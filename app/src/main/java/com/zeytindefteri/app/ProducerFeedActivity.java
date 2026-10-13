@@ -540,6 +540,13 @@ public class ProducerFeedActivity extends Activity {
                 );
                 break;
 
+            case "ELEK":
+                contentHost.addView(
+                        buildElekSection(),
+                        match()
+                );
+                break;
+
             case "MARKET":
                 contentHost.addView(
                         buildMarketSection(),
@@ -5993,6 +6000,296 @@ public class ProducerFeedActivity extends Activity {
         box.addView(v);
         return box;
     }
+    // =========================================================
+    // ELEK SEKMESİ (özet sayfası, alt menü görünür)
+    // Rakamlar Geçmiş ekranıyla aynı sorgudan gelir (ElekRepository archive*).
+    // Kayıt formu ElekActivity'de tam ekran açılır.
+    // =========================================================
+
+    private static final String ELEK_FILTER_SETTING = "elek_overview_garden";
+    private static final String[] ELEK_GRADE_COLUMNS =
+            {"double_kg", "grade1_kg", "grade2_kg", "grade3_kg", "grade4_kg", "oil_kg"};
+
+    private static final class ElekRow {
+        String date = "", garden = "";
+        double kg, revenue;
+        final double[] grades = new double[6];
+    }
+
+    private int[] elekGradeColors() {
+        return new int[]{
+                GreenTheme.color(R.color.elek_badge_double),
+                GreenTheme.color(R.color.elek_badge_one),
+                GreenTheme.color(R.color.elek_badge_two),
+                GreenTheme.color(R.color.elek_badge_three),
+                GreenTheme.color(R.color.elek_badge_four),
+                GreenTheme.color(R.color.elek_badge_oil)
+        };
+    }
+
+    private View buildElekSection() {
+        ScrollView scroll = scroll();
+        LinearLayout body = pageBody();
+        scroll.addView(body);
+
+        final int season = db.getActiveSeasonYear();
+        final String owner = db.getActiveOwnerUid();
+        ElekRepository elekRepository = new ElekRepository(db);
+
+        // Bahçeler (filtre çipleri için)
+        List<long[]> gardenIds = new ArrayList<>();
+        List<String> gardenNames = new ArrayList<>();
+        Cursor gc = null;
+        try {
+            gc = gardenRepository.getGardenSummaries();
+            while (gc != null && gc.moveToNext()) {
+                gardenIds.add(new long[]{getLong(gc, "id")});
+                gardenNames.add(getString(gc, "name", "Bahçe"));
+            }
+        } finally {
+            if (gc != null) gc.close();
+        }
+
+        long filter = -1;
+        try {
+            filter = Long.parseLong(db.getSetting(ELEK_FILTER_SETTING, "-1"));
+        } catch (Exception ignored) {
+        }
+        boolean filterExists = filter == -1;
+        for (long[] id : gardenIds) filterExists |= id[0] == filter;
+        if (!filterExists) filter = -1;
+
+        // Kayıtlar (aynı arşiv sorgusu; tarih sırasına göre)
+        List<ElekRow> rows = new ArrayList<>();
+        Cursor rc = null;
+        try {
+            rc = elekRepository.getArchiveRecords(season, filter, owner);
+            while (rc != null && rc.moveToNext()) {
+                ElekRow r = new ElekRow();
+                r.date = getString(rc, "record_date", "");
+                r.garden = getString(rc, "garden_name", "-");
+                r.kg = getDouble(rc, "total_kg");
+                r.revenue = getDouble(rc, "total_revenue");
+                for (int i = 0; i < ELEK_GRADE_COLUMNS.length; i++) r.grades[i] = getDouble(rc, ELEK_GRADE_COLUMNS[i]);
+                rows.add(r);
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (rc != null) rc.close();
+        }
+
+        double totalKg = 0, totalRevenue = 0;
+        double[] seasonGrades = new double[6];
+        for (ElekRow r : rows) {
+            totalKg += r.kg;
+            totalRevenue += r.revenue;
+            for (int i = 0; i < 6; i++) seasonGrades[i] += r.grades[i];
+        }
+
+        // Başlık
+        LinearLayout header = row();
+        header.setGravity(Gravity.BOTTOM);
+        LinearLayout titles = new LinearLayout(this);
+        titles.setOrientation(LinearLayout.VERTICAL);
+        TextView overline = text(season + " SEZONU · " + ElekInsights.recordCountOverline(rows.size()), 11, MUTED, true);
+        overline.setLetterSpacing(0.08f);
+        titles.addView(overline);
+        TextView title = text("Elek", 24, TEXT, true);
+        title.setPadding(0, dp(3), 0, 0);
+        titles.addView(title);
+        header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView history = text("Geçmiş", 14, GREEN, true);
+        history.setGravity(Gravity.CENTER);
+        history.setMinHeight(dp(44));
+        history.setPadding(dp(16), 0, dp(16), 0);
+        history.setBackground(round(CARD, 22, BORDER));
+        history.setContentDescription("Elek geçmişini aç");
+        history.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)));
+        header.addView(history, new LinearLayout.LayoutParams(-2, -2));
+        body.addView(header);
+
+        // Yeni kayıt
+        final long newRecordGarden = filter > 0 ? filter : homeActiveGardenIdOrZero();
+        TextView create = text("+  Yeni elek kaydı", 16, BG, true);
+        create.setGravity(Gravity.CENTER);
+        create.setMinHeight(dp(56));
+        create.setBackground(round(GREEN, 28, Color.TRANSPARENT));
+        create.setContentDescription("Yeni elek kaydı oluştur");
+        create.setOnClickListener(v -> startActivity(
+                new Intent(this, ElekActivity.class).putExtra("garden_id", newRecordGarden)));
+        body.addView(create, gardensBlockParams(16));
+
+        // Bahçe filtresi
+        if (gardenIds.size() > 1) {
+            HorizontalScrollView scroller = new HorizontalScrollView(this);
+            scroller.setHorizontalScrollBarEnabled(false);
+            LinearLayout chips = row();
+            for (int i = -1; i < gardenIds.size(); i++) {
+                final long id = i < 0 ? -1 : gardenIds.get(i)[0];
+                String label = i < 0 ? "Tüm bahçeler" : gardenNames.get(i);
+                boolean on = id == filter;
+                TextView chip = text(label, 12, on ? GREEN : MUTED, true);
+                chip.setGravity(Gravity.CENTER);
+                chip.setMinHeight(dp(40));
+                chip.setPadding(dp(14), 0, dp(14), 0);
+                chip.setBackground(round(on ? GREEN_SOFT : Color.TRANSPARENT, 20, on ? GREEN : BORDER));
+                chip.setContentDescription("Filtre: " + label + (on ? ", seçili" : ""));
+                final long current = filter;
+                chip.setOnClickListener(v -> {
+                    if (id == current) return;
+                    db.setSetting(ELEK_FILTER_SETTING, String.valueOf(id));
+                    refreshGardensKeepingScroll();
+                });
+                LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-2, -2);
+                if (i > -1) cp.setMargins(dp(8), 0, 0, 0);
+                chips.addView(chip, cp);
+            }
+            scroller.addView(chips);
+            body.addView(scroller, gardensBlockParams(16));
+        }
+
+        if (rows.isEmpty()) {
+            body.addView(emptyCard(
+                    filter > 0 ? "Bu bahçede henüz elek kaydı yok" : "Bu sezon henüz elek kaydı yok",
+                    "İlk elek kaydını eklediğinde sezon toplamı ve sınıf dağılımı burada görünür."),
+                    gardensBlockParams(12));
+            return scroll;
+        }
+
+        // Sezon toplamı
+        int gold = GreenTheme.color(R.color.zd_warning);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(14), dp(16), dp(16));
+        card.setBackground(round(CARD, 20, BORDER));
+        LinearLayout top = row();
+        top.setGravity(Gravity.BOTTOM);
+        LinearLayout left = new LinearLayout(this);
+        left.setOrientation(LinearLayout.VERTICAL);
+        TextView label = text("SEZON TOPLAMI", 11, MUTED, true);
+        label.setLetterSpacing(0.08f);
+        left.addView(label);
+        TextView revenue = text(fmtTl(totalRevenue), 28, gold, true);
+        revenue.setPadding(0, dp(2), 0, 0);
+        left.addView(revenue);
+        top.addView(left, new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout right = new LinearLayout(this);
+        right.setOrientation(LinearLayout.VERTICAL);
+        right.setGravity(Gravity.RIGHT);
+        right.addView(text(fmtKg(totalKg), 15, TEXT, true));
+        TextView avg = text("ort. " + ElekInsights.formatPerKg(totalRevenue, totalKg), 12, MUTED, false);
+        avg.setPadding(0, dp(2), 0, 0);
+        right.addView(avg);
+        top.addView(right, new LinearLayout.LayoutParams(-2, -2));
+        card.addView(top);
+
+        LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(-1, dp(10));
+        barParams.setMargins(0, dp(12), 0, 0);
+        card.addView(elekDistributionBar(seasonGrades, 5), barParams);
+        TextView legend = text(ElekInsights.legend(seasonGrades), 11, MUTED, false);
+        legend.setPadding(0, dp(8), 0, 0);
+        card.addView(legend);
+
+        LinearLayout stats = row();
+        stats.setGravity(Gravity.TOP);
+        stats.addView(gardenStat("Kayıt", String.valueOf(rows.size()), TEXT), new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout.LayoutParams second = new LinearLayout.LayoutParams(0, -2, 1);
+        second.setMargins(dp(8), 0, 0, 0);
+        stats.addView(gardenStat("En çok çıkan", ElekInsights.topGrade(seasonGrades), TEXT), second);
+        LinearLayout.LayoutParams third = new LinearLayout.LayoutParams(0, -2, 1);
+        third.setMargins(dp(8), 0, 0, 0);
+        stats.addView(gardenStat("Son kayıt", ElekInsights.formatDate(rows.get(0).date, true), TEXT), third);
+        LinearLayout.LayoutParams statsParams = new LinearLayout.LayoutParams(-1, -2);
+        statsParams.setMargins(0, dp(12), 0, 0);
+        card.addView(stats, statsParams);
+        card.setContentDescription("Sezon toplamı " + fmtTl(totalRevenue) + ", " + fmtKg(totalKg)
+                + ", ortalama " + ElekInsights.formatPerKg(totalRevenue, totalKg) + ". "
+                + ElekInsights.accessibleLegend(seasonGrades) + " " + rows.size() + " kayıt.");
+        body.addView(card, gardensBlockParams(12));
+
+        // Son kayıtlar
+        LinearLayout listHeader = row();
+        TextView listTitle = text("Son kayıtlar", 18, TEXT, true);
+        listHeader.addView(listTitle, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView all = text("Tümünü gör  ›", 13, GREEN, true);
+        all.setGravity(Gravity.CENTER_VERTICAL);
+        all.setMinHeight(dp(44));
+        all.setContentDescription("Tüm elek kayıtlarını aç");
+        all.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)));
+        listHeader.addView(all, new LinearLayout.LayoutParams(-2, -2));
+        body.addView(listHeader, gardensBlockParams(16));
+
+        int shown = Math.min(5, rows.size());
+        for (int i = 0; i < shown; i++) {
+            body.addView(elekRecordRow(rows.get(i)), gardensBlockParams(i == 0 ? 4 : 10));
+        }
+        return scroll;
+    }
+
+    private long homeActiveGardenIdOrZero() {
+        try {
+            return Long.parseLong(db.getSetting(homeActiveGardenSettingKey(), "0"));
+        } catch (Exception ignored) {
+            return 0;
+        }
+    }
+
+    private View elekDistributionBar(double[] grades, int radiusDp) {
+        LinearLayout bar = row();
+        bar.setBackground(round(GreenTheme.color(R.color.zd_surface), radiusDp, Color.TRANSPARENT));
+        bar.setClipToOutline(true);
+        bar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        int[] colors = elekGradeColors();
+        boolean first = true;
+        for (int i = 0; i < grades.length && i < colors.length; i++) {
+            if (grades[i] <= 0) continue;
+            View segment = new View(this);
+            segment.setBackgroundColor(colors[i]);
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -1, (float) grades[i]);
+            if (!first) p.setMargins(dp(2), 0, 0, 0);
+            first = false;
+            bar.addView(segment, p);
+        }
+        return bar;
+    }
+
+    private View elekRecordRow(ElekRow r) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(14), dp(12), dp(14), dp(14));
+        card.setBackground(round(CARD, 18, BORDER));
+        card.setClickable(true);
+        card.setFocusable(true);
+        LinearLayout top = row();
+        top.setGravity(Gravity.TOP);
+        LinearLayout left = new LinearLayout(this);
+        left.setOrientation(LinearLayout.VERTICAL);
+        left.addView(text(ElekInsights.formatDate(r.date, false), 15, TEXT, true));
+        TextView meta = text(r.garden + "  ·  " + fmtKg(r.kg), 12, MUTED, false);
+        meta.setSingleLine(true);
+        meta.setEllipsize(TextUtils.TruncateAt.END);
+        meta.setPadding(0, dp(2), 0, 0);
+        left.addView(meta);
+        top.addView(left, new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout right = new LinearLayout(this);
+        right.setOrientation(LinearLayout.VERTICAL);
+        right.setGravity(Gravity.RIGHT);
+        right.addView(text(fmtTl(r.revenue), 15, TEXT, true));
+        TextView perKg = text(ElekInsights.formatPerKg(r.revenue, r.kg), 12, MUTED, false);
+        perKg.setPadding(0, dp(2), 0, 0);
+        right.addView(perKg);
+        top.addView(right, new LinearLayout.LayoutParams(-2, -2));
+        card.addView(top);
+        LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(-1, dp(6));
+        barParams.setMargins(0, dp(10), 0, 0);
+        card.addView(elekDistributionBar(r.grades, 3), barParams);
+        card.setContentDescription(ElekInsights.formatDate(r.date, false) + ", " + r.garden + ", "
+                + fmtKg(r.kg) + ", " + fmtTl(r.revenue) + ", ortalama " + ElekInsights.formatPerKg(r.revenue, r.kg)
+                + ". " + ElekInsights.accessibleLegend(r.grades) + " Geçmişi açmak için dokun.");
+        card.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)));
+        return card;
+    }
+
 
 
 
@@ -7055,17 +7352,8 @@ public class ProducerFeedActivity extends Activity {
         labelParams.topMargin = dp(5);
         item.addView(title, labelParams);
         item.setOnClickListener(v -> {
-            if ("ELEK".equals(section)) {
-                // Elek kaydı, Ana Sayfa'daki aktif bahçe seçili açılır (kullanıcı değiştirebilir).
-                long activeGarden = 0;
-                try {
-                    activeGarden = Long.parseLong(db.getSetting(homeActiveGardenSettingKey(), "0"));
-                } catch (Exception ignored) {
-                }
-                startActivity(new Intent(this, ElekActivity.class).putExtra("garden_id", activeGarden));
-            } else {
-                showSection(section);
-            }
+            // Elek artık alt menülü bir sekme; kayıt formu sekmeden açılır.
+            showSection(section);
         });
         return item;
     }

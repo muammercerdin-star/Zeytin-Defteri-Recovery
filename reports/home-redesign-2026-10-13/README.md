@@ -180,3 +180,32 @@ Kaynak: tasarım tuvalindeki "Elek Kaydı · yeni tasarım" ekranı.
 - Kaydetme ve arşive düşmesi.
 - Alt menüden açınca aktif bahçenin seçili gelmesi.
 - Ekran döndürme ve geri dönüşte seçimlerin korunması.
+
+## 10. Elek sekmesi — özet sayfası (alt menü görünür)
+
+Sorun: Alt menüdeki "Elek" sekmesi doğrudan `ElekActivity` formunu açıyordu. Alt menü kayboluyor, diğer sekmelere dönmek için geri tuşu gerekiyordu.
+
+Çözüm (kabul edilen "Elek sekmesi · özet sayfası" tasarımı):
+- **Sekme davranışı:** Alt menüdeki Elek artık `showSection("ELEK")` ile `ProducerFeedActivity` içinde bir sekme açıyor. Alt menü ve üst çubuk görünür kalıyor; Elek sekmesi seçili görünüyor.
+- **Sekme içeriği (`buildElekSection`):**
+  - Başlık "2026 SEZONU · N KAYIT" / "Elek" ve "Geçmiş" hap butonu (`ElekArchiveActivity`).
+  - Tam genişlikte **"+ Yeni elek kaydı"** butonu, `ElekActivity` formunu tam ekran açar. Bahçe filtresi seçiliyse o bahçe, değilse Ana Sayfa'nın aktif bahçesi önceden seçilir.
+  - **Bahçe filtresi** (birden fazla bahçe varsa): "Tüm bahçeler" + bahçe adları; seçim `elek_overview_garden` ayarında saklanır.
+  - **Sezon toplamı:** tutar (altın), kg, ortalama TL/kg, sınıf dağılım şeridi ve açıklaması, kayıt sayısı, en çok çıkan sınıf, son kayıt tarihi.
+  - **Son kayıtlar** (en fazla 5): tarih, bahçe, kg, tutar, TL/kg ve kayda ait ince dağılım şeridi. Dokununca ve "Tümünü gör ›" ile Geçmiş açılır.
+  - Kayıt yoksa açıklayıcı boş durum kartı.
+- **Veri kaynağı:** Geçmiş ekranıyla birebir aynı `ElekRepository.getArchiveRecords(season, gardenId, owner)` sorgusu kullanılıyor; ayrı bir toplam hesabı yok.
+- **Yenileme:** Form kaydedilip geri dönülünce mevcut `onResume → refreshCurrentSection` akışı sekmeyi yeniden çizer; yeni kayıt listenin başında görünür.
+- **Form:** Form ekranı alt menüsüz kaldı (bilinçli). Asistanın "Elek aç" komutu da hâlâ formu açıyor.
+
+Testler:
+- `tests/elek_insights` 30 kontrole çıktı: en çok çıkan sınıf, tarih biçimleri, TL/kg, kayıt sayısı.
+- `check_archive_query.py`: arşiv SQL'i Java'daki parçalardan birebir yeniden kuruluyor ve SQLite'ta çalıştırılıyor. Sahip ve sezon kapsamı, tarih sırası, ekran görüntüsündeki kaydın 98 kg / 4.910 TL toplamı, sınıf sütunları, bahçe filtresi ve özetin kayıtların toplamına eşitliği kontrol ediliyor (5 kontrol).
+- Diğer tüm paketler önceki sonuçlarla aynı.
+
+Cihazda kontrol:
+- Alt menüden Elek'e geçiş ve diğer sekmelere dönüş.
+- Yeni kayıt → kaydet → geri dönünce listenin güncellenmesi.
+- Bahçe filtresi.
+- Geçmiş / Tümünü gör.
+- Kayıt olmayan sezon.

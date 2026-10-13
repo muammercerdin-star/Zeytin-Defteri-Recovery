@@ -63,6 +63,56 @@ public final class ElekInsights {
         return garden + " · " + date + " olarak kaydedilecek.";
     }
 
+    // ------------------------------------------------------------------
+    // Elek sekmesi (özet sayfası)
+    // ------------------------------------------------------------------
+    private static final String[] MONTHS = {"Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+            "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"};
+
+    /** En çok kilo çıkan sınıfın adı; kayıt yoksa "—". Eşitlikte üst sınıf seçilir. */
+    public static String topGrade(double[] kg) {
+        int best = -1;
+        for (int i = 0; i < kg.length && i < GRADE_NAMES.length; i++) {
+            if (kg[i] > 0 && (best < 0 || kg[i] > kg[best])) best = i;
+        }
+        return best < 0 ? "—" : GRADE_NAMES[best];
+    }
+
+    /** "2026-10-13" -> "13 Ekim 2026" (shortMonth: "13 Eki"). Tanınmayan biçim olduğu gibi döner. */
+    public static String formatDate(String iso, boolean shortMonth) {
+        if (iso == null) return "";
+        String v = iso.trim();
+        try {
+            if (v.length() >= 10 && v.charAt(4) == '-' && v.charAt(7) == '-') {
+                int year = Integer.parseInt(v.substring(0, 4));
+                int month = Integer.parseInt(v.substring(5, 7));
+                int day = Integer.parseInt(v.substring(8, 10));
+                if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                    String name = MONTHS[month - 1];
+                    return shortMonth
+                            ? day + " " + name.substring(0, Math.min(3, name.length()))
+                            : day + " " + name + " " + year;
+                }
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        return v;
+    }
+
+    /** "50,1 TL/kg"; kilo yoksa "— TL/kg". */
+    public static String formatPerKg(double revenue, double kg) {
+        if (kg <= 0) return "— TL/kg";
+        java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(new java.util.Locale("tr", "TR"));
+        nf.setMinimumFractionDigits(1);
+        nf.setMaximumFractionDigits(1);
+        return nf.format(revenue / kg) + " TL/kg";
+    }
+
+    /** "12 KAYIT" */
+    public static String recordCountOverline(int count) {
+        return count + " KAYIT";
+    }
+
     /** Ana Sayfa'daki aktif bahçe seçiliyse "Bahçe · aktif". */
     public static String gardenLabel(long selectedId, long activeId) {
         return selectedId > 0 && selectedId == activeId ? "Bahçe · aktif" : "Bahçe";

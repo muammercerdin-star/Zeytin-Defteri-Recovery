@@ -7,3 +7,4 @@ with tempfile.TemporaryDirectory(prefix='zeytin-elek-') as out:
                     str(root / 'app/src/main/java/com/zeytindefteri/app/ElekInsights.java'),
                     str(root / 'tests/elek_insights/ElekInsightsTest.java')], check=True)
     subprocess.run(['java', '-cp', out, 'com.zeytindefteri.app.ElekInsightsTest'], cwd=root, check=True)
+subprocess.run(['python3', str(root / 'tests/elek_insights/check_archive_query.py')], cwd=root, check=True)

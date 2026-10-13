@@ -34,6 +34,17 @@ public final class ElekInsightsTest {
         eq(ElekInsights.gardenLabel(5, 5), "Bahçe · aktif", "active label");
         eq(ElekInsights.gardenLabel(5, 7), "Bahçe", "other garden");
         eq(ElekInsights.gardenLabel(0, 0), "Bahçe", "none selected");
+        eq(ElekInsights.topGrade(new double[]{3, 15, 25, 40, 10, 5}), "3 Numara", "top grade");
+        eq(ElekInsights.topGrade(new double[]{10, 10, 0, 0, 0, 0}), "Double", "tie keeps upper grade");
+        eq(ElekInsights.topGrade(none), "—", "no top grade");
+        eq(ElekInsights.formatDate("2026-10-13", false), "13 Ekim 2026", "long date");
+        eq(ElekInsights.formatDate("2026-10-13", true), "13 Eki", "short date");
+        eq(ElekInsights.formatDate("2026-05-01", true), "1 May", "short may");
+        eq(ElekInsights.formatDate("13.10.2026", false), "13.10.2026", "unknown format passthrough");
+        eq(ElekInsights.formatDate(null, true), "", "null date");
+        eq(ElekInsights.formatPerKg(4910, 98), "50,1 TL/kg", "per kg from screenshot");
+        eq(ElekInsights.formatPerKg(100, 0), "— TL/kg", "no kg");
+        eq(ElekInsights.recordCountOverline(12), "12 KAYIT", "overline");
         System.out.println("PASS: " + checks + " elek insight checks (host only).");
     }
 }
