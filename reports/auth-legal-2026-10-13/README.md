@@ -163,3 +163,14 @@ Aşağıdakilerin hiçbiri bu ortamda test edilmedi:
 - Onay satırına dokunma, iki belge bağlantısı, belge ekranları, "İlgili belgeler" geçişleri, silme talebi e-postasının açılması.
 - Ayarlar → KVKK / Gizlilik / Kullanım Koşulları / Hesap ve Veri Silme Talebi satırları ve karşılama ekranındaki belge bağlantıları.
 - Yedi ana menü regresyonu: Ana Sayfa | Bahçelerim | Elek | Asistan | Zeytin Ligi | Sohbet | Ayarlar.
+
+## 12. Güncelleme — kayıt açıldı (13.10.2026, 22:14 sonrası)
+
+Yayıncının talebi ve kararıyla:
+- `LegalDocuments.CONTROLLER_NAME = "Muammer Çerdin"` (yayıncının bildirdiği ad soyad).
+- `LegalDocuments.VERSION = "1.0"`, `LEGAL_REVIEW_APPROVED = true`. Belgelerdeki TASLAK bandı ve kayıt ekranındaki engel satırı artık gösterilmez.
+- Bu onay **yayıncı kararıdır**; metinler bir hukukçu tarafından incelenmedi. Bölüm 9'daki konular açık kalmaya devam eder.
+- E-posta ile kayıt ve "Google ile kayıt ol" artık Kullanım Koşulları onay kutusu işaretlendiğinde çalışır.
+- Kayıt butonu onay işaretlenmeden de dokunulabilir hâle getirildi; dokunulduğunda "Kullanım Koşulları'nı kabul ettiğini işaretle" uyarısı gösterilir (önceden sessizce devre dışıydı). Onay kontrolü kaldırılmadı.
+- Hâlâ açık: "Giriş Yap" sekmesindeki Google girişi yeni kullanıcı için koşul onayı almadan hesap oluşturabilir (Bölüm 6). Koşul kabul sürümü/zamanı kaydedilmiyor.
+- Testler güncellendi: kayıt açık, ad dolu, sürüm 1.0, taslak bandı yok; boş ad verilirse belgede "yayın öncesinde eklenecektir" ibaresi kontrol edilir.

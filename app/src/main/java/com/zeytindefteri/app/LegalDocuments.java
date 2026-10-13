@@ -17,11 +17,14 @@ final class LegalDocuments {
 
     static final String CONTACT_EMAIL = "muammercerdin@gmail.com";
     /** Veri sorumlusunun doğrulanmış ad soyadı. Doğrulanmadan doldurulmamalı. */
-    static final String CONTROLLER_NAME = "";
-    static final String VERSION = "0.1 (taslak)";
+    static final String CONTROLLER_NAME = "Muammer Çerdin";
+    static final String VERSION = "1.0";
     static final String DATE = "13 Ekim 2026";
-    /** Hukuki inceleme tamamlanmadan true yapılmamalı. */
-    static final boolean LEGAL_REVIEW_APPROVED = false;
+    /**
+     * Yayıncı onayı: 13.10.2026 tarihinde yayıncı (Muammer Çerdin) metinleri sürüm 1.0 olarak
+     * yürürlüğe aldı. Metinler bir hukukçu tarafından incelenmedi; bu bayrak yayıncı kararını gösterir.
+     */
+    static final boolean LEGAL_REVIEW_APPROVED = true;
 
     static final String CONTROLLER_PENDING =
             "Bireysel geliştirici (ad soyad yayın öncesinde eklenecektir)";

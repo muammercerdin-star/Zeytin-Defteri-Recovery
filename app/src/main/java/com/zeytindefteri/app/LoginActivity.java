@@ -608,7 +608,8 @@ public class LoginActivity extends Activity {
     }
 
     private void refreshAuthControls() {
-        boolean allowed = !registerMode || AuthRegistrationPolicy.canRegister(legalAcceptance.isChecked());
+        // Kayıt modunda buton açık kalır; onay eksikse canStartRegistration() nedenini gösterir.
+        boolean allowed = !registerMode || AuthRegistrationPolicy.documentsReady();
         btnSubmit.setEnabled(!actionRunning && allowed);
         btnSubmit.setAlpha(1f);
         btnGoogle.setEnabled(!actionRunning && allowed);

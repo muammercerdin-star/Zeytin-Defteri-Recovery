@@ -21,9 +21,9 @@ public final class AuthRegistrationPolicyTest {
         check(AuthRegistrationPolicy.strength("abcdefgh") == 2);
         check(AuthRegistrationPolicy.strength("Abcdefg1") == 3);
         check(AuthRegistrationPolicy.strength("Abcdefghijk1") == 4);
-        check(!AuthRegistrationPolicy.documentsReady());
+        check(AuthRegistrationPolicy.documentsReady() == LegalDocuments.readyForRegistration());
         check(!AuthRegistrationPolicy.canRegister(false));
-        check(!AuthRegistrationPolicy.canRegister(true));
+        check(AuthRegistrationPolicy.canRegister(true) == LegalDocuments.readyForRegistration());
         System.out.println("PASS: " + count + " registration policy checks (no Firebase calls).");
     }
 }

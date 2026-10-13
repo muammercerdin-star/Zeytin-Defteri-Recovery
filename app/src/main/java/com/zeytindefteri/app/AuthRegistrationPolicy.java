@@ -21,9 +21,8 @@ final class AuthRegistrationPolicy {
     }
 
     static boolean documentsReady() {
-        // Belgeler uygulamada mevcut (res/raw/legal_*.txt) ancak taslaktır.
-        // Kayıt; veri sorumlusunun adı doğrulanıp hukuki inceleme onaylandığında
-        // LegalDocuments üzerinden açılır. Bu, sunucu tarafı bir kısıt değildir.
+        // Kayıt; veri sorumlusunun adı girilmiş ve belgeler yayıncı tarafından yürürlüğe
+        // alınmışsa açıktır (LegalDocuments). Bu, sunucu tarafı bir kısıt değildir.
         return LegalDocuments.readyForRegistration();
     }
 

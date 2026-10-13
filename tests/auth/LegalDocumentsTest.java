@@ -24,8 +24,12 @@ public final class LegalDocumentsTest {
         check(LegalDocuments.registrationBlockReason(true, "Ad Soyad").isEmpty(), "no reason when open");
         check(!LegalDocuments.registrationBlockReason(false, "").isEmpty(), "reason when closed");
         // Current repository state must stay closed until the publisher verifies identity and review.
-        check(!LegalDocuments.readyForRegistration(), "repo state closed");
-        check(!AuthRegistrationPolicy.documentsReady(), "policy follows legal config");
+        // Publisher decision 13.10.2026: controller named, documents in force as v1.0.
+        check(LegalDocuments.readyForRegistration(), "registration open");
+        check(LegalDocuments.registrationBlockReason().isEmpty(), "no block reason shown");
+        check(!LegalDocuments.isDraft(), "no draft banner");
+        check("Muammer Çerdin".equals(LegalDocuments.CONTROLLER_NAME), "controller name");
+        check(AuthRegistrationPolicy.documentsReady(), "policy follows legal config");
         check("muammercerdin@gmail.com".equals(LegalDocuments.CONTACT_EMAIL), "contact email");
 
         String[] files = {"legal_kvkk.txt", "legal_privacy.txt", "legal_terms.txt"};
@@ -33,7 +37,9 @@ public final class LegalDocumentsTest {
             String filled = LegalDocuments.fill(raw(file));
             check(!filled.contains("{{"), file + " placeholders filled");
             check(filled.contains(LegalDocuments.CONTACT_EMAIL), file + " contact email");
-            check(filled.contains(LegalDocuments.CONTROLLER_PENDING), file + " unverified controller is marked");
+            check(filled.contains("Muammer Çerdin") && !filled.contains(LegalDocuments.CONTROLLER_PENDING), file + " controller name filled");
+            check(LegalDocuments.fill(raw(file), "").contains(LegalDocuments.CONTROLLER_PENDING), file + " empty name is marked pending");
+            check(filled.contains("Sürüm 1.0"), file + " version 1.0");
             String named = LegalDocuments.fill(raw(file), "Ad Soyad");
             check(named.contains("Ad Soyad") && !named.contains(LegalDocuments.CONTROLLER_PENDING), file + " name substitution");
             // No fabricated contact data or absolute guarantees.
