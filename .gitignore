@@ -1,0 +1,16 @@
+# Local build artifacts
+.gradle/
+**/build/
+.idea/
+local.properties
+*.iml
+*.apk
+*.aab
+*.jks
+*.keystore
+*.pem
+.env
+.env.*
+node_modules/
+# Firebase local configuration
+app/google-services.json
