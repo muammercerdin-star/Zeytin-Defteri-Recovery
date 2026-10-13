@@ -54,6 +54,7 @@ public final class ZeytinAssistantController {
     private boolean ttsReady,closed;
     private int session,listenVersion;
     private String lastAnswer="";
+    private String pendingQuestion;
     public ZeytinAssistantController(Activity activity,Host host){this.activity=activity;this.host=host;}
     public void show() {
         if(closed || (dialog!=null && dialog.isShowing()))return;
@@ -122,7 +123,18 @@ public final class ZeytinAssistantController {
                 public void onStop(String id,boolean interrupted){update(id,"Cevap hazır.");}
             });
         }catch(Exception e){ttsReady=false;}
-        main.post(()->{if(panel==session && visible())listen();});
+        main.post(()->{if(panel==session && visible()){
+            String question=pendingQuestion;pendingQuestion=null;
+            if(question!=null)submit(question);else listen();
+        }});
+    }
+    /** Ana sayfadaki hazır sorular için: paneli açar ve soruyu mikrofon açmadan yazılı gönderir. */
+    public void ask(String question){
+        if(question==null||question.trim().isEmpty())return;
+        if(visible()){submit(question);return;}
+        pendingQuestion=question;
+        show();
+        if(!visible())pendingQuestion=null;
     }
     public boolean isOpen(){return visible();}
     public void orbTap(){if(!visible())return;if(conversation.state()==State.LISTENING && recognizer!=null){try{recognizer.stopListening();transition(State.PROCESSING,"Kontrol ediyorum…");}catch(Exception e){stopRecognizer();transition(State.ERROR,"Seni duyamadım. Tekrar deneyebilirsin.");}}else if(conversation.state()!=State.PROCESSING)listen();}

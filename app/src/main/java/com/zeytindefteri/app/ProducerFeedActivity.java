@@ -80,6 +80,8 @@ public class ProducerFeedActivity extends Activity {
         boolean forecastPending, currentPending;
         long forecastAttempt, currentAttempt;
         Runnable refresh;
+        Runnable expandForecast;
+        View weatherCard;
     }
     private String homeWeatherKey(HomeGardenSnapshot garden) {
         return currentUserKey()+"|"+garden.id+"|"+safe(garden.province,"")+"|"+
@@ -2379,18 +2381,34 @@ public class ProducerFeedActivity extends Activity {
 
         body.addView(hero);
 
+        final HomeWeatherState weatherState =
+                homeWeather;
+
         today.openWeather =
-                () -> scroll.smoothScrollTo(
-                        0,
-                        hero.getTop()
-                );
+                () -> {
+                    int offset = 0;
+
+                    if (weatherState != null
+                            && weatherState.weatherCard != null) {
+                        if (weatherState.expandForecast != null) {
+                            weatherState.expandForecast.run();
+                        }
+
+                        offset = weatherState.weatherCard.getTop();
+                    }
+
+                    scroll.smoothScrollTo(
+                            0,
+                            hero.getTop() + offset
+                    );
+                };
 
         LinearLayout titleRow = row();
 
         TextView todayTitle =
                 text(
-                        "Bugün Yapılacaklar",
-                        22,
+                        "Bugün yapılacaklar",
+                        20,
                         TEXT,
                         true
                 );
@@ -2489,6 +2507,10 @@ public class ProducerFeedActivity extends Activity {
         body.addView(
                 todayCard,
                 tcp
+        );
+
+        body.addView(
+                buildHomeAssistantChips()
         );
 
         LinearLayout quick = row();
@@ -2877,16 +2899,22 @@ public class ProducerFeedActivity extends Activity {
         return scroll;
     }
 
+    // =========================================================
+    // ANA SAYFA ÜST BÖLÜM (Saha Defteri)
+    // Selamlama, bahçe seçici, zeytin takvimi ve hava kartı.
+    // Hava önbelleği/yenileme mantığı önceki hero ile aynıdır.
+    // =========================================================
+
     private View buildHomeHero(
             final HomeGardenSnapshot garden,
             final TodayState today
     ) {
-        final String key = homeWeatherKey(garden);
+        final String key=homeWeatherKey(garden);
         if(homeWeather!=null && key.equals(homeWeather.key) && homeWeather.hero!=null
                 && (homeWeather.forecastPending || homeWeather.currentPending
-                    || weatherCoordinates(garden.id).equals(homeWeather.coordinates))) {
+                || weatherCoordinates(garden.id).equals(homeWeather.coordinates))) {
             homeWeather.today=today;
-            today.forecast=homeWeather.forecast; today.current=homeWeather.current;
+            today.forecast=homeWeather.forecast;today.current=homeWeather.current;
             View cached=homeWeather.hero;
             if(cached.getParent() instanceof android.view.ViewGroup)
                 ((android.view.ViewGroup)cached.getParent()).removeView(cached);
@@ -2895,451 +2923,391 @@ public class ProducerFeedActivity extends Activity {
         }
         final HomeWeatherState state=new HomeWeatherState();state.key=key;state.today=today;
         homeWeather=state;state.coordinates=weatherCoordinates(garden.id);
-        final int collapsedHeight =
-                dp(338);
 
-        final FrameLayout hero =
-                new FrameLayout(this);
+        final int gold=GreenTheme.color(R.color.zd_warning);
 
-        hero.setBackgroundColor(
-                GreenTheme.color(R.color.zd_bg)
-        );
+        LinearLayout hero=new LinearLayout(this);
+        hero.setOrientation(LinearLayout.VERTICAL);
+        hero.setPadding(dp(16),dp(18),dp(16),0);
 
-        ImageView image =
-                new ImageView(this);
-
-        image.setScaleType(
-                ImageView.ScaleType.CENTER_CROP
-        );
-
-        image.setImageResource(
-                R.drawable.home_hero_olive
-        );
-
-        hero.addView(
-                image,
-                new FrameLayout.LayoutParams(
-                        -1,
-                        -1
-                )
-        );
-
-        View shade = new View(this);
-
-        GradientDrawable overlay =
-                new GradientDrawable(
-                        GradientDrawable.Orientation.TOP_BOTTOM,
-                        new int[]{
-                                GreenTheme.parse("#B805161F"),
-                                GreenTheme.parse("#2505161F"),
-                                GreenTheme.parse("#9A05161F")
-                        }
-                );
-
-        shade.setBackground(overlay);
-
-        hero.addView(
-                shade,
-                new FrameLayout.LayoutParams(
-                        -1,
-                        -1
-                )
-        );
-
-        LinearLayout top = row();
-
-        top.setGravity(
-                Gravity.TOP
-        );
-
-        top.setPadding(
-                dp(16),
-                dp(16),
-                dp(12),
-                0
-        );
-
-        LinearLayout greetingBox =
-                new LinearLayout(this);
-
-        greetingBox.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        TextView greeting =
-                text(
-                        dayGreeting(),
-                        20,
-                        Color.WHITE,
-                        true
-                );
-
-        greeting.setIncludeFontPadding(
-                false
-        );
-
+        // 1) Selamlama + hatırlatmalar + profil
+        LinearLayout top=row();
+        top.setGravity(Gravity.TOP);
+        LinearLayout greetingBox=new LinearLayout(this);
+        greetingBox.setOrientation(LinearLayout.VERTICAL);
+        greetingBox.addView(text(HomeDashboardModel.dateLine(Calendar.getInstance()),13,MUTED,false));
+        final String userName=currentUserName();
+        TextView greeting=text(dayGreeting()+", "+HomeDashboardModel.displayFirstName(userName),24,TEXT,true);
+        greeting.setPadding(0,dp(3),0,0);
+        greeting.setMaxLines(2);
+        greeting.setEllipsize(TextUtils.TruncateAt.END);
         greetingBox.addView(greeting);
+        top.addView(greetingBox,new LinearLayout.LayoutParams(0,-2,1));
 
-        TextView name =
-                text(
-                        firstName(
-                                currentUserName()
-                        )
-                                + " 👋",
-                        30,
-                        Color.WHITE,
-                        true
-                );
+        ImageView bell=new ImageView(this);
+        bell.setImageResource(R.drawable.ic_bell_line);
+        bell.setColorFilter(TEXT);
+        bell.setPadding(dp(11),dp(11),dp(11),dp(11));
+        bell.setBackground(round(CARD,22,BORDER));
+        bell.setContentDescription("Hatırlatmaları aç");
+        bell.setClickable(true);
+        bell.setFocusable(true);
+        bell.setOnClickListener(v -> startActivity(new Intent(ProducerFeedActivity.this,RemindersActivity.class)));
+        LinearLayout.LayoutParams bellParams=new LinearLayout.LayoutParams(dp(44),dp(44));
+        bellParams.setMargins(dp(8),0,0,0);
+        top.addView(bell,bellParams);
 
-        name.setIncludeFontPadding(false);
-        name.setSingleLine(true);
+        TextView avatar=circle(HomeDashboardModel.initials(userName),14,GreenTheme.color(R.color.zd_green_chip),TEXT);
+        avatar.setContentDescription("Profil");
+        avatar.setClickable(true);
+        avatar.setFocusable(true);
+        avatar.setOnClickListener(v -> showSection("PROFILE"));
+        LinearLayout.LayoutParams avatarParams=new LinearLayout.LayoutParams(dp(44),dp(44));
+        avatarParams.setMargins(dp(8),0,0,0);
+        top.addView(avatar,avatarParams);
+        hero.addView(top);
 
-        name.setEllipsize(
-                TextUtils.TruncateAt.END
-        );
-
-        name.setOnClickListener(
-                v -> showSection("PROFILE")
-        );
-
-        greetingBox.addView(name);
-
-        TextView motto =
-                text(
-                        "Zeytin güzel, emek bereketli olsun.",
-                        12,
-                        GreenTheme.color(R.color.zd_text),
-                        false
-                );
-
-        motto.setSingleLine(true);
-
-        motto.setEllipsize(
-                TextUtils.TruncateAt.END
-        );
-
-        motto.setPadding(
-                0,
-                dp(5),
-                0,
-                0
-        );
-
-        greetingBox.addView(motto);
-
-        top.addView(
-                greetingBox,
-                new LinearLayout.LayoutParams(
-                        0,
-                        -2,
-                        1
-                )
-        );
-
-        final LinearLayout weather =
-                new LinearLayout(this);
-
-        weather.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        weather.setGravity(
-                Gravity.RIGHT
-        );
-
-        weather.setPadding(
-                dp(4),
-                0,
-                dp(2),
-                dp(3)
-        );
-
-        String gardenPlace =
-                garden.id > 0
-                        ? garden.name + " ▾"
-                        : "Bahçe seç";
-
-        final TextView place =
-                text(
-                        gardenPlace,
-                        10,
-                        Color.WHITE,
-                        true
-                );
-
+        // 2) Bahçe seçici
+        TextView place=text(
+                garden.id>0
+                        ? garden.name+"  ·  "+db.getActiveSeasonYear()+"   ▾"
+                        : "Bahçe seç   ▾",
+                14,TEXT,true);
         place.setSingleLine(true);
-
-        place.setEllipsize(
-                TextUtils.TruncateAt.END
-        );
-
-        place.setGravity(
-                Gravity.RIGHT
-        );
-
+        place.setEllipsize(TextUtils.TruncateAt.END);
+        place.setGravity(Gravity.CENTER_VERTICAL);
+        place.setMinHeight(dp(44));
+        place.setPadding(dp(16),0,dp(16),0);
+        place.setBackground(round(CARD,22,BORDER));
         place.setClickable(true);
         place.setFocusable(true);
+        place.setContentDescription(garden.id>0
+                ? "Aktif bahçe: "+garden.name+". Değiştirmek için dokun."
+                : "Aktif bahçe seç");
+        place.setOnClickListener(v -> showHomeGardenPicker(garden.id));
+        LinearLayout.LayoutParams placeParams=new LinearLayout.LayoutParams(-2,-2);
+        placeParams.setMargins(0,dp(14),0,0);
+        hero.addView(place,placeParams);
 
-        place.setOnClickListener(
-                v -> showHomeGardenPicker(
-                        garden.id
-                )
-        );
+        // 3) Zeytin takvimi
+        hero.addView(buildHomeSeasonCard(today,gold),homeCardParams(14));
 
-        weather.addView(place);
+        // 4) Hava kartı
+        LinearLayout weatherCard=new LinearLayout(this);
+        weatherCard.setOrientation(LinearLayout.VERTICAL);
+        weatherCard.setPadding(dp(16),dp(14),dp(16),dp(16));
+        weatherCard.setBackground(round(CARD,20,BORDER));
 
-        final TextView temp =
-                text(
-                        "☀  —°C",
-                        18,
-                        Color.WHITE,
-                        true
-                );
-
-        temp.setGravity(
-                Gravity.RIGHT
-        );
-
-        weather.addView(temp);
-
-        final TextView weatherStatus =
-                text(
-                        garden.id > 0
-                                ? "Bahçe havası yükleniyor"
-                                : "Önce bahçe kaydet",
-                        9,
-                        GreenTheme.color(R.color.zd_text_soft),
-                        false
-                );
-
-        weatherStatus.setGravity(
-                Gravity.RIGHT
-        );
-
+        LinearLayout weatherTop=row();
+        LinearLayout nowBox=new LinearLayout(this);
+        nowBox.setOrientation(LinearLayout.VERTICAL);
+        final TextView temp=text("☀ —°",30,TEXT,true);
+        temp.setIncludeFontPadding(false);
+        nowBox.addView(temp);
+        final TextView weatherStatus=text(
+                garden.id>0 ? "Bahçe havası yükleniyor" : "Önce bahçe kaydet",
+                13,MUTED,false);
         weatherStatus.setSingleLine(true);
+        weatherStatus.setEllipsize(TextUtils.TruncateAt.END);
+        weatherStatus.setPadding(0,dp(4),0,0);
+        nowBox.addView(weatherStatus);
+        weatherTop.addView(nowBox,new LinearLayout.LayoutParams(0,-2,1));
 
-        weatherStatus.setEllipsize(
-                TextUtils.TruncateAt.END
-        );
+        final TextView toggle=text("Saatlik  ›",13,GREEN,true);
+        toggle.setGravity(Gravity.CENTER_VERTICAL|Gravity.RIGHT);
+        toggle.setMinHeight(dp(44));
+        toggle.setPadding(dp(10),0,0,0);
+        toggle.setContentDescription("Saatlik ve 5 günlük tahmini göster");
+        toggle.setVisibility(garden.id>0 ? View.VISIBLE : View.GONE);
+        weatherTop.addView(toggle,new LinearLayout.LayoutParams(-2,-2));
+        weatherCard.addView(weatherTop);
 
-        weather.addView(weatherStatus);
+        final LinearLayout conditions=new LinearLayout(this);
+        conditions.setOrientation(LinearLayout.VERTICAL);
+        TextView loading=text(
+                garden.id>0 && weatherRepository!=null
+                        ? "Bahçenin hava tahmini hazırlanıyor…"
+                        : "Hava tahmini için önce bir bahçe seç",
+                13,MUTED,false);
+        loading.setPadding(0,dp(6),0,dp(4));
+        conditions.addView(loading);
+        LinearLayout.LayoutParams conditionParams=new LinearLayout.LayoutParams(-1,-2);
+        conditionParams.setMargins(0,dp(12),0,0);
+        weatherCard.addView(conditions,conditionParams);
 
-        top.addView(
-                weather,
-                new LinearLayout.LayoutParams(
-                        dp(124),
-                        -2
-                )
-        );
+        final LinearLayout rainBars=row();
+        rainBars.setGravity(Gravity.BOTTOM);
+        rainBars.setVisibility(View.GONE);
+        LinearLayout.LayoutParams rainParams=new LinearLayout.LayoutParams(-1,-2);
+        rainParams.setMargins(0,dp(14),0,0);
+        weatherCard.addView(rainBars,rainParams);
 
-        TextView bell =
-                text(
-                        "♧",
-                        23,
-                        Color.WHITE,
-                        true
-                );
+        final LinearLayout forecastPanel=new LinearLayout(this);
+        forecastPanel.setOrientation(LinearLayout.VERTICAL);
+        forecastPanel.setVisibility(View.GONE);
+        LinearLayout.LayoutParams panelParams=new LinearLayout.LayoutParams(-1,-2);
+        panelParams.setMargins(0,dp(14),0,0);
+        weatherCard.addView(forecastPanel,panelParams);
 
-        bell.setGravity(
-                Gravity.CENTER
-        );
+        final Runnable showPanel=() -> {
+            forecastPanel.setVisibility(View.VISIBLE);
+            toggle.setText("Gizle  ˄");
+            toggle.setContentDescription("Saatlik ve 5 günlük tahmini gizle");
+        };
+        toggle.setOnClickListener(v -> {
+            if(forecastPanel.getVisibility()==View.VISIBLE){
+                forecastPanel.setVisibility(View.GONE);
+                toggle.setText("Saatlik  ›");
+                toggle.setContentDescription("Saatlik ve 5 günlük tahmini göster");
+            } else showPanel.run();
+        });
+        state.expandForecast=showPanel;
+        state.weatherCard=weatherCard;
+        hero.addView(weatherCard,homeCardParams(12));
 
-        bell.setContentDescription(
-                "Hatırlatmaları aç"
-        );
-        bell.setOnClickListener(v -> startActivity(
-                new Intent(ProducerFeedActivity.this, RemindersActivity.class)));
-
-        top.addView(
-                bell,
-                new LinearLayout.LayoutParams(
-                        dp(34),
-                        dp(38)
-                )
-        );
-
-        hero.addView(
-                top,
-                new FrameLayout.LayoutParams(
-                        -1,
-                        -2
-                )
-        );
-
-        final TextView quote =
-                text(
-                        "“Toprağı iyi olanın,\ngeleceği de iyi olur.”",
-                        16,
-                        Color.WHITE,
-                        true
-                );
-
-        quote.setGravity(
-                Gravity.RIGHT
-        );
-
-        quote.setLineSpacing(
-                0,
-                1.04f
-        );
-
-        FrameLayout.LayoutParams q =
-                new FrameLayout.LayoutParams(
-                        -2,
-                        -2,
-                        Gravity.BOTTOM
-                                | Gravity.RIGHT
-                );
-
-        q.setMargins(
-                dp(16),
-                0,
-                dp(16),
-                dp(18)
-        );
-
-        hero.addView(
-                quote,
-                q
-        );
-
-        final LinearLayout forecastPanel =
-                new LinearLayout(this);
-
-        forecastPanel.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        forecastPanel.setPadding(
-                0,
-                0,
-                0,
-                0
-        );
-
-        forecastPanel.setBackgroundColor(
-                Color.TRANSPARENT
-        );
-
-        forecastPanel.setVisibility(
-                View.VISIBLE
-        );
-
-        forecastPanel.setAlpha(1f);
-
-        FrameLayout.LayoutParams fp =
-                new FrameLayout.LayoutParams(
-                        -1,
-                        -2,
-                        Gravity.BOTTOM
-                );
-
-        fp.setMargins(
-                dp(12),
-                0,
-                dp(12),
-                dp(8)
-        );
-
-        hero.addView(
-                forecastPanel,
-                fp
-        );
-
-        quote.setVisibility(
-                View.GONE
-        );
-
-        weather.setContentDescription(
-                garden.id > 0
-                        ? "Aktif bahçe: "
-                        + garden.name
-                        + ". Bahçe adından aktif bahçeyi değiştirebilirsin. Hava tahmini aşağıda sürekli görünür."
-                        : "Aktif bahçe seç"
-        );
-
-        forecastPanel.removeAllViews();
-
-        if(garden.id>0 && weatherRepository!=null) {
-            TextView loading=text("🌤  Bahçenin hava tahmini hazırlanıyor…",13,Color.WHITE,true);
-            loading.setGravity(Gravity.CENTER);
-            forecastPanel.addView(loading,new LinearLayout.LayoutParams(-1,dp(70)));
-        } else {
-            TextView empty=text("🌤  Hava tahmini için önce bir bahçe seç",12,Color.WHITE,true);
-            empty.setGravity(Gravity.CENTER);
-            forecastPanel.addView(empty,new LinearLayout.LayoutParams(-1,dp(90)));
-        }
         state.refresh=() -> {
             if(!weatherStateCurrent(state) || garden.id<=0 || weatherRepository==null)return;
             long now=android.os.SystemClock.elapsedRealtime();
             if(!state.forecastPending && (state.forecastAttempt==0 || now-state.forecastAttempt>=WEATHER_REFRESH_MS)) {
                 state.forecastPending=true;state.forecastAttempt=now;
                 weatherRepository.loadForecastForGarden(garden.id,garden.province,garden.district,garden.neighborhood,
-                    new WeatherRepository.ForecastCallback() {
-                        @Override public void onSuccess(WeatherRepository.WeatherForecast forecast) {
-                            runOnUiThread(() -> {
-                                state.forecastPending=false;
-                                if(!weatherStateCurrent(state))return;
-                                state.forecast=forecast;state.today.forecast=forecast;
-                                state.coordinates=weatherCoordinates(garden.id);
-                                String fingerprint=weatherFingerprint(forecast);
-                                boolean changed=!fingerprint.equals(state.fingerprint);
-                                if(changed) {
-                                    state.fingerprint=fingerprint;
-                                    boolean daily=!(forecastPanel.getTag() instanceof Boolean) || (Boolean)forecastPanel.getTag();
-                                    renderWeatherForecastPanel(forecastPanel,forecast,daily);
-                                }
-                                if(changed && isTodayCurrent(state.today))renderTodayRecommendations(state.today);
-                            });
-                        }
-                        @Override public void onError(String message) {
-                            runOnUiThread(() -> {
-                                state.forecastPending=false;
-                                if(!weatherStateCurrent(state) || state.forecast!=null)return;
-                                forecastPanel.removeAllViews();
-                                TextView error=text("☁  "+message,12,Color.WHITE,true);error.setGravity(Gravity.CENTER);
-                                forecastPanel.addView(error,new LinearLayout.LayoutParams(-1,dp(90)));
-                            });
-                        }
-                    });
+                        new WeatherRepository.ForecastCallback() {
+                            @Override public void onSuccess(WeatherRepository.WeatherForecast forecast) {
+                                runOnUiThread(() -> {
+                                    state.forecastPending=false;
+                                    if(!weatherStateCurrent(state))return;
+                                    state.forecast=forecast;state.today.forecast=forecast;
+                                    state.coordinates=weatherCoordinates(garden.id);
+                                    String fingerprint=weatherFingerprint(forecast);
+                                    boolean changed=!fingerprint.equals(state.fingerprint);
+                                    if(changed) {
+                                        state.fingerprint=fingerprint;
+                                        boolean daily=forecastPanel.getTag() instanceof Boolean && (Boolean)forecastPanel.getTag();
+                                        renderWeatherForecastPanel(forecastPanel,forecast,daily);
+                                        renderHomeRainBars(rainBars,forecast);
+                                    }
+                                    renderHomeConditions(conditions,state);
+                                    if(changed && isTodayCurrent(state.today))renderTodayRecommendations(state.today);
+                                });
+                            }
+                            @Override public void onError(String message) {
+                                runOnUiThread(() -> {
+                                    state.forecastPending=false;
+                                    if(!weatherStateCurrent(state) || state.forecast!=null)return;
+                                    conditions.removeAllViews();
+                                    TextView error=text("☁ "+message,13,MUTED,false);
+                                    error.setPadding(0,dp(6),0,dp(4));
+                                    conditions.addView(error);
+                                });
+                            }
+                        });
             }
             if(!state.currentPending && (state.currentAttempt==0 || now-state.currentAttempt>=WEATHER_REFRESH_MS)) {
                 state.currentPending=true;state.currentAttempt=now;
                 weatherRepository.loadForGarden(garden.id,garden.province,garden.district,garden.neighborhood,
-                    new WeatherRepository.Callback() {
-                        @Override public void onSuccess(WeatherRepository.WeatherSnapshot w) {
-                            runOnUiThread(() -> {
-                                state.currentPending=false;
-                                if(!weatherStateCurrent(state))return;
-                                state.current=w;state.today.current=w;
-                                state.coordinates=weatherCoordinates(garden.id);
-                                temp.setText(w.icon+"  "+Math.round(w.temperatureC)+"°C");
-                                String detail=w.condition;
-                                if(!Double.isNaN(w.windKmh)&&w.windKmh>=1)detail+=" • "+Math.round(w.windKmh)+" km/s";
-                                weatherStatus.setText(detail);
-                                if(isTodayCurrent(state.today))renderTodayRecommendations(state.today);
-                            });
-                        }
-                        @Override public void onError(String message) {
-                            runOnUiThread(() -> {
-                                state.currentPending=false;
-                                if(!weatherStateCurrent(state) || state.current!=null)return;
-                                temp.setText("☁  —°C");weatherStatus.setText(message);
-                            });
-                        }
-                    });
+                        new WeatherRepository.Callback() {
+                            @Override public void onSuccess(WeatherRepository.WeatherSnapshot w) {
+                                runOnUiThread(() -> {
+                                    state.currentPending=false;
+                                    if(!weatherStateCurrent(state))return;
+                                    state.current=w;state.today.current=w;
+                                    state.coordinates=weatherCoordinates(garden.id);
+                                    temp.setText(w.icon+" "+Math.round(w.temperatureC)+"°");
+                                    String detail=w.condition;
+                                    if(!Double.isNaN(w.windKmh)&&w.windKmh>=1)detail+=" · rüzgâr "+Math.round(w.windKmh)+" km/s";
+                                    weatherStatus.setText(detail);
+                                    if(state.forecast!=null)renderHomeConditions(conditions,state);
+                                    if(isTodayCurrent(state.today))renderTodayRecommendations(state.today);
+                                });
+                            }
+                            @Override public void onError(String message) {
+                                runOnUiThread(() -> {
+                                    state.currentPending=false;
+                                    if(!weatherStateCurrent(state) || state.current!=null)return;
+                                    temp.setText("☁ —°");weatherStatus.setText(message);
+                                });
+                            }
+                        });
             }
         };
         state.refresh.run();
-        LinearLayout.LayoutParams hp =
-                new LinearLayout.LayoutParams(
-                        -1,
-                        collapsedHeight
-                );
-
-        hero.setLayoutParams(hp);
+        hero.setLayoutParams(new LinearLayout.LayoutParams(-1,-2));
         state.hero=hero;
         return hero;
+    }
+
+    private LinearLayout.LayoutParams homeCardParams(int topMargin) {
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);
+        p.setMargins(0,dp(topMargin),0,0);
+        return p;
+    }
+
+    private View buildHomeSeasonCard(TodayState today,int gold) {
+        LinearLayout card=new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16),dp(14),dp(16),dp(14));
+        card.setBackground(round(CARD,20,BORDER));
+        int phase=HomeDashboardModel.seasonPhase(Calendar.getInstance().get(Calendar.MONTH));
+
+        LinearLayout head=row();
+        head.setGravity(Gravity.BOTTOM);
+        LinearLayout titles=new LinearLayout(this);
+        titles.setOrientation(LinearLayout.VERTICAL);
+        TextView label=text("ZEYTİN TAKVİMİ",11,MUTED,true);
+        label.setLetterSpacing(0.08f);
+        titles.addView(label);
+        TextView title=text(HomeDashboardModel.phaseTitle(phase),19,gold,true);
+        title.setPadding(0,dp(2),0,0);
+        titles.addView(title);
+        head.addView(titles,new LinearLayout.LayoutParams(0,-2,1));
+        long lastHarvest=-1;
+        for(GardenTodayAdvisor.Record r:today.records){
+            if(!"Hasat".equalsIgnoreCase(r.type))continue;
+            long d=daysSince(r.date);
+            if(d>=0 && (lastHarvest<0 || d<lastHarvest))lastHarvest=d;
+        }
+        TextView harvest=text(today.scope.garden>0 ? HomeDashboardModel.lastHarvestText(lastHarvest) : "",12,MUTED,false);
+        harvest.setGravity(Gravity.RIGHT);
+        head.addView(harvest,new LinearLayout.LayoutParams(-2,-2));
+        card.addView(head);
+
+        LinearLayout track=row();
+        track.setGravity(Gravity.TOP);
+        int line=BORDER;
+        StringBuilder description=new StringBuilder("Genel zeytin takvimi. Şu an: ")
+                .append(HomeDashboardModel.phaseTitle(phase)).append('.');
+        for(int i=0;i<HomeDashboardModel.PHASE_NAMES.length;i++){
+            LinearLayout column=new LinearLayout(this);
+            column.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout marker=row();
+            View dot=new View(this);
+            GradientDrawable dotShape=new GradientDrawable();
+            dotShape.setShape(GradientDrawable.OVAL);
+            dotShape.setColor(i==phase ? gold : i<phase ? GREEN : line);
+            int size=dp(i==phase ? 12 : 8);
+            if(i==phase)dotShape.setStroke(dp(3),(gold & 0x00FFFFFF)|0x40000000);
+            dot.setBackground(dotShape);
+            marker.addView(dot,new LinearLayout.LayoutParams(size,size));
+            View segment=new View(this);
+            segment.setBackgroundColor(i<phase ? GREEN : i==HomeDashboardModel.PHASE_NAMES.length-1 ? Color.TRANSPARENT : line);
+            LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(0,dp(2),1);
+            sp.setMargins(dp(3),0,dp(3),0);
+            marker.addView(segment,sp);
+            marker.setMinimumHeight(dp(16));
+            column.addView(marker,new LinearLayout.LayoutParams(-1,dp(16)));
+            TextView name=text(HomeDashboardModel.PHASE_NAMES[i]+"\n"+HomeDashboardModel.PHASE_MONTHS[i],10,
+                    i==phase ? TEXT : MUTED,i==phase);
+            name.setLineSpacing(0,1.05f);
+            name.setPadding(0,dp(4),0,0);
+            column.addView(name);
+            track.addView(column,new LinearLayout.LayoutParams(0,-2,1));
+        }
+        track.setContentDescription(description.toString());
+        track.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-1,-2);
+        tp.setMargins(0,dp(14),0,0);
+        card.addView(track,tp);
+
+        TextView note=text("Genel takvim; bölgene ve yıla göre değişebilir.",11,MUTED,false);
+        note.setPadding(0,dp(10),0,0);
+        card.addView(note);
+        return card;
+    }
+
+    private void renderHomeConditions(LinearLayout container,HomeWeatherState state) {
+        if(state.forecast==null)return;
+        Calendar now=Calendar.getInstance();
+        List<HomeDashboardModel.Hour> hours=new ArrayList<>();
+        for(WeatherRepository.HourlyForecast h:state.forecast.hourly)
+            hours.add(new HomeDashboardModel.Hour(h.timeIso,h.precipitationProbability,h.windKmh,h.temperatureC));
+        List<HomeDashboardModel.Day> days=new ArrayList<>();
+        for(WeatherRepository.DailyForecast d:state.forecast.daily)
+            days.add(new HomeDashboardModel.Day(d.dateIso,d.precipitationProbability,d.maxTemperatureC,d.minTemperatureC));
+        WeatherRepository.WeatherSnapshot current=state.current!=null ? state.current : state.forecast.current;
+        double wind=current==null ? Double.NaN : current.windKmh;
+        List<HomeDashboardModel.Condition> items=HomeDashboardModel.conditions(wind,hours,days,now);
+        container.removeAllViews();
+        int gold=GreenTheme.color(R.color.zd_warning);
+        int inner=GreenTheme.color(R.color.zd_surface);
+        for(int i=0;i<items.size();i++){
+            HomeDashboardModel.Condition c=items.get(i);
+            int tone=c.tone==HomeDashboardModel.Tone.CRITICAL ? RED
+                    : c.tone==HomeDashboardModel.Tone.ATTENTION ? gold
+                    : c.tone==HomeDashboardModel.Tone.INFO ? GreenTheme.parse("#8FC0E0") : GREEN;
+            LinearLayout item=row();
+            item.setPadding(dp(12),dp(10),dp(12),dp(10));
+            item.setBackground(round(inner,14,Color.TRANSPARENT));
+            View dot=new View(this);
+            GradientDrawable shape=new GradientDrawable();
+            shape.setShape(GradientDrawable.OVAL);
+            shape.setColor(tone);
+            dot.setBackground(shape);
+            LinearLayout.LayoutParams dotParams=new LinearLayout.LayoutParams(dp(10),dp(10));
+            dotParams.setMargins(0,0,dp(12),0);
+            item.addView(dot,dotParams);
+            LinearLayout texts=new LinearLayout(this);
+            texts.setOrientation(LinearLayout.VERTICAL);
+            android.text.SpannableStringBuilder line=new android.text.SpannableStringBuilder(c.title+"  ");
+            int start=line.length();
+            line.append(c.value);
+            line.setSpan(new android.text.style.ForegroundColorSpan(tone),start,line.length(),
+                    android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            TextView head=text("",14,TEXT,true);
+            head.setText(line);
+            texts.addView(head);
+            TextView note=text(c.note,12,MUTED,false);
+            note.setPadding(0,dp(2),0,0);
+            texts.addView(note);
+            item.addView(texts,new LinearLayout.LayoutParams(0,-2,1));
+            item.setContentDescription(c.title+": "+c.value+". "+c.note);
+            LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(-1,-2);
+            if(i>0)ip.setMargins(0,dp(8),0,0);
+            container.addView(item,ip);
+        }
+    }
+
+    private String homeTemp(double value) {
+        return Double.isNaN(value) ? "—" : Math.round(value)+"°";
+    }
+
+    private void renderHomeRainBars(LinearLayout container,WeatherRepository.WeatherForecast forecast) {
+        container.removeAllViews();
+        if(forecast==null || forecast.daily.isEmpty()){container.setVisibility(View.GONE);return;}
+        container.setVisibility(View.VISIBLE);
+        Calendar now=Calendar.getInstance();
+        int inner=GreenTheme.color(R.color.zd_surface);
+        int rain=GreenTheme.parse("#6FA7CF");
+        StringBuilder description=new StringBuilder("Günlük yağış ihtimali: ");
+        int count=Math.min(5,forecast.daily.size());
+        for(int i=0;i<count;i++){
+            WeatherRepository.DailyForecast d=forecast.daily.get(i);
+            String day=HomeDashboardModel.shortDay(d.dateIso,now);
+            boolean hasRain=!Double.isNaN(d.precipitationProbability);
+            String percent=hasRain ? "%"+Math.round(d.precipitationProbability) : "—";
+            description.append(day).append(' ').append(percent).append(i<count-1 ? ", " : ".");
+            LinearLayout column=new LinearLayout(this);
+            column.setOrientation(LinearLayout.VERTICAL);
+            column.setGravity(Gravity.CENTER_HORIZONTAL);
+            column.addView(text(percent,10,MUTED,true));
+            FrameLayout well=new FrameLayout(this);
+            well.setBackground(round(inner,8,Color.TRANSPARENT));
+            View bar=new View(this);
+            bar.setBackground(round(rain,8,Color.TRANSPARENT));
+            well.addView(bar,new FrameLayout.LayoutParams(-1,
+                    dp(HomeDashboardModel.rainBar(d.precipitationProbability,40)),Gravity.BOTTOM));
+            LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(-1,dp(40));
+            wp.setMargins(0,dp(4),0,dp(4));
+            column.addView(well,wp);
+            column.addView(text(day,11,i==0 ? TEXT : MUTED,true));
+            column.addView(text(homeTemp(d.maxTemperatureC)+"/"+homeTemp(d.minTemperatureC),10,MUTED,false));
+            LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);
+            if(i>0)cp.setMargins(dp(6),0,0,0);
+            container.addView(column,cp);
+        }
+        container.setContentDescription(description.toString());
+        container.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        for(int i=0;i<container.getChildCount();i++)
+            container.getChildAt(i).setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
     }
 
     private void animateHeroHeight(
@@ -4423,12 +4391,10 @@ public class ProducerFeedActivity extends Activity {
                 GardenTodayAdvisor.Weather w =
                         new GardenTodayAdvisor.Weather(
                                 state.scope,
-                                h.timeIso
-                                        .replace(
-                                                'T',
-                                                ' '
-                                        )
-                                        + " saatlik tahmin"
+                                HomeDashboardModel.whenLabel(
+                                        h.timeIso,
+                                        Calendar.getInstance()
+                                )
                         );
 
                 w.max =
@@ -4456,8 +4422,10 @@ public class ProducerFeedActivity extends Activity {
                 GardenTodayAdvisor.Weather w =
                         new GardenTodayAdvisor.Weather(
                                 state.scope,
-                                d.dateIso
-                                        + " günlük tahmin"
+                                HomeDashboardModel.whenLabel(
+                                        d.dateIso,
+                                        Calendar.getInstance()
+                                )
                         );
 
                 w.max =
@@ -4504,18 +4472,38 @@ public class ProducerFeedActivity extends Activity {
 
         state.container.removeAllViews();
 
+        int gold =
+                GreenTheme.color(R.color.zd_warning);
+
         for (
                 GardenTodayAdvisor.Recommendation item :
                 recommendations
         ) {
+            // Anlık hava zaten hava kartında gösteriliyor.
+            if ("current".equals(item.key)) {
+                continue;
+            }
+
             LinearLayout card =
-                    verticalCard();
+                    new LinearLayout(this);
+
+            card.setOrientation(
+                    LinearLayout.VERTICAL
+            );
 
             card.setPadding(
+                    dp(16),
                     dp(12),
-                    dp(10),
-                    dp(12),
-                    dp(10)
+                    dp(16),
+                    dp(4)
+            );
+
+            card.setBackground(
+                    round(
+                            CARD,
+                            18,
+                            BORDER
+                    )
             );
 
             int accent =
@@ -4524,40 +4512,34 @@ public class ProducerFeedActivity extends Activity {
                             ? RED
                             : item.level
                             == GardenTodayAdvisor.Level.WARNING
-                            ? GreenTheme.parse("#E9BC73")
-                            : GREEN;
+                            ? gold
+                            : "empty".equals(item.key)
+                            ? GREEN
+                            : MUTED;
 
-            TextView name =
+            TextView tag =
                     text(
-                            state.garden.name
-                                    + " • "
-                                    + state.scope.season,
+                            HomeDashboardModel.tagFor(item.key),
                             11,
-                            MUTED,
-                            false
+                            accent,
+                            true
                     );
 
-            name.setSingleLine(true);
+            tag.setLetterSpacing(0.08f);
 
-            name.setEllipsize(
-                    TextUtils.TruncateAt.END
-            );
-
-            if (state.scope.garden > 0) {
-                card.addView(name);
-            }
+            card.addView(tag);
 
             TextView title =
                     text(
-                            item.title,
-                            15,
-                            accent,
+                            HomeDashboardModel.plainTitle(item.title),
+                            16,
+                            TEXT,
                             true
                     );
 
             title.setPadding(
                     0,
-                    dp(3),
+                    dp(4),
                     0,
                     0
             );
@@ -4567,16 +4549,21 @@ public class ProducerFeedActivity extends Activity {
             TextView description =
                     text(
                             item.message,
-                            12,
-                            TEXT,
+                            13,
+                            GreenTheme.color(R.color.zd_text_soft),
                             false
                     );
+
+            description.setLineSpacing(
+                    dp(2),
+                    1f
+            );
 
             description.setPadding(
                     0,
                     dp(4),
                     0,
-                    dp(5)
+                    0
             );
 
             card.addView(description);
@@ -4584,70 +4571,80 @@ public class ProducerFeedActivity extends Activity {
             String label =
                     item.action
                             == GardenTodayAdvisor.Action.WEATHER
-                            ? "Hava Detayı"
+                            ? "Saatlik tahmin"
                             : item.action
                             == GardenTodayAdvisor.Action.ADD_GARDEN
-                            ? "Bahçe Ekle"
-                            : "Bahçeyi Aç";
+                            ? "Bahçe ekle"
+                            : "Bahçeyi aç";
 
             TextView action =
-                    button(
-                            label,
-                            v -> {
-                                if (!isTodayCurrent(
-                                        state
-                                )) {
-                                    return;
-                                }
-
-                                if (
-                                        item.action
-                                                == GardenTodayAdvisor.Action.WEATHER
-                                ) {
-                                    if (
-                                            state.openWeather
-                                                    != null
-                                    ) {
-                                        state.openWeather.run();
-                                    }
-
-                                } else if (
-                                        item.action
-                                                == GardenTodayAdvisor.Action.ADD_GARDEN
-                                ) {
-
-                                    startActivity(
-                                            new Intent(
-                                                    this,
-                                                    AddGardenActivity.class
-                                            )
-                                    );
-
-                                } else {
-
-                                    Intent intent =
-                                            new Intent(
-                                                    this,
-                                                    GardenDetailActivity.class
-                                            );
-
-                                    intent.putExtra(
-                                            "garden_id",
-                                            state.scope.garden
-                                    );
-
-                                    startActivity(
-                                            intent
-                                    );
-                                }
-                            }
+                    text(
+                            label + "  ›",
+                            13,
+                            GREEN,
+                            true
                     );
+
+            action.setGravity(
+                    Gravity.CENTER_VERTICAL
+            );
+
+            action.setMinHeight(
+                    dp(44)
+            );
+
+            action.setOnClickListener(
+                    v -> {
+                        if (!isTodayCurrent(
+                                state
+                        )) {
+                            return;
+                        }
+
+                        if (
+                                item.action
+                                        == GardenTodayAdvisor.Action.WEATHER
+                        ) {
+                            if (
+                                    state.openWeather
+                                            != null
+                            ) {
+                                state.openWeather.run();
+                            }
+                        } else if (
+                                item.action
+                                        == GardenTodayAdvisor.Action.ADD_GARDEN
+                        ) {
+                            startActivity(
+                                    new Intent(
+                                            this,
+                                            AddGardenActivity.class
+                                    )
+                            );
+                        } else {
+                            Intent intent =
+                                    new Intent(
+                                            this,
+                                            GardenDetailActivity.class
+                                    );
+
+                            intent.putExtra(
+                                    "garden_id",
+                                    state.scope.garden
+                            );
+
+                            startActivity(
+                                    intent
+                            );
+                        }
+                    }
+            );
 
             card.addView(
                     action,
                     new LinearLayout.LayoutParams(
-                            -1,
-                            dp(40)
+                            -2,
+                            -2
                     )
             );
 
@@ -4661,7 +4658,7 @@ public class ProducerFeedActivity extends Activity {
                     0,
                     0,
                     0,
-                    dp(6)
+                    dp(8)
             );
 
             state.container.addView(
@@ -4669,6 +4666,133 @@ public class ProducerFeedActivity extends Activity {
                     params
             );
         }
+    }
+
+    private static final String[] HOME_ASSISTANT_QUESTIONS = {
+            "Bugün bahçede ne var?",
+            "Yarın yağmur yağacak mı?",
+            "Son sulama ne zaman?"
+    };
+
+    private View buildHomeAssistantChips() {
+        LinearLayout box =
+                new LinearLayout(this);
+
+        box.setOrientation(
+                LinearLayout.VERTICAL
+        );
+
+        box.setPadding(
+                dp(16),
+                dp(10),
+                dp(16),
+                0
+        );
+
+        TextView label =
+                text(
+                        "ASİSTANA SOR",
+                        11,
+                        MUTED,
+                        true
+                );
+
+        label.setLetterSpacing(0.08f);
+
+        box.addView(label);
+
+        HorizontalScrollView scroller =
+                new HorizontalScrollView(this);
+
+        scroller.setHorizontalScrollBarEnabled(false);
+
+        LinearLayout chips = row();
+
+        for (int i = 0; i < HOME_ASSISTANT_QUESTIONS.length; i++) {
+            final String question =
+                    HOME_ASSISTANT_QUESTIONS[i];
+
+            TextView chip =
+                    text(
+                            question,
+                            13,
+                            TEXT,
+                            true
+                    );
+
+            chip.setGravity(
+                    Gravity.CENTER_VERTICAL
+            );
+
+            chip.setMinHeight(
+                    dp(44)
+            );
+
+            chip.setPadding(
+                    dp(14),
+                    0,
+                    dp(14),
+                    0
+            );
+
+            chip.setBackground(
+                    round(
+                            Color.TRANSPARENT,
+                            22,
+                            BORDER
+                    )
+            );
+
+            chip.setContentDescription(
+                    "Asistana sor: " + question
+            );
+
+            chip.setOnClickListener(
+                    v -> askZeytinAssistant(question)
+            );
+
+            LinearLayout.LayoutParams cp =
+                    new LinearLayout.LayoutParams(
+                            -2,
+                            -2
+                    );
+
+            if (i > 0) {
+                cp.setMargins(
+                        dp(8),
+                        0,
+                        0,
+                        0
+                );
+            }
+
+            chips.addView(
+                    chip,
+                    cp
+            );
+        }
+
+        scroller.addView(chips);
+
+        LinearLayout.LayoutParams sp =
+                new LinearLayout.LayoutParams(
+                        -1,
+                        -2
+                );
+
+        sp.setMargins(
+                0,
+                dp(8),
+                0,
+                0
+        );
+
+        box.addView(
+                scroller,
+                sp
+        );
+
+        return box;
     }
 
     private LinearLayout homeMiniMetric(
@@ -6831,6 +6955,11 @@ public class ProducerFeedActivity extends Activity {
     }
 
     private void openZeytinAssistant() {
+        ensureZeytinAssistant();
+        zeytinAssistant.show();
+    }
+
+    private void ensureZeytinAssistant() {
         if (zeytinAssistant == null) {
 
             zeytinAssistant =
@@ -6960,7 +7089,14 @@ public class ProducerFeedActivity extends Activity {
                     );
         }
 
-        zeytinAssistant.show();
+    }
+
+    private void askZeytinAssistant(
+            String question
+    ) {
+        // Paneli mikrofonu başlatmadan açar; soru yazılı olarak gönderilir.
+        ensureZeytinAssistant();
+        zeytinAssistant.ask(question);
     }
 
     @Override
