@@ -484,8 +484,8 @@ public class LoginActivity extends Activity {
         setContentView(R.layout.activity_auth_premium);
         root = findViewById(R.id.auth_content);
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) root.getLayoutParams();
-        params.width = dp(Math.min(480, Math.max(1,
-                getResources().getConfiguration().screenWidthDp - 40)));
+        params.width = dp(Math.min(360, Math.max(1,
+                getResources().getConfiguration().screenWidthDp - 48)));
         root.setLayoutParams(params);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         tvTitle = findViewById(R.id.auth_title);
@@ -618,7 +618,7 @@ public class LoginActivity extends Activity {
         findViewById(R.id.auth_terms).setEnabled(!actionRunning);
         findViewById(R.id.auth_privacy).setEnabled(!actionRunning);
         authProgress.setVisibility(actionRunning ? View.VISIBLE : View.GONE);
-        btnSubmit.setPadding(dp(actionRunning ? 40 : 16), dp(16), dp(actionRunning ? 40 : 16), dp(16));
+        btnSubmit.setPadding(dp(actionRunning ? 40 : 12), dp(12), dp(actionRunning ? 40 : 12), dp(12));
     }
 
     private void showForgotPasswordDialog() {
