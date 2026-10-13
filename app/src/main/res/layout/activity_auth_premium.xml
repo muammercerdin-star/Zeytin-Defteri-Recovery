@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/auth_scroll" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:background="@color/auth_bg" android:clipToPadding="false">
+<FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+<LinearLayout android:id="@+id/auth_content" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="top|center_horizontal" android:orientation="vertical" android:paddingTop="24dp" android:paddingBottom="24dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:orientation="horizontal">
+        <ImageView android:id="@+id/auth_logo" android:layout_width="40dp" android:layout_height="40dp" android:padding="7dp" android:src="@drawable/ic_olive_logo" android:importantForAccessibility="no" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:text="@string/auth_brand" android:textColor="@color/auth_accent" android:textSize="17sp" android:fontFamily="sans-serif-medium"/>
+    </LinearLayout>
+    <TextView android:id="@+id/auth_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:gravity="center" android:text="@string/auth_register_title" android:textSize="26sp" android:fontFamily="sans-serif-medium" android:textColor="@color/auth_title"/>
+    <TextView android:id="@+id/auth_subtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:gravity="center" android:lineSpacingExtra="4dp" android:text="@string/auth_register_description" android:textSize="14sp" android:textColor="@color/auth_body"/>
+    <LinearLayout android:id="@+id/auth_tabs" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="26dp" android:padding="5dp" android:orientation="horizontal">
+        <TextView android:id="@+id/auth_register_tab" style="@style/AuthTab" android:text="@string/auth_register_tab"/>
+        <TextView android:id="@+id/auth_login_tab" style="@style/AuthTab" android:text="@string/auth_login_tab"/>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/auth_google" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="54dp" android:padding="12dp" android:layout_marginTop="24dp" android:gravity="center" android:orientation="horizontal" android:focusable="true" android:clickable="true">
+        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_google" android:importantForAccessibility="no"/>
+        <TextView android:id="@+id/auth_google_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:text="@string/auth_google_register" android:textSize="16sp" android:textColor="@color/auth_bg" android:fontFamily="sans-serif-medium" android:importantForAccessibility="no"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:layout_marginBottom="24dp" android:gravity="center_vertical" android:orientation="horizontal">
+        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:background="@color/auth_divider"/>
+        <TextView android:id="@+id/auth_divider_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingStart="12dp" android:paddingEnd="12dp" android:text="@string/auth_email_divider" android:textColor="@color/auth_body" android:textSize="12sp"/>
+        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:background="@color/auth_divider"/>
+    </LinearLayout>
+
+<LinearLayout android:id="@+id/auth_name_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+<TextView style="@style/AuthLabel" android:labelFor="@+id/auth_name" android:text="@string/auth_name_label"/>
+
+<EditText android:id="@+id/auth_name" style="@style/AuthInput" android:hint="@string/auth_name_hint" android:inputType="textPersonName"/>
+</LinearLayout>
+<LinearLayout android:id="@+id/auth_email_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+<TextView style="@style/AuthLabel" android:labelFor="@+id/auth_email" android:text="@string/auth_email_label"/>
+
+<EditText android:id="@+id/auth_email" style="@style/AuthInput" android:hint="@string/auth_email_hint" android:inputType="textEmailAddress"/>
+</LinearLayout>
+<LinearLayout android:id="@+id/auth_password_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+<TextView style="@style/AuthLabel" android:labelFor="@+id/auth_password" android:text="@string/auth_password_label"/>
+
+<FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+<EditText android:id="@+id/auth_password" style="@style/AuthInput" android:hint="@string/auth_password_hint" android:inputType="textPassword" android:saveEnabled="false" android:paddingEnd="56dp"/>
+<ImageButton android:id="@+id/auth_password_eye" android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="end|center_vertical" android:padding="12dp" android:src="@drawable/auth_eye" android:background="?android:attr/selectableItemBackgroundBorderless" android:contentDescription="@string/auth_show_passwords"/>
+</FrameLayout>
+<LinearLayout android:id="@+id/auth_strength" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="10dp">
+<LinearLayout android:layout_width="match_parent" android:layout_height="4dp" android:orientation="horizontal" android:importantForAccessibility="noHideDescendants">
+<View android:id="@+id/auth_strength_0" android:layout_width="0dp" android:layout_height="4dp" android:layout_weight="1" android:layout_marginEnd="6dp"/>
+<View android:id="@+id/auth_strength_1" android:layout_width="0dp" android:layout_height="4dp" android:layout_weight="1" android:layout_marginEnd="6dp"/>
+<View android:id="@+id/auth_strength_2" android:layout_width="0dp" android:layout_height="4dp" android:layout_weight="1" android:layout_marginEnd="6dp"/>
+<View android:id="@+id/auth_strength_3" android:layout_width="0dp" android:layout_height="4dp" android:layout_weight="1" android:layout_marginEnd="0dp"/>
+</LinearLayout><TextView android:id="@+id/auth_strength_description" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/auth_password_rule" android:textColor="@color/auth_body" android:textSize="12sp"/>
+</LinearLayout>
+</LinearLayout>
+<LinearLayout android:id="@+id/auth_confirm_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+<TextView style="@style/AuthLabel" android:labelFor="@+id/auth_confirm" android:text="@string/auth_confirm_label"/>
+
+<FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+<EditText android:id="@+id/auth_confirm" style="@style/AuthInput" android:hint="@string/auth_confirm_hint" android:inputType="textPassword" android:saveEnabled="false" android:paddingEnd="56dp"/>
+<ImageButton android:id="@+id/auth_confirm_eye" android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="end|center_vertical" android:padding="12dp" android:src="@drawable/auth_eye" android:background="?android:attr/selectableItemBackgroundBorderless" android:contentDescription="@string/auth_show_passwords"/>
+</FrameLayout>
+</LinearLayout>
+<LinearLayout android:id="@+id/auth_legal" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="top">
+<CheckBox android:id="@+id/auth_accept" android:layout_width="48dp" android:layout_height="48dp" android:buttonTint="@color/auth_accent" android:enabled="false" android:saveEnabled="false" android:contentDescription="@string/auth_legal_checkbox"/>
+<LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+<TextView android:id="@+id/auth_terms" style="@style/AuthLegalLink" android:text="@string/auth_terms_ack"/>
+<TextView android:id="@+id/auth_privacy" style="@style/AuthLegalLink" android:text="@string/auth_privacy_ack"/>
+</LinearLayout></LinearLayout>
+<TextView android:id="@+id/auth_legal_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/auth_legal_missing" android:textSize="12sp" android:textColor="@color/auth_body"/>
+</LinearLayout>
+<TextView android:id="@+id/auth_forgot" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:gravity="end|center_vertical" android:paddingTop="8dp" android:paddingBottom="8dp" android:text="@string/auth_forgot" android:textColor="@color/auth_accent" android:textSize="14sp" android:focusable="true" android:clickable="true"/>
+<FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+<TextView android:id="@+id/auth_submit" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp" android:padding="16dp" android:gravity="center" android:text="@string/auth_register_submit" android:textColor="@android:color/white" android:textSize="16sp" android:fontFamily="sans-serif-medium" android:focusable="true" android:clickable="true" android:accessibilityLiveRegion="polite"/>
+<ProgressBar android:id="@+id/auth_progress" style="?android:attr/progressBarStyleSmall" android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="12dp" android:layout_gravity="end|center_vertical" android:indeterminateTint="@android:color/white" android:visibility="gone" android:importantForAccessibility="no"/>
+</FrameLayout>
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:gravity="center" android:orientation="horizontal">
+<ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/auth_lock" android:importantForAccessibility="no"/>
+<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/auth_security" android:textSize="12sp" android:textColor="@color/auth_body"/>
+</LinearLayout>
+</LinearLayout></FrameLayout></ScrollView>

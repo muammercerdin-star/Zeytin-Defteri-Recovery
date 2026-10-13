@@ -1,6 +1,16 @@
 package com.zeytindefteri.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.graphics.Paint;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.text.method.PasswordTransformationMethod;
+import android.view.inputmethod.EditorInfo;
+import android.widget.CheckBox;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Color;
@@ -57,25 +67,25 @@ public class LoginActivity extends Activity {
     // ============================================================
 
     private static final String COLOR_BG =
-            "#0B1D28";
+            "#0E1C25";
 
     private static final String COLOR_GREEN =
-            "#79C95A";
+            "#9CCB78";
 
     private static final String COLOR_GREEN_BUTTON =
-            "#4F745B";
+            "#3F6B47";
 
     private static final String COLOR_TEXT =
-            "#F4F7F4";
+            "#F2F6F0";
 
     private static final String COLOR_MUTED =
-            "#9AABA8";
+            "#A3B4BC";
 
     private static final String COLOR_BORDER =
-            "#29434D";
+            "#2A4957";
 
     private static final String COLOR_INPUT =
-            "#102632";
+            "#132732";
 
     private static final String COLOR_SOFT_GREEN =
             "#19392F";
@@ -121,7 +131,13 @@ public class LoginActivity extends Activity {
 
     private TextView btnSubmit;
     private TextView tvForgotPassword;
-    private TextView tvBottomSwitch;
+    private TextView googleLabel;
+    private View nameGroup, confirmGroup, strengthGroup, legalGroup;
+    private ImageButton passwordEye, confirmEye;
+    private CheckBox legalAcceptance;
+    private ProgressBar authProgress;
+    private TextView strengthDescription;
+    private final View[] strengthSegments = new View[4];
 
 
     // ============================================================
@@ -402,6 +418,9 @@ public class LoginActivity extends Activity {
         // ========================================================
 
         buildScreen();
+        if (savedInstanceState != null) {
+            setRegisterMode(savedInstanceState.getBoolean("auth_register_mode", fromOnboarding));
+        }
     }
 
 
@@ -462,1035 +481,145 @@ public class LoginActivity extends Activity {
     // ============================================================
 
     private void buildScreen() {
-
-        root =
-                new LinearLayout(
-                        this
-                );
-
-
-        root.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-
-        root.setBackgroundColor(
-                GreenTheme.parse(
-                        COLOR_BG
-                )
-        );
-
-
-        root.setPadding(
-                dp(20),
-                dp(7),
-                dp(20),
-                dp(7)
-        );
-
-
-        // ========================================================
-        // MARKA
-        // ========================================================
-
-        LinearLayout brandRow =
-                new LinearLayout(
-                        this
-                );
-
-
-        brandRow.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-
-        brandRow.setGravity(
-                Gravity.CENTER
-        );
-
-
-        TextView brandIcon =
-                new TextView(
-                        this
-                );
-
-
-        brandIcon.setText(
-                "🫒"
-        );
-
-
-        brandIcon.setTextSize(
-                22
-        );
-
-
-        brandIcon.setGravity(
-                Gravity.CENTER
-        );
-
-
-        brandIcon.setBackground(
-                rounded(
-                        COLOR_SOFT_GREEN,
-                        22,
-                        "#29434D",
-                        1
-                )
-        );
-
-
-        brandRow.addView(
-                brandIcon,
-                new LinearLayout.LayoutParams(
-                        dp(44),
-                        dp(44)
-                )
-        );
-
-
-        TextView brandName =
-                new TextView(
-                        this
-                );
-
-
-        brandName.setText(
-                "Zeytin Defteri"
-        );
-
-
-        brandName.setTextSize(
-                20
-        );
-
-
-        brandName.setTextColor(
-                GreenTheme.parse(
-                        COLOR_GREEN
-                )
-        );
-
-
-        brandName.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-
-
-        LinearLayout.LayoutParams brandNameParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        brandNameParams.leftMargin =
-                dp(9);
-
-
-        brandRow.addView(
-                brandName,
-                brandNameParams
-        );
-
-
-        root.addView(
-                brandRow
-        );
-
-
-        // ========================================================
-        // BAŞLIK
-        // ========================================================
-
-        tvTitle =
-                new TextView(
-                        this
-                );
-
-
-        tvTitle.setTextSize(
-                26
-        );
-
-
-        tvTitle.setTextColor(
-                GreenTheme.parse(
-                        COLOR_GREEN
-                )
-        );
-
-
-        tvTitle.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-
-
-        tvTitle.setGravity(
-                Gravity.CENTER
-        );
-
-
-        LinearLayout.LayoutParams titleParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        titleParams.topMargin =
-                dp(10);
-
-
-        root.addView(
-                tvTitle,
-                titleParams
-        );
-
-
-        // ========================================================
-        // ALT BAŞLIK
-        // ========================================================
-
-        tvSubtitle =
-                new TextView(
-                        this
-                );
-
-
-        tvSubtitle.setTextSize(
-                12
-        );
-
-
-        tvSubtitle.setTextColor(
-                GreenTheme.parse(
-                        COLOR_MUTED
-                )
-        );
-
-
-        tvSubtitle.setGravity(
-                Gravity.CENTER
-        );
-
-
-        tvSubtitle.setLineSpacing(
-                dp(1),
-                1f
-        );
-
-
-        LinearLayout.LayoutParams subtitleParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        subtitleParams.topMargin =
-                dp(3);
-
-
-        subtitleParams.leftMargin =
-                dp(12);
-
-
-        subtitleParams.rightMargin =
-                dp(12);
-
-
-        root.addView(
-                tvSubtitle,
-                subtitleParams
-        );
-
-
-        // ========================================================
-        // TABS
-        // ========================================================
-
-        LinearLayout tabs =
-                new LinearLayout(
-                        this
-                );
-
-
-        tabs.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-
-        tabs.setPadding(
-                dp(3),
-                dp(3),
-                dp(3),
-                dp(3)
-        );
-
-
-        tabs.setBackground(
-                rounded(
-                        "#132A38",
-                        20,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        tabs.setElevation(
-                dp(2)
-        );
-
-
-        btnRegisterTab =
-                createTab(
-                        "Hesap Oluştur"
-                );
-
-
-        btnLoginTab =
-                createTab(
-                        "Giriş Yap"
-                );
-
-
-        tabs.addView(
-                btnRegisterTab,
-                new LinearLayout.LayoutParams(
-                        0,
-                        dp(44),
-                        1f
-                )
-        );
-
-
-        tabs.addView(
-                btnLoginTab,
-                new LinearLayout.LayoutParams(
-                        0,
-                        dp(44),
-                        1f
-                )
-        );
-
-
-        LinearLayout.LayoutParams tabsParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(50)
-                );
-
-
-        tabsParams.topMargin =
-                dp(9);
-
-
-        root.addView(
-                tabs,
-                tabsParams
-        );
-
-
-        btnRegisterTab.setOnClickListener(
-                view -> {
-
-                    if (!actionRunning) {
-
-                        setRegisterMode(
-                                true
-                        );
-                    }
-                }
-        );
-
-
-        btnLoginTab.setOnClickListener(
-                view -> {
-
-                    if (!actionRunning) {
-
-                        setRegisterMode(
-                                false
-                        );
-                    }
-                }
-        );
-
-
-        // ========================================================
-        // HIZLI GİRİŞ
-        // ========================================================
-
-        TextView quickTitle =
-                createSectionDivider(
-                        "Hızlı giriş yap"
-                );
-
-
-        LinearLayout.LayoutParams quickParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        quickParams.topMargin =
-                dp(8);
-
-
-        root.addView(
-                quickTitle,
-                quickParams
-        );
-
-
-        // ========================================================
-        // GOOGLE
-        // ========================================================
-
-        btnGoogle =
-                createSocialButton(
-                        R.drawable.ic_google,
-                        "Google ile devam et"
-                );
-
-
-        LinearLayout.LayoutParams googleParams =
-                socialButtonParams();
-
-
-        googleParams.topMargin =
-                dp(6);
-
-
-        root.addView(
-                btnGoogle,
-                googleParams
-        );
-
-
-        btnGoogle.setOnClickListener(
-                view -> {
-
-                    if (!actionRunning) {
-
-                        pressEffect(
-                                btnGoogle,
-                                this::openGoogleAccountChooser
-                        );
-                    }
-                }
-        );
-
-
-        // Unconfigured providers are deliberately absent from the UI.
-
-        // ========================================================
-        // E-POSTA AYRAÇ
-        // ========================================================
-
-        tvEmailDivider =
-                createSectionDivider(
-                        ""
-                );
-
-
-        LinearLayout.LayoutParams dividerParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        dividerParams.topMargin =
-                dp(7);
-
-
-        dividerParams.bottomMargin =
-                dp(4);
-
-
-        root.addView(
-                tvEmailDivider,
-                dividerParams
-        );
-
-
-        // ========================================================
-        // FORM KART
-        // ========================================================
-
-        LinearLayout formCard =
-                new LinearLayout(
-                        this
-                );
-
-
-        formCard.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-
-        formCard.setPadding(
-                dp(12),
-                dp(10),
-                dp(12),
-                dp(10)
-        );
-
-
-        formCard.setBackground(
-                rounded(
-                        "#132A38",
-                        20,
-                        "#29434D",
-                        1
-                )
-        );
-
-
-        formCard.setElevation(
-                dp(2)
-        );
-
-
-        // ========================================================
-        // AD
-        // ========================================================
-
-        etName =
-                createInput(
-                        "Ad Soyad"
-                );
-
-
-        etName.setInputType(
-                InputType.TYPE_CLASS_TEXT
-                        |
-                        InputType.TYPE_TEXT_FLAG_CAP_WORDS
-        );
-
-
-        formCard.addView(
-                etName,
-                inputParams(
-                        false
-                )
-        );
-
-
-        // ========================================================
-        // EMAIL
-        // ========================================================
-
-        etEmail =
-                createInput(
-                        "E-posta adresi"
-                );
-
-
-        etEmail.setInputType(
-                InputType.TYPE_CLASS_TEXT
-                        |
-                        InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-        );
-
-
-        formCard.addView(
-                etEmail,
-                inputParams(
-                        true
-                )
-        );
-
-
-        // ========================================================
-        // ŞİFRE SATIRI
-        // ========================================================
-
-        LinearLayout passwordBox =
-                new LinearLayout(
-                        this
-                );
-
-
-        passwordBox.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-
-        passwordBox.setGravity(
-                Gravity.CENTER_VERTICAL
-        );
-
-
-        passwordBox.setBackground(
-                rounded(
-                        COLOR_INPUT,
-                        15,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        etPassword =
-                new EditText(
-                        this
-                );
-
-
-        etPassword.setHint(
-                "Şifre"
-        );
-
-
-        etPassword.setTextSize(
-                13
-        );
-
-
-        etPassword.setTextColor(
-                GreenTheme.parse(
-                        COLOR_TEXT
-                )
-        );
-
-
-        etPassword.setHintTextColor(
-                GreenTheme.color(R.color.zd_muted)
-        );
-
-
-        etPassword.setSingleLine(
-                true
-        );
-
-
-        etPassword.setBackgroundColor(
-                Color.TRANSPARENT
-        );
-
-
-        etPassword.setPadding(
-                dp(13),
-                0,
-                dp(4),
-                0
-        );
-
-
-        setPasswordHidden();
-
-
-        passwordBox.addView(
-                etPassword,
-                new LinearLayout.LayoutParams(
-                        0,
-                        dp(48),
-                        1f
-                )
-        );
-
-
-        TextView btnEye =
-                new TextView(
-                        this
-                );
-
-
-        btnEye.setText(
-                "◉"
-        );
-
-
-        btnEye.setTextSize(
-                18
-        );
-
-
-        btnEye.setTextColor(
-                GreenTheme.parse(
-                        COLOR_MUTED
-                )
-        );
-
-
-        btnEye.setGravity(
-                Gravity.CENTER
-        );
-
-
-        passwordBox.addView(
-                btnEye,
-                new LinearLayout.LayoutParams(
-                        dp(42),
-                        dp(48)
-                )
-        );
-
-
-        LinearLayout.LayoutParams passwordParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(48)
-                );
-
-
-        passwordParams.topMargin =
-                dp(7);
-
-
-        formCard.addView(
-                passwordBox,
-                passwordParams
-        );
-
-
-        btnEye.setOnClickListener(
-                view -> togglePasswordVisibility()
-        );
-
-
-        // ========================================================
-        // ŞİFRE TEKRAR
-        // ========================================================
-
-        etConfirmPassword =
-                createInput(
-                        "Şifre tekrar"
-                );
-
-
-        etConfirmPassword.setInputType(
-                InputType.TYPE_CLASS_TEXT
-                        |
-                        InputType.TYPE_TEXT_VARIATION_PASSWORD
-        );
-
-
-        formCard.addView(
-                etConfirmPassword,
-                inputParams(
-                        true
-                )
-        );
-
-
-        // ========================================================
-        // ŞİFREMİ UNUTTUM
-        // ========================================================
-
-        tvForgotPassword =
-                new TextView(
-                        this
-                );
-
-
-        tvForgotPassword.setText(
-                "Şifremi unuttum?"
-        );
-
-
-        tvForgotPassword.setTextSize(
-                11
-        );
-
-
-        tvForgotPassword.setTextColor(
-                GreenTheme.parse(
-                        COLOR_GREEN_BUTTON
-                )
-        );
-
-
-        tvForgotPassword.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-
-
-        tvForgotPassword.setGravity(
-                Gravity.END
-        );
-
-
-        tvForgotPassword.setPadding(
-                0,
-                dp(6),
-                dp(1),
-                dp(2)
-        );
-
-
-        formCard.addView(
-                tvForgotPassword
-        );
-
-
-        tvForgotPassword.setOnClickListener(
-                view -> {
-
-                    if (!actionRunning) {
-
-                        showForgotPasswordDialog();
-                    }
-                }
-        );
-
-
-        // ========================================================
-        // SUBMIT
-        // ========================================================
-
-        btnSubmit =
-                new TextView(
-                        this
-                );
-
-
-        btnSubmit.setTextSize(
-                15
-        );
-
-
-        btnSubmit.setTextColor(
-                Color.WHITE
-        );
-
-
-        btnSubmit.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-
-
-        btnSubmit.setGravity(
-                Gravity.CENTER
-        );
-
-
-        btnSubmit.setClickable(
-                true
-        );
-
-
-        btnSubmit.setFocusable(
-                true
-        );
-
-
-        btnSubmit.setBackground(
-                rounded(
-                        COLOR_GREEN_BUTTON,
-                        15,
-                        null,
-                        0
-                )
-        );
-
-
-        LinearLayout.LayoutParams submitParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(50)
-                );
-
-
-        submitParams.topMargin =
-                dp(7);
-
-
-        formCard.addView(
-                btnSubmit,
-                submitParams
-        );
-
-
-        btnSubmit.setOnClickListener(
-                view -> {
-
-                    if (!actionRunning) {
-
-                        pressEffect(
-                                btnSubmit,
-                                this::handleSubmit
-                        );
-                    }
-                }
-        );
-
-
-        root.addView(
-                formCard
-        );
-
-
-        // ========================================================
-        // ALT SWITCH
-        // ========================================================
-
-        tvBottomSwitch =
-                new TextView(
-                        this
-                );
-
-
-        tvBottomSwitch.setTextSize(
-                12
-        );
-
-
-        tvBottomSwitch.setTextColor(
-                GreenTheme.parse(
-                        COLOR_GREEN
-                )
-        );
-
-
-        tvBottomSwitch.setGravity(
-                Gravity.CENTER
-        );
-
-
-        tvBottomSwitch.setPadding(
-                dp(5),
-                dp(7),
-                dp(5),
-                dp(2)
-        );
-
-
-        tvBottomSwitch.setClickable(
-                true
-        );
-
-
-        root.addView(
-                tvBottomSwitch
-        );
-
-
-        tvBottomSwitch.setOnClickListener(
-                view -> {
-
-                    if (!actionRunning) {
-
-                        setRegisterMode(
-                                !registerMode
-                        );
-                    }
-                }
-        );
-
-
-        // ========================================================
-        // GÜVEN
-        // ========================================================
-
-        TextView security =
-                new TextView(
-                        this
-                );
-
-
-        security.setText(
-                "🔒  Hesabın ve bahçe kayıtların güvende."
-        );
-
-
-        security.setTextSize(
-                9
-        );
-
-
-        security.setTextColor(
-                GreenTheme.color(R.color.zd_muted)
-        );
-
-
-        security.setGravity(
-                Gravity.CENTER
-        );
-
-
-        security.setPadding(
-                dp(8),
-                dp(4),
-                dp(8),
-                dp(4)
-        );
-
-
-        root.addView(
-                security
-        );
-
-
-        // ========================================================
-        // GÖSTER
-        // ========================================================
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-        scroll.setBackgroundColor(GreenTheme.parse(COLOR_BG));
-        scroll.addView(root, new ScrollView.LayoutParams(
-                ScrollView.LayoutParams.MATCH_PARENT,
-                ScrollView.LayoutParams.WRAP_CONTENT));
+        setContentView(R.layout.activity_auth_premium);
+        root = findViewById(R.id.auth_content);
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) root.getLayoutParams();
+        params.width = dp(Math.min(480, Math.max(1,
+                getResources().getConfiguration().screenWidthDp - 40)));
+        root.setLayoutParams(params);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        setContentView(scroll);
-
-
-        // ========================================================
-        // MOD
-        // ========================================================
-
-        if (fromOnboarding) {
-
-            setRegisterMode(
-                    true
-            );
-
-        } else {
-
-            setRegisterMode(
-                    false
-            );
+        tvTitle = findViewById(R.id.auth_title);
+        tvSubtitle = findViewById(R.id.auth_subtitle);
+        tvEmailDivider = findViewById(R.id.auth_divider_label);
+        btnRegisterTab = findViewById(R.id.auth_register_tab);
+        btnLoginTab = findViewById(R.id.auth_login_tab);
+        btnGoogle = findViewById(R.id.auth_google);
+        googleLabel = findViewById(R.id.auth_google_label);
+        btnSubmit = findViewById(R.id.auth_submit);
+        tvForgotPassword = findViewById(R.id.auth_forgot);
+        etName = findViewById(R.id.auth_name);
+        etEmail = findViewById(R.id.auth_email);
+        etPassword = findViewById(R.id.auth_password);
+        etConfirmPassword = findViewById(R.id.auth_confirm);
+        nameGroup = findViewById(R.id.auth_name_group);
+        confirmGroup = findViewById(R.id.auth_confirm_group);
+        strengthGroup = findViewById(R.id.auth_strength);
+        legalGroup = findViewById(R.id.auth_legal);
+        legalAcceptance = findViewById(R.id.auth_accept);
+        authProgress = findViewById(R.id.auth_progress);
+        passwordEye = findViewById(R.id.auth_password_eye);
+        confirmEye = findViewById(R.id.auth_confirm_eye);
+        strengthDescription = findViewById(R.id.auth_strength_description);
+        int[] segments = {R.id.auth_strength_0, R.id.auth_strength_1,
+                R.id.auth_strength_2, R.id.auth_strength_3};
+        for (int i = 0; i < 4; i++) strengthSegments[i] = findViewById(segments[i]);
+        findViewById(R.id.auth_logo).setBackground(rounded("#1C3528", 12, null, 0));
+        findViewById(R.id.auth_tabs).setBackground(rounded(COLOR_INPUT, 14, COLOR_BORDER, 1));
+        btnGoogle.setBackground(rounded("#F2F6F0", 14, null, 0));
+        btnSubmit.setBackground(rounded(COLOR_GREEN_BUTTON, 14, null, 0));
+        for (EditText field : new EditText[]{etName, etEmail, etPassword, etConfirmPassword}) {
+            field.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         }
-
-
-        // ========================================================
-        // ENTRANCE
-        // ========================================================
-
-        root.setAlpha(
-                0f
-        );
-
-
-        root.setTranslationY(
-                dp(8)
-        );
-
-
-        root.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(340)
-                .setInterpolator(
-                        new AccelerateDecelerateInterpolator()
-                )
-                .start();
+        passwordEye.setOnClickListener(v -> togglePasswordVisibility());
+        confirmEye.setOnClickListener(v -> togglePasswordVisibility());
+        applyPasswordVisibility();
+        btnRegisterTab.setOnClickListener(v -> { if (!actionRunning) setRegisterMode(true); });
+        btnLoginTab.setOnClickListener(v -> { if (!actionRunning) setRegisterMode(false); });
+        btnGoogle.setOnClickListener(v -> {
+            if (actionRunning || (registerMode && !canStartRegistration())) return;
+            openGoogleAccountChooser();
+        });
+        btnSubmit.setOnClickListener(v -> handleSubmit());
+        tvForgotPassword.setOnClickListener(v -> { if (!actionRunning) showForgotPasswordDialog(); });
+        legalAcceptance.setChecked(false);
+        legalAcceptance.setEnabled(false);
+        legalAcceptance.setOnCheckedChangeListener((button, checked) -> refreshAuthControls());
+        TextView terms = findViewById(R.id.auth_terms);
+        TextView privacy = findViewById(R.id.auth_privacy);
+        terms.setPaintFlags(terms.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+        privacy.setPaintFlags(privacy.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+        terms.setOnClickListener(v -> startActivity(new Intent(this, TermsActivity.class)));
+        privacy.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle(R.string.auth_legal_dialog_title)
+                .setMessage(R.string.auth_legal_dialog_body)
+                .setPositiveButton(R.string.auth_close, null)
+                .setNeutralButton(R.string.auth_existing_privacy,
+                        (dialog, which) -> startActivity(new Intent(this, PrivacyActivity.class)))
+                .show());
+        etName.setOnEditorActionListener((view, action, event) -> {
+            if (action == EditorInfo.IME_ACTION_NEXT) { etEmail.requestFocus(); return true; }
+            return false;
+        });
+        etEmail.setOnEditorActionListener((view, action, event) -> {
+            if (action == EditorInfo.IME_ACTION_NEXT) { etPassword.requestFocus(); return true; }
+            return false;
+        });
+        etPassword.setOnEditorActionListener((view, action, event) -> {
+            if (action == EditorInfo.IME_ACTION_NEXT && registerMode) {
+                etConfirmPassword.requestFocus(); return true;
+            }
+            if (action == EditorInfo.IME_ACTION_DONE && !registerMode) {
+                handleSubmit(); return true;
+            }
+            return false;
+        });
+        etConfirmPassword.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        etConfirmPassword.setOnEditorActionListener((view, action, event) -> {
+            if (action == EditorInfo.IME_ACTION_DONE) { handleSubmit(); return true; }
+            return false;
+        });
+        etPassword.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence text, int start, int count, int after) {}
+            public void onTextChanged(CharSequence text, int start, int before, int count) {
+                updatePasswordStrength();
+            }
+            public void afterTextChanged(Editable text) {}
+        });
+        setRegisterMode(fromOnboarding);
+        updatePasswordStrength();
     }
 
+    private void updatePasswordStrength() {
+        int strength = AuthRegistrationPolicy.strength(etPassword.getText().toString());
+        for (int i = 0; i < 4; i++) {
+            strengthSegments[i].setBackground(rounded(i < strength ? "#7FB35C" : COLOR_BORDER, 2, null, 0));
+        }
+        String[] labels = {"Şifre girilmedi", "Zayıf", "Geliştirilebilir", "Kayıt koşulları sağlandı", "Daha güçlü"};
+        strengthDescription.setContentDescription(labels[strength] + ". " + getString(R.string.auth_password_rule));
+    }
 
-    // ============================================================
-    // ŞİFREMİ UNUTTUM MODAL
-    // ============================================================
+    private boolean canStartRegistration() {
+        if (!AuthRegistrationPolicy.documentsReady()) {
+            showMessage(getString(R.string.auth_legal_missing));
+            return false;
+        }
+        if (!legalAcceptance.isChecked()) {
+            showMessage("Kullanım koşullarını kabul ettiğini ve aydınlatma metnini okuduğunu belirt.");
+            return false;
+        }
+        return true;
+    }
+
+    private void refreshAuthControls() {
+        boolean allowed = !registerMode || AuthRegistrationPolicy.canRegister(legalAcceptance.isChecked());
+        btnSubmit.setEnabled(!actionRunning && allowed);
+        btnSubmit.setAlpha(1f);
+        btnGoogle.setEnabled(!actionRunning && allowed);
+        btnGoogle.setAlpha(actionRunning ? 0.7f : 1f);
+        btnRegisterTab.setEnabled(!actionRunning);
+        btnLoginTab.setEnabled(!actionRunning);
+        tvForgotPassword.setEnabled(!actionRunning);
+        for (EditText field : new EditText[]{etName, etEmail, etPassword, etConfirmPassword}) {
+            field.setEnabled(!actionRunning);
+        }
+        passwordEye.setEnabled(!actionRunning);
+        confirmEye.setEnabled(!actionRunning);
+        legalAcceptance.setEnabled(!actionRunning && AuthRegistrationPolicy.documentsReady());
+        findViewById(R.id.auth_terms).setEnabled(!actionRunning);
+        findViewById(R.id.auth_privacy).setEnabled(!actionRunning);
+        authProgress.setVisibility(actionRunning ? View.VISIBLE : View.GONE);
+        btnSubmit.setPadding(dp(actionRunning ? 40 : 16), dp(16), dp(actionRunning ? 40 : 16), dp(16));
+    }
 
     private void showForgotPasswordDialog() {
 
@@ -1542,7 +671,7 @@ public class LoginActivity extends Activity {
                 rounded(
                         "#132A38",
                         24,
-                        "#29434D",
+                        "#2A4957",
                         1
                 )
         );
@@ -1832,7 +961,7 @@ public class LoginActivity extends Activity {
 
         btnCancel.setBackground(
                 rounded(
-                        "#102632",
+                        "#132732",
                         15,
                         COLOR_BORDER,
                         1
@@ -2429,127 +1558,29 @@ public class LoginActivity extends Activity {
     // MOD
     // ============================================================
 
-    private void setRegisterMode(
-            boolean register
-    ) {
-
-        registerMode =
-                register;
-
-
-        if (register) {
-
-            tvTitle.setText(
-                    "Hesabını oluşturalım"
-            );
-
-
-            tvSubtitle.setText(
-                    "Bahçelerini ve sezon kayıtlarını güvenle saklamak için hesabını oluştur."
-            );
-
-
-            tvEmailDivider.setText(
-                    "veya e-posta ile kayıt ol"
-            );
-
-
-            etName.setVisibility(
-                    View.VISIBLE
-            );
-
-
-            etConfirmPassword.setVisibility(
-                    View.VISIBLE
-            );
-
-
-            tvForgotPassword.setVisibility(
-                    View.GONE
-            );
-
-
-            btnSubmit.setText(
-                    "Hesabımı Oluştur   →"
-            );
-
-
-            tvBottomSwitch.setText(
-                    "Zaten hesabın var mı?  Giriş Yap"
-            );
-
-
-            selectTab(
-                    btnRegisterTab,
-                    true
-            );
-
-
-            selectTab(
-                    btnLoginTab,
-                    false
-            );
-
-
-        } else {
-
-            tvTitle.setText(
-                    "Hoş geldin!"
-            );
-
-
-            tvSubtitle.setText(
-                    "Bahçelerine ve kayıtlarına ulaşmak için hesabınla giriş yap."
-            );
-
-
-            tvEmailDivider.setText(
-                    "veya e-posta ile giriş yap"
-            );
-
-
-            etName.setVisibility(
-                    View.GONE
-            );
-
-
-            etConfirmPassword.setVisibility(
-                    View.GONE
-            );
-
-
-            tvForgotPassword.setVisibility(
-                    View.VISIBLE
-            );
-
-
-            btnSubmit.setText(
-                    "Giriş Yap   →"
-            );
-
-
-            tvBottomSwitch.setText(
-                    "Hesabın yok mu?  Hesap Oluştur"
-            );
-
-
-            selectTab(
-                    btnRegisterTab,
-                    false
-            );
-
-
-            selectTab(
-                    btnLoginTab,
-                    true
-            );
-        }
+    private void setRegisterMode(boolean register) {
+        if (actionRunning) return;
+        registerMode = register;
+        tvTitle.setText(register ? R.string.auth_register_title : R.string.auth_login_title);
+        tvSubtitle.setText(register ? R.string.auth_register_description : R.string.auth_login_description);
+        googleLabel.setText(register ? R.string.auth_google_register : R.string.auth_google_login);
+        btnGoogle.setContentDescription(googleLabel.getText());
+        tvEmailDivider.setText(R.string.auth_email_divider);
+        nameGroup.setVisibility(register ? View.VISIBLE : View.GONE);
+        confirmGroup.setVisibility(register ? View.VISIBLE : View.GONE);
+        strengthGroup.setVisibility(register ? View.VISIBLE : View.GONE);
+        legalGroup.setVisibility(register ? View.VISIBLE : View.GONE);
+        tvForgotPassword.setVisibility(register ? View.GONE : View.VISIBLE);
+        etPassword.setHint(register ? R.string.auth_password_hint : R.string.auth_login_password_hint);
+        etPassword.setImeOptions(register ? EditorInfo.IME_ACTION_NEXT : EditorInfo.IME_ACTION_DONE);
+        btnSubmit.setText(register ? R.string.auth_register_submit : R.string.auth_login_submit);
+        selectTab(btnRegisterTab, register);
+        selectTab(btnLoginTab, !register);
+        btnRegisterTab.setSelected(register);
+        btnLoginTab.setSelected(!register);
+        if (!register && (etName.hasFocus() || etConfirmPassword.hasFocus())) etEmail.requestFocus();
+        refreshAuthControls();
     }
-
-
-    // ============================================================
-    // TAB
-    // ============================================================
 
     private void selectTab(
             TextView tab,
@@ -2572,7 +1603,7 @@ public class LoginActivity extends Activity {
             tab.setBackground(
                     rounded(
                             COLOR_GREEN_BUTTON,
-                            17,
+                            10,
                             null,
                             0
                     )
@@ -2583,7 +1614,7 @@ public class LoginActivity extends Activity {
 
             tab.setTextColor(
                     GreenTheme.parse(
-                            COLOR_GREEN
+                            COLOR_MUTED
                     )
             );
 
@@ -2646,10 +1677,10 @@ public class LoginActivity extends Activity {
             return;
         }
 
-        if (registerMode && password.length() < 6) {
+        if (registerMode && !AuthRegistrationPolicy.validPassword(password)) {
 
             showMessage(
-                    "Şifre en az 6 karakter olmalı."
+                    getString(R.string.auth_password_rejected)
             );
 
             etPassword.requestFocus();
@@ -2708,6 +1739,8 @@ public class LoginActivity extends Activity {
                 return;
             }
 
+
+            if (!canStartRegistration()) return;
 
             createFirebaseAccount(
                     name,
@@ -2926,9 +1959,9 @@ public class LoginActivity extends Activity {
             String message
     ) {
 
-        actionRunning =
-                true;
-
+        actionRunning = true;
+        refreshAuthControls();
+        authProgress.setVisibility(View.GONE);
 
         btnSubmit.setEnabled(
                 false
@@ -3634,9 +2667,8 @@ public class LoginActivity extends Activity {
         }
 
 
-        setSocialButtonsEnabled(
-                !running
-        );
+        setSocialButtonsEnabled(!running);
+        refreshAuthControls();
     }
 
 
@@ -3685,45 +2717,26 @@ public class LoginActivity extends Activity {
     // ============================================================
 
     private void togglePasswordVisibility() {
+        passwordVisible = !passwordVisible;
+        applyPasswordVisibility();
+    }
 
-        passwordVisible =
-                !passwordVisible;
-
-
-        if (passwordVisible) {
-
-            etPassword.setInputType(
-                    InputType.TYPE_CLASS_TEXT
-                            |
-                            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-            );
-
-
-        } else {
-
-            setPasswordHidden();
+    private void applyPasswordVisibility() {
+        for (EditText field : new EditText[]{etPassword, etConfirmPassword}) {
+            int start = field.getSelectionStart();
+            int end = field.getSelectionEnd();
+            field.setTransformationMethod(passwordVisible ? null : PasswordTransformationMethod.getInstance());
+            field.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            if (start >= 0 && end >= 0) {
+                field.setSelection(Math.min(start, field.length()), Math.min(end, field.length()));
+            }
         }
-
-
-        etPassword.setSelection(
-                etPassword.length()
-        );
+        for (ImageButton eye : new ImageButton[]{passwordEye, confirmEye}) {
+            eye.setImageResource(passwordVisible ? R.drawable.auth_eye_off : R.drawable.auth_eye);
+            eye.setContentDescription(getString(passwordVisible
+                    ? R.string.auth_hide_passwords : R.string.auth_show_passwords));
+        }
     }
-
-
-    private void setPasswordHidden() {
-
-        etPassword.setInputType(
-                InputType.TYPE_CLASS_TEXT
-                        |
-                        InputType.TYPE_TEXT_VARIATION_PASSWORD
-        );
-    }
-
-
-    // ============================================================
-    // PRESS
-    // ============================================================
 
     private void pressEffect(
             View view,
@@ -4217,6 +3230,12 @@ public class LoginActivity extends Activity {
     // ============================================================
     // DESTROY
     // ============================================================
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        state.putBoolean("auth_register_mode", registerMode);
+        super.onSaveInstanceState(state);
+    }
 
     @Override
     protected void onDestroy() {
