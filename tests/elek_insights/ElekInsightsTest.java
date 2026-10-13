@@ -45,6 +45,28 @@ public final class ElekInsightsTest {
         eq(ElekInsights.formatPerKg(4910, 98), "50,1 TL/kg", "per kg from screenshot");
         eq(ElekInsights.formatPerKg(100, 0), "— TL/kg", "no kg");
         eq(ElekInsights.recordCountOverline(12), "12 KAYIT", "overline");
+        String share = ElekInsights.receiptShareText("Girelli Zeytinliği", "13 Ekim 2026",
+                new double[]{3, 15, 0, 40, 0, 2.5},
+                new String[]{"120 TL", "80 TL", "60 TL", "40 TL", "20 TL", "10 TL"},
+                new String[]{"360 TL", "1.200 TL", "—", "1.600 TL", "—", "25 TL"},
+                "60,5 kg", "3.185 TL", "52,6 TL/kg", "  Kasa 3 ");
+        eq(share.startsWith("Zeytin Defteri · Elek makbuzu\nGirelli Zeytinliği · 13 Ekim 2026\n\n"), true, "share header");
+        eq(share.contains("Double: 3 kg × 120 TL = 360 TL\n"), true, "share line");
+        eq(share.contains("Yağlık: 2,5 kg × 10 TL = 25 TL\n"), true, "share decimal kg");
+        eq(share.contains("2 Numara"), false, "empty grades skipped");
+        eq(share.contains("\nToplam: 60,5 kg · 3.185 TL (ort. 52,6 TL/kg)"), true, "share total");
+        eq(share.endsWith("\nNot: Kasa 3"), true, "share note trimmed");
+        eq(ElekInsights.receiptShareText("A", "B", new double[]{1, 0, 0, 0, 0, 0},
+                new String[]{"1 TL", "", "", "", "", ""}, new String[]{"1 TL", "", "", "", "", ""},
+                "1 kg", "1 TL", "", "").contains("Not:"), false, "no empty note");
+        eq(ElekInsights.shortWeekday("Salı"), "SAL", "weekday sal");
+        eq(ElekInsights.shortWeekday("Cuma"), "CUM", "weekday cuma");
+        eq(ElekInsights.shortWeekday("Cumartesi"), "CMT", "weekday cumartesi differs from cuma");
+        eq(ElekInsights.shortWeekday("Çarşamba"), "ÇAR", "weekday çarşamba");
+        eq(ElekInsights.shortWeekday(""), "", "weekday unknown");
+        eq(ElekInsights.monthHeader("2026-10-13"), "EKİM 2026", "month header dotted İ");
+        eq(ElekInsights.monthHeader("2026-08-01"), "AĞUSTOS 2026", "month header ğ");
+        eq(ElekInsights.monthHeader("13.10.2026"), "", "month header unknown");
         System.out.println("PASS: " + checks + " elek insight checks (host only).");
     }
 }

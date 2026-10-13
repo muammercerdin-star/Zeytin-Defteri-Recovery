@@ -2,324 +2,133 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="10dp"
-    android:background="@drawable/elek_archive_paper_record"
-    android:orientation="vertical"
-    android:paddingLeft="10dp"
-    android:paddingTop="12dp"
-    android:paddingRight="10dp"
-    android:paddingBottom="12dp">
+    android:orientation="vertical">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/archiveMonthHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:letterSpacing="0.08"
+        android:paddingTop="20dp"
+        android:paddingBottom="8dp"
+        android:text=""
+        android:textColor="@color/zd_muted"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
 
-        <ImageView
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:importantForAccessibility="no"
-            android:src="@drawable/ic_olive" />
+    <LinearLayout
+        android:id="@+id/archiveRecordCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/elek_archive_row_card"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:padding="14dp">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/archiveRecordGarden"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:fontFamily="serif"
-                android:maxLines="1"
-                android:singleLine="true"
-                android:textColor="#10283D"
-                android:textSize="17sp"
-                android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="15dp"
-                    android:layout_height="15dp"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_archive_calendar" />
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/elek_distribution_track"
+                android:gravity="center"
+                android:importantForAccessibility="noHideDescendants"
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/archiveRecordDate"
+                    android:id="@+id/archiveRecordDayNumber"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:fontFamily="serif"
-                    android:singleLine="true"
-                    android:textColor="#20364A"
-                    android:textSize="12sp"
+                    android:includeFontPadding="false"
+                    android:text=""
+                    android:textColor="@color/zd_text"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/archiveRecordWeekday"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="4dp"
-                    android:layout_marginRight="4dp"
-                    android:text="|"
-                    android:textColor="#A39372"
-                    android:textSize="12sp" />
+                    android:layout_marginTop="2dp"
+                    android:includeFontPadding="false"
+                    android:text=""
+                    android:textColor="@color/zd_muted"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/archiveRecordDay"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/archiveRecordGarden"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="cursive"
+                    android:ellipsize="end"
                     android:singleLine="true"
-                    android:textColor="#0D4DB8"
-                    android:textSize="13sp"
-                    android:textStyle="italic" />
+                    android:text=""
+                    android:textColor="@color/zd_text"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/archiveRecordMeta"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text=""
+                    android:textColor="@color/zd_muted"
+                    android:textSize="12sp" />
             </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="104dp"
-            android:layout_height="74dp"
-            android:background="@drawable/elek_archive_note_tape"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="6dp"
-            android:rotation="-2">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="serif"
-                android:text="TOPLAM TUTAR"
-                android:textColor="#10283D"
-                android:textSize="9sp"
-                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/archiveRecordRevenue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:fontFamily="cursive"
-                android:singleLine="true"
-                android:textColor="#0D4DB8"
-                android:textSize="20sp"
+                android:layout_marginStart="8dp"
+                android:text=""
+                android:textColor="@color/zd_text"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
-            <View
-                android:layout_width="72dp"
-                android:layout_height="3dp"
-                android:layout_marginTop="2dp"
-                android:background="#C46F5B" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:importantForAccessibility="no"
+                android:text="›"
+                android:textColor="@color/zd_muted"
+                android:textSize="20sp" />
         </LinearLayout>
-    </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/elek_archive_table_border"
-        android:orientation="vertical">
-
+        <!-- Kayda ait sınıf dağılımı: her segment bir elek sınıfı (ağırlık = kg). -->
         <LinearLayout
+            android:id="@+id/archiveRecordBar"
             android:layout_width="match_parent"
-            android:layout_height="30dp"
-            android:background="#17FFFFFF"
-            android:gravity="center_vertical"
+            android:layout_height="6dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/elek_distribution_track"
+            android:importantForAccessibility="noHideDescendants"
             android:orientation="horizontal">
 
-            <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:text="No" android:textColor="#10283D" android:textSize="11sp" android:textStyle="bold"/>
-            <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" />
-            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:fontFamily="serif" android:text="Elek" android:textColor="#10283D" android:textSize="11sp" android:textStyle="bold"/>
-            <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" />
-            <TextView android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:text="Kg" android:textColor="#10283D" android:textSize="11sp" android:textStyle="bold"/>
-            <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" />
-            <TextView android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:text="Fiyat" android:textColor="#10283D" android:textSize="11sp" android:textStyle="bold"/>
-            <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" />
-            <TextView android:layout_width="62dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:text="Tutar" android:textColor="#10283D" android:textSize="11sp" android:textStyle="bold"/>
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#978868" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="31dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:id="@+id/archiveBadge0" android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:textColor="#10283D" android:textSize="13sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveLabel0" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingLeft="8dp" android:fontFamily="serif" android:textColor="#20364A" android:textSize="12sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveGrade0" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archivePrice0" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#0D4DB8" android:textSize="11.5sp" android:textStyle="bold"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveTotal0" android:layout_width="62dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11.5sp" android:textStyle="bold"/></LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#978868" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="31dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:id="@+id/archiveBadge1" android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:textColor="#10283D" android:textSize="13sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveLabel1" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingLeft="8dp" android:fontFamily="serif" android:textColor="#20364A" android:textSize="12sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveGrade1" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archivePrice1" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#0D4DB8" android:textSize="11.5sp" android:textStyle="bold"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveTotal1" android:layout_width="62dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11.5sp" android:textStyle="bold"/></LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#978868" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="31dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:id="@+id/archiveBadge2" android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:textColor="#10283D" android:textSize="13sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveLabel2" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingLeft="8dp" android:fontFamily="serif" android:textColor="#20364A" android:textSize="12sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveGrade2" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archivePrice2" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#0D4DB8" android:textSize="11.5sp" android:textStyle="bold"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveTotal2" android:layout_width="62dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11.5sp" android:textStyle="bold"/></LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#978868" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="31dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:id="@+id/archiveBadge3" android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:textColor="#10283D" android:textSize="13sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveLabel3" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingLeft="8dp" android:fontFamily="serif" android:textColor="#20364A" android:textSize="12sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveGrade3" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archivePrice3" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#0D4DB8" android:textSize="11.5sp" android:textStyle="bold"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveTotal3" android:layout_width="62dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11.5sp" android:textStyle="bold"/></LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#978868" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="31dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:id="@+id/archiveBadge4" android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:textColor="#10283D" android:textSize="13sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveLabel4" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingLeft="8dp" android:fontFamily="serif" android:textColor="#20364A" android:textSize="12sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveGrade4" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archivePrice4" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#0D4DB8" android:textSize="11.5sp" android:textStyle="bold"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveTotal4" android:layout_width="62dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11.5sp" android:textStyle="bold"/></LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#978868" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="31dp" android:gravity="center_vertical" android:orientation="horizontal"><TextView android:id="@+id/archiveBadge5" android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:textColor="#10283D" android:textSize="13sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveLabel5" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingLeft="8dp" android:fontFamily="serif" android:textColor="#20364A" android:textSize="12sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveGrade5" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11sp"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archivePrice5" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#0D4DB8" android:textSize="11.5sp" android:textStyle="bold"/><View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" /><TextView android:id="@+id/archiveTotal5" android:layout_width="62dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:textColor="#20364A" android:textSize="11.5sp" android:textStyle="bold"/></LinearLayout>
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#978868" />
-
-        <LinearLayout android:layout_width="match_parent" android:layout_height="34dp" android:gravity="center_vertical" android:orientation="horizontal" android:background="#11FFFFFF">
-            <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:text="Σ" android:textColor="#10283D" android:textSize="11sp" android:textStyle="bold"/>
-            <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" />
-            <TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingLeft="8dp" android:fontFamily="serif" android:text="TOPLAM" android:textColor="#10283D" android:textSize="12sp" android:textStyle="bold"/>
-            <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" />
-            <TextView android:id="@+id/archiveRecordKg" android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="sans-serif-medium" android:textColor="#0D4DB8" android:textSize="13sp" android:textStyle="bold"/>
-            <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" />
-            <TextView android:layout_width="56dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="serif" android:text="—" android:textColor="#8D816A" android:textSize="11sp"/>
-            <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#978868" />
-            <TextView android:id="@+id/archiveRecordRevenueTable" android:layout_width="62dp" android:layout_height="match_parent" android:gravity="center" android:fontFamily="sans-serif-medium" android:textColor="#0D4DB8" android:textSize="13sp" android:textStyle="bold"/>
+            <View android:id="@+id/archiveGrade0" android:layout_width="0dp" android:layout_height="match_parent" android:background="@color/elek_badge_double" />
+            <View android:id="@+id/archiveGrade1" android:layout_width="0dp" android:layout_height="match_parent" android:background="@color/elek_badge_one" />
+            <View android:id="@+id/archiveGrade2" android:layout_width="0dp" android:layout_height="match_parent" android:background="@color/elek_badge_two" />
+            <View android:id="@+id/archiveGrade3" android:layout_width="0dp" android:layout_height="match_parent" android:background="@color/elek_badge_three" />
+            <View android:id="@+id/archiveGrade4" android:layout_width="0dp" android:layout_height="match_parent" android:background="@color/elek_badge_four" />
+            <View android:id="@+id/archiveGrade5" android:layout_width="0dp" android:layout_height="match_parent" android:background="@color/elek_badge_oil" />
         </LinearLayout>
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="9dp"
-        android:orientation="horizontal">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="72dp"
-            android:layout_marginRight="6dp"
-            android:layout_weight="1"
-            android:background="@drawable/elek_archive_paper_summary"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp">
-
-            <LinearLayout
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@drawable/elek_archive_metric_icon_box"
-                android:gravity="center">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_archive_scale" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="serif"
-                    android:text="Toplam Kg"
-                    android:textColor="#20364A"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/archiveRecordKgSide"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="cursive"
-                    android:singleLine="true"
-                    android:textColor="#0D4DB8"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="72dp"
-            android:layout_marginLeft="6dp"
-            android:layout_weight="1"
-            android:background="@drawable/elek_archive_paper_summary"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp">
-
-            <LinearLayout
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@drawable/elek_archive_metric_icon_box"
-                android:gravity="center">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_archive_coins" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="serif"
-                    android:singleLine="true"
-                    android:text="Ortalama Fiyat"
-                    android:textColor="#20364A"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/archiveRecordAverage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:singleLine="true"
-                    android:textColor="#0D4DB8"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/archiveDetailButton"
-        android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/elek_archive_detail_button"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp">
-
-        <ImageView
-            android:layout_width="18dp"
-            android:layout_height="18dp"
-            android:importantForAccessibility="no"
-            android:src="@drawable/ic_archive_document" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:fontFamily="serif"
-            android:singleLine="true"
-            android:text="Detayları Gör"
-            android:textColor="#10283D"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <ImageView
-            android:layout_width="12dp"
-            android:layout_height="12dp"
-            android:importantForAccessibility="no"
-            android:src="@drawable/ic_archive_chevron" />
-    </LinearLayout>
 </LinearLayout>

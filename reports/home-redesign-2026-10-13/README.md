@@ -209,3 +209,51 @@ Cihazda kontrol:
 - Bahçe filtresi.
 - Geçmiş / Tümünü gör.
 - Kayıt olmayan sezon.
+
+## 11. Elek geçmişi — koyu arşiv listesi + kayıt makbuzu
+
+Kaynak: "Elek geçmişi · arşiv listesi" ve "Elek geçmişi · kayıt makbuzu" tasarımları.
+
+### Arşiv listesi (`ElekArchiveActivity`, yeniden yazıldı)
+- Kâğıt temalı başlık, damga ve el yazısı rakamlar kaldırıldı. Ekran koyu temaya geçti:
+  - geri butonu, "Elek geçmişi" başlığı, "2026 ▾" yıl seçici;
+  - bahçe filtre çipleri (yatay kaydırma Java'da kuruluyor);
+  - sezon kartı: tutar (altın), kg, ort. TL/kg, sınıf dağılım şeridi ve açıklama;
+  - ay başlıkları ("EKİM 2026");
+  - kayıt satırları: gün kutusu (13 / SAL), bahçe, "98 kg · 50,1 TL/kg", tutar, kayda ait dağılım şeridi.
+- Ondalık ayracı virgül, para birimi her yerde "TL", sınıf adları "1 Numara" (formla aynı).
+- Elek sekmesinden açılırken seçili bahçe filtresi `garden_id` ile geliyor.
+- Veri sorgusu değişmedi: `new ElekRepository(databaseHelper).getArchiveRecords(...)`.
+
+### Makbuz (`ElekReceiptActivity`, yeni)
+- Koyu zemin üzerinde krem "Elek makbuzu" fişi:
+  - "ZEYTİN DEFTERİ" başlığı ve eğik "SEZON 2026" damgası;
+  - bahçe ve tarih (gün adıyla);
+  - Sınıf / Kg / Fiyat / Tutar tablosu (hizalı rakamlar) ve toplam satırı;
+  - dağılım şeridi ve not alanı.
+- **Paylaş:** düz metin (WhatsApp vb.); metin `ElekInsights.receiptShareText` ile üretiliyor ve test ediliyor.
+- **Not ekle / düzenle:** `ElekRepository.updateElekRecordNote` (en fazla 300 karakter), ardından `ProductionCloudRepository.syncElekByLocalId`.
+- **Kaydı sil:**
+  - Onay penceresinden sonra `ElekRepository.deleteElekRecord` çağrılır. Bu yöntem, bahçe ve işlem silmeyle aynı şekilde bir silme işareti bırakır; işaret bir sonraki senkronda buluta gider. Sınıf satırları `ON DELETE CASCADE` ile silinir.
+  - **Dikkat:** Bu iki depo yöntemi daha önce hiçbir ekranda kullanılmıyordu; cihazda ilk kez çalışacaklar.
+- **Kullanıcı ayrımı:** Kaydın `owner_uid` değeri aktif kullanıcıyla eşleşmezse makbuz açılmaz.
+- **Elek sekmesi:** "Son kayıtlar" satırları artık doğrudan ilgili makbuzu açıyor.
+
+### Testler
+- `tests/elek_archive/check_archive.py` **artık tamamen geçiyor**. Önceden eski bir yazım kalıbı yüzünden başarısızdı. Gerçek repository SQL'ini SQLite'ta çalıştırıp kullanıcı, sezon ve bahçe ayrımını, eski tarih biçimini, sıralamayı ve toplamları doğruluyor.
+- `tests/elek_insights` 45 kontrole çıktı: paylaşım metni, gün kısaltmaları (Cuma ≠ Cumartesi) ve ay başlıkları eklendi.
+- Python test paketlerinde başarısız sayısı 4'ten 3'e indi. Kalan 3 test eski ve bu işle ilgisiz.
+
+### Bahçe şüphesi (Edremit / Girelli)
+Kodda form açılışında seçili bahçenin kendiliğinden değiştiği bir yol bulunamadı. Bahçe yalnızca şu durumlarda değişiyor:
+- tek bahçe varsa otomatik seçim;
+- Elek sekmesinden gelen `garden_id`;
+- ekran döndürmede durum geri yükleme;
+- kullanıcının seçici ile değiştirmesi.
+
+Cihazda tekrar görülürse adımlar ile birlikte bildirilmeli.
+
+### Cihazda kontrol
+- Geçmiş listesi: yıl değiştirme, bahçe filtresi, ay başlıkları.
+- Makbuz açma, paylaşma, not ekleme ve not sonrası görünüm.
+- Kayıt silme: silince listeden ve Elek sekmesinden düşmesi, diğer cihazda senkron sonrası kaybolması.

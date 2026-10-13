@@ -108,6 +108,61 @@ public final class ElekInsights {
         return nf.format(revenue / kg) + " TL/kg";
     }
 
+    /**
+     * Makbuzun paylaşım metni (WhatsApp vb.). Sadece kilo girilen sınıflar yazılır.
+     * kg/price/total dizileri GRADE_NAMES sırasındadır; tutarlar hazır biçimli gelir.
+     */
+    public static String receiptShareText(String garden, String date, double[] kg, String[] priceText,
+                                          String[] totalText, String totalKg, String totalTl,
+                                          String average, String note) {
+        StringBuilder out = new StringBuilder("Zeytin Defteri · Elek makbuzu\n");
+        out.append(garden).append(" · ").append(date).append("\n\n");
+        for (int i = 0; i < kg.length && i < GRADE_NAMES.length; i++) {
+            if (kg[i] <= 0) continue;
+            out.append(GRADE_NAMES[i]).append(": ")
+                    .append(formatKgPlain(kg[i])).append(" kg × ")
+                    .append(priceText[i]).append(" = ").append(totalText[i]).append('\n');
+        }
+        out.append("\nToplam: ").append(totalKg).append(" · ").append(totalTl);
+        if (average != null && !average.isEmpty()) out.append(" (ort. ").append(average).append(')');
+        if (note != null && !note.trim().isEmpty()) out.append("\nNot: ").append(note.trim());
+        return out.toString();
+    }
+
+    private static String formatKgPlain(double value) {
+        java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(new java.util.Locale("tr", "TR"));
+        nf.setMaximumFractionDigits(2);
+        return nf.format(value);
+    }
+
+    /** "Salı" -> "SAL"; Cuma/Cumartesi gibi çakışmalar için sabit kısaltmalar. */
+    public static String shortWeekday(String dayName) {
+        if (dayName == null) return "";
+        switch (dayName.trim()) {
+            case "Pazartesi": return "PZT";
+            case "Salı": return "SAL";
+            case "Çarşamba": return "ÇAR";
+            case "Perşembe": return "PER";
+            case "Cuma": return "CUM";
+            case "Cumartesi": return "CMT";
+            case "Pazar": return "PAZ";
+            default: return "";
+        }
+    }
+
+    /** "2026-10-13" -> "EKİM 2026" (ay başlığı); tanınmazsa boş. */
+    public static String monthHeader(String iso) {
+        if (iso == null || iso.length() < 7 || iso.charAt(4) != '-') return "";
+        try {
+            int year = Integer.parseInt(iso.substring(0, 4));
+            int month = Integer.parseInt(iso.substring(5, 7));
+            if (month < 1 || month > 12) return "";
+            return MONTHS[month - 1].toUpperCase(new java.util.Locale("tr", "TR")) + " " + year;
+        } catch (NumberFormatException e) {
+            return "";
+        }
+    }
+
     /** "12 KAYIT" */
     public static String recordCountOverline(int count) {
         return count + " KAYIT";

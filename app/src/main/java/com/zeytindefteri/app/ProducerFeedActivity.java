@@ -6011,6 +6011,7 @@ public class ProducerFeedActivity extends Activity {
             {"double_kg", "grade1_kg", "grade2_kg", "grade3_kg", "grade4_kg", "oil_kg"};
 
     private static final class ElekRow {
+        long id;
         String date = "", garden = "";
         double kg, revenue;
         final double[] grades = new double[6];
@@ -6066,6 +6067,7 @@ public class ProducerFeedActivity extends Activity {
             rc = elekRepository.getArchiveRecords(season, filter, owner);
             while (rc != null && rc.moveToNext()) {
                 ElekRow r = new ElekRow();
+                r.id = getLong(rc, "record_id");
                 r.date = getString(rc, "record_date", "");
                 r.garden = getString(rc, "garden_name", "-");
                 r.kg = getDouble(rc, "total_kg");
@@ -6078,6 +6080,7 @@ public class ProducerFeedActivity extends Activity {
             if (rc != null) rc.close();
         }
 
+        final long archiveFilter = filter;
         double totalKg = 0, totalRevenue = 0;
         double[] seasonGrades = new double[6];
         for (ElekRow r : rows) {
@@ -6104,7 +6107,8 @@ public class ProducerFeedActivity extends Activity {
         history.setPadding(dp(16), 0, dp(16), 0);
         history.setBackground(round(CARD, 22, BORDER));
         history.setContentDescription("Elek geçmişini aç");
-        history.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)));
+        history.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)
+                .putExtra(ElekArchiveActivity.EXTRA_GARDEN_ID, archiveFilter)));
         header.addView(history, new LinearLayout.LayoutParams(-2, -2));
         body.addView(header);
 
@@ -6215,7 +6219,8 @@ public class ProducerFeedActivity extends Activity {
         all.setGravity(Gravity.CENTER_VERTICAL);
         all.setMinHeight(dp(44));
         all.setContentDescription("Tüm elek kayıtlarını aç");
-        all.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)));
+        all.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)
+                .putExtra(ElekArchiveActivity.EXTRA_GARDEN_ID, archiveFilter)));
         listHeader.addView(all, new LinearLayout.LayoutParams(-2, -2));
         body.addView(listHeader, gardensBlockParams(16));
 
@@ -6285,8 +6290,9 @@ public class ProducerFeedActivity extends Activity {
         card.addView(elekDistributionBar(r.grades, 3), barParams);
         card.setContentDescription(ElekInsights.formatDate(r.date, false) + ", " + r.garden + ", "
                 + fmtKg(r.kg) + ", " + fmtTl(r.revenue) + ", ortalama " + ElekInsights.formatPerKg(r.revenue, r.kg)
-                + ". " + ElekInsights.accessibleLegend(r.grades) + " Geçmişi açmak için dokun.");
-        card.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)));
+                + ". " + ElekInsights.accessibleLegend(r.grades) + " Makbuzu açmak için dokun.");
+        card.setOnClickListener(v -> startActivity(new Intent(this, ElekReceiptActivity.class)
+                .putExtra(ElekReceiptActivity.EXTRA_RECORD_ID, r.id)));
         return card;
     }
 

@@ -2,11 +2,18 @@ package com.zeytindefteri.app;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,39 +26,41 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Elek geçmişi (13.10.2026 tasarımı): koyu tema arşiv listesi.
+ * Bir kayda dokununca ElekReceiptActivity (makbuz) açılır.
+ * Veri: ElekRepository.getArchiveRecords (Elek sekmesiyle aynı sorgu).
+ */
 public class ElekArchiveActivity extends Activity {
 
-    private static final String[] GRADE_KEYS = {"DOUBLE", "1", "2", "3", "4", "YAGLIK"};
-    private static final String[] GRADE_BADGES = {"★", "1", "2", "3", "4", "○"};
-    private static final String[] GRADE_LABELS = {"Double", "1. Kalite", "2. Kalite", "3. Kalite", "4. Kalite", "Yağlık"};
+    static final String EXTRA_GARDEN_ID = "garden_id";
 
     private DatabaseHelper databaseHelper;
-    private ElekRepository elekRepository;
 
     private TextView btnArchiveBack;
     private TextView btnArchiveYear;
-    private TextView btnArchiveGardenFilter;
-    private TextView tvArchiveScreenSubtitle;
-
+    private TextView tvArchiveScreenScope;
     private TextView tvArchiveScreenTotalKg;
     private TextView tvArchiveScreenTotalRevenue;
     private TextView tvArchiveScreenAverage;
+    private TextView tvArchiveSeasonLegend;
+    private TextView tvArchiveEmpty;
+    private LinearLayout archiveSeasonBar;
+    private FrameLayout archiveGardenChipsHost;
 
     private android.widget.ListView archiveRecordList;
     private final List<ArchiveCard> archiveCards = new ArrayList<>();
     private ArchiveAdapter archiveAdapter;
-    private TextView tvArchiveEmpty;
 
     private int selectedYear = Calendar.getInstance().get(Calendar.YEAR);
     private long selectedGardenId = -1;
-    private String selectedGardenName = "Tüm Bahçeler";
+    private String selectedGardenName = "Tüm bahçeler";
 
     private final List<Long> gardenIds = new ArrayList<>();
     private final List<String> gardenNames = new ArrayList<>();
 
     private final Locale turkishLocale = new Locale("tr", "TR");
     private DecimalFormat numberFormat;
-    private DecimalFormat averageNumberFormat;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,13 +76,20 @@ public class ElekArchiveActivity extends Activity {
         setContentView(R.layout.activity_elek_archive);
 
         databaseHelper = new DatabaseHelper(this);
-        elekRepository = new ElekRepository(databaseHelper);
         selectedYear = databaseHelper.getActiveSeasonYear();
 
         setupNumberFormat();
         findViews();
         setupButtons();
         loadGardenFilter();
+
+        long requested = getIntent().getLongExtra(EXTRA_GARDEN_ID, -1L);
+        int index = gardenIds.indexOf(requested);
+        if (requested > 0 && index >= 0) {
+            selectedGardenId = requested;
+            selectedGardenName = gardenNames.get(index);
+        }
+
         loadArchive();
     }
 
@@ -82,7 +98,6 @@ public class ElekArchiveActivity extends Activity {
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator(',');
         numberFormat = new DecimalFormat("#,##0.##", symbols);
-        averageNumberFormat = new DecimalFormat("#,##0.00", symbols);
     }
 
     private void findViews() {
@@ -96,18 +111,19 @@ public class ElekArchiveActivity extends Activity {
 
         btnArchiveBack = header.findViewById(R.id.btnArchiveBack);
         btnArchiveYear = header.findViewById(R.id.btnArchiveYear);
-        btnArchiveGardenFilter = header.findViewById(R.id.btnArchiveGardenFilter);
-        tvArchiveScreenSubtitle = header.findViewById(R.id.tvArchiveScreenSubtitle);
+        tvArchiveScreenScope = header.findViewById(R.id.tvArchiveScreenScope);
         tvArchiveScreenTotalKg = header.findViewById(R.id.tvArchiveScreenTotalKg);
         tvArchiveScreenTotalRevenue = header.findViewById(R.id.tvArchiveScreenTotalRevenue);
         tvArchiveScreenAverage = header.findViewById(R.id.tvArchiveScreenAverage);
+        tvArchiveSeasonLegend = header.findViewById(R.id.tvArchiveSeasonLegend);
         tvArchiveEmpty = header.findViewById(R.id.tvArchiveEmpty);
+        archiveSeasonBar = header.findViewById(R.id.archiveSeasonBar);
+        archiveGardenChipsHost = header.findViewById(R.id.archiveGardenChipsHost);
     }
 
     private void setupButtons() {
         btnArchiveBack.setOnClickListener(view -> finish());
         btnArchiveYear.setOnClickListener(view -> showYearPicker());
-        btnArchiveGardenFilter.setOnClickListener(view -> showGardenFilter());
     }
 
     private void showYearPicker() {
@@ -131,7 +147,7 @@ public class ElekArchiveActivity extends Activity {
         gardenIds.clear();
         gardenNames.clear();
         gardenIds.add(-1L);
-        gardenNames.add("Tüm Bahçeler");
+        gardenNames.add("Tüm bahçeler");
 
         Cursor cursor = null;
         try {
@@ -159,33 +175,67 @@ public class ElekArchiveActivity extends Activity {
         }
     }
 
-    private void showGardenFilter() {
-        String[] names = gardenNames.toArray(new String[0]);
-        new AlertDialog.Builder(this)
-                .setTitle("Bahçe seç")
-                .setItems(names, (dialog, which) -> {
-                    selectedGardenId = gardenIds.get(which);
-                    selectedGardenName = gardenNames.get(which);
-                    loadArchive();
-                })
-                .setNegativeButton("İptal", null)
-                .show();
+    // Bahçe filtre çipleri (birden fazla bahçe varsa), yatay kaydırma içinde.
+    private void renderGardenChips() {
+        archiveGardenChipsHost.removeAllViews();
+        if (gardenIds.size() <= 2) {
+            archiveGardenChipsHost.setVisibility(View.GONE);
+            return;
+        }
+        archiveGardenChipsHost.setVisibility(View.VISIBLE);
+        HorizontalScrollView scroller = new HorizontalScrollView(this);
+        scroller.setHorizontalScrollBarEnabled(false);
+        LinearLayout chips = new LinearLayout(this);
+        chips.setOrientation(LinearLayout.HORIZONTAL);
+        int green = GreenTheme.color(R.color.zd_green);
+        int muted = GreenTheme.color(R.color.zd_muted);
+        for (int i = 0; i < gardenIds.size(); i++) {
+            final long id = gardenIds.get(i);
+            final String name = gardenNames.get(i);
+            boolean on = id == selectedGardenId;
+            TextView chip = new TextView(this);
+            chip.setText(name);
+            chip.setTextSize(12);
+            chip.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            chip.setTextColor(on ? green : muted);
+            chip.setGravity(Gravity.CENTER);
+            chip.setMinHeight(dp(40));
+            chip.setPadding(dp(14), 0, dp(14), 0);
+            chip.setBackground(rounded(
+                    on ? GreenTheme.color(R.color.zd_green_soft) : Color.TRANSPARENT,
+                    on ? green : GreenTheme.color(R.color.zd_border)));
+            chip.setContentDescription("Filtre: " + name + (on ? ", seçili" : ""));
+            chip.setOnClickListener(v -> {
+                if (id == selectedGardenId) return;
+                selectedGardenId = id;
+                selectedGardenName = name;
+                loadArchive();
+            });
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-2, -2);
+            if (i > 0) p.setMargins(dp(8), 0, 0, 0);
+            chips.addView(chip, p);
+        }
+        scroller.addView(chips);
+        archiveGardenChipsHost.addView(scroller);
     }
 
     private void loadArchive() {
-        btnArchiveYear.setText(String.valueOf(selectedYear));
-        tvArchiveScreenSubtitle.setText("Geçmiş elek kayıtları •");
-        btnArchiveGardenFilter.setText(selectedGardenName);
+        btnArchiveYear.setText(selectedYear + "  ▾");
+        renderGardenChips();
+        tvArchiveScreenScope.setText(selectedYear + " SEZONU · "
+                + selectedGardenName.toUpperCase(turkishLocale));
 
         archiveCards.clear();
 
         Cursor cursor = null;
         double seasonTotalKg = 0;
         double seasonTotalRevenue = 0;
+        double[] seasonGrades = new double[6];
         int recordCount = 0;
+        String previousMonth = "";
 
         try {
-            cursor = elekRepository.getArchiveRecords(
+            cursor = new ElekRepository(databaseHelper).getArchiveRecords(
                     selectedYear,
                     selectedGardenId,
                     databaseHelper.getActiveOwnerUid()
@@ -194,45 +244,39 @@ public class ElekArchiveActivity extends Activity {
             int recordIdIndex = cursor.getColumnIndexOrThrow("record_id");
             int dateIndex = cursor.getColumnIndexOrThrow("record_date");
             int gardenIndex = cursor.getColumnIndexOrThrow("garden_name");
-            int doubleIndex = cursor.getColumnIndexOrThrow("double_kg");
-            int grade1Index = cursor.getColumnIndexOrThrow("grade1_kg");
-            int grade2Index = cursor.getColumnIndexOrThrow("grade2_kg");
-            int grade3Index = cursor.getColumnIndexOrThrow("grade3_kg");
-            int grade4Index = cursor.getColumnIndexOrThrow("grade4_kg");
-            int oilIndex = cursor.getColumnIndexOrThrow("oil_kg");
+            int[] gradeIndexes = {
+                    cursor.getColumnIndexOrThrow("double_kg"),
+                    cursor.getColumnIndexOrThrow("grade1_kg"),
+                    cursor.getColumnIndexOrThrow("grade2_kg"),
+                    cursor.getColumnIndexOrThrow("grade3_kg"),
+                    cursor.getColumnIndexOrThrow("grade4_kg"),
+                    cursor.getColumnIndexOrThrow("oil_kg")
+            };
             int totalKgIndex = cursor.getColumnIndexOrThrow("total_kg");
             int totalRevenueIndex = cursor.getColumnIndexOrThrow("total_revenue");
 
             while (cursor.moveToNext()) {
-                long recordId = cursor.getLong(recordIdIndex);
+                ArchiveCard card = new ArchiveCard();
+                card.recordId = cursor.getLong(recordIdIndex);
                 String date = cursor.getString(dateIndex);
-                String gardenName = cursor.getString(gardenIndex);
-                double totalKg = cursor.getDouble(totalKgIndex);
-                double totalRevenue = cursor.getDouble(totalRevenueIndex);
-                double average = totalKg > 0 ? totalRevenue / totalKg : 0;
+                card.gardenName = cursor.getString(gardenIndex);
+                card.totalKgValue = cursor.getDouble(totalKgIndex);
+                card.totalRevenueValue = cursor.getDouble(totalRevenueIndex);
+                for (int i = 0; i < 6; i++) {
+                    card.grades[i] = cursor.getDouble(gradeIndexes[i]);
+                    seasonGrades[i] += card.grades[i];
+                }
+                card.dateLong = formatTableDate(date);
+                card.dayNumber = dayNumberOf(date);
+                card.weekday = ElekInsights.shortWeekday(formatDay(date));
+                String month = ElekInsights.monthHeader(date);
+                card.monthHeader = !month.isEmpty() && !month.equals(previousMonth) ? month : "";
+                if (!month.isEmpty()) previousMonth = month;
 
-                double[] kgValues = new double[]{
-                        cursor.getDouble(doubleIndex),
-                        cursor.getDouble(grade1Index),
-                        cursor.getDouble(grade2Index),
-                        cursor.getDouble(grade3Index),
-                        cursor.getDouble(grade4Index),
-                        cursor.getDouble(oilIndex)
-                };
-
-                seasonTotalKg += totalKg;
-                seasonTotalRevenue += totalRevenue;
+                seasonTotalKg += card.totalKgValue;
+                seasonTotalRevenue += card.totalRevenueValue;
                 recordCount++;
-
-                archiveCards.add(buildArchiveCard(
-                        recordId,
-                        date,
-                        gardenName,
-                        kgValues,
-                        totalKg,
-                        totalRevenue,
-                        average
-                ));
+                archiveCards.add(card);
             }
         } catch (Exception e) {
             Toast.makeText(this, "Elek arşivi okunamadı.", Toast.LENGTH_LONG).show();
@@ -243,90 +287,59 @@ public class ElekArchiveActivity extends Activity {
         }
 
         if (recordCount == 0) {
-            tvArchiveEmpty.setText("Bu seçim için henüz Elek kaydı yok.");
+            tvArchiveEmpty.setText(selectedGardenId > 0
+                    ? "Bu bahçe için " + selectedYear + " sezonunda elek kaydı yok."
+                    : selectedYear + " sezonunda henüz elek kaydı yok.");
             tvArchiveEmpty.setVisibility(View.VISIBLE);
         } else {
             tvArchiveEmpty.setVisibility(View.GONE);
         }
 
-        double seasonAverage = seasonTotalKg > 0 ? seasonTotalRevenue / seasonTotalKg : 0;
-        tvArchiveScreenTotalKg.setText(formatNumber(seasonTotalKg));
-        tvArchiveScreenTotalRevenue.setText(formatNumber(seasonTotalRevenue));
-        tvArchiveScreenAverage.setText(formatAverage(seasonAverage));
+        tvArchiveScreenTotalRevenue.setText(money(seasonTotalRevenue));
+        tvArchiveScreenTotalKg.setText(formatNumber(seasonTotalKg) + " kg");
+        tvArchiveScreenAverage.setText("ort. " + ElekInsights.formatPerKg(seasonTotalRevenue, seasonTotalKg));
+        tvArchiveScreenTotalRevenue.setTextColor(GreenTheme.color(
+                seasonTotalKg > 0 ? R.color.zd_warning : R.color.zd_muted));
+        renderBar(archiveSeasonBar, seasonGrades);
+        tvArchiveSeasonLegend.setText(ElekInsights.legend(seasonGrades));
+        archiveSeasonBar.setContentDescription(ElekInsights.accessibleLegend(seasonGrades));
 
         archiveAdapter.notifyDataSetChanged();
     }
 
-    private ArchiveCard buildArchiveCard(long recordId,
-                                         String date,
-                                         String gardenName,
-                                         double[] kgValues,
-                                         double totalKg,
-                                         double totalRevenue,
-                                         double average) {
-        ArchiveCard card = new ArchiveCard();
-        card.recordId = recordId;
-        card.date = formatTableDate(date);
-        card.day = formatDay(date);
-        card.gardenName = gardenName;
-        card.totalKg = formatKg(totalKg);
-        card.totalKgCompact = formatNumber(totalKg) + " kg";
-        card.totalRevenue = money(totalRevenue);
-        card.totalRevenueCompact = formatCompactMoney(totalRevenue);
-        card.average = formatAverage(average) + " TL/kg";
-
-        for (int i = 0; i < GRADE_KEYS.length; i++) {
-            GradeLine line = new GradeLine();
-            line.badge = GRADE_BADGES[i];
-            line.label = GRADE_LABELS[i];
-            line.kgValue = i < kgValues.length ? kgValues[i] : 0;
-            card.lines.add(line);
-        }
-
-        Cursor gradesCursor = null;
+    // "2026-10-07" -> "7"; tanınmayan biçimde (ör. eski "06.09.2026") gün kısmını dener, olmazsa boş.
+    private String dayNumberOf(String date) {
+        if (date == null) return "";
+        String v = date.trim();
         try {
-            gradesCursor = elekRepository.getElekGrades(recordId);
-            int gradeIndex = gradesCursor.getColumnIndexOrThrow("grade");
-            int kgIndex = gradesCursor.getColumnIndexOrThrow("kg");
-            int priceIndex = gradesCursor.getColumnIndexOrThrow("price_per_kg");
-            int lineTotalIndex = gradesCursor.getColumnIndexOrThrow("line_total");
-            while (gradesCursor.moveToNext()) {
-                String grade = gradesCursor.getString(gradeIndex);
-                int index = gradeIndexOf(grade);
-                if (index < 0 || index >= card.lines.size()) {
-                    continue;
-                }
-                GradeLine line = card.lines.get(index);
-                line.kgValue = gradesCursor.getDouble(kgIndex);
-                line.pricePerKgValue = gradesCursor.getDouble(priceIndex);
-                line.lineTotalValue = gradesCursor.getDouble(lineTotalIndex);
-            }
-        } catch (Exception ignored) {
-        } finally {
-            if (gradesCursor != null) {
-                gradesCursor.close();
-            }
+            if (v.length() >= 10 && v.charAt(4) == '-') return String.valueOf(Integer.parseInt(v.substring(8, 10)));
+            if (v.length() >= 2 && (v.indexOf('.') == 2 || v.indexOf('/') == 2)) return String.valueOf(Integer.parseInt(v.substring(0, 2)));
+        } catch (NumberFormatException ignored) {
         }
-
-        for (GradeLine line : card.lines) {
-            line.kg = formatKg(line.kgValue);
-            line.price = formatPriceCell(line.pricePerKgValue);
-            line.total = formatCompactMoneyOrDash(line.lineTotalValue);
-        }
-
-        return card;
+        return "";
     }
 
-    private int gradeIndexOf(String key) {
-        if (key == null) {
-            return -1;
+    private void renderBar(LinearLayout bar, double[] grades) {
+        bar.removeAllViews();
+        bar.setClipToOutline(true);
+        int[] colors = {
+                GreenTheme.color(R.color.elek_badge_double),
+                GreenTheme.color(R.color.elek_badge_one),
+                GreenTheme.color(R.color.elek_badge_two),
+                GreenTheme.color(R.color.elek_badge_three),
+                GreenTheme.color(R.color.elek_badge_four),
+                GreenTheme.color(R.color.elek_badge_oil)
+        };
+        boolean first = true;
+        for (int i = 0; i < grades.length; i++) {
+            if (grades[i] <= 0) continue;
+            View segment = new View(this);
+            segment.setBackgroundColor(colors[i]);
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -1, (float) grades[i]);
+            if (!first) p.setMargins(dp(2), 0, 0, 0);
+            first = false;
+            bar.addView(segment, p);
         }
-        for (int i = 0; i < GRADE_KEYS.length; i++) {
-            if (GRADE_KEYS[i].equalsIgnoreCase(key)) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     private String formatDay(String isoDate) {
@@ -362,65 +375,43 @@ public class ElekArchiveActivity extends Activity {
                 holder = (ArchiveViewHolder) convertView.getTag();
             }
 
-            ArchiveCard card = archiveCards.get(position);
+            final ArchiveCard card = archiveCards.get(position);
+            holder.monthHeader.setText(card.monthHeader);
+            holder.monthHeader.setVisibility(card.monthHeader.isEmpty() ? View.GONE : View.VISIBLE);
+            holder.dayNumber.setText(card.dayNumber);
+            holder.weekday.setText(card.weekday);
             holder.garden.setText(card.gardenName);
-            holder.date.setText(card.date);
-            holder.day.setText(card.day);
-            holder.revenue.setText(card.totalRevenue);
-            holder.totalKg.setText(card.totalKgCompact);
-            holder.average.setText(card.average);
-            holder.tableTotalKg.setText(card.totalKg);
-            holder.tableTotalRevenue.setText(card.totalRevenueCompact);
+            holder.meta.setText(formatNumber(card.totalKgValue) + " kg  ·  "
+                    + ElekInsights.formatPerKg(card.totalRevenueValue, card.totalKgValue));
+            holder.revenue.setText(money(card.totalRevenueValue));
 
-            for (int i = 0; i < holder.gradeBanners.length && i < card.lines.size(); i++) {
-                GradeLine line = card.lines.get(i);
-                holder.gradeBanners[i].setText(line.badge);
-                holder.gradeLabels[i].setText(line.label);
-                holder.gradeKgs[i].setText(line.kg);
-                holder.gradePrices[i].setText(line.price);
-                holder.gradeTotals[i].setText(line.total);
+            holder.bar.setClipToOutline(true);
+            boolean first = true;
+            for (int i = 0; i < holder.gradeSegments.length; i++) {
+                View segment = holder.gradeSegments[i];
+                double kg = card.grades[i];
+                LinearLayout.LayoutParams p = (LinearLayout.LayoutParams) segment.getLayoutParams();
+                p.weight = (float) Math.max(0, kg);
+                p.setMargins(first || kg <= 0 ? 0 : dp(2), 0, 0, 0);
+                segment.setLayoutParams(p);
+                segment.setVisibility(kg > 0 ? View.VISIBLE : View.GONE);
+                if (kg > 0) first = false;
             }
 
-            holder.detailButton.setOnClickListener(v -> showRecordDetails(card));
+            holder.card.setContentDescription(card.dateLong + ", " + card.gardenName + ", "
+                    + formatNumber(card.totalKgValue) + " kilogram, " + money(card.totalRevenueValue) + ". "
+                    + ElekInsights.accessibleLegend(card.grades) + " Makbuzu açmak için dokun.");
+            holder.card.setOnClickListener(v -> openReceipt(card));
             return convertView;
         }
     }
 
-    private void showRecordDetails(ArchiveCard card) {
-        if (card == null) {
+    private void openReceipt(ArchiveCard card) {
+        if (card == null || card.recordId <= 0) {
             return;
         }
-
-        StringBuilder builder = new StringBuilder();
-        builder.append("Tarih: ")
-                .append(card.date)
-                .append(" • ")
-                .append(card.day)
-                .append("\n\n");
-
-        for (GradeLine line : card.lines) {
-            builder.append(line.label)
-                    .append(": ")
-                    .append(line.kg)
-                    .append(" | ")
-                    .append(line.price)
-                    .append(" | ")
-                    .append(line.total)
-                    .append("\n");
-        }
-
-        builder.append("\nToplam Kg: ")
-                .append(card.totalKgCompact)
-                .append("\nToplam Tutar: ")
-                .append(card.totalRevenue)
-                .append("\nOrtalama Fiyat: ")
-                .append(card.average);
-
-        new AlertDialog.Builder(this)
-                .setTitle(card.gardenName)
-                .setMessage(builder.toString())
-                .setPositiveButton("Kapat", null)
-                .show();
+        startActivity(new Intent(this, ElekReceiptActivity.class)
+                .putExtra(ElekReceiptActivity.EXTRA_RECORD_ID, card.recordId));
     }
 
     private String formatTableDate(String isoDate) {
@@ -444,35 +435,6 @@ public class ElekArchiveActivity extends Activity {
         return formatNumber(value) + " TL";
     }
 
-    private String formatKg(double value) {
-        return formatNumber(value) + " kg";
-    }
-
-    private String formatPriceCell(double value) {
-        if (value <= 0) {
-            return "—";
-        }
-        return formatNumber(value) + "₺";
-    }
-
-    private String formatCompactMoney(double value) {
-        return formatNumber(value) + "₺";
-    }
-
-    private String formatCompactMoneyOrDash(double value) {
-        if (value <= 0) {
-            return "—";
-        }
-        return formatCompactMoney(value);
-    }
-
-    private String formatAverage(double value) {
-        if (averageNumberFormat == null) {
-            return String.format(turkishLocale, "%.2f", value);
-        }
-        return averageNumberFormat.format(value);
-    }
-
     private String formatNumber(double value) {
         if (numberFormat == null) {
             return String.valueOf(value);
@@ -480,10 +442,23 @@ public class ElekArchiveActivity extends Activity {
         return numberFormat.format(value);
     }
 
+    private GradientDrawable rounded(int fill, int stroke) {
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(fill);
+        g.setCornerRadius(dp(20));
+        g.setStroke(dp(1), stroke);
+        return g;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         if (databaseHelper != null && archiveRecordList != null) {
+            loadGardenFilter();
             loadArchive();
         }
     }
@@ -496,91 +471,44 @@ public class ElekArchiveActivity extends Activity {
         super.onDestroy();
     }
 
-    private static final class GradeLine {
-        String badge;
-        String label;
-        double kgValue;
-        double pricePerKgValue;
-        double lineTotalValue;
-        String kg;
-        String price;
-        String total;
-    }
-
     private static final class ArchiveCard {
         long recordId;
-        String gardenName;
-        String date;
-        String day;
-        String totalKg;
-        String totalKgCompact;
-        String totalRevenue;
-        String totalRevenueCompact;
-        String average;
-        final List<GradeLine> lines = new ArrayList<>();
+        String gardenName = "";
+        String dateLong = "";
+        String dayNumber = "";
+        String weekday = "";
+        String monthHeader = "";
+        double totalKgValue;
+        double totalRevenueValue;
+        final double[] grades = new double[6];
     }
 
     private static final class ArchiveViewHolder {
+        final TextView monthHeader;
+        final View card;
+        final TextView dayNumber;
+        final TextView weekday;
         final TextView garden;
-        final TextView date;
-        final TextView day;
+        final TextView meta;
         final TextView revenue;
-        final TextView totalKg;
-        final TextView average;
-        final TextView tableTotalKg;
-        final TextView tableTotalRevenue;
-        final View detailButton;
-        final TextView[] gradeBanners = new TextView[6];
-        final TextView[] gradeLabels = new TextView[6];
-        final TextView[] gradeKgs = new TextView[6];
-        final TextView[] gradePrices = new TextView[6];
-        final TextView[] gradeTotals = new TextView[6];
+        final LinearLayout bar;
+        final View[] gradeSegments = new View[6];
 
         ArchiveViewHolder(View root) {
+            monthHeader = root.findViewById(R.id.archiveMonthHeader);
+            card = root.findViewById(R.id.archiveRecordCard);
+            dayNumber = root.findViewById(R.id.archiveRecordDayNumber);
+            weekday = root.findViewById(R.id.archiveRecordWeekday);
             garden = root.findViewById(R.id.archiveRecordGarden);
-            date = root.findViewById(R.id.archiveRecordDate);
-            day = root.findViewById(R.id.archiveRecordDay);
+            meta = root.findViewById(R.id.archiveRecordMeta);
             revenue = root.findViewById(R.id.archiveRecordRevenue);
-            totalKg = root.findViewById(R.id.archiveRecordKgSide);
-            average = root.findViewById(R.id.archiveRecordAverage);
-            tableTotalKg = root.findViewById(R.id.archiveRecordKg);
-            tableTotalRevenue = root.findViewById(R.id.archiveRecordRevenueTable);
-            detailButton = root.findViewById(R.id.archiveDetailButton);
-
-            gradeBanners[0] = root.findViewById(R.id.archiveBadge0);
-            gradeBanners[1] = root.findViewById(R.id.archiveBadge1);
-            gradeBanners[2] = root.findViewById(R.id.archiveBadge2);
-            gradeBanners[3] = root.findViewById(R.id.archiveBadge3);
-            gradeBanners[4] = root.findViewById(R.id.archiveBadge4);
-            gradeBanners[5] = root.findViewById(R.id.archiveBadge5);
-
-            gradeLabels[0] = root.findViewById(R.id.archiveLabel0);
-            gradeLabels[1] = root.findViewById(R.id.archiveLabel1);
-            gradeLabels[2] = root.findViewById(R.id.archiveLabel2);
-            gradeLabels[3] = root.findViewById(R.id.archiveLabel3);
-            gradeLabels[4] = root.findViewById(R.id.archiveLabel4);
-            gradeLabels[5] = root.findViewById(R.id.archiveLabel5);
-
-            gradeKgs[0] = root.findViewById(R.id.archiveGrade0);
-            gradeKgs[1] = root.findViewById(R.id.archiveGrade1);
-            gradeKgs[2] = root.findViewById(R.id.archiveGrade2);
-            gradeKgs[3] = root.findViewById(R.id.archiveGrade3);
-            gradeKgs[4] = root.findViewById(R.id.archiveGrade4);
-            gradeKgs[5] = root.findViewById(R.id.archiveGrade5);
-
-            gradePrices[0] = root.findViewById(R.id.archivePrice0);
-            gradePrices[1] = root.findViewById(R.id.archivePrice1);
-            gradePrices[2] = root.findViewById(R.id.archivePrice2);
-            gradePrices[3] = root.findViewById(R.id.archivePrice3);
-            gradePrices[4] = root.findViewById(R.id.archivePrice4);
-            gradePrices[5] = root.findViewById(R.id.archivePrice5);
-
-            gradeTotals[0] = root.findViewById(R.id.archiveTotal0);
-            gradeTotals[1] = root.findViewById(R.id.archiveTotal1);
-            gradeTotals[2] = root.findViewById(R.id.archiveTotal2);
-            gradeTotals[3] = root.findViewById(R.id.archiveTotal3);
-            gradeTotals[4] = root.findViewById(R.id.archiveTotal4);
-            gradeTotals[5] = root.findViewById(R.id.archiveTotal5);
+            bar = root.findViewById(R.id.archiveRecordBar);
+            gradeSegments[0] = root.findViewById(R.id.archiveGrade0);
+            gradeSegments[1] = root.findViewById(R.id.archiveGrade1);
+            gradeSegments[2] = root.findViewById(R.id.archiveGrade2);
+            gradeSegments[3] = root.findViewById(R.id.archiveGrade3);
+            gradeSegments[4] = root.findViewById(R.id.archiveGrade4);
+            gradeSegments[5] = root.findViewById(R.id.archiveGrade5);
         }
     }
 }
