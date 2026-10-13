@@ -79,3 +79,19 @@ Yeni ekranda yeni renk tanımı yok; tamamı mevcut `colors.xml` değerlerinden 
 - Asistan önerilerinin mikrofon izni istemeden cevap vermesi.
 - Büyük yazı ölçeği.
 - Yedi alt menünün çalışması.
+
+## 7. Bahçelerim ekranı (aynı kart diliyle)
+
+`ProducerFeedActivity.buildGardensSection` ve `gardenCard` yeniden yazıldı. Veri, sorgu ve gezinme değişmedi; hepsi mevcut `getGardenSummaries()` sorgusundan geliyor.
+
+- **Başlık:** Ana Sayfa'daki gibi küçük üst satır ("2026 SEZONU · 3 BAHÇE") ve 24sp "Bahçelerim". "+ Bahçe ekle" büyük yeşil buton yerine Ana Sayfa'daki bahçe seçiciyle aynı çerçeveli hap butonu oldu.
+- **Hatırlatmalar:** 🔔 emoji yerine Ana Sayfa'daki zil ikonu, kompakt satır kartı.
+- **Bahçe kartları:**
+  - Fotoğraf yoksa her bahçeye aynı stok manzara yerine sade bir zeytin karosu (56dp); kendi fotoğrafı olan bahçede fotoğraf gösterilir.
+  - "🌳 100 ağaç 📅 10 yaş" yerine "Gemlik · 100 ağaç · 10 yaş".
+  - Altta üç küçük gösterge: bu sezon **Hasat** (kg), **Masraf** (TL) ve **Son işlem**. Bu değerler sorguda zaten vardı, önceden gösterilmiyordu.
+  - Ana Sayfa'da gösterilen bahçede altın renkli **AKTİF** rozeti var. Ayar boşsa Ana Sayfa'nın seçtiği ilk bahçe işaretlenir.
+- **Erişilebilirlik:** Her kart tek bir okunabilir açıklama taşır.
+- **Testler:** `gardenMeta` ve `gardensOverline` için 4 yeni kontrol eklendi (toplam 65).
+- **Eski ekran:** Kullanılmayan eski `GardensActivity` ekranına dokunulmadı (Manifest'te kayıtlı ama hiçbir yerden açılmıyor).
+- **Cihazda kontrol:** Kart dokunuşu → bahçe detayı; "+ Bahçe ekle"; Hatırlatmalar; fotoğraflı ve fotoğrafsız bahçe; AKTİF rozetinin Ana Sayfa'da bahçe değiştirince güncellenmesi.

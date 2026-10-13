@@ -102,6 +102,11 @@ public final class HomeDashboardModelTest {
         eq(HomeDashboardModel.tagFor("history"), "KAYIT", "tag history");
         eq(HomeDashboardModel.tagFor("rain"), "HAVA", "tag rain");
 
+        eq(HomeDashboardModel.gardenMeta("Gemlik", 100, 10), "Gemlik · 100 ağaç · 10 yaş", "garden meta");
+        eq(HomeDashboardModel.gardenMeta("", 80, 0), "80 ağaç", "garden meta partial");
+        eq(HomeDashboardModel.gardenMeta(null, 0, 0), "Bilgileri tamamlanmamış", "garden meta empty");
+        eq(HomeDashboardModel.gardensOverline(2026, 3), "2026 SEZONU · 3 BAHÇE", "overline");
+
         // Home assistant shortcuts must map to commands the assistant understands.
         for (String q : new String[]{"Bugün bahçede ne var?", "Yarın yağmur yağacak mı?", "Son sulama ne zaman?"}) {
             ok(ZeytinAssistantCommand.parse(q).kind != ZeytinAssistantCommand.Kind.UNKNOWN, "assistant understands: " + q);

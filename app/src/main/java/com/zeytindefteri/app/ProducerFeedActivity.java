@@ -5523,346 +5523,230 @@ public class ProducerFeedActivity extends Activity {
     // BAHÇELER
     // =========================================================
 
+    // =========================================================
+    // BAHÇELERİM (Ana Sayfa "Saha Defteri" kart diliyle)
+    // =========================================================
+
+    private static final class GardenListItem {
+        long id;
+        String name, variety, last, photoUri;
+        int tree, age;
+        double harvestKg, cost;
+    }
+
     private View buildGardensSection() {
         ScrollView scroll = scroll();
-
-        LinearLayout body =
-                pageBody();
-
+        LinearLayout body = pageBody();
         scroll.addView(body);
 
-        body.addView(
-                sectionTitleWithAction(
-                        "Bahçelerim",
-                        "Kayıtlı zeytinliklerini tek yerden yönet",
-                        "+ Bahçe Ekle",
-                        v ->
-                                startActivity(
-                                        new Intent(
-                                                this,
-                                                AddGardenActivity.class
-                                        )
-                                )
-                )
-        );
-
-        LinearLayout reminders = rowCard();
-        reminders.setPadding(dp(16), dp(16), dp(16), dp(16));
-        reminders.setMinimumHeight(dp(80));
-        reminders.setGravity(Gravity.CENTER_VERTICAL);
-        reminders.setFocusable(true);
-        reminders.setContentDescription(
-                "Hatırlatmalar. Sulama, gübreleme ve diğer işlerini zamanında hatırla. Açmak için dokun.");
-
-        LinearLayout reminderText = new LinearLayout(this);
-        reminderText.setOrientation(LinearLayout.VERTICAL);
-        reminderText.addView(text("🔔 Hatırlatmalar", 18, GREEN, true));
-        TextView reminderSubtitle = text(
-                "Sulama, gübreleme ve diğer işlerini zamanında hatırla", 13, MUTED, false);
-        reminderSubtitle.setPadding(0, dp(6), dp(8), 0);
-        reminderText.addView(reminderSubtitle);
-        reminders.addView(reminderText, new LinearLayout.LayoutParams(0, -2, 1f));
-        reminders.addView(text("›", 28, GREEN, true),
-                new LinearLayout.LayoutParams(dp(24), -2));
-        reminders.setOnClickListener(v -> startActivity(
-                new Intent(ProducerFeedActivity.this, RemindersActivity.class)));
-        LinearLayout.LayoutParams reminderParams = new LinearLayout.LayoutParams(-1, -2);
-        reminderParams.setMargins(0, dp(12), 0, dp(16));
-        body.addView(reminders, reminderParams);
-
+        List<GardenListItem> gardens = new ArrayList<>();
         Cursor c = null;
-        boolean any = false;
-
         try {
-            c =
-                    gardenRepository
-                            .getGardenSummaries();
-
-            while (
-                    c != null
-                            && c.moveToNext()
-            ) {
-                any = true;
-
-                long id =
-                        getLong(
-                                c,
-                                "id"
-                        );
-
-                String name =
-                        getString(
-                                c,
-                                "name",
-                                "Bahçe"
-                        );
-
-                String variety =
-                        getString(
-                                c,
-                                "variety",
-                                ""
-                        );
-
-                int tree =
-                        getInt(
-                                c,
-                                "tree_count"
-                        );
-
-                int age =
-                        getInt(
-                                c,
-                                "age"
-                        );
-
-                String last =
-                        getString(
-                                c,
-                                "last_operation",
-                                ""
-                        );
-
-                String photoUri =
-                        getString(
-                                c,
-                                "photo_uri",
-                                ""
-                        );
-
-                body.addView(
-                        gardenCard(
-                                id,
-                                name,
-                                variety,
-                                tree,
-                                age,
-                                last,
-                                photoUri
-                        )
-                );
+            c = gardenRepository.getGardenSummaries();
+            while (c != null && c.moveToNext()) {
+                GardenListItem g = new GardenListItem();
+                g.id = getLong(c, "id");
+                g.name = getString(c, "name", "Bahçe");
+                g.variety = getString(c, "variety", "");
+                g.tree = getInt(c, "tree_count");
+                g.age = getInt(c, "age");
+                g.last = getString(c, "last_operation", "");
+                g.photoUri = getString(c, "photo_uri", "");
+                g.harvestKg = getDouble(c, "total_harvest");
+                g.cost = getDouble(c, "total_cost");
+                gardens.add(g);
             }
-
         } finally {
             if (c != null) {
                 c.close();
             }
         }
 
-        if (!any) {
-            body.addView(
-                    emptyCard(
-                            "Henüz bahçe yok",
-                            "İlk bahçeni ekleyerek Zeytin Defteri'ni kullanmaya başla."
-                    )
-            );
+        // Ana Sayfa'daki aktif bahçe; ayar boşsa Ana Sayfa ilk bahçeyi seçer.
+        long activeId = 0;
+        try {
+            activeId = Long.parseLong(db.getSetting(homeActiveGardenSettingKey(), "0"));
+        } catch (Exception ignored) {
+        }
+        if (activeId <= 0 && !gardens.isEmpty()) {
+            activeId = gardens.get(0).id;
         }
 
+        // Başlık
+        LinearLayout header = row();
+        header.setGravity(Gravity.BOTTOM);
+        LinearLayout titles = new LinearLayout(this);
+        titles.setOrientation(LinearLayout.VERTICAL);
+        TextView overline = text(
+                HomeDashboardModel.gardensOverline(db.getActiveSeasonYear(), gardens.size()),
+                11, MUTED, true);
+        overline.setLetterSpacing(0.08f);
+        titles.addView(overline);
+        TextView title = text("Bahçelerim", 24, TEXT, true);
+        title.setPadding(0, dp(3), 0, 0);
+        titles.addView(title);
+        header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
+
+        TextView add = text("+ Bahçe ekle", 14, GREEN, true);
+        add.setGravity(Gravity.CENTER);
+        add.setMinHeight(dp(44));
+        add.setPadding(dp(16), 0, dp(16), 0);
+        add.setBackground(round(CARD, 22, BORDER));
+        add.setContentDescription("Yeni bahçe ekle");
+        add.setOnClickListener(v -> startActivity(new Intent(this, AddGardenActivity.class)));
+        header.addView(add, new LinearLayout.LayoutParams(-2, -2));
+        body.addView(header);
+
+        // Hatırlatmalar
+        LinearLayout reminders = row();
+        reminders.setPadding(dp(14), dp(12), dp(14), dp(12));
+        reminders.setMinimumHeight(dp(64));
+        reminders.setBackground(round(CARD, 20, BORDER));
+        reminders.setClickable(true);
+        reminders.setFocusable(true);
+        reminders.setContentDescription(
+                "Hatırlatmalar. Sulama, gübreleme ve diğer işlerini zamanında hatırla. Açmak için dokun.");
+        ImageView bell = new ImageView(this);
+        bell.setImageResource(R.drawable.ic_bell_line);
+        bell.setColorFilter(GREEN);
+        bell.setPadding(dp(9), dp(9), dp(9), dp(9));
+        bell.setBackground(round(GreenTheme.color(R.color.zd_surface), 12, Color.TRANSPARENT));
+        bell.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        reminders.addView(bell, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        LinearLayout reminderText = new LinearLayout(this);
+        reminderText.setOrientation(LinearLayout.VERTICAL);
+        reminderText.setPadding(dp(12), 0, dp(8), 0);
+        reminderText.addView(text("Hatırlatmalar", 15, TEXT, true));
+        TextView reminderSubtitle = text("Sulama, gübreleme ve diğer işlerini zamanında hatırla", 12, MUTED, false);
+        reminderSubtitle.setPadding(0, dp(2), 0, 0);
+        reminderText.addView(reminderSubtitle);
+        reminders.addView(reminderText, new LinearLayout.LayoutParams(0, -2, 1f));
+        reminders.addView(text("›", 24, GREEN, true), new LinearLayout.LayoutParams(-2, -2));
+        reminders.setOnClickListener(v -> startActivity(
+                new Intent(ProducerFeedActivity.this, RemindersActivity.class)));
+        LinearLayout.LayoutParams reminderParams = new LinearLayout.LayoutParams(-1, -2);
+        reminderParams.setMargins(0, dp(16), 0, dp(12));
+        body.addView(reminders, reminderParams);
+
+        for (GardenListItem g : gardens) {
+            body.addView(gardenCard(g, g.id == activeId));
+        }
+        if (gardens.isEmpty()) {
+            body.addView(emptyCard(
+                    "Henüz bahçe yok",
+                    "İlk bahçeni ekleyerek Zeytin Defteri'ni kullanmaya başla."));
+        }
         return scroll;
     }
 
-    private View gardenCard(
-            long id,
-            String name,
-            String variety,
-            int tree,
-            int age,
-            String last,
-            String photoUri
-    ) {
-        LinearLayout card =
-                rowCard();
+    private View gardenCard(GardenListItem g, boolean active) {
+        int gold = GreenTheme.color(R.color.zd_warning);
+        int inner = GreenTheme.color(R.color.zd_surface);
 
-        card.setPadding(
-                dp(14),
-                dp(14),
-                dp(14),
-                dp(14)
-        );
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(14), dp(14), dp(14), dp(14));
+        card.setBackground(round(CARD, 20, active ? GreenTheme.color(R.color.zd_green_chip) : BORDER));
+        card.setClickable(true);
+        card.setFocusable(true);
 
-        ImageView image =
-                new ImageView(this);
+        LinearLayout top = row();
 
-        image.setScaleType(
-                ImageView.ScaleType.CENTER_CROP
-        );
-
-        image.setClipToOutline(true);
-
-        image.setBackground(
-                round(
-                        GREEN_SOFT,
-                        16,
-                        Color.TRANSPARENT
-                )
-        );
-
-        try {
-            if (!TextUtils.isEmpty(
-                    photoUri
-            )) {
-                Glide.with(this)
-                        .load(photoUri)
-                        .placeholder(
-                                R.drawable.onboarding_garden_1
-                        )
-                        .error(
-                                R.drawable.onboarding_garden_1
-                        )
-                        .centerCrop()
-                        .into(image);
-
-            } else {
-                image.setImageResource(
-                        R.drawable.onboarding_garden_1
-                );
+        if (!TextUtils.isEmpty(g.photoUri)) {
+            ImageView image = new ImageView(this);
+            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setClipToOutline(true);
+            image.setBackground(round(inner, 14, Color.TRANSPARENT));
+            image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            try {
+                Glide.with(this).load(g.photoUri)
+                        .placeholder(R.drawable.ic_olive_logo)
+                        .error(R.drawable.ic_olive_logo)
+                        .centerCrop().into(image);
+            } catch (Exception e) {
+                image.setImageResource(R.drawable.ic_olive_logo);
             }
-
-        } catch (Exception e) {
-            image.setImageResource(
-                    R.drawable.onboarding_garden_1
-            );
+            top.addView(image, new LinearLayout.LayoutParams(dp(56), dp(56)));
+        } else {
+            // Fotoğraf yoksa her bahçeye aynı stok görsel yerine sade bir zeytin karosu.
+            ImageView tile = new ImageView(this);
+            tile.setImageResource(R.drawable.ic_olive_logo);
+            tile.setPadding(dp(12), dp(12), dp(12), dp(12));
+            tile.setBackground(round(inner, 14, Color.TRANSPARENT));
+            tile.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            top.addView(tile, new LinearLayout.LayoutParams(dp(56), dp(56)));
         }
 
-        card.addView(
-                image,
-                new LinearLayout.LayoutParams(
-                        dp(112),
-                        dp(112)
-                )
-        );
+        LinearLayout info = new LinearLayout(this);
+        info.setOrientation(LinearLayout.VERTICAL);
+        info.setPadding(dp(12), 0, dp(6), 0);
+        TextView name = text(g.name, 17, TEXT, true);
+        name.setMaxLines(2);
+        name.setEllipsize(TextUtils.TruncateAt.END);
+        info.addView(name);
+        TextView meta = text(HomeDashboardModel.gardenMeta(g.variety, g.tree, g.age), 13, MUTED, false);
+        meta.setPadding(0, dp(3), 0, 0);
+        info.addView(meta);
+        top.addView(info, new LinearLayout.LayoutParams(0, -2, 1));
 
-        LinearLayout info =
-                new LinearLayout(this);
-
-        info.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        info.setPadding(
-                dp(16),
-                dp(2),
-                0,
-                0
-        );
-
-        info.addView(
-                text(
-                        name,
-                        19,
-                        TEXT,
-                        true
-                )
-        );
-
-        if (!variety.isEmpty()) {
-            info.addView(
-                    padded(
-                            text(
-                                    variety,
-                                    14,
-                                    MUTED,
-                                    false
-                            ),
-                            4
-                    )
-            );
+        if (active) {
+            TextView badge = text("AKTİF", 10, gold, true);
+            badge.setLetterSpacing(0.08f);
+            badge.setPadding(dp(8), dp(4), dp(8), dp(4));
+            badge.setBackground(round(inner, 10, Color.TRANSPARENT));
+            badge.setContentDescription("Ana Sayfa'da gösterilen bahçe");
+            top.addView(badge, new LinearLayout.LayoutParams(-2, -2));
+        } else {
+            top.addView(text("›", 24, MUTED, false), new LinearLayout.LayoutParams(-2, -2));
         }
+        card.addView(top);
 
-        info.addView(
-                padded(
-                        text(
-                                "🌳  "
-                                        + tree
-                                        + " ağaç    📅  "
-                                        + age
-                                        + " yaş",
-                                14,
-                                GreenTheme.color(R.color.zd_muted),
-                                false
-                        ),
-                        10
-                )
-        );
+        LinearLayout stats = row();
+        stats.setGravity(Gravity.TOP);
+        stats.addView(gardenStat("Hasat", g.harvestKg > 0 ? fmtKg(g.harvestKg) : "—"),
+                new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout.LayoutParams second = new LinearLayout.LayoutParams(0, -2, 1);
+        second.setMargins(dp(8), 0, 0, 0);
+        stats.addView(gardenStat("Masraf", g.cost > 0 ? fmtTl(g.cost) : "—"), second);
+        LinearLayout.LayoutParams third = new LinearLayout.LayoutParams(0, -2, 1);
+        third.setMargins(dp(8), 0, 0, 0);
+        stats.addView(gardenStat("Son işlem", g.last.isEmpty() ? "Kayıt yok" : g.last), third);
+        LinearLayout.LayoutParams statsParams = new LinearLayout.LayoutParams(-1, -2);
+        statsParams.setMargins(0, dp(12), 0, 0);
+        card.addView(stats, statsParams);
 
-        info.addView(
-                padded(
-                        text(
-                                "🌱 Son işlem: "
-                                        + (
-                                        last.isEmpty()
-                                                ? "Kayıt yok"
-                                                : last
-                                ),
-                                13,
-                                MUTED,
-                                false
-                        ),
-                        10
-                )
-        );
-
-        card.addView(
-                info,
-                new LinearLayout.LayoutParams(
-                        0,
-                        -2,
-                        1
-                )
-        );
-
-        TextView arrow =
-                text(
-                        "›",
-                        32,
-                        MUTED,
-                        false
-                );
-
-        arrow.setGravity(
-                Gravity.CENTER
-        );
-
-        card.addView(
-                arrow,
-                new LinearLayout.LayoutParams(
-                        dp(34),
-                        -1
-                )
-        );
-
+        card.setContentDescription(g.name + ". " + HomeDashboardModel.gardenMeta(g.variety, g.tree, g.age)
+                + ". Bu sezon hasat " + (g.harvestKg > 0 ? fmtKg(g.harvestKg) : "yok")
+                + ", masraf " + (g.cost > 0 ? fmtTl(g.cost) : "yok")
+                + ", son işlem " + (g.last.isEmpty() ? "kayıt yok" : g.last)
+                + (active ? ". Ana Sayfa'da gösterilen bahçe." : ".") + " Açmak için dokun.");
         card.setOnClickListener(v -> {
-            Intent i =
-                    new Intent(
-                            this,
-                            GardenDetailActivity.class
-                    );
-
-            i.putExtra(
-                    "garden_id",
-                    id
-            );
-
+            Intent i = new Intent(this, GardenDetailActivity.class);
+            i.putExtra("garden_id", g.id);
             startActivity(i);
         });
 
-        LinearLayout.LayoutParams cp =
-                new LinearLayout.LayoutParams(
-                        -1,
-                        -2
-                );
-
-        cp.setMargins(
-                0,
-                0,
-                0,
-                dp(12)
-        );
-
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
+        cp.setMargins(0, 0, 0, dp(10));
         card.setLayoutParams(cp);
-
         return card;
     }
+
+    private View gardenStat(String label, String value) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(10), dp(8), dp(10), dp(8));
+        box.setBackground(round(GreenTheme.color(R.color.zd_surface), 12, Color.TRANSPARENT));
+        box.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        box.addView(text(label, 11, MUTED, false));
+        TextView v = text(value, 13, TEXT, true);
+        v.setSingleLine(true);
+        v.setEllipsize(TextUtils.TruncateAt.END);
+        v.setPadding(0, dp(2), 0, 0);
+        box.addView(v);
+        return box;
+    }
+
 
     // =========================================================
     // PİYASA

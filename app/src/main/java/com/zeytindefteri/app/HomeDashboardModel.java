@@ -262,6 +262,23 @@ public final class HomeDashboardModel {
         return "HAVA";
     }
 
+    // ------------------------------------------------------------------
+    // Bahçelerim kartları
+    // ------------------------------------------------------------------
+    /** "Gemlik · 100 ağaç · 10 yaş"; boş/sıfır alanlar atlanır. */
+    public static String gardenMeta(String variety, int trees, int age) {
+        StringBuilder out = new StringBuilder();
+        if (variety != null && !variety.trim().isEmpty()) out.append(variety.trim());
+        if (trees > 0) out.append(out.length() > 0 ? " · " : "").append(trees).append(" ağaç");
+        if (age > 0) out.append(out.length() > 0 ? " · " : "").append(age).append(" yaş");
+        return out.length() == 0 ? "Bilgileri tamamlanmamış" : out.toString();
+    }
+
+    /** "2026 SEZONU · 3 BAHÇE" */
+    public static String gardensOverline(int season, int count) {
+        return season + " SEZONU · " + count + " BAHÇE";
+    }
+
     private static boolean valid(double d) {
         return !Double.isNaN(d) && !Double.isInfinite(d);
     }
