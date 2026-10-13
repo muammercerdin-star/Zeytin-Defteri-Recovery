@@ -1,0 +1,86 @@
+ZEYTİN DEFTERİ – İŞ EMRİ 06.3A / MODERASYON BACKEND
+
+ANA KAYNAK
+Zeytin-Defteri-IS-EMRI-06-2-KULLANICI-ENGELLEME-FINAL.zip
+
+YETKİ MEKANİZMASI
+Mevcut operator/role.js, league_operator custom claim'ini yalnız Admin SDK ile atıyor. Bu mekanizma ve rol korundu. Lig operatörüne moderasyon yetkisi otomatik verilmedi. Aynı güvenilir Admin SDK yaklaşımıyla ayrı, dar kapsamlı moderation_admin=true claim'i eklendi.
+Her callable:
+1. Firebase Callable tarafından doğrulanmış request.auth ister.
+2. Token içindeki moderation_admin değerini strict boolean true olarak kontrol eder.
+3. Firebase Admin SDK getUser ile güncel hesabı doğrular: disabled olmamalı ve mevcut customClaims.moderation_admin=true olmalı.
+4. tokensValidAfterTime varsa auth_time ile karşılaştırarak geçersizleşmiş oturumu reddeder.
+Normal kullanıcı, yalnız league_operator olan kullanıcı, request.data içine admin:true yazan kullanıcı, string 'true' claim, rolü kaldırılmış veya devre dışı hesap kabul edilmez. Rol verme callable'ı yoktur.
+
+ROL VERME / KALDIRMA
+Yeni güvenilir ortam aracı: functions/operator/moderation-role.js
+Yalnız proje yöneticisinin ADC/Admin SDK yetkili ortamında, functions klasöründen:
+  node operator/moderation-role.js PROJECT_ID MODERATOR_UID grant --apply
+  node operator/moderation-role.js PROJECT_ID MODERATOR_UID revoke --apply
+PROJECT_ID/MODERATOR_UID gerçek hedefle değiştirilmelidir; bunlar yer tutucudur. Bu çalışma araçları çalıştırmadı ve kimseye yetki vermedi.
+İlgisiz custom claim'ler korunur. Revoke, moderasyon claim'ini kaldırır ve refresh token'larını iptal eder. Grant sonrası yeni claim'in token'a gelmesi için yeniden giriş/token yenileme gerekir. Sunucudaki güncel claim kontrolü kaldırılmış rolün eski token'la kullanılmasını da engeller. Mevcut league_operator aracı değişmedi.
+
+EKLENEN CALLABLE FUNCTIONS
+Bölge: europe-west1. Runtime mevcut nodejs22. Her fonksiyon maxInstances 3, timeout 30 saniye, memory 256MiB.
+1. moderationListReports
+2. moderationUpdateReportStatus
+Hata yanıtları yalnızca kontrollü hata kodu/metni taşır; ham Firestore hatası veya rapor gövdesi döndürülmez.
+
+RAPOR LİSTELEME
+Örnek request.data:
+  {"status":"OPEN","limit":25}
+Sonraki sayfa:
+  {"status":"OPEN","limit":25,"cursor":"<önceki next_cursor>"}
+status varsayılan OPEN, izin verilen değerler OPEN/REVIEWED/ACTIONED/REJECTED. limit varsayılan 25, en fazla 100.
+Yanıt: reports dizisi ve next_cursor (son sayfada null).
+Her satır: reporter_uid, report_id, reported_uid, target_type, target_id, post_cloud_id, comment_cloud_id, reason, status, created_at, reviewed_at, reviewed_by. Tarihler ISO UTC olarak döner.
+Admin SDK collectionGroup('items') sorgusu status'a göre filtrelenir ve belge yolu aralığı reports altına sınırlandırılır. Böylece aynı items adını kullanan user_blocks veya users içerikleri moderasyon listesine girmez. Sonuç yolları ayrıca doğrulanır.
+Sıralama kararlı belge anahtarı sırasıdır; genel olarak en yeni tarih sırası değildir. Rapor tarihi her satırda ayrıca bulunur. Cursor yalnız geçerli reports/{UID}/items/{reportId} yolu olabilir; keyfi koleksiyon yolu verilemez. Her çağrı sınırlı sayıda kayıt okur; sınırsız listeleme yoktur.
+
+İNDEKS
+firestore.indexes.json içine items.status için COLLECTION_GROUP ASCENDING tek alan indeksi eklendi. Mevcut indeksler aynen korundu; status alanının varsayılan COLLECTION ASC/DESC/ARRAY indeksleri de override içinde korundu. Client rules açılmadı. Canlı sorgu için indeksin yayınlanıp hazır hale gelmesi gerekir. Gerçek emulator/production sorgusu bu ortamda çalıştırılamadı.
+
+DURUM GÜNCELLEME
+Örnek request.data:
+  {"reporter_uid":"A","report_id":"POST|p|p","status":"REVIEWED","expected_status":"OPEN"}
+expected_status isteğe bağlıdır. Verilirse transaction içinde mevcut durumla karşılaştırılır; farklıysa failed-precondition döner ve yazılmaz. Verilmezse yetkili güncelleme mevcut durumu atomik olarak değiştirir.
+Mevcut reports/{reporter_uid}/items/{report_id} belgesi Admin SDK transaction ile okunur. Yoksa not-found. Yalnız üç alan güncellenir:
+- status: OPEN / REVIEWED / ACTIONED / REJECTED
+- reviewed_by: doğrulanmış request.auth.uid
+- reviewed_at: FieldValue.serverTimestamp()
+İstemci reviewed_by veya reviewed_at gönderemez; bilinmeyen alanlar reddedilir. created_at, reporter_uid, reported_uid, hedef, neden ve kaynak bağlamı değiştirilmez.
+OPEN durumuna tekrar geçişte de son inceleyen ve zamanı güncellenir. Bu minimal sürüm son inceleme bilgisini tutar; ayrı tarihçe/audit paneli yoktur.
+ACTIONED yalnızca rapor durum etiketidir; gönderi/yorum silme, banlama veya hesap askıya alma işlemi çalıştırmaz.
+
+DEĞİŞEN MEVCUT DOSYALAR
+- functions/index.js: yeni callable export'ları bağlandı.
+- functions/package.json: mevcut check komutuna yeni backend dosyalarının sözdizimi kontrolleri eklendi; bağımlılık sürümleri aynı.
+- functions/test/trigger.test.js: mevcut sosyal trigger testinin modül stub listesine yeni bağımsız export modülü eklendi. Test beklentileri kaldırılmadı.
+- firestore.indexes.json: yeni listeleme indeksi.
+
+YENİ DOSYALAR
+- functions/moderation/service.js
+- functions/moderation/functions.js
+- functions/operator/moderation-role.js
+- functions/test/moderation.test.js
+- functions/test/moderation.role.test.js
+- functions/test/moderation.firestore.test.js
+- Bu rapor.
+
+KORUNANLAR
+Tüm Android kaynakları, SocialReportManager/SocialReportTarget, engelleme sınıfları, SQLite, Firebase yapılandırması ve firestore.rules bayt bayt korundu. Normal kullanıcı kendi raporunu oluşturup tekil okuyabilir; tüm raporları listeleme ve durum değiştirme client rules üzerinden açılmadı. Moderatör custom claim'i bile Firestore istemcisine yeni izin vermez; erişim sadece backend Admin SDK üzerinden yapılır. 06.2 user_blocks kuralları değişmedi. Android moderasyon ekranı yapılmadı.
+
+TEST SONUÇLARI
+- npm run check: PASS (mevcut ve yeni Functions JavaScript sözdizimi).
+- npm test: 55 test, 47 PASS, 0 FAIL, 8 SKIP.
+- Yeni çalışan birim testleri: normal/anonim/league-only/sahte-string rol; rol kaldırma/devre dışı hesap/geçersiz oturum; admin OPEN listeleme, tarih ve sayfalama; alakasız koleksiyonların dışlanması; bozuk limit/status/cursor/payload; dört durum geçişi; server reviewer/time; sahte reviewer/time reddi; olmayan hedef ve expected_status çakışması; mevcut client rules sınırları; trusted role aracının claim koruması ve revoke davranışı.
+- Bu birim testleri gerçek moderasyon servis kodunu kontrollü Auth/Firestore test doubles ile çalıştırır; canlı SDK güvenlik testi değildir.
+- Mevcut Functions suite'i de çalıştı; sosyal bildirim replay/own-reply/retry testleri ve mevcut lig/piyasa host testleri geçti.
+- 8 SKIP: Firestore/Auth Emulator gerektiren testler. Bunlar arasında 06.1 reports, 06.2 blocks ve yeni gerçek Admin SDK moderasyon sorgu/sayfalama/güncelleme testi vardır. Emulator ortamı mevcut olmadığından normal rapor oluşturma ve block rules davranışı burada yeniden runtime olarak doğrulanamadı; kuralların bayt eşitliği ve mevcut kaynak sözleşmesi kontrolleri yapıldı.
+- Değişiklik karşılaştırması: yalnız dört mevcut dosya değişti, tüm Android ve rules korundu. Eski indeksler yapısal olarak aynı.
+- Teslim ZIP bütünlüğü kontrol edildi.
+
+GERÇEK ORTAM DOĞRULAMASI / YAYIN
+Functions, indeksler veya claim'ler production'a YAYIMLANMADI. Hiçbir canlı rapor güncellenmedi; kullanıcıya yetki verilmedi.
+Yetkili ortamda mevcut kilit dosyalarıyla bağımlılıkları kurup Functions suite'ini ve Firestore/Auth emulator testlerini çalıştırın. Yeni moderation.firestore.test.js, gerçek collection-group sınırları ve transaction güncellemesini yalnız localhost emulator üzerinde doğrular. Sonrasında yeni Functions ve indeks yayımlanmalı; indeks hazır olmalı; seçilen yetkili hesabın claim'i güvenilir Admin SDK aracıyla atanmalı.
+Bu görev Android kodunu değiştirmediği için Android Gradle derlemesi tekrar çalıştırılmadı.

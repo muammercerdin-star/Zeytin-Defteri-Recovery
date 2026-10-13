@@ -1,0 +1,88 @@
+ZEYTİN DEFTERİ – İŞ EMRİ 06.2 / KULLANICI ENGELLEME
+
+ANA KAYNAK
+Zeytin-Defteri-IS-EMRI-06-1-SIKAYET-SISTEMI-FINAL.zip
+
+DEĞİŞTİRİLEN MEVCUT DOSYALAR
+- ProducerFeedActivity.java: mevcut şikâyet menüsüne Kullanıcıyı Engelle; akış ve önizleme filtreleri; Ayarlar > Engellenen Kullanıcılar bağlantısı; UID kapsamlı listenin yaşam döngüsü.
+- PostRepliesActivity.java: kök gönderi, yorum/nested reply filtreleri; mevcut menüye engelleme; bloklanan yanıt hedefini temizleme; engellenen ana gönderiye doğrudan girişte ekranı kapatma.
+- FeedManager.java: sadece getLatestVisiblePosts eklendi. Engellenen üreticiler görüntüleme limitinden önce elenir; diğer mevcut metotlar korunur.
+- AndroidManifest.xml: dışarıya kapalı BlockedUsersActivity kaydı.
+- firestore.rules: yalnızca user_blocks altına yeni kurallar. Şikâyet kuralları ve diğer eski kurallar bayt bayt korundu.
+
+YENİ DOSYALAR
+- app/src/main/java/com/zeytindefteri/app/SocialBlockRepository.java
+- app/src/main/java/com/zeytindefteri/app/SocialBlockUi.java
+- app/src/main/java/com/zeytindefteri/app/BlockedUsersActivity.java
+- functions/test/blocks.rules.test.js
+- tests/blocks/check_blocks.py
+- Bu rapor.
+
+VERİ MODELİ
+user_blocks/{blockerUid}/items/{blockedUid}
+Alanlar: blocker_uid, blocked_uid, created_at (serverTimestamp), display_name, region.
+Belge ID'si engellenen UID olduğundan aynı kullanıcı için duplicate belge oluşmaz. Transaction mevcut belge varsa yeniden yazmaz. Kaldırma da transaction içinde, sunucudan okuma sonrasında yapılır. Gönderi/yorum/kullanıcı verisi silinmez.
+İsim ve bölge engelleme anındaki menü kaydından alınan görüntüleme etiketidir; kullanıcı UID'si kimlik kaynağıdır. Kullanıcı adı sonradan değişirse bu etiket eski kalabilir. Profil fotoğrafı için yeni sorgu veya Storage işlemi eklenmedi.
+
+FİLTRELEME
+- Akışta gönderinin userId alanı aktif kullanıcının engel listesiyle kontrol edilir.
+- getLatestVisiblePosts, engelli kayıtları 100 kayıt sınırından önce eler. Böylece çok sayıda engelli gönderi, diğer üreticilerin eski gönderilerini görünmez yapmaz.
+- Kategori filtreleri aynı kalır; engel filtresi tüm kategorilerde uygulanır.
+- Ana akışın son yanıt önizlemesi ve görünen yanıt sayısı sadece engellenmemiş yerel yorumlardan hesaplanır. Engel listesi boşken önceki bulut/yerel sayı davranışı korunur.
+- PostRepliesActivity, engelli yazarları görünür yorum limitinden önce eler; sonsuz NOT IN parametreleri veya SQLite şema değişimi yoktur.
+- Nested reply ağacına yalnızca görünen yazarlar girer. Engellenen üst yoruma verilen C kullanıcısının cevabı korunur ve mevcut orphan/missing-parent düzeniyle gösterilir; engellenen yazarın alıntı bağlam adı yerine Önceki mesaj kullanılır.
+- Doğrudan link/yeniden açılışta ana gönderi sahibi engelliyse yorum ekranı kapanır. Açık ekranda engel listesi değiştiğinde yeniden filtre uygulanır.
+- Engel kaldırma sonrası kayıtlar yeniden yerel veriden gösterilebilir; hiçbir sosyal kayıt engelleme sırasında silinmez.
+
+AYARLAR EKRANI
+Ayarlar > Üretici bilgileri kartına Engellenen Kullanıcılar girişi eklendi.
+Yeni küçük ekranda kaydedilmiş isim, varsa bölge, Yenile ve her satırda Engeli Kaldır vardır. İsimsiz kayıt için UID ile ayırt edilebilir üretici etiketi gösterilir. Giriş yapmış kullanıcının kendi listesi dışında veri gösterilmez. Kaldırma için onay istenir. Profil tasarımı değiştirilmedi.
+
+OTURUM / OFFLINE
+- Doğrulanmış liste SharedPreferences içinde confirmed_{UID} anahtarıyla ayrı saklanır; SQLite değişmez.
+- Uygulama yeniden açıldığında aktif UID'nin doğrulanmış listesi okunur. Firestore'a erişilemiyorsa bu liste korunur.
+- Snapshot listener, pending-write veya yalnızca cache kaynaklı değişiklikleri doğrulanmış listenin üzerine uygulamaz. Engel kaldırma başarısızsa sahte yerel silme yapılmaz.
+- Engel ekleme/kaldırma transaction sonucu başarıyla dönmeden başarı mesajı veya iyimser yerel liste güncellemesi yapılmaz.
+- 20 saniyede sonuç alınmazsa bekleme kapanır ve sonuç doğrulanamadı mesajı çıkar. Bu süre aşımı sunucudaki işlemi iptal etmez; daha sonra doğrulanmış sunucu sonucu listeyi güncelleyebilir.
+- Auth değişimi dinlenir. Eski UID'nin görünür listesi temizlenir; sosyal ekranların oturum kontrolleri eski hesaba ait listeyi kullanmayı engeller.
+- İlk kez kullanılan bir cihaz tamamen offline ise daha önce bu cihazda doğrulanmamış uzak engeller bilinemez. Bilinen yerel liste uygulanır; yenileme durumu ayrıca gösterilir.
+- Misafir/anonim kullanıcı için engel yönetimi açılmaz; mevcut sosyal akış erişim davranışı sırf engelleme nedeniyle değiştirilmez.
+
+RULES
+- get/list/create/delete yalnızca oturum UID'si blockerUid yolu ile eşleşirse mümkündür; anonim engel yönetimi reddedilir.
+- blocker_uid sahte gönderilemez; blocked_uid belge ID ile eşleşir; kendini engelleme reddedilir.
+- Oluşturma zamanı request.time ile eşit olmalıdır; yalnızca tanımlanan alanlar kabul edilir, isim/bölge en fazla 200 karakterdir.
+- Güncelleme yasaktır. Kaldırma yalnızca kendi kullanıcı yolu altında mümkündür.
+- Başka kullanıcının listesini get/list veya delete etme reddedilir.
+- Sosyal kayıtların Firestore okuma yetkisi değiştirilmedi: engelleme, talep edildiği gibi kişiye özel istemci filtresidir; karşı tarafın verisine erişim yetkisini backend'de iptal eden bir sistem değildir.
+
+KORUNANLAR
+SocialReportManager.java, SocialReportTarget.java, reason dialog, report transaction/duplicate mantığı, reports kuralları ve 06.1 testleri aynı kaldı. Yeni menüler mevcut showReasons metoduna gider. Gönderi oluşturma, yorum/silme, nested reply, reaksiyonlar, fotoğraflar, mevcut kategori filtreleri ve bulut senkronizasyonu yeniden tasarlanmadı. Onboarding, Elek, Piyasa, Zeytin Ligi, Profil, üyelik/reklam/ödeme kodları değişmedi. Admin moderasyon paneli yapılmadı.
+
+ÇALIŞTIRILAN KONTROLLER
+- 102 Java dosyası JavacTask parse: 0 sözdizimi hatası. Tam Android derlemesi değildir.
+- 19 engelleme SQLite fixture/kaynak sözleşmesi kontrolü PASS: B yoğun listede C'nin korunması, görünür limit öncesi filtre, kök/nested kayıt, cache UID ayrımı/seri hale getirme, kaldırma sonrası içerik görünürlüğü, verinin silinmemesi ve menü/transaction/pending-write bağlantıları. Bunlar cihaz/Firebase runtime testleri değildir.
+- Şikâyet hedef kimliği gerçek Java derlemesi + 19 kontrol PASS.
+- Mevcut CommentThread 20 Java kontrolü PASS.
+- Mevcut threaded/check_roundtrip.py 18 kurulum/migration/duplicate/owner/pending-delete fixture ve alan aktarımı kontrolleri PASS.
+- XML ve yeni Activity Manifest/resource bağlantıları PASS.
+- Orijinal dosya karşılaştırması: yalnızca belirtilen beş mevcut dosya değişti; diğer bütün mevcut dosyalar korundu.
+- blocks.rules.test.js ve reports.rules.test.js: 2 SKIP, 0 PASS. FIRESTORE_EMULATOR_HOST ve yerel emulator bulunmadığı için çalıştırılmadı. Bu sonuç güvenlik testleri geçti anlamına gelmez.
+- Tam :app:compileDebugJavaWithJavac denendi; Gradle 8.7 yerelde yok ve services.gradle.org erişim/DNS hatası nedeniyle başlayamadı. Gradle/targetSdk değiştirilmedi.
+- Gerçek Android cihazında engelleme, yeniden başlatma, oturum değişimi, offline hata ve UI kabul testleri yapılamadı.
+- ZIP bütünlüğü doğrulandı.
+
+EMULATOR TESTİ (HAZIR, ÇALIŞTIRILMADI)
+A->B oluşturma, eşzamanlı duplicate, kendi listesi, başka UID'nin okuma/listeleme/silmesi, kendini engelleme, sahte UID, timestamp/fazla alan, offline kaldırmada kaydın korunması, kaldırma/tekrar ekleme, C listesi izolasyonu ve B sosyal verisinin korunması senaryolarını içerir. Şikâyet testleriyle birlikte çalıştırılabilir.
+Proje kökünden:
+  python3 tests/blocks/check_blocks.py
+  java tests/reports/RunReportTests.java
+  npm ci --prefix functions/test/rules
+  firebase emulators:exec --only firestore --project demo-zeytin-blocks --config firebase.emulator.json "node --test functions/test/blocks.rules.test.js functions/test/reports.rules.test.js"
+Testler yalnızca localhost/127.0.0.1 emulator hedeflerini kabul eder.
+
+YAYIN DURUMU
+Firestore kuralları canlı projeye YAYIMLANMADI. Yeni user_blocks izinleri ve 06.1 reports izinleri cihaz/emulator kabulünden sonra yetkili ortamdan mevcut Firebase projesine yayımlanmalıdır. Mevcut eski kurallarla canlı engelleme yazma/listeleme işlemleri reddedilebilir; bu durumda uygulama başarı göstermez. Bu çalışma canlı Firebase verilerini değiştirmedi.
+
+KISA CİHAZ KABULÜ
+A/B/C hesapları ile gönderi, kök yorum ve nested reply oluştur. A ile B'yi engelle; B'nin tüm ilgili satırları kaybolurken C'nin satırları kalmalı. A'nın kendi içeriğinde seçenek olmamalı. Uygulamayı kapat/aç ve offline doğrulanmış engelleri kontrol et. Ayarlar'dan kaldır; B tekrar görünebilmeli. Offline engel ekleme/kaldırma sahte başarı göstermemeli. Hesap değiştir; yalnızca yeni hesabın listesi uygulanmalı. Şikâyet menüsü ve neden/duplicate akışını tekrar dene.

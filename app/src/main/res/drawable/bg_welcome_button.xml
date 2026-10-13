@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <!-- BASILI -->
+
+    <item android:state_pressed="true">
+
+        <shape android:shape="rectangle">
+
+            <corners
+                android:radius="20dp" />
+
+            <solid
+                android:color="#435524" />
+
+        </shape>
+
+    </item>
+
+
+    <!-- NORMAL -->
+
+    <item>
+
+        <shape android:shape="rectangle">
+
+            <corners
+                android:radius="20dp" />
+
+            <gradient
+                android:angle="0"
+                android:startColor="#4C612A"
+                android:endColor="#718B43" />
+
+        </shape>
+
+    </item>
+
+
+</selector>

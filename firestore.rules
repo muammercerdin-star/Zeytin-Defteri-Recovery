@@ -1,0 +1,217 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      match /devices/{deviceId} {
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && deviceId.matches('[a-f0-9]{64}')
+          && request.resource.data.keys().hasAll(['token','platform','session_id','updated_at'])
+          && request.resource.data.keys().hasOnly(['token','platform','session_id','updated_at'])
+          && request.resource.data.token is string && request.resource.data.token.size() > 0
+          && request.resource.data.token.size() <= 4096
+          && request.resource.data.platform == 'android'
+          && request.resource.data.session_id is string && request.resource.data.session_id.size() == 36
+          && request.resource.data.updated_at == request.time;
+      }
+      // Exclude devices here: overlapping allows would bypass its field validation.
+      match /{collection}/{document=**} {
+        // Verification belongs only to the server attestation, never a private backup flag.
+        function verificationFields() {
+          return ['verified','approved','attested','verified_sale','verification_status',
+            'evidence_status','verified_at','verified_by','approved_at','approved_by','attestation_id'];
+        }
+        function owner() { return collection != 'devices' && request.auth != null && request.auth.uid == uid; }
+        allow read, delete: if owner();
+        allow create: if owner() && !request.resource.data.keys().hasAny(verificationFields());
+        allow update: if owner()
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(verificationFields());
+      }
+    }
+    match /social_posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.user_id == request.auth.uid;
+      allow update: if request.auth != null
+                    && resource.data.user_id == request.auth.uid
+                    && request.resource.data.user_id == resource.data.user_id;
+      // Delete has no request.resource; checking it used to reject every deletion.
+      allow delete: if request.auth != null && resource.data.user_id == request.auth.uid;
+
+      match /comments/{commentId} {
+        function signedIn() { return request.auth != null; }
+        // Optional fields preserve legacy root documents without rewriting them.
+        function validThreadFields(d) {
+          return d.get('parent_comment_id','') is string
+            && d.get('parent_comment_id','').size() <= 200
+            && d.get('root_comment_id',commentId) is string
+            && d.get('root_comment_id',commentId).size() > 0
+            && d.get('root_comment_id',commentId).size() <= 200
+            && d.get('reply_to_uid','') is string && d.get('reply_to_uid','').size() <= 128
+            && d.get('reply_to_name','') is string && d.get('reply_to_name','').size() <= 200;
+        }
+        function validParent(d) {
+          let parentId = d.get('parent_comment_id','');
+          return parentId == ''
+            ? (d.get('root_comment_id',commentId) == commentId
+               && d.get('reply_to_uid','') == '' && d.get('reply_to_name','') == '')
+            : (parentId != commentId && parentId.matches('[^/]+')
+               && exists(/databases/$(database)/documents/social_posts/$(postId)/comments/$(parentId))
+               && matchesParent(d, parentId));
+        }
+        function matchesParent(d, parentId) {
+          let p = get(/databases/$(database)/documents/social_posts/$(postId)/comments/$(parentId)).data;
+          return d.get('root_comment_id',commentId) == p.get('root_comment_id',parentId)
+            && d.get('reply_to_uid','') == p.user_id
+            && d.get('reply_to_name','') == p.user_name;
+        }
+        function sameThread() {
+          let before = resource.data;
+          let after = request.resource.data;
+          return after.get('parent_comment_id','') == before.get('parent_comment_id','')
+            && after.get('root_comment_id',commentId) == before.get('root_comment_id',commentId)
+            && after.get('reply_to_uid','') == before.get('reply_to_uid','')
+            && after.get('reply_to_name','') == before.get('reply_to_name','');
+        }
+        function validComment() {
+          let d = request.resource.data;
+          return d.keys().hasAll(['cloud_id','post_cloud_id','user_id','user_name',
+                                  'content','is_active','created_at','updated_at'])
+            && d.keys().hasOnly(['cloud_id','post_cloud_id','user_id','user_name',
+                                'content','is_active','created_at','updated_at',
+                                'parent_comment_id','root_comment_id','reply_to_uid','reply_to_name'])
+            && validThreadFields(d)
+            && d.cloud_id == commentId
+            && d.post_cloud_id == postId
+            && d.user_id == request.auth.uid
+            && d.user_name is string && d.user_name.size() > 0 && d.user_name.size() <= 200
+            && d.content is string && d.content.size() <= 500
+            && d.is_active in [0,1]
+            && (d.is_active == 0 || d.content.matches('[\\s\\S]*[^\\s][\\s\\S]*'))
+            && d.created_at is int && d.created_at > 0
+            && d.updated_at is int && d.updated_at >= 0;
+        }
+        allow read: if signedIn();
+        allow create: if signedIn() && validComment() && validParent(request.resource.data)
+          && exists(/databases/$(database)/documents/social_posts/$(postId));
+        // Soft deletion is a durable tombstone so offline readers learn about it.
+        allow update: if signedIn() && resource.data.user_id == request.auth.uid
+          && validComment() && sameThread()
+          && request.resource.data.user_id == resource.data.user_id
+          && request.resource.data.created_at == resource.data.created_at;
+        allow delete: if signedIn() && resource.data.user_id == request.auth.uid;
+      }
+    }
+    // Private client-side visibility preferences. Social content permissions are unchanged.
+    match /user_blocks/{blockerUid}/items/{blockedUid} {
+      function blockOwner() {
+        return request.auth != null && request.auth.uid == blockerUid
+          && request.auth.token.get('firebase', {}).get('sign_in_provider', '') != 'anonymous';
+      }
+      function validBlock() {
+        let d = request.resource.data;
+        return d.keys().hasAll(['blocker_uid','blocked_uid','created_at','display_name','region'])
+          && d.keys().hasOnly(['blocker_uid','blocked_uid','created_at','display_name','region'])
+          && d.blocker_uid == request.auth.uid && d.blocker_uid == blockerUid
+          && d.blocked_uid == blockedUid && blockedUid != blockerUid
+          && blockedUid.matches('[A-Za-z0-9_-]{1,128}')
+          && d.created_at == request.time
+          && d.display_name is string && d.display_name.size() <= 200
+          && d.region is string && d.region.size() <= 200;
+      }
+      allow get, list: if blockOwner();
+      allow create: if blockOwner() && validBlock();
+      allow delete: if blockOwner();
+      allow update: if false;
+    }
+
+    // Reports are isolated by reporter; individual own-document get supports a transaction.
+    // No client may list reports, alter a submitted report, or decide moderation status.
+    match /reports/{reporterUid}/items/{reportId} {
+      function reportingUser() {
+        return request.auth != null && request.auth.uid == reporterUid
+          && request.auth.token.get('firebase', {}).get('sign_in_provider', '') != 'anonymous';
+      }
+      function reportIdPart(value) {
+        return value is string && value.matches('[A-Za-z0-9_-]{1,128}');
+      }
+      function postOwner(d) {
+        let path = /databases/$(database)/documents/social_posts/$(d.post_cloud_id);
+        return exists(path) && get(path).data.user_id == d.reported_uid
+          && get(path).data.get('is_active', 1) == 1;
+      }
+      function commentOwner(d) {
+        let path = /databases/$(database)/documents/social_posts/$(d.post_cloud_id)/comments/$(d.comment_cloud_id);
+        return reportIdPart(d.comment_cloud_id)
+          && exists(/databases/$(database)/documents/social_posts/$(d.post_cloud_id))
+          && exists(path) && get(path).data.user_id == d.reported_uid
+          && get(path).data.get('is_active', 1) == 1
+          && (d.target_type == 'USER'
+            || (d.target_type == 'COMMENT' && get(path).data.get('parent_comment_id', '') == '')
+            || (d.target_type == 'REPLY' && get(path).data.get('parent_comment_id', '') != ''));
+      }
+      function targetExists(d) {
+        return d.target_type == 'USER'
+          ? (d.target_id == d.reported_uid && (d.comment_cloud_id == '' ? postOwner(d) : commentOwner(d)))
+          : (d.target_type == 'POST'
+            ? (d.target_id == d.post_cloud_id && d.comment_cloud_id == '' && postOwner(d))
+            : (d.target_id == d.comment_cloud_id && commentOwner(d)));
+      }
+      function validReport() {
+        let d = request.resource.data;
+        return d.keys().hasAll(['reporter_uid','reported_uid','target_type','target_id',
+                                 'post_cloud_id','comment_cloud_id','reason','created_at','status'])
+          && d.keys().hasOnly(['reporter_uid','reported_uid','target_type','target_id',
+                              'post_cloud_id','comment_cloud_id','reason','created_at','status'])
+          && d.reporter_uid == request.auth.uid && d.reporter_uid == reporterUid
+          && reportIdPart(d.reported_uid) && d.reported_uid != request.auth.uid
+          && d.target_type in ['POST','COMMENT','REPLY','USER']
+          && reportIdPart(d.target_id) && reportIdPart(d.post_cloud_id)
+          && d.comment_cloud_id is string
+          && d.reason in ['SPAM','ABUSE','MISLEADING','INAPPROPRIATE','FRAUD','OTHER']
+          && d.status == 'OPEN' && d.created_at == request.time
+          && reportId == d.target_type + '|' + (d.target_type == 'USER' ? '' : d.post_cloud_id) + '|' + d.target_id
+          && targetExists(d);
+      }
+      allow get: if reportingUser();
+      allow create: if reportingUser() && validReport();
+      allow list, update, delete: if false;
+    }
+
+    // Anonymous regional market output is authored only by trusted Cloud Functions.
+    // Raw Elek records remain under users/{uid}/... and are never publicly readable.
+    match /zeytin_markets/{season} {
+      allow read: if request.auth != null;
+      allow write: if false;
+      match /regions/{regionId} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+    }
+    match /zeytin_market_stats/{statId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // League output is authored only by a trusted Admin SDK publisher.
+    // Client-controlled users/{uid}/... backups are NEVER publication authority.
+    match /zeytin_leagues/{season} {
+      allow read: if request.auth != null;
+      allow write: if false;
+      match /snapshots/{snapshot} {
+        allow read: if request.auth != null;
+        allow write: if false;
+        match /regions/{region} {
+          allow read: if request.auth != null;
+          allow write: if false;
+        }
+        match /members/{uid} {
+          allow get: if request.auth != null && request.auth.uid == uid;
+          allow list, write: if false;
+        }
+      }
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

@@ -1,0 +1,16 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#F2E6C8" />
+            <stroke android:width="1dp" android:color="#9D8D6E" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/elek_parchment_texture" />
+    <item android:left="6dp" android:top="6dp" android:right="6dp" android:bottom="6dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#06FFFFFF" />
+            <corners android:radius="18dp" />
+            <stroke android:width="1dp" android:color="#786C57" />
+        </shape>
+    </item>
+</layer-list>

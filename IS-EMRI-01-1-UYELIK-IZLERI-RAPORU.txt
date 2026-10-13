@@ -1,0 +1,31 @@
+ZEYTİN DEFTERİ – İŞ EMRİ 01.1 / ÜYELİK İZLERİ TEMİZLİĞİ
+
+Ana kaynak: Zeytin-Defteri-IS-EMRI-01-PROFIL-TEMIZLIK-FINAL.zip
+Değiştirilen tek kaynak dosya: app/src/main/java/com/zeytindefteri/app/ProfileActivity.java
+
+Yapılanlar:
+- showAccountMenu: Üyelik/paket seçeneği kaldırıldı. Kalan dört seçeneğin indeksleri doğru işlemlere bağlandı: Profili düzenle, Profil fotoğrafı, Hesap bilgileri, Çıkış yap.
+- loadAboutTab: Üyelik ve getPlanDisplayName() satırı kaldırıldı; ad, konum ve e-posta korundu.
+- buildBioText: Üretici bilgileri metnine eklenen aktif plan adı kaldırıldı; bahçe sayısı ve konum korundu.
+- showMembershipInfo: Eski üyelik bilgi penceresi ve giriş çağrısı kaldırıldı.
+- Profilde artık kullanılmayan SubscriptionManager alanı ve oluşturma çağrısı kaldırıldı. SubscriptionManager.java ve SubscriptionActivity.java değiştirilmedi; veri temizliği yapılmadı.
+
+Kontroller:
+- 96 Java dosyası JDK 17 JavacTask parse aşamasıyla kontrol edildi: 0 sözdizimi hatası. Bu, tam Android derlemesi değildir.
+- 144 XML dosyası ayrıştırıldı: hata yok. Profil kaynak referansları ve Manifest Activity kaydı doğrulandı.
+- Profilde Subscription/üyelik/paket metin ve çağrılarının kalmadığı kontrol edildi.
+- Menüde dört seçeneğin ilgili işleme eşleşmesi kaynak üzerinden doğrulandı.
+- Ayarlar > Profili yönet bağlantısı korunuyor; Ayarlar Üyelik butonu ve Profil eski alt navigasyonu geri eklenmedi.
+- Ana kaynak ZIP ile bayt karşılaştırmasında yalnızca ProfileActivity.java değişti. Diğer tüm orijinal dosyalar aynı; bu rapor yeni eklendi.
+- Fotoğraf, kullanıcı adı/e-posta, istatistik, düzenleme, gönderi, sekme, Firebase ve kayıt işlemleriyle ilgili kodlar korundu. Diğer ekranlar ve veri altyapısı değiştirilmedi.
+
+Doğrulama sınırları:
+:app:compileDebugJavaWithJavac komutu denendi. Yerel Gradle 8.7 dağıtımı olmadığı ve services.gradle.org adresine erişilemediği için derleme başlayamadı (UnknownHostException). Tam Java compile başarısı doğrulanamadı. Mevcut Gradle ayarları değiştirilmedi; yerel JDK yolu sadece kontrol komutuna geçici parametre olarak verildi.
+Cihaz/emülatörde uygulama çalıştırılmadı. Ekranın açılması ve gerçek tıklama/görünüm kabul kriterleri cihazda doğrulanmalıdır.
+
+Kısa cihaz kontrolü:
+1. Ayarlar > Profili yönet ile Profil açılır; eski alt navigasyon ve Ayarlar Üyelik butonu görünmez.
+2. Profilde üretici bilgileri, Hakkında ve sağ üst menüde paket/üyelik bilgisi görünmez.
+3. Ad/e-posta, fotoğraf ve Bahçe/Gönderi/Hasat istatistikleri korunur.
+4. Profili Düzenle, + Gönderi ve Gönderiler/Bahçeler/Hakkında sekmeleri çalışır.
+5. Sağ üst menüde Hesap bilgileri Hakkında sekmesini, Çıkış yap ise çıkış onayını açar.

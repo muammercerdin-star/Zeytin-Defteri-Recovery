@@ -1,0 +1,98 @@
+[
+  {
+    "command": [
+      "python3",
+      "tests/elek_archive/check_archive.py"
+    ],
+    "exit": 1
+  },
+  {
+    "command": [
+      "python3",
+      "tests/assistant/run_host_tests.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "python3",
+      "tests/final_assistant/run_weather_measure_tests.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "python3",
+      "tests/location/check_location.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "python3",
+      "tests/feed_thread/check_preview.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "python3",
+      "tests/threaded/check_roundtrip.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "python3",
+      "tests/today/SQLiteScopeTest.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "python3",
+      "tests/elek_ui/check_form.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "python3",
+      "tests/assistant_ux/run_ux_tests.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "python3",
+      "tests/elek_popup/check_prices.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "python3",
+      "tests/meydan/check_schema.py"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "npm",
+      "--prefix",
+      "functions",
+      "test"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "npm",
+      "--prefix",
+      "functions",
+      "run",
+      "check"
+    ],
+    "exit": 0
+  }
+]

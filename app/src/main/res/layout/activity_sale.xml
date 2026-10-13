@@ -1,0 +1,904 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/zd_bg"
+    android:fillViewport="true"
+    android:overScrollMode="never">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingTop="24dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="48dp">
+
+
+        <!-- ================================================= -->
+        <!-- ÜST BAR -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btnBack"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:background="@drawable/bg_soft_circle"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="‹"
+                android:textColor="@color/zd_text"
+                android:textSize="32sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="serif"
+                    android:text="Satış Kaydı"
+                    android:textColor="@color/zd_text"
+                    android:textSize="30sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Gerçek satışını veya aldığın fiyat teklifini kaydet"
+                    android:textColor="@color/zd_muted"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- SATIŞ BİLGİLERİ -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:background="@drawable/bg_card"
+            android:elevation="3dp"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💰  Satış Bilgileri"
+                android:textColor="@color/zd_text"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+
+            <!-- KAYIT TÜRÜ -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="19dp"
+                android:text="Kayıt Türü *"
+                android:textColor="@color/zd_text"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spinnerSaleKind"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_search"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp" />
+
+
+            <!-- BAHÇE -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="19dp"
+                android:text="Bahçe *"
+                android:textColor="@color/zd_text"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spinnerGarden"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_search"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp" />
+
+
+            <!-- TARİH -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="19dp"
+                android:text="Tarih *"
+                android:textColor="@color/zd_text"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etSaleDate"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_search"
+                android:clickable="true"
+                android:cursorVisible="false"
+                android:focusable="false"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:textColor="@color/zd_text"
+                android:textSize="16sp" />
+
+
+            <!-- BÖLGE -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="19dp"
+                android:text="Piyasa Bölgesi *"
+                android:textColor="@color/zd_text"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etRegion"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_search"
+                android:hint="Örn. Alaşehir"
+                android:inputType="textCapWords"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:singleLine="true"
+                android:textColor="@color/zd_text"
+                android:textColorHint="@color/zd_muted"
+                android:textSize="16sp" />
+
+
+            <!-- ÇEŞİT -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="19dp"
+                android:text="Zeytin Çeşidi"
+                android:textColor="@color/zd_text"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etVariety"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_search"
+                android:hint="Domat, Gemlik, Uslu..."
+                android:inputType="textCapWords"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:singleLine="true"
+                android:textColor="@color/zd_text"
+                android:textColorHint="@color/zd_muted"
+                android:textSize="16sp" />
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- SATIŞ / TEKLİF BİLGİSİ -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:id="@+id/cardSaleKindInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_market"
+            android:orientation="vertical"
+            android:padding="15dp">
+
+            <TextView
+                android:id="@+id/tvSaleKindInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="✅ Gerçek satışlar gelir hesabına ve izin verirsen anonim piyasa verisine dahil edilir."
+                android:textColor="@color/zd_muted"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- ALICI -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:id="@+id/cardBuyer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_card"
+            android:elevation="2dp"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="👤  Alıcı"
+                android:textColor="@color/zd_text"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etBuyerName"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_search"
+                android:hint="Alıcı / tüccar adı"
+                android:inputType="textCapWords"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:singleLine="true" />
+
+            <EditText
+                android:id="@+id/etBuyerPhone"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_search"
+                android:hint="Telefon (isteğe bağlı)"
+                android:inputType="phone"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:singleLine="true" />
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- ELEK + GERÇEK FİYAT -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_card"
+            android:elevation="3dp"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🫒  Elek ve Fiyat"
+                android:textColor="@color/zd_text"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:text="Her eleğin sattığın kilosunu ve gerçek TL/kg fiyatını gir."
+                android:textColor="@color/zd_muted"
+                android:textSize="12sp" />
+
+
+            <!-- DOUBLE -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="19dp"
+                android:text="Double"
+                android:textColor="@color/zd_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etKgDouble"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="Kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+                <EditText
+                    android:id="@+id/etPriceDouble"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="9dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="TL/kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvValueDouble"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="end"
+                android:text="0 TL"
+                android:textColor="@color/zd_muted"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+
+            <!-- 1 NO -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="1 No"
+                android:textColor="@color/zd_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etKg1"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="Kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+                <EditText
+                    android:id="@+id/etPrice1"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="9dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="TL/kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvValue1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="end"
+                android:text="0 TL"
+                android:textColor="@color/zd_muted"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+
+            <!-- 2 NO -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="2 No"
+                android:textColor="@color/zd_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etKg2"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="Kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+                <EditText
+                    android:id="@+id/etPrice2"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="9dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="TL/kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvValue2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="end"
+                android:text="0 TL"
+                android:textColor="@color/zd_muted"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+
+            <!-- 3 NO -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="3 No"
+                android:textColor="@color/zd_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etKg3"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="Kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+                <EditText
+                    android:id="@+id/etPrice3"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="9dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="TL/kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvValue3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="end"
+                android:text="0 TL"
+                android:textColor="@color/zd_muted"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+
+            <!-- 4 NO -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="4 No"
+                android:textColor="@color/zd_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etKg4"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="Kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+                <EditText
+                    android:id="@+id/etPrice4"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="9dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="TL/kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvValue4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="end"
+                android:text="0 TL"
+                android:textColor="@color/zd_muted"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+
+            <!-- YAĞLIK -->
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="Yağlık"
+                android:textColor="@color/zd_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etKgOil"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="Kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+                <EditText
+                    android:id="@+id/etPriceOil"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="9dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:hint="TL/kg"
+                    android:inputType="numberDecimal"
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:singleLine="true" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvValueOil"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="end"
+                android:text="0 TL"
+                android:textColor="@color/zd_muted"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- SATIŞ ÖZETİ -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_market"
+            android:elevation="3dp"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Satış Özeti"
+                android:textColor="@color/zd_text"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvTotalKg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Toplam miktar: 0 kg"
+                android:textColor="@color/zd_muted"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvGrossTotal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Brüt satış: 0 TL"
+                android:textColor="@color/zd_muted"
+                android:textSize="14sp" />
+
+
+            <EditText
+                android:id="@+id/etTransportCost"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_search"
+                android:hint="Nakliye masrafı (TL)"
+                android:inputType="numberDecimal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:singleLine="true" />
+
+            <EditText
+                android:id="@+id/etDeductions"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_search"
+                android:hint="Kesinti / komisyon (TL)"
+                android:inputType="numberDecimal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:singleLine="true" />
+
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="14dp"
+                android:background="@color/zd_surface" />
+
+
+            <TextView
+                android:id="@+id/tvNetTotal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Net satış: 0 TL"
+                android:textColor="@color/zd_text"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- TAHSİLAT -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:id="@+id/cardPayment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_card"
+            android:elevation="2dp"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💳  Tahsilat"
+                android:textColor="@color/zd_text"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etAmountReceived"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_search"
+                android:hint="Tahsil edilen tutar (TL)"
+                android:inputType="numberDecimal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/tvRemaining"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="11dp"
+                android:text="Kalan alacak: 0 TL"
+                android:textColor="@color/zd_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="Vade Tarihi"
+                android:textColor="@color/zd_text"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etDueDate"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_search"
+                android:clickable="true"
+                android:cursorVisible="false"
+                android:focusable="false"
+                android:hint="Vade yoksa boş bırak"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp" />
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- PİYASA KATKISI -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:id="@+id/cardMarketConsent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_market"
+            android:orientation="vertical"
+            android:padding="15dp">
+
+            <CheckBox
+                android:id="@+id/checkMarketConsent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="Bu gerçek satışı anonim piyasa verisine dahil et"
+                android:textColor="@color/zd_text"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Alıcı adı ve telefon gibi kişisel bilgiler piyasa verisine dahil edilmez."
+                android:textColor="@color/zd_muted"
+                android:textSize="11sp" />
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- NOT -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Not"
+                android:textColor="@color/zd_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etNote"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_search"
+                android:gravity="top|start"
+                android:hint="Satışla ilgili not..."
+                android:inputType="textMultiLine"
+                android:padding="18dp" />
+
+        </LinearLayout>
+
+
+        <!-- ================================================= -->
+        <!-- KAYDET -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:id="@+id/btnSaveSale"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="22dp"
+            android:background="@drawable/bg_green_button"
+            android:clickable="true"
+            android:elevation="5dp"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="Satışı Kaydet"
+            android:textColor="#FFFFFF"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+</ScrollView>

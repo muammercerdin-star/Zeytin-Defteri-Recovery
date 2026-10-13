@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.App" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/zd_green</item>
+        <item name="android:colorPrimaryDark">@color/zd_bg</item>
+        <item name="android:colorAccent">@color/zd_green</item>
+        <item name="android:statusBarColor">@color/zd_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/zd_bg</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">@color/zd_bg</item>
+        <item name="android:textColorPrimary">@color/zd_text</item>
+        <item name="android:textColorSecondary">@color/zd_muted</item>
+        <item name="android:textColorHint">@color/zd_muted</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorBackground">@color/zd_bg</item>
+        <item name="android:colorControlNormal">@color/zd_muted</item>
+        <item name="android:colorControlActivated">@color/zd_green</item>
+        <item name="android:editTextStyle">@style/Widget.Zeytin.Input</item>
+        <item name="android:alertDialogTheme">@style/Theme.Zeytin.Dialog</item>
+    </style>
+    <style name="Theme.Welcome" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/zd_green</item>
+        <item name="android:colorPrimaryDark">@color/zd_bg</item>
+        <item name="android:colorAccent">@color/zd_green</item>
+        <item name="android:statusBarColor">@color/zd_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/zd_bg</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">@color/zd_bg</item>
+        <item name="android:textColorPrimary">@color/zd_text</item>
+        <item name="android:textColorSecondary">@color/zd_muted</item>
+        <item name="android:textColorHint">@color/zd_muted</item>
+    </style>
+    <style name="Theme.Legal" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/zd_green</item>
+        <item name="android:colorPrimaryDark">@color/zd_bg</item>
+        <item name="android:colorAccent">@color/zd_green</item>
+        <item name="android:statusBarColor">@color/zd_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/zd_bg</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">@color/zd_bg</item>
+        <item name="android:textColorPrimary">@color/zd_text</item>
+        <item name="android:textColorSecondary">@color/zd_muted</item>
+        <item name="android:textColorHint">@color/zd_muted</item>
+    </style>
+    <style name="Widget.Zeytin.Input" parent="android:Widget.Material.EditText">
+        <item name="android:textColor">@color/zd_text</item>
+        <item name="android:textColorHint">@color/zd_muted</item>
+        <item name="android:backgroundTint">@null</item>
+    </style>
+    <style name="Theme.Zeytin.Dialog" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/zd_green</item>
+        <item name="android:colorBackground">@color/zd_card</item>
+        <item name="android:textColorPrimary">@color/zd_text</item>
+        <item name="android:textColorSecondary">@color/zd_muted</item>
+    </style>
+</resources>

@@ -1,0 +1,4 @@
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+PASS roles: normal/moderator/super, role refresh, auth error, guest/sign-out, stale callbacks, detach and navigation
+PASS static: routes, logout reuse, season/assistant callbacks, seven-tab order, weighted layout, scrollbar, XML and manifest

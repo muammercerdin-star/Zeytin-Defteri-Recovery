@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="zd_green">#79C95A</color>
+    <color name="zd_green_dark">#EAF5E7</color>
+    <color name="zd_green_mid">#72B957</color>
+    <color name="zd_green_soft">#19392F</color>
+    <color name="zd_green_chip">#274B39</color>
+    <color name="zd_bg">#0B1D28</color>
+    <color name="zd_surface">#102632</color>
+    <color name="zd_card">#132A38</color>
+    <color name="zd_input">#102632</color>
+    <color name="zd_text">#F4F7F4</color>
+    <color name="zd_muted">#9AABA8</color>
+    <color name="zd_text_soft">#C4CFCC</color>
+    <color name="zd_border">#29434D</color>
+    <color name="zd_danger">#FF6B63</color>
+    <color name="zd_warning">#E5B455</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="ic_launcher_background">#0B1D28</color>
+    <color name="color_bg_primary">@color/zd_bg</color>
+    <color name="color_bg_secondary">@color/zd_surface</color>
+    <color name="color_surface">@color/zd_card</color>
+    <color name="color_surface_alt">@color/zd_input</color>
+    <color name="color_surface_elevated">#17313D</color>
+    <color name="color_accent">@color/zd_green</color>
+    <color name="color_accent_soft">@color/zd_green_soft</color>
+    <color name="color_text_primary">@color/zd_text</color>
+    <color name="color_text_secondary">@color/zd_text_soft</color>
+    <color name="color_text_muted">@color/zd_muted</color>
+    <color name="color_border">@color/zd_border</color>
+    <color name="color_success">@color/zd_green</color>
+    <color name="color_warning">@color/zd_warning</color>
+    <color name="color_error">@color/zd_danger</color>
+</resources>

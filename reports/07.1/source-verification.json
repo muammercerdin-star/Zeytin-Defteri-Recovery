@@ -1,0 +1,16 @@
+{
+  "source": "Zeytin-Defteri-IS-EMRI-07-AYARLAR-PREMIUM-FINAL.zip",
+  "changed_existing_files": [
+    "app/src/main/java/com/zeytindefteri/app/ProducerFeedActivity.java",
+    "app/src/main/java/com/zeytindefteri/app/ModerationAccess.java",
+    "functions/test/moderation.android.test.js",
+    "functions/test/moderator-management.android.test.js",
+    "app/src/main/java/com/zeytindefteri/app/SettingsView.java",
+    "tests/settings07_check.py"
+  ],
+  "unchanged_existing_files": 670,
+  "xml_parsed": 153,
+  "missing_java_resource_refs": [],
+  "backend_gradle_manifest_database_and_resources_identical": true,
+  "source_video_duration_seconds": 13.566625
+}

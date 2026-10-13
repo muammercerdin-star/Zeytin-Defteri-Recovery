@@ -1,0 +1,2 @@
+PASS 89 Java syntax parses; not Android compilation
+PASS 105 XML; 03.1 card order/Intent preserved; all source files except scheduler byte-identical. Not device UI test.

@@ -1,0 +1,143 @@
+[
+  {
+    "command": [
+      "python3",
+      "tests/assistant/run_host_tests.py"
+    ],
+    "exit": 0,
+    "log": "0.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/assistant_ux/run_ux_tests.py"
+    ],
+    "exit": 0,
+    "log": "1.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/elek_archive/check_archive.py"
+    ],
+    "exit": 0,
+    "log": "2.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/elek_popup/check_prices.py"
+    ],
+    "exit": 0,
+    "log": "3.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/elek_ui/check_form.py"
+    ],
+    "exit": 0,
+    "log": "4.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/feed_thread/check_preview.py"
+    ],
+    "exit": 0,
+    "log": "5.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/final_assistant/run_weather_measure_tests.py"
+    ],
+    "exit": 0,
+    "log": "6.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/garden_analytics/check_analytics.py"
+    ],
+    "exit": 0,
+    "log": "7.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/garden_detail/check_sqlite.py"
+    ],
+    "exit": 0,
+    "log": "8.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/location/check_location.py"
+    ],
+    "exit": 0,
+    "log": "9.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/meydan/check_schema.py"
+    ],
+    "exit": 0,
+    "log": "10.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/reminders/check_release_gate.py"
+    ],
+    "exit": 0,
+    "log": "11.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/reminders/check_reminders.py"
+    ],
+    "exit": 0,
+    "log": "12.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/threaded/check_roundtrip.py"
+    ],
+    "exit": 0,
+    "log": "13.log"
+  },
+  {
+    "command": [
+      "python3",
+      "tests/today/SQLiteScopeTest.py"
+    ],
+    "exit": 0,
+    "log": "14.log"
+  },
+  {
+    "command": [
+      "npm",
+      "--prefix",
+      "functions",
+      "test"
+    ],
+    "exit": 0,
+    "log": "15.log"
+  },
+  {
+    "command": [
+      "npm",
+      "--prefix",
+      "functions",
+      "run",
+      "check"
+    ],
+    "exit": 0,
+    "log": "16.log"
+  }
+]

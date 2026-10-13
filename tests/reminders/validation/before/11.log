@@ -1,0 +1,2 @@
+PASS 18 fresh install / migration preservation / duplicate / owner / pending-delete fixtures; not Firestore emulator tests
+PASS additive migration, legacy preservation, nested cache reopen, ownership/delete and four-field upload/download mapping checks

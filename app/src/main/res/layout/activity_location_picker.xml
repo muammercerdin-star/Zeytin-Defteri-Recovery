@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/zd_bg"
+    android:orientation="vertical">
+
+
+    <!-- ========================================================= -->
+    <!-- ÜST BAŞLIK                                                -->
+    <!-- ========================================================= -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#0E5A3A"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingTop="18dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="18dp">
+
+
+        <!-- GERİ -->
+
+        <TextView
+            android:id="@+id/btnLocationBack"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="‹"
+            android:textColor="#FFFFFF"
+            android:textSize="34sp"
+            android:textStyle="bold" />
+
+
+        <!-- BAŞLIK -->
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ZEYTİN DEFTERİ"
+                android:textColor="#A9D8B9"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+
+            <TextView
+                android:id="@+id/tvLocationTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="İl Seç"
+                android:textColor="#FFFFFF"
+                android:textSize="23sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+
+        <!-- KAPAT -->
+
+        <TextView
+            android:id="@+id/btnLocationClose"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="×"
+            android:textColor="#DDF0E3"
+            android:textSize="30sp" />
+
+    </LinearLayout>
+
+
+    <!-- ========================================================= -->
+    <!-- SEÇİM YOLU                                               -->
+    <!-- ========================================================= -->
+
+    <HorizontalScrollView
+        android:id="@+id/scrollBreadcrumb"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/zd_card"
+        android:fillViewport="false"
+        android:overScrollMode="never"
+        android:paddingStart="18dp"
+        android:paddingTop="11dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="11dp">
+
+
+        <LinearLayout
+            android:id="@+id/containerBreadcrumb"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+
+            <!-- ================================================= -->
+            <!-- İL                                                -->
+            <!-- ================================================= -->
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="50dp">
+
+
+                <!-- YEŞİL İL KUTUSU -->
+
+                <TextView
+                    android:id="@+id/tvProvinceCrumb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_green_button"
+                    android:gravity="center"
+                    android:minWidth="126dp"
+                    android:paddingStart="16dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="16dp"
+                    android:text="Manisa"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+
+                <!-- İLÇE SAYISI -->
+
+                <TextView
+                    android:id="@+id/tvProvinceCountBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="3dp"
+                    android:layout_marginEnd="7dp"
+                    android:fontFamily="sans-serif-black"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:minWidth="38dp"
+                    android:paddingStart="3dp"
+                    android:paddingEnd="3dp"
+                    android:text="17 İlç."
+                    android:textColor="#FFD83D"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+            </FrameLayout>
+
+
+            <!-- İL OKU -->
+
+            <TextView
+                android:id="@+id/tvProvinceArrow"
+                android:layout_width="30dp"
+                android:layout_height="50dp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="›"
+                android:textColor="#2A8054"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+
+            <!-- ================================================= -->
+            <!-- İLÇE                                              -->
+            <!-- ================================================= -->
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="50dp">
+
+
+                <!-- YEŞİL İLÇE KUTUSU -->
+
+                <TextView
+                    android:id="@+id/tvDistrictCrumb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_green_button"
+                    android:gravity="center"
+                    android:minWidth="126dp"
+                    android:paddingStart="16dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="16dp"
+                    android:text="Alaşehir"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+
+                <!-- MAHALLE SAYISI -->
+
+                <TextView
+                    android:id="@+id/tvDistrictCountBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="3dp"
+                    android:layout_marginEnd="7dp"
+                    android:fontFamily="sans-serif-black"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:minWidth="38dp"
+                    android:paddingStart="3dp"
+                    android:paddingEnd="3dp"
+                    android:text="87 Mh."
+                    android:textColor="#FFD83D"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+            </FrameLayout>
+
+
+            <!-- İLÇE OKU -->
+
+            <TextView
+                android:id="@+id/tvDistrictArrow"
+                android:layout_width="30dp"
+                android:layout_height="50dp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="›"
+                android:textColor="#2A8054"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+
+            <!-- ================================================= -->
+            <!-- MAHALLE / KÖY                                     -->
+            <!-- ================================================= -->
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="50dp">
+
+
+                <!-- YEŞİL MAHALLE KUTUSU -->
+
+                <TextView
+                    android:id="@+id/tvSettlementCrumb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_green_button"
+                    android:gravity="center"
+                    android:minWidth="126dp"
+                    android:paddingStart="16dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="16dp"
+                    android:text="Girelli"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+
+                <!-- ESKİ CADDE / SOKAK SAYACI -->
+                <!-- Java uyumluluğu için ID duruyor -->
+                <!-- Yeni sistemde görünmeyecek -->
+
+                <TextView
+                    android:id="@+id/tvSettlementCountBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="3dp"
+                    android:layout_marginEnd="7dp"
+                    android:fontFamily="sans-serif-black"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:minWidth="38dp"
+                    android:paddingStart="3dp"
+                    android:paddingEnd="3dp"
+                    android:text="7 Cd/Sk."
+                    android:textColor="#FFD83D"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+            </FrameLayout>
+
+
+            <!-- MAHALLE OKU -->
+
+            <TextView
+                android:id="@+id/tvSettlementArrow"
+                android:layout_width="30dp"
+                android:layout_height="50dp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="›"
+                android:textColor="#2A8054"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+
+            <!-- ================================================= -->
+            <!-- ESKİ CADDE / SOKAK                               -->
+            <!-- Java uyumluluğu için ID duruyor ama görünmeyecek -->
+            <!-- ================================================= -->
+
+            <TextView
+                android:id="@+id/tvStreetCrumb"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:background="@drawable/bg_green_button"
+                android:gravity="center"
+                android:minWidth="126dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="Cadde / Sokak"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+
+    <!-- ========================================================= -->
+    <!-- ARAMA                                                    -->
+    <!-- ========================================================= -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/zd_card"
+        android:orientation="vertical"
+        android:paddingStart="18dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="16dp">
+
+
+        <EditText
+            android:id="@+id/etLocationSearch"
+            android:layout_width="match_parent"
+            android:layout_height="62dp"
+            android:background="@drawable/bg_search"
+            android:drawableStart="@android:drawable/ic_menu_search"
+            android:drawablePadding="12dp"
+            android:hint="İl ara..."
+            android:importantForAutofill="no"
+            android:inputType="textCapWords"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:singleLine="true"
+            android:textColor="@color/zd_text"
+            android:textColorHint="@color/zd_muted"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+
+
+    <!-- ========================================================= -->
+    <!-- BİLGİ                                                    -->
+    <!-- ========================================================= -->
+
+    <TextView
+        android:id="@+id/tvLocationInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/zd_surface"
+        android:paddingStart="20dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="10dp"
+        android:text="Türkiye'deki iller A’dan Z’ye listeleniyor"
+        android:textColor="@color/zd_muted"
+        android:textSize="11sp" />
+
+
+    <!-- ========================================================= -->
+    <!-- YÜKLENİYOR                                               -->
+    <!-- ========================================================= -->
+
+    <ProgressBar
+        android:id="@+id/progressLocation"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:indeterminate="true"
+        android:visibility="gone" />
+
+
+    <!-- ========================================================= -->
+    <!-- BOŞ SONUÇ                                                -->
+    <!-- ========================================================= -->
+
+    <TextView
+        android:id="@+id/tvLocationEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="28dp"
+        android:text="Sonuç bulunamadı"
+        android:textColor="@color/zd_muted"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+
+    <!-- ========================================================= -->
+    <!-- KONUM LİSTESİ                                            -->
+    <!-- ========================================================= -->
+
+    <ListView
+        android:id="@+id/listLocations"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/zd_card"
+        android:clipToPadding="false"
+        android:divider="@color/zd_border"
+        android:dividerHeight="1dp"
+        android:overScrollMode="never"
+        android:paddingBottom="20dp"
+        android:scrollbars="vertical" />
+
+
+</LinearLayout>

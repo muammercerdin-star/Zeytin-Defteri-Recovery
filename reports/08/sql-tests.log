@@ -1,0 +1,7 @@
+PASS actual market-schema.sql: 1 distinct producers -> HIDDEN
+PASS actual market-schema.sql: 2 distinct producers -> HIDDEN
+PASS actual market-schema.sql: 3 distinct producers -> HIDDEN
+PASS actual market-schema.sql: 4 distinct producers -> HIDDEN
+PASS actual market-schema.sql: 5 distinct producers -> PUBLIC
+PASS actual SQL: one producer / ten sales -> HIDDEN
+PASS restore fixtures: 2->5, idempotence, newer-code refusal/atomic rollback, missing/incomplete-backup refusal, League untouched, lowering disabled

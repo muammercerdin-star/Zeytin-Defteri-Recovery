@@ -1,0 +1,7 @@
+{
+  "changed": [
+    "app/src/main/java/com/zeytindefteri/app/ProducerFeedActivity.java"
+  ],
+  "unchanged_source_files": 430,
+  "reminder_release_gate_db_manifest_unchanged": true
+}

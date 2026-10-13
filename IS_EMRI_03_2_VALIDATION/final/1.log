@@ -1,0 +1,31 @@
+PASS initial idle
+PASS single tap new listening turn
+PASS TTS forbidden while listening
+PASS double tap cancellation invalidates old request
+PASS final result processing state
+PASS no speech during query
+PASS ready answer can speak once
+PASS duplicate answer and late TTS init cannot repeat speech
+PASS interrupting answer invalidates previous utterance
+PASS no TTS echo in new listening session
+PASS next question may read its own answer
+PASS panel close invalidates callbacks
+PASS pause invalidates pending data reply
+PASS recreated panel does not auto-listen
+PASS no automatic old speech on recreation
+PASS speech errors have distinct state
+PASS unknown parsed command is a response not speech error
+PASS unchanged state avoids repeated accessibility transition
+PASS no match wording
+PASS silence wording
+PASS network wording
+PASS permission fallback wording
+PASS busy wording
+PASS service unavailable written fallback
+PASS quiet RMS clamped
+PASS silent RMS no activity
+PASS measured RMS drives amplitude
+PASS loud RMS bounded
+PASS invalid RMS quiet
+PASS infinite RMS quiet
+30 UI/session policy assertions passed; not Android device tests

@@ -1,0 +1,16 @@
+{
+  "changed_existing": [
+    "app/src/main/java/com/zeytindefteri/app/ProducerFeedActivity.java",
+    "app/src/main/java/com/zeytindefteri/app/ProfileActivity.java",
+    "app/src/main/java/com/zeytindefteri/app/ModerationAccess.java",
+    "functions/test/moderator-management.android.test.js"
+  ],
+  "unchanged_existing_count": 652,
+  "protected_bytes_identical": true,
+  "missing_resource_refs": [],
+  "parsed_xml": 153,
+  "aapt2_new_icons_pass": true,
+  "aapt2_full_resources_pass": false,
+  "source_png_failures": 4,
+  "reference_image": "1000172391.jpg"
+}

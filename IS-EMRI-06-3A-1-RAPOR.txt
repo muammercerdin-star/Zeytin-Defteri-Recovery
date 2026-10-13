@@ -1,0 +1,59 @@
+İŞ EMRİ 06.3A.1 – MODERASYON SIRALAMA
+
+Kaynak: Zeytin-Defteri-AYARLAR-BUTON-CILA-FINAL.zip
+
+Eski sıralama: belge yolu ASC; tarih sıralaması yoktu.
+Yeni sıralama: status eşitlik filtresi + created_at DESC + documentId DESC.
+Collection-group sorgusunda documentId tam belge yoludur; farklı raportörlerin
+aynı belge ID'leri de kararlı biçimde ayrılır.
+
+Cursor: {version:1, status, created_at:{seconds,nanoseconds}, path}.
+startAfter(timestamp, documentReference) kullanılır. Milisaniyeye yuvarlama yok.
+Cursor status'a bağlıdır; eski yalnız-path cursor reddedilir, ilk sayfadan başlanır.
+Sınır belgesi sonradan silinse bile cursor belgeyi tekrar okumaya ihtiyaç duymaz.
+Bir sonraki geçerli rapor için lookahead yapılır. Diğer items ağaçları sonuçlara
+alınmaz; bunlar sayfayı doldurursa sonraki parti taranır.
+
+Eklenen index: items / COLLECTION_GROUP:
+status ASC, created_at DESC, __name__ DESC.
+Mevcut indexler korundu. Canlı Functions/index deploy yapılmadı.
+Kullanıma almadan önce yeni index oluşturulup hazır olmalı, ardından Functions
+sürümü yayınlanmalıdır.
+
+Eski veri: SocialReportManager created_at için serverTimestamp kullanıyor;
+mevcut rules created_at == request.time zorunlu tutuyor. Canlı veritabanı
+incelenmedi. created_at eksik belgeler Firestore orderBy nedeniyle listelenmez;
+null veya Timestamp olmayan eski kayıtlar güvenli biçimde atlanır. Hiçbir kayıt
+silinmedi, migration yapılmadı. Bu tür kayıtların geçmişten var olması halinde
+ayrı bir veri denetimi gerekir.
+
+Sayfalama sabit veri kümesinde test edildi. Canlı listede sayfalar arasında yeni
+rapor gelirse veya status değişirse sonuç kümesi değişebilir; liste snapshot
+oturumu değildir. Yeni gelen üst sıradaki raporlar ilk sayfa yenilenince görünür.
+
+Değiştirilen dosyalar:
+- functions/moderation/service.js (liste ve cursor yardımcıları)
+- functions/moderation/functions.js (Timestamp oluşturucu enjeksiyonu)
+- firestore.indexes.json
+- functions/test/moderation.test.js
+- functions/test/moderation.firestore.test.js
+
+Kontroller:
+- npm test: 60 test; 52 başarılı, 0 başarısız, 8 atlandı.
+- npm run check: başarılı.
+- En yeni/eski sıra; eşit timestamp; nanosaniye farkı; farklı raportörlerde aynı
+  ID; 1/2/3/5/100 sayfa boyutlarında tekrar/atlama olmaması doğrulandı.
+- Dört status filtresi, yetkisiz erişim reddi, admin erişimi, server-owned
+  reviewed_by ve mevcut status update testleri başarılı.
+- Yanlış/eskimiş cursor, silinen sınır belgesi, eksik/null/geçersiz tarih ve diğer
+  items koleksiyonlarını dışlama testleri başarılı.
+- Firestore/Auth Emulator yok: 06.1 reports, 06.2 blocks ve gerçek moderasyon
+  sorgusu dahil 8 emulator testi çalıştırılamadı. Production index kabulü ve
+  gerçek Firestore sorgusu burada doğrulanmadı.
+- Status update metodunun gövdesi, yetkilendirme, rules ve tüm Android dosyaları
+  kaynak ZIP ile byte düzeyinde aynı. Ayarlar cilası korundu.
+- ZIP bütünlük kontrolü başarılı.
+
+Firestore davranışı kaynakları:
+https://firebase.google.com/docs/firestore/query-data/query-cursors
+https://firebase.google.com/docs/firestore/query-data/order-limit-data

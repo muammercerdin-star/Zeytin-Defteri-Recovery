@@ -1,0 +1,6 @@
+Check supabase/functions/moderation-api/tests/rest_test.ts
+running 1 test from ./supabase/functions/moderation-api/tests/rest_test.ts
+real REST Auth/Firestore: all six actions, descending cursor ties/deletion, server review fields, claims audit locks and stale access ... ok (1s)
+
+ok | 1 passed | 0 failed (1s)
+

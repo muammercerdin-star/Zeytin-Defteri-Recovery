@@ -1,0 +1,8 @@
+warning: [options] bootstrap class path not set in conjunction with -source 8
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: /workspace/scratch/cf29f3b6b1ee/task071/zeytin-defteri/zeytin-defteri/app/src/main/java/com/zeytindefteri/app/ZeytinLeagueRepository.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+1 warning
+
+Exit 0; 113 source files.

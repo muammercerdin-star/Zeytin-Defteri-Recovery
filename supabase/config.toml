@@ -1,0 +1,6 @@
+[functions.market-api]
+verify_jwt = false
+
+# Firebase ID tokens are cryptographically verified inside the handler.
+[functions.moderation-api]
+verify_jwt = false

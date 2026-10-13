@@ -1,0 +1,23 @@
+ZEYTİN DEFTERİ – AYARLAR BUTON CİLASI
+
+Ana kaynak: Zeytin-Defteri-IS-EMRI-06-3A-MODERASYON-BACKEND-FINAL.zip
+
+Değiştirilen uygulama dosyası:
+app/src/main/java/com/zeytindefteri/app/ProducerFeedActivity.java
+
+- Üretici bilgileri kartındaki butonların arasına 20 dp dikey boşluk eklendi.
+- Kartın alt iç boşluğu 16 dp yerine 24 dp yapıldı.
+- Profili yönet birincil dolu yeşil stilini koruyor.
+- Engellenen Kullanıcılar mevcut tema renkleriyle koyu yeşil zemin,
+  yeşil yazı ve 1 dp çerçeveli ikincil stile alındı.
+- İki butonun genişliği, 48 dp yüksekliği, 24 dp köşe yarıçapı ve
+  ortalı yazıları korundu. Mevcut kaydırılabilir sayfa yapısı değişmedi.
+- ProfileActivity ve BlockedUsersActivity tıklama bağlantıları korundu.
+
+Kontroller:
+- 102 Java dosyasında sözdizimi kontrolü: 0 hata.
+- Kaynak ZIP ile içerik karşılaştırması: yalnızca yukarıdaki Java dosyası
+  değişti; bu rapor eklendi. XML/resource, backend ve diğer dosyalar aynı.
+- ZIP bütünlük kontrolü başarılı.
+- Cihaz/emülatörde görsel ve tıklama testi yapılmadı. Tam Android Gradle
+  derlemesi yapılmadı; sözdizimi kontrolü tam derlemenin yerine geçmez.

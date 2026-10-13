@@ -1,0 +1,106 @@
+PASS Elek aç
+PASS Piyasayı aç
+PASS Girelli’yi en son ne zaman suladım?
+PASS Son gübreleme ne zaman?
+PASS Bu sezon kaç kilo hasat yaptım?
+PASS Bu sezon masrafım kaç?
+PASS Satış gelirim kaç?
+PASS 2 numara kaç kilo?
+PASS Girelli’nin havası nasıl?
+PASS Yarın yağmur var mı?
+PASS Şu an hangi bahçe seçili?
+PASS Bana bir şarkı söyle
+PASS Girelli’de kaç ağaç var?
+PASS Girelli kaç yaşında?
+PASS Girelli’nin çeşidi ne?
+PASS En son ne zaman gübre attım?
+PASS En son ne zaman ilaçlama yaptım?
+PASS Kaç kilo sattım?
+PASS Toplam satışım ne kadar?
+PASS Yağlık kaç kilo?
+PASS Elek dağılımım nasıl?
+PASS Salamurada kaç kilo ürün var?
+PASS Hazır ürün kaç kilo?
+PASS Piyasa nasıl?
+PASS Akhisar’da 2 numara kaç para?
+PASS Nem kaç?
+PASS Rüzgâr kaç?
+PASS Bana sezon özeti ver
+PASS Bu sezon durumum nasıl?
+PASS Yarın ilaç atayım mı?
+PASS Gübre dozu kaç gram?
+PASS Eleği aç
+PASS Hasat aç
+PASS Satış aç
+PASS Sulama ekle
+PASS Gübreleme aç
+PASS İlaçlama aç
+PASS Salamura aç
+PASS Bahçelerimi aç
+PASS Meydanı aç
+PASS Raporları aç
+PASS Ana sayfayı aç
+PASS explicit garden overrides active
+PASS Turkish normalization
+PASS multiword name
+PASS active garden fallback
+PASS unknown explicit garden rejected
+PASS ambiguous alias rejected
+PASS spoken grade
+PASS report total scope
+PASS default active scope
+PASS tomorrow flag
+PASS similar garden names require clarification
+PASS full name resolves ambiguity
+PASS unknown unpunctuated name cannot use active garden
+55 checks passed
+PASS actual harvest values
+PASS report totals exclude other owner and season
+PASS operation + harvest + brine expenses
+PASS net recorded revenue excludes quotes
+PASS sold kg excludes quotes
+PASS elek actual grade
+PASS missing grade not fabricated zero
+PASS ready brine value
+PASS input weight not misrepresented as current stock
+PASS own consenting market records
+PASS market works without active garden
+PASS unknown region no fallback
+PASS no irrigation record
+PASS existing Gubre type
+PASS garden switch
+PASS real summary
+PASS season change invalidates request
+PASS selected previous season
+PASS owner change invalidates request
+PASS second user only owns third garden
+PASS actual humidity
+PASS tomorrow actual probability
+PASS no invented tomorrow wind
+PASS weather failure
+PASS missing rain remains explicit
+25 adapter checks passed (test doubles, not device database)
+165 FINAL parser/scope checks passed
+36 FINAL data/period checks passed (fixtures, not device)
+PASS 1 last irrigation two calendar days ago
+PASS 2 missing irrigation
+PASS 3 real rain probability
+PASS 4 strong wind
+PASS 5 API failure produces no weather alert
+PASS 6 garden switch rejects old records and weather
+PASS 7 season switch
+PASS 8 multiple gardens select correct date
+PASS 9 different owner cannot see records
+PASS 10 offline local history
+PASS 11 new garden no invented dates
+PASS 12 five candidates only top three
+PASS latest operation date not creation order
+PASS existing Gubre storage label
+PASS future record not treated as today
+PASS invalid date rejected
+PASS missing or invalid weather not invented
+PASS thresholds below boundary
+PASS old record gives no farming decision
+PASS read failure is not empty history
+PASS no garden
+21 assertions passed

@@ -1,0 +1,16 @@
+ZEYTIN DEFTERI - ELEK ARSIVI KAGIT TASARIM V3
+
+Yapilan guncellemeler:
+- ElekArchiveActivity.java dosyasina package satiri eklendi ve ekran daha duzgun calissin diye toparlandi.
+- Ust baslik alani referanstaki duzene yaklastirildi.
+- Geri butonu gorsel akisi bozmasin diye gizlendi.
+- Parchment / kagit dokusu yenilendi.
+- Ozet kutularinda sayi + birim ayri gosterim mantigina yaklastirildi.
+- Toplam tutar alani ve kart icindeki not kagidi gorunumu gelistirildi.
+- Tablo izgara cizgileri belirginlestirildi.
+- Alt footer ve dekoratif zeytin detaylari iyilestirildi.
+- Alt navigasyona id ve basic gecis tiklamalari eklendi.
+
+Not:
+- Gradle wrapper build denemesi yapildi ancak ortam internete cikamadigi icin gerekli Gradle dagitimi indirilemedi.
+- Bu nedenle bu ortamda tam APK build dogrulamasi yapilamadi.

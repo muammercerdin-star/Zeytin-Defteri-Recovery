@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <exclude domain="sharedpref" path="zeytin_push.xml" />
+    <exclude domain="sharedpref" path="push_seen.xml" />
+        <exclude domain="sharedpref" path="local_reminder_delivery.xml" />
+</full-backup-content>

@@ -1,0 +1,5 @@
+Initial baseline archive test: javac executable missing.
+Environment-only launcher: exec java com.sun.tools.javac.Main "$@"
+Retry BEFORE product edits: exit 0.
+PASS Turkish date/day and number formatting
+PASS archive Activity->Repository boundary, actual Repository SQL owner/season/garden isolation, legacy season fallback, ordering, six grades, sums, average, XML/IDs/drawables

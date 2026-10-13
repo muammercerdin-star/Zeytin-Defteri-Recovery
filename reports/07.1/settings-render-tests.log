@@ -1,0 +1,11 @@
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+PASS entry/exit cycles=10 moderator=true super=true
+PASS entry/exit cycles=5 moderator=true super=false
+PASS entry/exit cycles=5 moderator=false super=false
+PASS host attach/detach route model: HOME→PROFILE
+PASS host attach/detach route model: MEYDAN→PROFILE
+PASS host attach/detach route model: GARDENS→PROFILE
+PASS host attach/detach route model: PROFILE→MEYDAN→PROFILE
+PASS whole-tree updates, scroll, token failure/retry, stale callbacks, account/session isolation and lifecycle
+PASS static: atomic host wiring, existing intents/logout, seven tabs, scrollbar, XML and Manifest

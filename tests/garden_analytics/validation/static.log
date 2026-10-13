@@ -1,0 +1,2 @@
+PASS 83 Java sources parsed as Java 8; duplicate signatures checked. NOT Android compilation.
+PASS 104 resource XML; 29 Manifest components; 601 R references. NOT APK build.

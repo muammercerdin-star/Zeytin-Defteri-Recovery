@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <color name="elek_popup_bg">#14272C</color>
+  <color name="elek_popup_border">#A9444F</color>
+  <color name="elek_popup_field">#0E1D24</color>
+  <color name="elek_popup_line">#536971</color>
+  <color name="elek_popup_red">#C74350</color>
+  <style name="ElekPricePopupAnimation">
+    <item name="android:windowEnterAnimation">@anim/elek_popup_enter</item>
+    <item name="android:windowExitAnimation">@anim/elek_popup_exit</item>
+  </style>
+  <color name="elek_edit_action_start">#291E27</color>
+  <color name="elek_edit_action_end">#162932</color>
+</resources>

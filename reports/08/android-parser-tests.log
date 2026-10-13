@@ -1,0 +1,7 @@
+warning: [options] bootstrap class path not set in conjunction with -source 8
+1 warning
+PASS Android parser: 1 producers, 10 sales -> HIDDEN
+PASS Android parser: 2 producers, 10 sales -> HIDDEN
+PASS Android parser: 3 producers, 10 sales -> HIDDEN
+PASS Android parser: 4 producers, 10 sales -> HIDDEN
+PASS Android parser: 5 producers, 10 sales -> PUBLIC

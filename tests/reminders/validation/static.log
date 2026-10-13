@@ -1,0 +1,2 @@
+PASS 89 Java syntax parses; not Android compilation
+PASS 105 XML files; 32 component targets; reminder permissions and exported flags

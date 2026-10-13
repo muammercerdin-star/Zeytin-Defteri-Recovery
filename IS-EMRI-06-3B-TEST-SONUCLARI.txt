@@ -1,0 +1,75 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test
+> node --test test/*.test.js
+
+﹣ Blocks: owner privacy, self/spoof protection, duplicates, delete, offline rollback (0.628095ms) # SKIP
+﹣ real Auth emulator: signed operator claim is server controlled and removed role rejects old token (1.095423ms) # SKIP
+﹣ operator approval on real Firestore: source binding, atomic uniqueness, revoke, replay and league consumption (1.130635ms) # SKIP
+✔ operator authorization rejects normal, forged body role, removed role, disabled and revoked sessions (2.176716ms)
+✔ approval command rejects injected rank/score and missing independent review (0.676977ms)
+✔ backend rows parse through actual Android methods; region keys and own #37 agree (978.573475ms)
+﹣ real Firestore SDK pipeline publishes complete generation and private #21 (0.596589ms) # SKIP
+✔ backend formula matches the actual unchanged Java ZeytinLeagueScore (40 cases) (1176.877285ms)
+✔ 1 and 2 producers remain insufficient; never manufacture regional positions (2.245527ms)
+✔ same owner with three gardens is one producer, weighted totals preserved (1.049325ms)
+✔ owner, season and regional cohort cannot mix (0.715614ms)
+✔ 99kg rejected; 100kg accepted with other eligibility conditions (0.800438ms)
+✔ extreme and tiny priced submissions do not win (0.62453ms)
+✔ quality advantage dominates size-only advantage; volume is capped (0.225783ms)
+✔ stable tie break, exact Top20 and private #21 (5.630869ms)
+✔ Turkish case, diacritics and whitespace normalize to one region (1.194058ms)
+✔ proof binding, raw arithmetic, consent, revocation and client forged ranks (7.660593ms)
+✔ client backup alone / stale evidence / mismatched owner is never verification (0.389785ms)
+✔ leave-one-out median agrees with a slow independent IQR reference (29.445429ms)
+﹣ Firestore emulator: private ranks, global writes and evidence are protected (0.947365ms) # SKIP
+✔ actual pipeline publishes 25 producers; three gardens remain one; own #21 exists (39.616939ms)
+✔ incomplete snapshot is hidden; checkpoint retry does not duplicate producer totals (5.662831ms)
+✔ duplicate external evidence invalidates both claimants (4.009576ms)
+✔ seasons and regions isolated; one producer region has no global rank (3.916128ms)
+✔ no attestations means empty honest snapshot; disabled config does no work (0.904762ms)
+✔ failed initial enqueue can resume same job on scheduler retry (0.685009ms)
+✔ superseded job cannot publish over a newer season job (0.78092ms)
+✔ failed generation preserves prior active snapshot, then retry publishes without duplicates (180.490718ms)
+✔ region normalization is stable for Turkish spelling (2.712425ms)
+✔ normalizer rejects identity mismatch and keeps only priced grade rows (1.335487ms)
+✔ public market requires at least five distinct producers (2.480434ms)
+✔ outlier is removed and aggregate never publishes user identity (1.404238ms)
+✔ daily chart requires five producers for that day (13.466413ms)
+✔ previous period comparison is generated only from anonymous cohort (1.795114ms)
+✔ one producer cannot dominate the public median by submitting many records (6.06321ms)
+﹣ Firestore emulator: anonymous market is read-only and private sources stay server-only (0.634004ms) # SKIP
+✔ actual Android page model: backend order, opaque cursor, dedup, filter reset, safe update (957.626664ms)
+✔ Android wiring retains backend boundary and lifecycle guards (static) (0.816813ms)
+﹣ moderation Admin SDK collection-group bounds, pagination and update on real emulator (0.994475ms) # SKIP
+✔ trusted role helper preserves unrelated claims on grant/revoke; import has no writes (3.603518ms)
+✔ role helper rejects disabled grant and missing explicit apply (1.085759ms)
+✔ normal/guest/league/string claims cannot list or update; no DB access (2.745114ms)
+✔ live role revocation, disabled account and invalidated session deny old token (0.795902ms)
+✔ admin OPEN list includes date/identities, excludes unrelated items and pages stably (3.287722ms)
+✔ invalid bounds/status/body roles/cursor cannot alter query scope (3.249786ms)
+✔ admin can set all statuses; reviewer and time are server owned; content untouched (2.637405ms)
+✔ invalid status and caller-supplied reviewer/time rejected without writes (1.229551ms)
+✔ missing record and stale expected_status never update (1.603602ms)
+✔ client rules still deny moderation access; existing report/block contracts retained (0.421962ms)
+✔ newest first; timestamp nanoseconds and full path break ties without duplicate/omission (3.287062ms)
+✔ each status filters independently and sorts descending (0.651961ms)
+✔ skips other items trees across batches; missing/null date does not crash (0.695394ms)
+✔ cursor survives boundary deletion and rejects legacy/invalid/mismatched status (0.625701ms)
+✔ chronological collection-group composite index is declared (0.381282ms)
+✔ only active replies by another user notify (1.146008ms)
+✔ delivery identities deduplicate retries and isolate devices and sessions (0.700782ms)
+✔ bounded preview and invalid-token classification (0.401251ms)
+﹣ Reports: ownership, targets, duplicate races, privacy, immutable status and social regression (0.921978ms) # SKIP
+✔ actual trigger sends once on replay, resolves Auth display name (3.856861ms)
+✔ actual trigger skips own reply (0.7881ms)
+✔ actual trigger retries transient failure without losing comment (1.672404ms)
+✔ actual trigger removes invalid token, preserves comment (1.21522ms)
+ℹ tests 62
+ℹ suites 0
+ℹ pass 54
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 8
+ℹ todo 0
+ℹ duration_ms 1310.80052

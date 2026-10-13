@@ -1,0 +1,92 @@
+ZEYTİN DEFTERİ – İŞ EMRİ 06.1 / ŞİKÂYET SİSTEMİ
+
+ANA KAYNAK
+Zeytin-Defteri-IS-EMRI-02-1-ONBOARDING-SAYFA3-4-CILA-FINAL.zip
+
+DEĞİŞTİRİLEN MEVCUT DOSYALAR
+- app/src/main/java/com/zeytindefteri/app/ProducerFeedActivity.java
+  Mevcut gönderi/son yanıt satırının üç nokta menüsüne Şikâyet Et ve Kullanıcıyı Şikâyet Et girişi eklendi. Kendi UID'si ve misafir/anonim oturum için gösterilmez. Mevcut menü daha önce işlem bağlamıyordu; başka işlev kaldırılmadı.
+- app/src/main/java/PostRepliesActivity.java
+  Gönderi, kök yorum ve nested reply menülerine aynı seçenekler eklendi. Yanıtla ve kendi yanıtını sil davranışı korundu. Kendi ana gönderisinde de şikâyet gösterilmez.
+- firestore.rules
+  Yalnızca yeni reports alanı için kurallar eklendi. Eski kuralların tamamı bu yeni blok dışında bayt bayt korundu.
+
+YENİ DOSYALAR
+- app/src/main/java/com/zeytindefteri/app/SocialReportManager.java
+  Neden seçimi, açık Gönder onayı, Firebase Auth kontrolü, transaction, başarı/duplicate/hata mesajları. Altı neden: Spam/reklam, hakaret/rahatsız edici içerik, yanıltıcı bilgi, uygunsuz içerik, dolandırıcılık şüphesi, diğer.
+- app/src/main/java/com/zeytindefteri/app/SocialReportTarget.java
+  Hedef doğrulama ve ortak deterministik rapor anahtarı.
+- tests/reports/SocialReportTargetTest.java
+- tests/reports/RunReportTests.java
+- functions/test/reports.rules.test.js
+- Bu teslim raporu.
+
+GERÇEK VERİ MODELİYLE EŞLEŞME
+Mevcut gönderi: social_posts/{postCloudId}, sahibi user_id.
+Mevcut yorum/yanıt: social_posts/{postCloudId}/comments/{commentCloudId}, sahibi user_id.
+parent_comment_id boşsa COMMENT, doluysa REPLY. Yerel post_comments.user_key ve cloud_id alanları mevcut kayıttan alınır. Yerel sayısal id Firestore hedef kimliği olarak kullanılmaz.
+CommentManager.showComments zaten PostRepliesActivity açtığı için kullanılmayan eski yorum çizim kodu değiştirilmedi. SocialCloudRepository ve DatabaseHelper incelendi; raporların sosyal içerik senkronizasyonuna karışmaması için değiştirilmedi.
+
+RAPOR KOLEKSİYONU / ALANLARI
+Yol: reports/{reporterUid}/items/{reportId}
+reports altında kullanıcıya göre yol ayrımı vardır; rapor belgeleri items alt koleksiyonundadır.
+Alanlar:
+- reporter_uid: Firebase Auth UID
+- reported_uid: hedefin sahibi UID
+- target_type: POST / COMMENT / REPLY / USER
+- target_id: gönderi/yorum/yanıt cloud ID; USER için raporlanan UID
+- post_cloud_id: kaynak gönderinin cloud ID'si
+- comment_cloud_id: yorum/yanıt cloud ID; gönderiden raporda boş
+- reason: SPAM / ABUSE / MISLEADING / INAPPROPRIATE / FRAUD / OTHER
+- created_at: FieldValue.serverTimestamp(), rules tarafında request.time ile eşitlik
+- status: OPEN
+USER raporunda kaynak gönderi/yorum bilgisi kanıt bağlamı olarak tutulur; rules sahibini oradan doğrular. Yeni kullanıcı/profil verisi veya sosyal içerik üretilmez.
+
+DUPLICATE KORUMASI
+İçerik anahtarı: target_type + | + post_cloud_id + | + target_id
+Kullanıcı anahtarı: USER||reported_uid
+Raporlayan UID üst yolda sabittir. Aynı kullanıcı farklı gönderi veya yorumdan aynı üreticiyi raporlasa bile aynı USER belgesine gider. Sebep değiştirmek yeni belge üretmez. Kimlik doğrulayıcı yalnızca uygulamadaki UUID/Firebase UID biçimine uygun A-Z/a-z/0-9/alt çizgi/tire, 1–128 karakter kabul eder; ayraç ve slash reddedilir.
+Transaction önce aynı belgeyi okur; varsa duplicate mesajı döner. Yoksa oluşturur. Eşzamanlı transaction yeniden denemesinde de ikinci kayıt oluşmaz. Rules deterministik belge adını zorunlu tutar ve update/delete işlemlerini reddeder.
+İstemci açısından bir kullanıcı/hedef için mevcut rapor varken ikinci rapor açılamaz; CLOSED olsa bile tekrar açma yetkisi yoktur. İleride yeniden açma politikası admin/backend işidir.
+
+GÜVENLİK
+- Oturum zorunlu, anonim giriş reddedilir.
+- Yol reporterUid ve reporter_uid alanı request.auth.uid ile eşleşir.
+- Kullanıcı kendisini veya kendi içeriğini raporlayamaz.
+- Hedef belge ve sahibi gerçek social_posts/comments kayıtlarından doğrulanır; sahte reported_uid, eksik hedef ve COMMENT/REPLY tür karışıklığı reddedilir.
+- Beklenen alanlar dışında veri, bilinmeyen neden/durum ve istemci zamanı reddedilir.
+- Yalnızca kişinin kendi rapor belgesini tekil get ile okumasına izin verilir; transaction için olmayan belge get'i de mümkündür.
+- Başkasının raporunu okuma/yazma, reports veya items listeleme, güncelleme ve silme yasaktır.
+- Normal istemci moderasyon durumu değiştiremez. Yetkili Admin SDK süreci ileride ayrıca yapılabilir.
+
+OFFLINE / HATA DAVRANIŞI
+Mevcut gönderi/yorum local-first davranışı korunur. Şikâyet ayrı, sunucu doğrulamalı transaction kullanır; offline başarı gösterilmez ve sosyal içerik değiştirilmez. Firestore/bağlantı hatasında açıklayıcı kısa mesaj gösterilir. 20 saniyede sonuç gelmezse bekleme penceresi kapanır ve sonucun doğrulanamadığı belirtilir. Bu zaman aşımı işlemi sunucuda iptal etmez; daha sonra tamamlanabileceği için tekrar deneme aynı deterministik belgeye gider. Oturum değişirse sonuç eski kullanıcıya ait bilgi olarak yeni oturumda gösterilmez.
+
+KORUNANLAR
+Yeni şikâyet kodu gönderi/yorum silmez, gizlemez veya güncellemez. Engelleme, admin paneli, otomatik moderasyon yapılmadı. Onboarding, Profil/Ayarlar, Elek, Piyasa, Zeytin Ligi, ana navigasyon, SQLite, Firebase yapılandırması, Storage ve Gradle değişmedi. Reaksiyonlar, kategoriler, fotoğraflar, mevcut oluşturma/yanıtlama/silme ve senkronizasyon kodları korundu.
+
+ÇALIŞTIRILAN KONTROLLER
+- 99 Java kaynak dosyası JavacTask parse: 0 sözdizimi hatası. Tam Android derlemesi değildir.
+- SocialReportTarget gerçek Java derlemesi + 19 kimlik/duplicate/invalid-ID doğrulaması: PASS.
+- Mevcut CommentThread testleri: 20 sıralama/legacy/orphan/silme/cycle/deep/repeated-render doğrulaması PASS.
+- Mevcut threaded/check_roundtrip.py: 18 kurulum/migration/duplicate/owner/pending-delete fixture ve alan aktarımı kontrolleri PASS. Bunlar Firestore Emulator testi değildir.
+- XML ayrıştırma ve kaynak-kod menü/own-content/transaction bağlantı kontrolleri PASS.
+- Ana kaynak karşılaştırması: yalnızca üç mevcut dosya değişti; eski rules içeriği eklenen rapor bloğu dışında aynı.
+- Yeni rules test dosyası node --check: PASS.
+- node --test functions/test/reports.rules.test.js: 1 SKIP, 0 PASS. FIRESTORE_EMULATOR_HOST yok; yerel emulator/CLI mevcut değil. Güvenlik kurallarının çalıştığı bu ortamda emulator ile doğrulanmadı.
+- Gradle :app:compileDebugJavaWithJavac denendi; services.gradle.org erişim/DNS hatası ve yerel Gradle 8.7 eksikliği nedeniyle başlamadı. Gradle ayarları değiştirilmedi.
+- Cihazda UI, gerçek çevrimdışı gönderim ve canlı Firebase testi yapılmadı.
+
+EKLENEN EMULATOR TEST KAPSAMI (ÇALIŞTIRILMADI)
+A->B gönderi/yorum/nested reply/kullanıcı raporu, eşzamanlı duplicate transaction, farklı kaynaklardan kullanıcı duplicate'i, kendi içeriği, sahte reporter/reported UID, yanlış tür/hedef/neden/durum/zaman/fazla alan/anahtar, anonim giriş, tekil başka rapor okuma, listeleme, update/delete, offline transaction, mevcut içeriklerin değişmemesi ve yeni gönderi/yorum/nested reply oluşturma.
+Hazır ortamda proje kökünden:
+  java tests/reports/RunReportTests.java
+  npm ci --prefix functions/test/rules
+  firebase emulators:exec --only firestore --project demo-zeytin-reports --config firebase.emulator.json "node --test functions/test/reports.rules.test.js"
+Test dosyası yalnızca localhost/127.0.0.1 emulator adresine izin verir; production'a karşı çalışmaz.
+
+YAYIN DURUMU
+Firestore kuralları production'a YAYIMLANMADI. Yeni APK'nın canlı ortamda rapor kaydedebilmesi için güncel firestore.rules dosyasının, emulator ve cihaz kontrollerinden sonra yetkili ortamdan mevcut Firebase projesine yayımlanması gerekir. Eski kurallar yeni reports yoluna yazmayı reddeder. Firebase projesi veya canlı veriler bu çalışma sırasında değiştirilmedi.
+
+MANUEL KABUL
+A/B test hesaplarıyla B'nin gönderi, kök yorum ve nested reply menüsünden rapor gönder; kendi içeriğinde seçenek olmadığını kontrol et. Aynı hedefi farklı nedenlerle tekrar gönder, tek belge ve duplicate mesajını kontrol et. B kullanıcısını başka kaynak içerikten tekrar raporla; aynı USER belgesi kullanılmalı. Offline/hatalı bağlantıda başarı mesajı çıkmamalı. Mevcut mesajlar, yanıtlar, reaksiyonlar ve kategoriler aynı kalmalı. Rules testleri tamamlanmadan güvenlik kabulü verilmemelidir.

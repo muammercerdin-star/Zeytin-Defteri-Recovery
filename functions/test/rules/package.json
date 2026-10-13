@@ -1,0 +1,9 @@
+{
+  "name": "zeytin-league-rules-tests",
+  "private": true,
+  "description": "Isolated emulator-only test dependencies; not deployed with Cloud Functions",
+  "dependencies": {
+    "@firebase/rules-unit-testing": "4.0.1",
+    "firebase": "11.10.0"
+  }
+}

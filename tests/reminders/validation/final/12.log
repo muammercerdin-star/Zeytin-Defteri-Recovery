@@ -1,0 +1,40 @@
+PASS idempotent channel
+PASS SQLite insert and identity
+PASS A new record -> correct schedule
+PASS E repeated schedule -> one active alarm
+PASS B edit cancels old and installs one new alarm
+PASS H garden owner cloud ID preserved
+PASS stale/early broadcast cannot notify edited reminder
+PASS real production notification builder invoked
+PASS notification content and scoped click ID
+PASS delivery ledger prevents replay after reopen/reschedule
+PASS C complete cancels repeating reminder; no notification
+PASS delete succeeds
+PASS D delete cancels alarm
+PASS existing production tombstone recorded
+PASS F other owner and stale repository cannot read
+PASS account switch clears notifications and old schedules
+PASS foreign mutation rejected
+PASS foreign garden insert rejected
+PASS G reminders intentionally cross report seasons (schema has no season_year)
+PASS I old one-shot not delivered on restart
+PASS J repeat advances once into future
+PASS repeat has no immediate loop
+PASS N permission denied preserves SQLite without crash
+PASS permission revoked during notify does not crash or delete
+PASS K blank/zero/overflow time rejected
+PASS malformed persisted time/rule safely ignored
+PASS L reboot reconciles only open future/repeating rows
+PASS reboot reschedule remains idempotent
+PASS locked credential storage safely deferred
+PASS null-owner guest fixture isolated
+PASS guest cannot attach signed-in garden
+PASS no session produces no notification
+PASS monthly month-end clamp
+PASS year boundary
+PASS DST calendar day preserves local hour
+PASS weekly recurrence
+PASS NULL invalid recurrence safe
+PASS missed repeats skip to future without notification storm
+PASS all fixture child links intact
+PASS 39 runtime SQLite/production scheduler checks; OS test doubles, NOT Android build/device PASS

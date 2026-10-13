@@ -1,0 +1,18 @@
+{
+  "source_sha256": "6658466b7d2452b7d0f7efaeeb4d448746ff937ede9050355d48b5a36f61d26a",
+  "changed_existing_files": [
+    "functions/package.json",
+    "functions/operator/moderation-role.js",
+    "functions/test/moderation.role.test.js",
+    "functions/moderation/roles.js"
+  ],
+  "unchanged_files": 619,
+  "new_code_test_files": [
+    "functions/operator/super-admin-role.js",
+    "functions/operator/project-guard.js",
+    "functions/test/super-admin.operator.test.js"
+  ],
+  "deleted_files": [],
+  "android_changed": false,
+  "public_api_added": false
+}

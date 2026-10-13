@@ -1,0 +1,5 @@
+Command: java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain -Dorg.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64 assembleDebug --no-daemon
+Exit code: 1
+Downloading https://services.gradle.org/distributions/gradle-8.7-bin.zip
+java.net.UnknownHostException: services.gradle.org
+No APK produced. Project Gradle properties unchanged.

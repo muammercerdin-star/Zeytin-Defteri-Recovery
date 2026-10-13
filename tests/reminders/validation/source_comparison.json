@@ -1,0 +1,24 @@
+{
+  "source_files": 384,
+  "changed": [
+    "app/src/main/AndroidManifest.xml",
+    "app/src/main/java/ReminderRepository.java",
+    "app/src/main/java/ZeytinApplication.java",
+    "app/src/main/java/com/zeytindefteri/app/GardensActivity.java",
+    "app/src/main/java/com/zeytindefteri/app/SessionManager.java",
+    "app/src/main/res/xml/push_backup_rules.xml",
+    "app/src/main/res/xml/push_data_extraction_rules.xml"
+  ],
+  "added": [
+    "app/src/main/java/com/zeytindefteri/app/LocalReminderScheduler.java",
+    "app/src/main/java/com/zeytindefteri/app/ReminderRestoreReceiver.java",
+    "app/src/main/java/com/zeytindefteri/app/ReminderActions.java",
+    "app/src/main/java/com/zeytindefteri/app/ReminderReceiver.java",
+    "app/src/main/java/com/zeytindefteri/app/RemindersActivity.java",
+    "app/src/main/java/com/zeytindefteri/app/ReminderTime.java",
+    "tests/reminders/check_release_gate.py",
+    "tests/reminders/check_reminders.py"
+  ],
+  "missing": [],
+  "release_gate_and_db_identical": true
+}

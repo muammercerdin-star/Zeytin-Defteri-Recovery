@@ -1,0 +1,5 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> check
+> node --check index.js && node --check league/functions.js && node --check league/runtime.js && node --check league/policy.js && node --check league/approval.js && node --check operator/role.js && node --check operator/submit.js
+

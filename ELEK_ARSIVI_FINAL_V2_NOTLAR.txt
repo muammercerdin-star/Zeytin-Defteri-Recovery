@@ -1,0 +1,16 @@
+ZEYTIN DEFTERI - ELEK ARSIVI FINAL V2
+
+Bu duzeltme kullanicinin gercek cihaz ekran goruntusune gore yapildi.
+
+Duzeltilenler:
+- Gecmis/Elek Arsivi ekranindaki alt ana navigasyon tamamen kaldirildi.
+- Liste artik ekranin altina kadar tam yukseklik kullaniyor.
+- Dar telefon ekranlarinda 66.296 TL, 56,09 TL/kg, Pazar ve Detaylari Gor gibi metinlerin alt satira kirilmasi azaltildi/engellendi.
+- Ust ozet rakamlari ve birimleri dar ekranlara uygun yeniden boyutlandirildi.
+- Bahce filtresi ve yil satiri dar ekranda tasma yapmayacak sekilde kompaktlastirildi.
+- Kayit kartinda bahce adi/tarih/gun alani icin daha fazla yatay alan acildi.
+- Toplam Tutar notu daraltildi ve rakam tek satira sabitlendi.
+- Sag ozet paneli genisletildi; Ortalama Fiyat ve Detaylari Gor tek satira sabitlendi.
+- Elek tablosu okunabilirligi korunarak kart ici bosluklar azaltildi.
+
+Not: Tam Android build ortami bu oturumda Gradle bagimliliklarini internetten indiremiyorsa build dogrulamasi yapilamaz. XML dosyalari parse edilerek dogrulandi.

@@ -1,0 +1,47 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> test
+> node --test test/*.test.js
+
+﹣ real Auth emulator: signed operator claim is server controlled and removed role rejects old token (3.49686ms) # SKIP
+﹣ operator approval on real Firestore: source binding, atomic uniqueness, revoke, replay and league consumption (6.245939ms) # SKIP
+✔ operator authorization rejects normal, forged body role, removed role, disabled and revoked sessions (5.265124ms)
+✔ approval command rejects injected rank/score and missing independent review (2.119107ms)
+✔ backend rows parse through actual Android methods; region keys and own #37 agree (2980.485058ms)
+﹣ real Firestore SDK pipeline publishes complete generation and private #21 (2.96972ms) # SKIP
+✔ backend formula matches the actual unchanged Java ZeytinLeagueScore (40 cases) (2630.083547ms)
+✔ 1 and 2 producers remain insufficient; never manufacture regional positions (27.033189ms)
+✔ same owner with three gardens is one producer, weighted totals preserved (0.92797ms)
+✔ owner, season and regional cohort cannot mix (2.711781ms)
+✔ 99kg rejected; 100kg accepted with other eligibility conditions (3.425582ms)
+✔ extreme and tiny priced submissions do not win (1.981017ms)
+✔ quality advantage dominates size-only advantage; volume is capped (124.184008ms)
+✔ stable tie break, exact Top20 and private #21 (14.560611ms)
+✔ Turkish case, diacritics and whitespace normalize to one region (8.085625ms)
+✔ proof binding, raw arithmetic, consent, revocation and client forged ranks (31.160842ms)
+✔ client backup alone / stale evidence / mismatched owner is never verification (1.053483ms)
+✔ leave-one-out median agrees with a slow independent IQR reference (79.842365ms)
+﹣ Firestore emulator: private ranks, global writes and evidence are protected (4.056559ms) # SKIP
+✔ actual pipeline publishes 25 producers; three gardens remain one; own #21 exists (127.750681ms)
+✔ incomplete snapshot is hidden; checkpoint retry does not duplicate producer totals (16.423737ms)
+✔ duplicate external evidence invalidates both claimants (10.269284ms)
+✔ seasons and regions isolated; one producer region has no global rank (15.157213ms)
+✔ no attestations means empty honest snapshot; disabled config does no work (3.84162ms)
+✔ failed initial enqueue can resume same job on scheduler retry (3.090741ms)
+✔ superseded job cannot publish over a newer season job (3.702742ms)
+✔ failed generation preserves prior active snapshot, then retry publishes without duplicates (423.752789ms)
+✔ only active replies by another user notify (2.749955ms)
+✔ delivery identities deduplicate retries and isolate devices and sessions (2.039329ms)
+✔ bounded preview and invalid-token classification (0.813312ms)
+✔ actual trigger sends once on replay, resolves Auth display name (17.601272ms)
+✔ actual trigger skips own reply (7.005453ms)
+✔ actual trigger retries transient failure without losing comment (7.945504ms)
+✔ actual trigger removes invalid token, preserves comment (7.205421ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 4
+ℹ todo 0
+ℹ duration_ms 3687.767686

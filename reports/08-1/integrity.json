@@ -1,0 +1,20 @@
+{
+  "changed_existing": [
+    "zeytin-defteri/zeytin-defteri/supabase/DIRECT-RPC-V7-README.md",
+    "zeytin-defteri/zeytin-defteri/supabase/RESTORE-MIN-PRODUCERS-5.sql",
+    "zeytin-defteri/zeytin-defteri/supabase/VERIFY-PRODUCTION-MIN-PRODUCERS-5.sql",
+    "zeytin-defteri/zeytin-defteri/supabase/tests/production-five-sql.mjs"
+  ],
+  "unchanged_existing_count": 692,
+  "added": [
+    "zeytin-defteri/zeytin-defteri/supabase/RESTORE-SAFETY-08-1.md",
+    "zeytin-defteri/zeytin-defteri/supabase/DRY-RUN-RESTORE-MIN-PRODUCERS-5.sql",
+    "zeytin-defteri/zeytin-defteri/reports/08-1/RAPOR.md",
+    "zeytin-defteri/zeytin-defteri/reports/08-1/restore-safety.log",
+    "zeytin-defteri/zeytin-defteri/reports/08-1/policy-tests.log",
+    "zeytin-defteri/zeytin-defteri/reports/08-1/production-five-sql.log",
+    "zeytin-defteri/zeytin-defteri/supabase/tests/restore-safety.test.mjs"
+  ],
+  "android_and_protected_files_byte_identical": true,
+  "live_connection_or_deploy": false
+}

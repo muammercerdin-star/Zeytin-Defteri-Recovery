@@ -1,0 +1,11 @@
+ZEYTIN DEFTERI - ELEK ARSIVI FINAL SON CILA
+
+- Tum Bahceler filtresi tam gorunecek sekilde genisletildi.
+- Filtre oku metinden cikarilip kucuk ikon olarak saga alindi.
+- Ust ozet baslik ve rakamlari hafif buyutuldu.
+- Bahce adi, tarih ve gun yazilari daha belirgin hale getirildi.
+- Tablo satirlari, Elek/Kg/Fiyat/Tutar degerleri hafif buyutuldu.
+- Fiyat ve Tutar sutunlari kalinlastirildi.
+- Alt Toplam Kg ve Ortalama Fiyat kartlari buyutuldu.
+- Ortalama fiyat icin ayri #,##0.00 formati kullanilarak Turkce ondalik virgulu ve iki hane garanti edildi (or: 49,56 TL/kg).
+- Karttaki Ortalama Fiyat degeri daha okunakli sans-serif-medium fonta alindi.

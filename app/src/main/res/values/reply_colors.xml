@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="reply_bg">#092532</color>
+    <color name="reply_surface">#102B39</color>
+    <color name="reply_border">#294654</color>
+</resources>

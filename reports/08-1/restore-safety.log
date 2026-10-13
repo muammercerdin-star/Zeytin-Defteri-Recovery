@@ -1,0 +1,12 @@
+PASS Market and League backed-up patch restore + distinct producer boundary
+PASS Unpatched League without backup untouched
+PASS Newer body aborts whole batch; no partial restore
+PASS Missing backup never authorizes name-based restore
+PASS Changed signature aborts and leaves other candidate patched
+PASS Dry-run is read-only and reports eligible/mismatch/no-backup
+PASS Missing backup table fails closed; dry-run reports
+PASS Duplicate backup identity fails closed
+PASS Multiple batches never silently choose latest
+PASS Mismatched backup CREATE identity cannot redirect restore
+PASS Unrecognized original is unsafe
+11 restore safety scenarios passed

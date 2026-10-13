@@ -1,0 +1,574 @@
+(node:8) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+i  emulators: Starting emulators: auth, firestore
+i  emulators: Detected demo project ID "demo-zeytin-league", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+⚠  firestore: Cloud Firestore Emulator does not support multiple databases yet.
+⚠  firestore: Did not find a Cloud Firestore rules file specified in a firebase.json config file.
+⚠  firestore: The emulator will default to allowing all reads and writes. Learn more about this option: https://firebase.google.com/docs/emulator-suite/install_and_configure#security_rules_configuration.
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+i  Running script: node --test /tmp/zeytin-baseline-063b/zeytin-defteri/zeytin-defteri/functions/test/*.test.js
+(node:74) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:81) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [2026-09-15T03:40:17.270Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x3370ba23 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'delete' @ L125, false for 'delete' @ L215
+# [2026-09-15T03:40:17.282Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x3370ba24 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'delete' @ L125, false for 'delete' @ L215
+# [2026-09-15T03:40:17.298Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x3370ba25 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'update' @ L126, false for 'update' @ L215
+# [2026-09-15T03:40:17.314Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x3370ba26 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L124, false for 'create' @ L215, false for 'update' @ L126, false for 'update' @ L215
+# [2026-09-15T03:40:17.339Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x3370ba27 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L124:24 for 'create' @ L124, false for 'create' @ L215, false for 'update' @ L126, false for 'update' @ L215, false for 'create' @ L124, false for 'create' @ L215
+# [2026-09-15T03:40:17.349Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x3370ba28 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L124, false for 'create' @ L215, false for 'update' @ L126, false for 'update' @ L215
+# [2026-09-15T03:40:17.364Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x3370ba29 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L124:24 for 'create' @ L124, false for 'create' @ L215, false for 'update' @ L126, false for 'update' @ L215, false for 'create' @ L124, false for 'create' @ L215
+# [2026-09-15T03:40:17.375Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x3370ba2a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L124, false for 'create' @ L215, false for 'update' @ L126, false for 'update' @ L215
+# [2026-09-15T03:40:17.388Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x3370ba2b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L124:24 for 'create' @ L124, false for 'create' @ L215, false for 'update' @ L126, false for 'update' @ L215, false for 'create' @ L124, false for 'create' @ L215
+# Subtest: Blocks: owner privacy, self/spoof protection, duplicates, delete, offline rollback
+not ok 1 - Blocks: owner privacy, self/spoof protection, duplicates, delete, offline rollback
+  ---
+  duration_ms: 3459.461419
+  type: 'test'
+  location: '/tmp/zeytin-baseline-063b/zeytin-defteri/zeytin-defteri/functions/test/blocks.rules.test.js:4:1'
+  failureType: 'testCodeFailure'
+  error: 'Expected request to fail, but it succeeded.'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    pr.then._a (/workspace/scratch/cf29f3b6b1ee/project/zeytin-defteri/zeytin-defteri/functions/test/rules/node_modules/@firebase/rules-unit-testing/dist/index.cjs.js:579:31)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async TestContext.<anonymous> (/tmp/zeytin-baseline-063b/zeytin-defteri/zeytin-defteri/functions/test/blocks.rules.test.js:30:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# (node:82) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: real Auth emulator: signed operator claim is server controlled and removed role rejects old token
+ok 2 - real Auth emulator: signed operator claim is server controlled and removed role rejects old token
+  ---
+  duration_ms: 271.775079
+  type: 'test'
+  ...
+# (node:83) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: operator approval on real Firestore: source binding, atomic uniqueness, revoke, replay and league consumption
+ok 3 - operator approval on real Firestore: source binding, atomic uniqueness, revoke, replay and league consumption
+  ---
+  duration_ms: 7276.905253
+  type: 'test'
+  ...
+# (node:89) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: operator authorization rejects normal, forged body role, removed role, disabled and revoked sessions
+ok 4 - operator authorization rejects normal, forged body role, removed role, disabled and revoked sessions
+  ---
+  duration_ms: 1.274634
+  type: 'test'
+  ...
+# Subtest: approval command rejects injected rank/score and missing independent review
+ok 5 - approval command rejects injected rank/score and missing independent review
+  ---
+  duration_ms: 0.490948
+  type: 'test'
+  ...
+# (node:95) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: backend rows parse through actual Android methods; region keys and own \#37 agree
+ok 6 - backend rows parse through actual Android methods; region keys and own \#37 agree
+  ---
+  duration_ms: 1039.159661
+  type: 'test'
+  ...
+# (node:96) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: real Firestore SDK pipeline publishes complete generation and private \#21
+ok 7 - real Firestore SDK pipeline publishes complete generation and private \#21
+  ---
+  duration_ms: 3803.788547
+  type: 'test'
+  ...
+# (node:102) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: backend formula matches the actual unchanged Java ZeytinLeagueScore (40 cases)
+ok 8 - backend formula matches the actual unchanged Java ZeytinLeagueScore (40 cases)
+  ---
+  duration_ms: 1131.409826
+  type: 'test'
+  ...
+# (node:145) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 1 and 2 producers remain insufficient; never manufacture regional positions
+ok 9 - 1 and 2 producers remain insufficient; never manufacture regional positions
+  ---
+  duration_ms: 3.485765
+  type: 'test'
+  ...
+# Subtest: same owner with three gardens is one producer, weighted totals preserved
+ok 10 - same owner with three gardens is one producer, weighted totals preserved
+  ---
+  duration_ms: 0.76039
+  type: 'test'
+  ...
+# Subtest: owner, season and regional cohort cannot mix
+ok 11 - owner, season and regional cohort cannot mix
+  ---
+  duration_ms: 0.760207
+  type: 'test'
+  ...
+# Subtest: 99kg rejected; 100kg accepted with other eligibility conditions
+ok 12 - 99kg rejected; 100kg accepted with other eligibility conditions
+  ---
+  duration_ms: 0.987448
+  type: 'test'
+  ...
+# Subtest: extreme and tiny priced submissions do not win
+ok 13 - extreme and tiny priced submissions do not win
+  ---
+  duration_ms: 0.733107
+  type: 'test'
+  ...
+# Subtest: quality advantage dominates size-only advantage; volume is capped
+ok 14 - quality advantage dominates size-only advantage; volume is capped
+  ---
+  duration_ms: 0.208544
+  type: 'test'
+  ...
+# Subtest: stable tie break, exact Top20 and private \#21
+ok 15 - stable tie break, exact Top20 and private \#21
+  ---
+  duration_ms: 1.505718
+  type: 'test'
+  ...
+# Subtest: Turkish case, diacritics and whitespace normalize to one region
+ok 16 - Turkish case, diacritics and whitespace normalize to one region
+  ---
+  duration_ms: 2.008222
+  type: 'test'
+  ...
+# Subtest: proof binding, raw arithmetic, consent, revocation and client forged ranks
+ok 17 - proof binding, raw arithmetic, consent, revocation and client forged ranks
+  ---
+  duration_ms: 6.935183
+  type: 'test'
+  ...
+# Subtest: client backup alone / stale evidence / mismatched owner is never verification
+ok 18 - client backup alone / stale evidence / mismatched owner is never verification
+  ---
+  duration_ms: 0.837322
+  type: 'test'
+  ...
+# Subtest: leave-one-out median agrees with a slow independent IQR reference
+ok 19 - leave-one-out median agrees with a slow independent IQR reference
+  ---
+  duration_ms: 28.314965
+  type: 'test'
+  ...
+# (node:220) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [2026-09-15T03:40:16.668Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e831c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L201, false for 'create' @ L215, false for 'update' @ L201, false for 'update' @ L215
+# [2026-09-15T03:40:16.693Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e831d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L204, false for 'create' @ L215, false for 'update' @ L204, false for 'update' @ L215
+# [2026-09-15T03:40:16.722Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e831e error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L207, false for 'create' @ L215, false for 'update' @ L207, false for 'update' @ L215
+# [2026-09-15T03:40:16.743Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e831f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L211, false for 'create' @ L215, false for 'update' @ L211, false for 'update' @ L215
+# [2026-09-15T03:40:16.762Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8320 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L215, false for 'update' @ L215
+# [2026-09-15T03:40:16.786Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8321 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L215, false for 'update' @ L215
+# [2026-09-15T03:40:16.809Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8322 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L215, false for 'update' @ L215
+# [2026-09-15T03:40:16.827Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8323 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L215, false for 'update' @ L215
+# [2026-09-15T03:40:16.875Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8324 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, false for 'update' @ L28, false for 'update' @ L215
+# [2026-09-15T03:40:16.954Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8325 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'update' @ L28, false for 'update' @ L215
+# [2026-09-15T03:40:16.977Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8326 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'create' @ L27, false for 'create' @ L215
+# [2026-09-15T03:40:17.003Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8327 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'update' @ L28, false for 'update' @ L215
+# [2026-09-15T03:40:17.028Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8328 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'create' @ L27, false for 'create' @ L215
+# [2026-09-15T03:40:17.053Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8329 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'update' @ L28, false for 'update' @ L215
+# [2026-09-15T03:40:17.075Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e832a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'create' @ L27, false for 'create' @ L215
+# [2026-09-15T03:40:17.089Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e832b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'update' @ L28, false for 'update' @ L215
+# [2026-09-15T03:40:17.103Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e832c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'create' @ L27, false for 'create' @ L215
+# [2026-09-15T03:40:17.128Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e832d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'update' @ L28, false for 'update' @ L215
+# [2026-09-15T03:40:17.143Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e832e error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'create' @ L27, false for 'create' @ L215
+# [2026-09-15T03:40:17.170Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e832f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'update' @ L28, false for 'update' @ L215
+# [2026-09-15T03:40:17.189Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8330 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, evaluation error at L28:26 for 'update' @ L28, false for 'update' @ L215, false for 'create' @ L27, false for 'create' @ L215
+# [2026-09-15T03:40:17.223Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8331 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L215, false for 'update' @ L215
+# [2026-09-15T03:40:17.248Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x7c6e8332 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L215, false for 'update' @ L215
+# Subtest: Firestore emulator: private ranks, global writes and evidence are protected
+ok 20 - Firestore emulator: private ranks, global writes and evidence are protected
+  ---
+  duration_ms: 3032.809497
+  type: 'test'
+  ...
+# (node:244) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: actual pipeline publishes 25 producers; three gardens remain one; own \#21 exists
+ok 21 - actual pipeline publishes 25 producers; three gardens remain one; own \#21 exists
+  ---
+  duration_ms: 33.057073
+  type: 'test'
+  ...
+# Subtest: incomplete snapshot is hidden; checkpoint retry does not duplicate producer totals
+ok 22 - incomplete snapshot is hidden; checkpoint retry does not duplicate producer totals
+  ---
+  duration_ms: 4.239688
+  type: 'test'
+  ...
+# Subtest: duplicate external evidence invalidates both claimants
+ok 23 - duplicate external evidence invalidates both claimants
+  ---
+  duration_ms: 10.899113
+  type: 'test'
+  ...
+# Subtest: seasons and regions isolated; one producer region has no global rank
+ok 24 - seasons and regions isolated; one producer region has no global rank
+  ---
+  duration_ms: 4.441378
+  type: 'test'
+  ...
+# Subtest: no attestations means empty honest snapshot; disabled config does no work
+ok 25 - no attestations means empty honest snapshot; disabled config does no work
+  ---
+  duration_ms: 1.284056
+  type: 'test'
+  ...
+# Subtest: failed initial enqueue can resume same job on scheduler retry
+ok 26 - failed initial enqueue can resume same job on scheduler retry
+  ---
+  duration_ms: 0.825488
+  type: 'test'
+  ...
+# Subtest: superseded job cannot publish over a newer season job
+ok 27 - superseded job cannot publish over a newer season job
+  ---
+  duration_ms: 1.100781
+  type: 'test'
+  ...
+# Subtest: failed generation preserves prior active snapshot, then retry publishes without duplicates
+ok 28 - failed generation preserves prior active snapshot, then retry publishes without duplicates
+  ---
+  duration_ms: 227.000364
+  type: 'test'
+  ...
+# (node:262) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: region normalization is stable for Turkish spelling
+ok 29 - region normalization is stable for Turkish spelling
+  ---
+  duration_ms: 11.400303
+  type: 'test'
+  ...
+# Subtest: normalizer rejects identity mismatch and keeps only priced grade rows
+ok 30 - normalizer rejects identity mismatch and keeps only priced grade rows
+  ---
+  duration_ms: 1.11796
+  type: 'test'
+  ...
+# Subtest: public market requires at least five distinct producers
+ok 31 - public market requires at least five distinct producers
+  ---
+  duration_ms: 2.480908
+  type: 'test'
+  ...
+# Subtest: outlier is removed and aggregate never publishes user identity
+ok 32 - outlier is removed and aggregate never publishes user identity
+  ---
+  duration_ms: 0.783328
+  type: 'test'
+  ...
+# Subtest: daily chart requires five producers for that day
+ok 33 - daily chart requires five producers for that day
+  ---
+  duration_ms: 11.822604
+  type: 'test'
+  ...
+# Subtest: previous period comparison is generated only from anonymous cohort
+ok 34 - previous period comparison is generated only from anonymous cohort
+  ---
+  duration_ms: 0.619221
+  type: 'test'
+  ...
+# Subtest: one producer cannot dominate the public median by submitting many records
+ok 35 - one producer cannot dominate the public median by submitting many records
+  ---
+  duration_ms: 2.395611
+  type: 'test'
+  ...
+# (node:274) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [2026-09-15T03:40:16.574Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x12291f81 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L194, false for 'create' @ L215, false for 'update' @ L194, false for 'update' @ L215
+# [2026-09-15T03:40:16.617Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x12291f82 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L215, false for 'update' @ L215
+# [2026-09-15T03:40:16.731Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x12291f84 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L27, false for 'create' @ L215, false for 'update' @ L28, false for 'update' @ L215
+# Subtest: Firestore emulator: anonymous market is read-only and private sources stay server-only
+ok 36 - Firestore emulator: anonymous market is read-only and private sources stay server-only
+  ---
+  duration_ms: 1745.999345
+  type: 'test'
+  ...
+# (node:282) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: actual Android page model: backend order, opaque cursor, dedup, filter reset, safe update
+ok 37 - actual Android page model: backend order, opaque cursor, dedup, filter reset, safe update
+  ---
+  duration_ms: 1445.839327
+  type: 'test'
+  ...
+# Subtest: Android wiring retains backend boundary and lifecycle guards (static)
+ok 38 - Android wiring retains backend boundary and lifecycle guards (static)
+  ---
+  duration_ms: 4.905347
+  type: 'test'
+  ...
+# (node:290) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: moderation Admin SDK collection-group bounds, pagination and update on real emulator
+ok 39 - moderation Admin SDK collection-group bounds, pagination and update on real emulator
+  ---
+  duration_ms: 992.953443
+  type: 'test'
+  ...
+# (node:333) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: trusted role helper preserves unrelated claims on grant/revoke; import has no writes
+ok 40 - trusted role helper preserves unrelated claims on grant/revoke; import has no writes
+  ---
+  duration_ms: 3.017607
+  type: 'test'
+  ...
+# Subtest: role helper rejects disabled grant and missing explicit apply
+ok 41 - role helper rejects disabled grant and missing explicit apply
+  ---
+  duration_ms: 4.089611
+  type: 'test'
+  ...
+# (node:341) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: normal/guest/league/string claims cannot list or update; no DB access
+ok 42 - normal/guest/league/string claims cannot list or update; no DB access
+  ---
+  duration_ms: 6.321344
+  type: 'test'
+  ...
+# Subtest: live role revocation, disabled account and invalidated session deny old token
+ok 43 - live role revocation, disabled account and invalidated session deny old token
+  ---
+  duration_ms: 1.647701
+  type: 'test'
+  ...
+# Subtest: admin OPEN list includes date/identities, excludes unrelated items and pages stably
+ok 44 - admin OPEN list includes date/identities, excludes unrelated items and pages stably
+  ---
+  duration_ms: 5.794143
+  type: 'test'
+  ...
+# Subtest: invalid bounds/status/body roles/cursor cannot alter query scope
+ok 45 - invalid bounds/status/body roles/cursor cannot alter query scope
+  ---
+  duration_ms: 0.747497
+  type: 'test'
+  ...
+# Subtest: admin can set all statuses; reviewer and time are server owned; content untouched
+ok 46 - admin can set all statuses; reviewer and time are server owned; content untouched
+  ---
+  duration_ms: 1.03484
+  type: 'test'
+  ...
+# Subtest: invalid status and caller-supplied reviewer/time rejected without writes
+ok 47 - invalid status and caller-supplied reviewer/time rejected without writes
+  ---
+  duration_ms: 0.486319
+  type: 'test'
+  ...
+# Subtest: missing record and stale expected_status never update
+ok 48 - missing record and stale expected_status never update
+  ---
+  duration_ms: 0.561599
+  type: 'test'
+  ...
+# Subtest: client rules still deny moderation access; existing report/block contracts retained
+ok 49 - client rules still deny moderation access; existing report/block contracts retained
+  ---
+  duration_ms: 0.483299
+  type: 'test'
+  ...
+# Subtest: newest first; timestamp nanoseconds and full path break ties without duplicate/omission
+ok 50 - newest first; timestamp nanoseconds and full path break ties without duplicate/omission
+  ---
+  duration_ms: 3.174993
+  type: 'test'
+  ...
+# Subtest: each status filters independently and sorts descending
+ok 51 - each status filters independently and sorts descending
+  ---
+  duration_ms: 3.13599
+  type: 'test'
+  ...
+# Subtest: skips other items trees across batches; missing/null date does not crash
+ok 52 - skips other items trees across batches; missing/null date does not crash
+  ---
+  duration_ms: 1.781747
+  type: 'test'
+  ...
+# Subtest: cursor survives boundary deletion and rejects legacy/invalid/mismatched status
+ok 53 - cursor survives boundary deletion and rejects legacy/invalid/mismatched status
+  ---
+  duration_ms: 1.388363
+  type: 'test'
+  ...
+# Subtest: chronological collection-group composite index is declared
+ok 54 - chronological collection-group composite index is declared
+  ---
+  duration_ms: 0.695141
+  type: 'test'
+  ...
+# (node:369) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only active replies by another user notify
+ok 55 - only active replies by another user notify
+  ---
+  duration_ms: 0.67046
+  type: 'test'
+  ...
+# Subtest: delivery identities deduplicate retries and isolate devices and sessions
+ok 56 - delivery identities deduplicate retries and isolate devices and sessions
+  ---
+  duration_ms: 0.373879
+  type: 'test'
+  ...
+# Subtest: bounded preview and invalid-token classification
+ok 57 - bounded preview and invalid-token classification
+  ---
+  duration_ms: 0.286349
+  type: 'test'
+  ...
+# (node:375) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [2026-09-15T03:40:18.727Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310b3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'update' @ L179, false for 'update' @ L215
+# [2026-09-15T03:40:18.791Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310b6 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'update' @ L179, false for 'update' @ L215
+# [2026-09-15T03:40:18.796Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310b7 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'delete' @ L179, false for 'delete' @ L215
+# [2026-09-15T03:40:18.806Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310b8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215
+# [2026-09-15T03:40:18.846Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310b9 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'update' @ L179, false for 'update' @ L215
+# [2026-09-15T03:40:18.857Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310ba error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.869Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310bb error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.879Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310bc error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.890Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310bd error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.909Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310be error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.920Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310bf error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.931Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c0 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.941Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c1 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.950Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.963Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.972Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c4 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.980Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c5 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215
+# [2026-09-15T03:40:18.989Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c6 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:18.997Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c7 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L178:24 for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215, false for 'create' @ L178, false for 'create' @ L215
+# [2026-09-15T03:40:19.003Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215
+# [2026-09-15T03:40:19.011Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310c9 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215
+# [2026-09-15T03:40:19.027Z]  @firebase/firestore: Firestore (11.10.0): GrpcConnection RPC 'Write' stream 0x5ca310ca error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L178, false for 'create' @ L215, false for 'update' @ L179, false for 'update' @ L215
+# Subtest: Reports: ownership, targets, duplicate races, privacy, immutable status and social regression
+not ok 58 - Reports: ownership, targets, duplicate races, privacy, immutable status and social regression
+  ---
+  duration_ms: 2309.917878
+  type: 'test'
+  location: '/tmp/zeytin-baseline-063b/zeytin-defteri/zeytin-defteri/functions/test/reports.rules.test.js:4:1'
+  failureType: 'testCodeFailure'
+  error: 'Expected request to fail, but it succeeded.'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    pr.then._a (/workspace/scratch/cf29f3b6b1ee/project/zeytin-defteri/zeytin-defteri/functions/test/rules/node_modules/@firebase/rules-unit-testing/dist/index.cjs.js:579:31)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async TestContext.<anonymous> (/tmp/zeytin-baseline-063b/zeytin-defteri/zeytin-defteri/functions/test/reports.rules.test.js:68:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# (node:385) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: actual trigger sends once on replay, resolves Auth display name
+ok 59 - actual trigger sends once on replay, resolves Auth display name
+  ---
+  duration_ms: 7.831006
+  type: 'test'
+  ...
+# Subtest: actual trigger skips own reply
+ok 60 - actual trigger skips own reply
+  ---
+  duration_ms: 1.216793
+  type: 'test'
+  ...
+# Subtest: actual trigger retries transient failure without losing comment
+ok 61 - actual trigger retries transient failure without losing comment
+  ---
+  duration_ms: 2.485944
+  type: 'test'
+  ...
+# Subtest: actual trigger removes invalid token, preserves comment
+ok 62 - actual trigger removes invalid token, preserves comment
+  ---
+  duration_ms: 1.549186
+  type: 'test'
+  ...
+1..62
+# tests 62
+# suites 0
+# pass 60
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7383.923617
+⚠  Script exited unsuccessfully (code 1)
+i  emulators: Shutting down emulators.
+i  firestore: Stopping Firestore Emulator
+i  auth: Stopping Authentication Emulator
+i  hub: Stopping emulator hub
+i  logging: Stopping Logging Emulator
+
+Error: Script "node --test /tmp/zeytin-baseline-063b/zeytin-defteri/zeytin-defteri/functions/test/*.test.js" exited with code 1

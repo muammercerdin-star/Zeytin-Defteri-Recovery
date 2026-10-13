@@ -1,0 +1,16 @@
+{
+  "source_sha256": "68ffebc29b68208bf9252a9d43844850a1c89eab8116263f67d52b9138238836",
+  "changed_existing_files": [
+    "app/src/main/java/com/zeytindefteri/app/ProducerFeedActivity.java",
+    "app/src/main/AndroidManifest.xml",
+    "app/src/main/java/com/zeytindefteri/app/ModerationAccess.java"
+  ],
+  "unchanged_files": 611,
+  "new_code_test_files": [
+    "app/src/main/java/com/zeytindefteri/app/ModeratorManagementActivity.java",
+    "app/src/main/java/com/zeytindefteri/app/ModeratorManagementState.java",
+    "functions/test/moderator-management.android.test.js"
+  ],
+  "deleted_files": [],
+  "backend_changed": false
+}

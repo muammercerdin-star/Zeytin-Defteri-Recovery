@@ -1,0 +1,2 @@
+PASS 89 Java syntax parses; not Android compilation
+PASS 105 XML files; reminder target, card order and single-file source difference verified. Not device UI testing.

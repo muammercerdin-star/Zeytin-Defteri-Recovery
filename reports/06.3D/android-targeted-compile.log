@@ -1,0 +1,6 @@
+warning: [options] bootstrap class path not set in conjunction with -source 8
+warning: unknown enum constant Scope.TESTS
+  reason: class file for androidx.annotation.RestrictTo$Scope not found
+2 warnings
+
+EXIT_CODE=0

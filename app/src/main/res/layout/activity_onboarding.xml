@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/zd_bg"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="20dp">
+
+
+    <!-- ================================================= -->
+    <!-- ÜST BAR                                           -->
+    <!-- ================================================= -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="@drawable/bg_welcome_step"
+            android:gravity="center"
+            android:text="🫒"
+            android:textSize="21sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="11dp"
+            android:layout_weight="1"
+            android:text="Zeytin Defteri"
+            android:textColor="@color/zd_text"
+            android:textSize="21sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSkip"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingEnd="4dp"
+            android:text="Atla"
+            android:textColor="@color/zd_muted"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+
+    <!-- ================================================= -->
+    <!-- SAYFALAR                                          -->
+    <!-- ================================================= -->
+
+    <ViewFlipper
+        android:id="@+id/viewFlipper"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:inAnimation="@android:anim/fade_in"
+        android:outAnimation="@android:anim/fade_out">
+        <!-- Reference 1: story. Text and footer are native, artwork is proportional. -->
+        <com.zeytindefteri.app.OnboardingReferencePage
+            android:id="@+id/onboardingStory"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Original page 2 and animations preserved; scroll only on short screens. -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:clipToPadding="false"
+            android:scrollbars="none">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingTop="14dp">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:orientation="horizontal">
+
+
+                <!-- SULAMA -->
+
+                <LinearLayout
+                    android:id="@+id/cardWater"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="7dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_onboarding_premium_card"
+                    android:elevation="4dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:id="@+id/iconWater"
+                        android:layout_width="62dp"
+                        android:layout_height="62dp"
+                        android:background="@drawable/bg_welcome_step"
+                        android:gravity="center"
+                        android:text="💧"
+                        android:textSize="35sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:gravity="center"
+                        android:text="Sulama"
+                        android:textColor="@color/zd_text"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="28dp"
+                        android:layout_height="3dp"
+                        android:layout_marginTop="4dp"
+                        android:background="#8EC9DE" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:gravity="center"
+                        android:lineSpacingExtra="1dp"
+                        android:text="Sulama tarihini&#10;ve miktarını kaydet."
+                        android:textColor="@color/zd_muted"
+                        android:textSize="10sp" />
+
+                </LinearLayout>
+
+
+                <!-- GÜBRE -->
+
+                <LinearLayout
+                    android:id="@+id/cardFertilizer"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="7dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_onboarding_premium_card"
+                    android:elevation="4dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:id="@+id/iconFertilizer"
+                        android:layout_width="62dp"
+                        android:layout_height="62dp"
+                        android:background="@drawable/bg_welcome_step"
+                        android:gravity="center"
+                        android:text="🌱"
+                        android:textSize="35sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:gravity="center"
+                        android:text="Gübre"
+                        android:textColor="@color/zd_text"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="28dp"
+                        android:layout_height="3dp"
+                        android:layout_marginTop="4dp"
+                        android:background="#A6C56F" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:gravity="center"
+                        android:lineSpacingExtra="1dp"
+                        android:text="Gübreleme tarihini&#10;ve miktarını kaydet."
+                        android:textColor="@color/zd_muted"
+                        android:textSize="10sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+
+                <!-- HASAT -->
+
+                <LinearLayout
+                    android:id="@+id/cardHarvest"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="7dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_onboarding_premium_card"
+                    android:elevation="4dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:id="@+id/iconHarvest"
+                        android:layout_width="62dp"
+                        android:layout_height="62dp"
+                        android:background="@drawable/bg_welcome_step"
+                        android:gravity="center"
+                        android:text="🧺"
+                        android:textSize="35sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:gravity="center"
+                        android:text="Hasat"
+                        android:textColor="@color/zd_text"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="28dp"
+                        android:layout_height="3dp"
+                        android:layout_marginTop="4dp"
+                        android:background="#E5C56C" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:gravity="center"
+                        android:lineSpacingExtra="1dp"
+                        android:text="Hasat tarihini&#10;ve miktarını kaydet."
+                        android:textColor="@color/zd_muted"
+                        android:textSize="10sp" />
+
+                </LinearLayout>
+
+
+                <!-- ELEK -->
+
+                <LinearLayout
+                    android:id="@+id/cardElek"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="7dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_onboarding_premium_card"
+                    android:elevation="4dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:id="@+id/iconElek"
+                        android:layout_width="62dp"
+                        android:layout_height="62dp"
+                        android:background="@drawable/bg_welcome_step"
+                        android:gravity="center"
+                        android:text="⚖"
+                        android:textSize="35sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:gravity="center"
+                        android:text="Elek"
+                        android:textColor="@color/zd_text"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="28dp"
+                        android:layout_height="3dp"
+                        android:layout_marginTop="4dp"
+                        android:background="#B8B58E" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:gravity="center"
+                        android:lineSpacingExtra="1dp"
+                        android:text="Elek sonuçlarını&#10;bahçene kaydet."
+                        android:textColor="@color/zd_muted"
+                        android:textSize="10sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+            <TextView
+                android:id="@+id/tvPageTwoIndicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:background="@drawable/bg_welcome_step"
+                android:paddingStart="16dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="4dp"
+                android:text="2 / 4"
+                android:textColor="@color/zd_muted"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+
+            <TextView
+                android:id="@+id/tvPageTwoTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Sezonu Takip Et"
+                android:textColor="@color/zd_text"
+                android:textSize="27sp"
+                android:textStyle="bold" />
+
+
+            <TextView
+                android:id="@+id/tvPageTwoDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:gravity="center"
+                android:lineSpacingExtra="2dp"
+                android:text="Sulamadan gübreye, hasattan eleğe kadar&#10;yaptığın işlemleri bahçene kaydet."
+                android:textColor="@color/zd_muted"
+                android:textSize="14sp" />
+
+
+            <TextView
+                android:id="@+id/tvPageTwoMemory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="11dp"
+                android:background="@drawable/bg_welcome_step"
+                android:paddingStart="17dp"
+                android:paddingTop="5dp"
+                android:paddingEnd="17dp"
+                android:paddingBottom="5dp"
+                android:text="📒  Bahçenin hafızası artık kaybolmaz."
+                android:textColor="@color/zd_muted"
+                android:textSize="11sp" />
+
+        </LinearLayout>
+        </ScrollView>
+
+        <!-- Reference 2 belongs to page 3. -->
+        <com.zeytindefteri.app.OnboardingReferencePage
+            android:id="@+id/onboardingMarket"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Reference 3 belongs to page 4. -->
+        <com.zeytindefteri.app.OnboardingReferencePage
+            android:id="@+id/onboardingCommunity"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </ViewFlipper>
+
+
+    <!-- ================================================= -->
+    <!-- ANA SAYFA NOKTALARI                               -->
+    <!-- ================================================= -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="30dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+
+        <TextView
+            android:id="@+id/dot1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="●"
+            android:textColor="@color/zd_text"
+            android:textSize="14sp" />
+
+
+        <TextView
+            android:id="@+id/dot2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="●"
+            android:textColor="@color/zd_text"
+            android:textSize="14sp" />
+
+
+        <TextView
+            android:id="@+id/dot3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="●"
+            android:textColor="@color/zd_text"
+            android:textSize="14sp" />
+
+
+        <TextView
+            android:id="@+id/dot4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="●"
+            android:textColor="@color/zd_text"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+
+
+    <!-- ================================================= -->
+    <!-- DEVAM BUTONU                                      -->
+    <!-- ================================================= -->
+
+    <Button
+        android:id="@+id/btnNext"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="62dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_welcome_button"
+        android:backgroundTint="@null"
+        android:elevation="5dp"
+        android:gravity="center"
+        android:text="Devam Et   →"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

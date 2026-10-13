@@ -1,0 +1,861 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/zd_bg">
+
+    <!-- ========================================================= -->
+    <!-- ANA İÇERİK                                                -->
+    <!-- ========================================================= -->
+
+    <ScrollView
+        android:id="@+id/mainScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingLeft="18dp"
+            android:paddingTop="10dp"
+            android:paddingRight="18dp"
+            android:paddingBottom="150dp">
+
+
+            <!-- ================================================= -->
+            <!-- HEADER                                            -->
+            <!-- ================================================= -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:contentDescription="Zeytin Defteri"
+                    android:padding="3dp"
+                    android:src="@drawable/ic_olive_logo" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="9dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Zeytin Defteri"
+                        android:textColor="@color/zd_text"
+                        android:textSize="23sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:text="Bahçenin hafızası cebinde"
+                        android:textColor="@color/zd_muted"
+                        android:textSize="10.5sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/btnNotifications"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="@drawable/ui_header_circle"
+                    android:drawableTop="@drawable/ic_bell_line"
+                    android:gravity="center"
+                    android:padding="10dp" />
+
+                <TextView
+                    android:id="@+id/btnProfile"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:layout_marginLeft="8dp"
+                    android:background="@drawable/ui_header_circle"
+                    android:drawableTop="@drawable/ic_profile_line"
+                    android:gravity="center"
+                    android:padding="10dp" />
+
+            </LinearLayout>
+
+
+            <!-- ================================================= -->
+            <!-- KARŞILAMA                                         -->
+            <!-- ================================================= -->
+
+            <TextView
+                android:id="@+id/tvGreeting"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="13dp"
+                android:text="Günaydın 👋"
+                android:textColor="@color/zd_text"
+                android:textSize="23sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Bugün bahçen için harika bir gün!"
+                android:textColor="@color/zd_muted"
+                android:textSize="12sp" />
+
+
+            <!-- ================================================= -->
+            <!-- ARAMA                                             -->
+            <!-- ================================================= -->
+
+            <EditText
+                android:id="@+id/etSearch"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/ui_search"
+                android:drawableStart="@drawable/ic_search_line"
+                android:drawablePadding="10dp"
+                android:hint="Ne arıyorsunuz?"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:singleLine="true"
+                android:textColor="@color/zd_text"
+                android:textColorHint="@color/zd_muted"
+                android:textSize="13sp" />
+
+
+            <!-- ================================================= -->
+            <!-- SEÇİLİ BAHÇE                                      -->
+            <!-- ================================================= -->
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="216dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/ui_hero_card"
+                android:clipToOutline="true"
+                android:elevation="3dp">
+
+                <ImageView
+                    android:id="@+id/imgSelectedGarden"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="Seçili bahçe"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/onboarding_garden_1" />
+
+                <!-- GENEL KARARTMA -->
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#420B2417" />
+
+                <!-- ALT BİLGİ GRADIENT HİSSİ -->
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="124dp"
+                    android:layout_gravity="bottom"
+                    android:background="#B20D2C1D" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="bottom"
+                    android:orientation="vertical"
+                    android:paddingLeft="16dp"
+                    android:paddingTop="15dp"
+                    android:paddingRight="16dp"
+                    android:paddingBottom="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="30dp"
+                        android:background="@drawable/ui_chip_active"
+                        android:gravity="center"
+                        android:paddingLeft="13dp"
+                        android:paddingRight="13dp"
+                        android:text="Seçili Bahçem"
+                        android:textColor="#FFFFFF"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnViewGarden"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Bahçe yükleniyor...  ›"
+                        android:textColor="#FFFFFF"
+                        android:textSize="21sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvHeroGardenMeta"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="7dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Bahçe bilgileri hazırlanıyor"
+                        android:textColor="#EDF3EE"
+                        android:textSize="11sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="9dp"
+                        android:layout_marginBottom="7dp"
+                        android:background="#46FFFFFF" />
+
+                    <TextView
+                        android:id="@+id/tvHeroLastOperation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Son işlem bilgisi hazırlanıyor"
+                        android:textColor="#FFFFFF"
+                        android:textSize="10.5sp" />
+
+                </LinearLayout>
+
+            </FrameLayout>
+
+
+            <!-- ================================================= -->
+            <!-- HASAT DURUMU                                      -->
+            <!-- ================================================= -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="13dp"
+                android:background="@drawable/ui_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:paddingLeft="16dp"
+                android:paddingTop="14dp"
+                android:paddingRight="16dp"
+                android:paddingBottom="13dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="BU SEZON"
+                            android:textColor="@color/zd_text"
+                            android:textSize="9sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Hasat Durumu"
+                            android:textColor="@color/zd_text"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvTotalHarvest"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 kg"
+                            android:textColor="@color/zd_text"
+                            android:textSize="25sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Toplam hasat"
+                            android:textColor="@color/zd_muted"
+                            android:textSize="9.5sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="11dp"
+                    android:background="@color/zd_surface" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Kayıtlı sezon hasadı"
+                    android:textColor="@color/zd_muted"
+                    android:textSize="9.5sp" />
+
+            </LinearLayout>
+
+
+            <!-- ================================================= -->
+            <!-- HIZLI İŞLEMLER                                    -->
+            <!-- ================================================= -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Hızlı İşlemler"
+                        android:textColor="@color/zd_text"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnAllOperations"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="Tümünü Gör  ›"
+                        android:textColor="@color/zd_muted"
+                        android:textSize="10.5sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="2dp"
+                    android:orientation="horizontal"
+                    android:weightSum="4">
+
+                    <TextView
+                        android:id="@+id/actionWater"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginRight="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/ui_quick"
+                        android:drawableTop="@drawable/ic_water"
+                        android:drawablePadding="6dp"
+                        android:gravity="center"
+                        android:text="Sulama\nEkle"
+                        android:textColor="@color/zd_text"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/actionFertilizer"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginLeft="4dp"
+                        android:layout_marginRight="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/ui_quick"
+                        android:drawableTop="@drawable/ic_leaf"
+                        android:drawablePadding="6dp"
+                        android:gravity="center"
+                        android:text="Gübreleme\nEkle"
+                        android:textColor="@color/zd_text"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/actionHarvest"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginLeft="4dp"
+                        android:layout_marginRight="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/ui_quick"
+                        android:drawableTop="@drawable/ic_olive"
+                        android:drawablePadding="6dp"
+                        android:gravity="center"
+                        android:text="Hasat\nEkle"
+                        android:textColor="@color/zd_text"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/actionSale"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginLeft="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/ui_quick"
+                        android:drawableTop="@drawable/ic_tag"
+                        android:drawablePadding="6dp"
+                        android:gravity="center"
+                        android:text="Satış\nEkle"
+                        android:textColor="@color/zd_text"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+            <!-- ================================================= -->
+            <!-- PİYASA ÖZETİ                                      -->
+            <!-- ================================================= -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="17dp"
+                android:background="@drawable/ui_soft_green"
+                android:orientation="vertical"
+                android:paddingLeft="15dp"
+                android:paddingTop="13dp"
+                android:paddingRight="15dp"
+                android:paddingBottom="13dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvMarketLocalRegion"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Piyasa Özeti"
+                        android:textColor="@color/zd_text"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnMarket"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="Piyasayı Gör  ›"
+                        android:textColor="@color/zd_green"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="bottom"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvMarketLocalPrice"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="—"
+                        android:textColor="@color/zd_text"
+                        android:textSize="25sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvMarketConfidence"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="3dp"
+                        android:text="Veri bekleniyor"
+                        android:textColor="@color/zd_muted"
+                        android:textSize="9sp" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@color/zd_surface" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="28dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvMarketCompare1Region"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Bölge"
+                        android:textColor="@color/zd_muted"
+                        android:textSize="10.5sp" />
+
+                    <TextView
+                        android:id="@+id/tvMarketCompare1Price"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textColor="@color/zd_text"
+                        android:textSize="11.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvMarketCompare1Difference"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="7dp"
+                        android:text="—"
+                        android:textColor="@color/zd_green"
+                        android:textSize="9.5sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="28dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvMarketCompare2Region"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Bölge"
+                        android:textColor="@color/zd_muted"
+                        android:textSize="10.5sp" />
+
+                    <TextView
+                        android:id="@+id/tvMarketCompare2Price"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textColor="@color/zd_text"
+                        android:textSize="11.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvMarketCompare2Difference"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="7dp"
+                        android:text="—"
+                        android:textColor="@color/zd_green"
+                        android:textSize="9.5sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvMarketVolume"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:text=""
+                    android:textColor="@color/zd_muted"
+                    android:textSize="9sp" />
+
+            </LinearLayout>
+
+
+            <!-- ================================================= -->
+            <!-- ÜRETİCİ AKIŞI                                     -->
+            <!-- ================================================= -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="17dp"
+                android:background="@drawable/ui_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:paddingLeft="14dp"
+                android:paddingTop="12dp"
+                android:paddingRight="14dp"
+                android:paddingBottom="10dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Meydan"
+                        android:textColor="@color/zd_text"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnOpenProducerFeed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="Tümünü Gör  ›"
+                        android:textColor="@color/zd_muted"
+                        android:textSize="10.5sp" />
+
+                </LinearLayout>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnFeedNearby"
+                            android:layout_width="102dp"
+                            android:layout_height="31dp"
+                            android:gravity="center"
+                            android:text="Yakınımdakiler"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/btnFeedFollowing"
+                            android:layout_width="76dp"
+                            android:layout_height="31dp"
+                            android:gravity="center"
+                            android:text="Takip"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/btnFeedMarket"
+                            android:layout_width="76dp"
+                            android:layout_height="31dp"
+                            android:gravity="center"
+                            android:text="Piyasa"
+                            android:textSize="10sp" />
+
+                    </LinearLayout>
+
+                </HorizontalScrollView>
+
+                <LinearLayout
+                    android:id="@+id/containerProducerFeed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/btnCreatePost"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:text="+  Paylaşım Yap"
+                    android:textColor="@color/zd_green"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+
+            <!-- ================================================= -->
+            <!-- JAVA UYUMLULUK ALANI                               -->
+            <!-- ================================================= -->
+
+            <LinearLayout
+                android:layout_width="1dp"
+                android:layout_height="1dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvTotalGardens"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/tvTotalCost"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/tvNetProfit"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+                <LinearLayout
+                    android:id="@+id/containerGardens"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp"
+                    android:orientation="vertical" />
+
+                <LinearLayout
+                    android:id="@+id/containerToday"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/actionSpray"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/actionElek"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/btnAddGarden"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/btnNewOperation"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/btnAssistant"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+                <TextView
+                    android:id="@+id/tvAssistantOlive"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+                <LinearLayout
+                    android:id="@+id/assistantCard"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/navBrine"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+
+    <!-- ========================================================= -->
+    <!-- ALT NAVİGASYON                                            -->
+    <!-- ========================================================= -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/ui_bottom"
+        android:elevation="18dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/navHome"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_home_nav"
+            android:drawablePadding="3dp"
+            android:gravity="center"
+            android:text="Ana Sayfa"
+            android:textColor="@color/zd_green"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/navOperations"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_garden_nav"
+            android:drawablePadding="3dp"
+            android:gravity="center"
+            android:text="Bahçem"
+            android:textColor="@color/zd_muted"
+            android:textSize="9sp" />
+
+        <TextView
+            android:id="@+id/navAssistant"
+            android:layout_width="58dp"
+            android:layout_height="58dp"
+            android:layout_marginBottom="18dp"
+            android:background="@drawable/ui_fab"
+            android:elevation="10dp"
+            android:gravity="center"
+            android:text="+"
+            android:textColor="#FFFFFF"
+            android:textSize="29sp" />
+
+        <TextView
+            android:id="@+id/navMarket"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_market_nav"
+            android:drawablePadding="3dp"
+            android:gravity="center"
+            android:text="Piyasa"
+            android:textColor="@color/zd_muted"
+            android:textSize="9sp" />
+
+        <TextView
+            android:id="@+id/navReport"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_profile_nav"
+            android:drawablePadding="3dp"
+            android:gravity="center"
+            android:text="Profil"
+            android:textColor="@color/zd_muted"
+            android:textSize="9sp" />
+
+    </LinearLayout>
+
+</FrameLayout>

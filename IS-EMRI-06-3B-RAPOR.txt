@@ -1,0 +1,92 @@
+ZEYTİN DEFTERİ – İŞ EMRİ 06.3B
+ANDROID MODERASYON MERKEZİ
+
+Ana kaynak: Zeytin-Defteri-IS-EMRI-06-3A-1-MODERASYON-SIRALAMA-FINAL.zip
+
+Eklenen Android dosyaları:
+- app/src/main/java/com/zeytindefteri/app/ModerationActivity.java
+- app/src/main/java/com/zeytindefteri/app/ModerationAccess.java
+- app/src/main/java/com/zeytindefteri/app/ModerationPage.java
+Değiştirilen Android dosyaları:
+- ProducerFeedActivity.java: Ayarlar'a ayrı, yalnız admin için görünür kart.
+  Profili yönet ve Engellenen Kullanıcılar buton kodları aynen korundu.
+- app/src/main/AndroidManifest.xml: ModerationActivity exported=false.
+- app/build.gradle: yalnız firebase-functions:22.0.0 eklendi. Mevcut sürümler,
+  minSdk/targetSdk/compileSdk ve Gradle sürümü değiştirilmedi.
+Eklenen test: functions/test/moderation.android.test.js
+
+Yetki:
+- Ayarlar kartı başlangıçta GONE; normal kullanıcı için alan/boşluk bırakmaz.
+- getIdToken(true) sonucunda moderation_admin Boolean true ise görünür.
+- Activity her ön plana gelişinde yeniden yetki kontrol eder. Doğrulanmadan
+  rapor arayüzü kurulmaz. Oturum değişirse/giriş kapanırsa erişim sonlanır.
+- UI kontrolü güvenlik yerine geçmez. Mevcut backend canlı admin yetkisini
+  bağımsız doğrulamaya devam eder. UID hardcode veya claim atama yok.
+
+Functions entegrasyonu:
+- FirebaseFunctions.getInstance("europe-west1") kullanılır.
+- Liste: moderationListReports; durum: moderationUpdateReportStatus.
+- İstekler 30 saniye timeout ile gönderilir. reports'a doğrudan erişim yok.
+- Backend/functions, firestore.rules ve firestore.indexes.json aynen korundu.
+
+Liste:
+- Varsayılan OPEN; Açık/İncelendi/İşlem Yapıldı/Reddedildi filtreleri.
+- 25 kayıtlık sayfalar; Daha fazla yükle ile devam.
+- Cursor içeriği çözülmez veya yeniden üretilmez, backend nesnesi aynen
+  saklanır ve gönderilir. Filtre değişiminde cursor ve liste sıfırlanır.
+- Backend sırası korunur; reporter_uid + report_id ile görünür tekrar önlenir.
+- Loading, boş liste, yenileme, tekrar deneme ve sade hata mesajları bulunur.
+- Bekleyen cevaplar lifecycle/hesap değişiminden sonra ekrana uygulanmaz.
+
+Detay ve güncelleme:
+- Neden, tür, reporter/reported UID, hedef ID, varsa gönderi ID, tarihler,
+  durum ve varsa inceleyen UID gösterilir. Raporlanan içerik açılmaz.
+- Yeni durum seçimi sonrası onay sorulur.
+- İstemci sadece reporter_uid, report_id, status, expected_status gönderir.
+  reviewed_by/reviewed_at backend tarafından yazılır.
+- Başarılı güncelleme sonrası rapor mevcut listeden çıkarılır ve ilk sayfa
+  yeniden yüklenir; sayfalama baştan başlar. Metadata backend'den alınır.
+- Eşzamanlı başka admin değişikliği expected_status ile yakalanır ve liste
+  yenilenir. Hata halinde sahte başarı veya yerel durum değişikliği yapılmaz.
+
+Kontroller:
+- npm test: 62 test; 54 PASS, 0 FAIL, 8 SKIP.
+- Gerçek ModerationPage Java kodu derlenip çalıştırıldı: backend sırası,
+  opaque cursor nesnesinin korunması, duplicate önleme, dört status filtresi
+  reset'i, kısmi/geçersiz cevapta atomik davranış, update alan sınırı PASS.
+- UI erişim/Manifest/callable/lifecycle bağlantıları statik kontrol PASS.
+- Mevcut backend yetki, sıralama, pagination ve reviewed_by testleri PASS.
+- npm run check: PASS.
+- 105 Java dosyası: sözdizimi hatası 0.
+- 144 XML dosyası ayrıştırıldı; Manifest ve yeni renk referansları PASS.
+- ZIP karşılaştırması: yalnız üç mevcut Android dosyası değişti. Mevcut
+  backend, 06.1/06.2 kodları, rules, onboarding ve diğer ekranlar aynı.
+- Tam Android compile denenmiş, Gradle 8.7 indirmesinde
+  UnknownHostException: services.gradle.org nedeniyle başlayamamıştır.
+  Tam Java/resource derlemesi ve bağımlılık çözümlemesi doğrulanamadı.
+- Firestore/Auth Emulator yok: 06.1/06.2 güvenlik testleri dahil 8 entegrasyon
+  testi atlandı. Cihaz/emülatörde UI ve canlı callable uçtan uca çalıştırılmadı.
+- Canlı deploy veya admin claim ataması yapılmadı. Ekranın veri alabilmesi
+  için önceki iş emirlerindeki Functions ve index canlıda hazır olmalıdır.
+
+CİHAZDA KABUL KONTROLÜ (burada çalıştırılmadı):
+1. Normal hesap: Ayarlar'da Moderasyon Merkezi ve ek boşluk bulunmamalı.
+2. moderation_admin=true hesap: Ayarlar'a dön; ayrı kart görünmeli.
+3. Admin olmayan oturumla uygulama içinden Activity açılışı erişimi reddetmeli.
+   exported=false nedeniyle dış uygulama Activity'yi başlatamamalı.
+4. Admin: OPEN en yeni önce; dört filtre; detaydaki alanlar; Daha fazla yükle.
+   Filtreyi değiştirince ilk sayfadan başlamalı, tekrar kart olmamalı.
+5. OPEN raporu REVIEWED yap: onay sonrası OPEN'dan çıkmalı; REVIEWED'da yeni
+   durum ve backend'in yazdığı reviewer/tarih görülmeli.
+6. İnterneti kes: liste/güncelleme hata mesajı; başarı bildirimi olmamalı.
+7. Backend yetkiyi reddettiğinde sade mesajla erişim kapanmalı.
+8. Telefonu döndür/arka plana al/hesap değiştir: önceki hesaba ait rapor
+   görünmemeli. Yeniden açılışta yetki tekrar doğrulanmalı.
+9. Küçük ekran/büyük yazıda filtrelerin yatay, listenin/detayın dikey
+   kaydırılması; alt butonların erişilebilirliği kontrol edilmeli.
+10. Şikâyet/engelleme, Profili yönet ve Engellenen Kullanıcılar girişleri.
+
+SDK başvuru kaynakları:
+https://firebase.google.com/support/release-notes/android
+https://firebase.google.com/docs/functions/callable
+https://firebase.google.com/docs/reference/android/com/google/firebase/functions/HttpsCallableReference

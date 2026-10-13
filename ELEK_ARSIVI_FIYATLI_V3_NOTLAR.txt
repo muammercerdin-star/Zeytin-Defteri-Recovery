@@ -1,0 +1,19 @@
+ZEYTIN DEFTERI - ELEK ARSIVI FINAL V3
+
+Bu surumde archive / gecmis ekrani tablo yapisi gelistirildi.
+
+Yapilanlar:
+- Elek tablosuna 2 yeni sutun eklendi: Fiyat ve Tutar.
+- Her kayit satirinda artik su bilgiler var:
+  No | Elek | Kg | Fiyat | Tutar
+- Fiyat degeri elek_grades.price_per_kg alanindan okunur.
+- Tutar degeri elek_grades.line_total alanindan okunur.
+- Kart tasarimi dar ekranda daha rahat sigmasi icin yeniden duzenlendi:
+  * tablo artik tum genisligi kullanir,
+  * sag ozet alani alta tasindi,
+  * detay butonu alta tam genislikte konumlandirildi.
+- Detaylar dialogu da fiyat ve tutar bilgilerini gosterir.
+
+Not:
+- Build bu ortamda internet/gradle dagitimi olmadigi icin calistirilamadi.
+- XML dosyalari denetlendi.

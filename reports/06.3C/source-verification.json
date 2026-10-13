@@ -1,0 +1,14 @@
+{
+  "baseline_sha256": "6cbe54e66c4f9a818f39768f2bf026e1f1b8e17a03a0f18f78837799e211a3f1",
+  "changed_existing_files": [
+    "functions/package.json",
+    "functions/index.js",
+    "functions/test/trigger.test.js",
+    "functions/moderation/service.js",
+    "functions/operator/moderation-role.js",
+    "functions/test/moderation.role.test.js"
+  ],
+  "unchanged_existing_files": 598,
+  "deleted_files": [],
+  "android_files_changed": []
+}

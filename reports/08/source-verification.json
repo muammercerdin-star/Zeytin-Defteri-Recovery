@@ -1,0 +1,20 @@
+{
+  "changed_existing_files": [
+    "app/src/main/java/com/zeytindefteri/app/MarketCloudRepository.java",
+    "app/src/main/java/com/zeytindefteri/app/MarketBackendConfig.java",
+    "supabase/DIRECT-RPC-V7-README.md",
+    "supabase/TEST-MODE-2-URETICI-README.md",
+    "supabase/TEST-ONLY-MIN-PRODUCERS-2.sql",
+    "supabase/RESTORE-MIN-PRODUCERS-5.sql"
+  ],
+  "unchanged_existing_files": 679,
+  "protected_features_unchanged": true,
+  "league_methods_unchanged": true,
+  "xml_parse_pass": true,
+  "active_source_threshold_2_hits": 0,
+  "manual_out_of_scope_test_sql_preserved": [
+    "ZEYTIN-LIGI-BOLGE-RAPORU-TEST-2.sql",
+    "ZEYTIN-LIGI-ELEK-BOLGE-FIYATLARI-TEST-2.sql",
+    "ZEYTIN-LIGI-BOLGE-DIZINI-TEST-2.sql"
+  ]
+}

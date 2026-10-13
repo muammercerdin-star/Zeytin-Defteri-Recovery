@@ -1,0 +1,2 @@
+PASS actual ElekActivity calculation methods: empty, row totals, sum, average, comma decimal, changed price
+PASS XML, all bound IDs, six quantity inputs, hidden prices and removed hero reference

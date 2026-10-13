@@ -1,0 +1,8 @@
+app/src/main/res/drawable-nodpi/elek_hero_olive.png: error: failed to read PNG signature: file does not start with PNG signature.
+app/src/main/res/drawable-nodpi/elek_hero_olive.png: error: file failed to compile.
+app/src/main/res/drawable-nodpi/kantar_toplam_miktar_36dp.png: error: failed to read PNG signature: file does not start with PNG signature.
+app/src/main/res/drawable-nodpi/kantar_toplam_miktar_36dp.png: error: file failed to compile.
+app/src/main/res/drawable-nodpi/para_toplam_tutar_36dp.png: error: failed to read PNG signature: file does not start with PNG signature.
+app/src/main/res/drawable-nodpi/para_toplam_tutar_36dp.png: error: file failed to compile.
+app/src/main/res/drawable-nodpi/trend_ortalama_fiyat_24dp.png: error: failed to read PNG signature: file does not start with PNG signature.
+app/src/main/res/drawable-nodpi/trend_ortalama_fiyat_24dp.png: error: file failed to compile.

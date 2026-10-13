@@ -1,0 +1,53 @@
+PASS existing garden updated
+PASS garden_id/owner/cloud_id/created_at unchanged
+PASS all edited data persisted, sync timestamp increases
+PASS edit creates no garden
+PASS operations rows and links unchanged
+PASS harvests rows and links unchanged
+PASS elek_records rows and links unchanged
+PASS sales rows and links unchanged
+PASS brine_batches rows and links unchanged
+PASS garden_notes rows and links unchanged
+PASS harvest_grades rows and links unchanged
+PASS elek_grades rows and links unchanged
+PASS sale_grades rows and links unchanged
+PASS brine_events rows and links unchanged
+PASS receivables rows and links unchanged
+PASS reminders rows and links unchanged
+PASS unauthorized/missing edit rejected b7
+PASS unauthorized/missing edit rejected a9
+PASS unauthorized/missing edit rejected 7
+PASS unauthorized/missing edit rejected a999
+PASS invalid edit rejected ['   ', '120', '2']
+PASS invalid edit rejected ['Invalid', '-1', '2']
+PASS invalid edit rejected ['Invalid', '1', 'NaN']
+PASS invalid edit rejected ['Invalid', '1', '-2']
+PASS guest edit works locally
+PASS null-owner guest behavior preserved
+PASS note saved offline
+PASS saved note read by reopening database; wrong owner note excluded
+PASS note trimmed and correct owner
+PASS existing note cloud identity assigned
+PASS notes exclude other garden/owner a8
+PASS notes exclude other garden/owner b7
+PASS notes exclude other garden/owner a9
+PASS notes exclude other garden/owner 7
+PASS empty/foreign/missing note rejected a7
+PASS empty/foreign/missing note rejected b7
+PASS empty/foreign/missing note rejected a9
+PASS empty/foreign/missing note rejected a999
+PASS empty/foreign/missing note rejected 7
+PASS rejected notes insert nothing
+PASS guest note saved and reopened
+PASS history owner/season/garden ('a', 2026, 7)
+PASS history owner/season/garden ('a', 2025, 7)
+PASS history owner/season/garden ('a', 2026, 8)
+PASS history owner/season/garden ('a', 2026, 9)
+PASS history owner/season/garden ('b', 2026, 7)
+PASS history owner/season/garden ('b', 2026, 9)
+PASS history owner/season/garden ('', 2026, 10)
+PASS history owner/season/garden ('', 2026, 7)
+PASS history owner/season/garden ('a', 2027, 7)
+PASS recent preview shares scope and stable ordering
+PASS all fixture foreign keys valid
+PASS 52 real SQLite checks using compiled production helper bodies; no Android/device claim

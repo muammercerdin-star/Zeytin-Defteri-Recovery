@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.zeytindefteri.app">
+
+
+    <!-- ========================================================= -->
+    <!-- İZİNLER                                                   -->
+    <!-- ========================================================= -->
+
+    <uses-permission
+        android:name="android.permission.INTERNET" />
+
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+
+    <!-- ========================================================= -->
+    <!-- UYGULAMA                                                  -->
+    <!-- ========================================================= -->
+
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <queries>
+        <intent><action android:name="android.speech.RecognitionService" /></intent>
+        <intent><action android:name="android.intent.action.TTS_SERVICE" /></intent>
+    </queries>
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:name=".ZeytinApplication"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/push_backup_rules"
+        android:dataExtractionRules="@xml/push_data_extraction_rules"
+
+        android:icon="@mipmap/ic_launcher_zeytin"
+
+        android:label="@string/app_name"
+
+        android:roundIcon="@mipmap/ic_launcher_zeytin"
+
+        android:supportsRtl="true"
+
+        android:theme="@style/Theme.App">
+
+
+        <!-- ===================================================== -->
+        <!-- KARŞILAMA EKRANI                                     -->
+        <!-- LAUNCHER                                             -->
+        <!-- ===================================================== -->
+
+        <activity android:name=".RemindersActivity" android:exported="false"
+            android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <receiver android:name=".ReminderReceiver" android:exported="false" />
+        <receiver android:name=".ReminderRestoreReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <activity android:name=".GardenAnalyticsActivity" android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity android:name=".GardenEditActivity" android:exported="false"
+            android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".GardenOperationHistoryActivity" android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".WelcomeActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Welcome">
+
+            <intent-filter>
+
+                <action
+                    android:name="android.intent.action.MAIN" />
+
+                <category
+                    android:name="android.intent.category.LAUNCHER" />
+
+            </intent-filter>
+
+        </activity>
+
+
+        <!-- ===================================================== -->
+        <!-- KULLANIM KOŞULLARI                                   -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".TermsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Legal" />
+
+
+        <!-- ===================================================== -->
+        <!-- GİZLİLİK POLİTİKASI                                  -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".PrivacyActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Legal" />
+
+
+        <!-- ===================================================== -->
+        <!-- GİRİŞ / KAYIT                                        -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- ANA EKRAN                                            -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".GardensActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ProducerFeedActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- YENİ İŞLEM                                           -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".NewOperationActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- BAHÇE EKLE                                           -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".AddGardenActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- KONUM SEÇİCİ                                         -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".LocationPickerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- BAHÇE DETAY                                          -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".GardenDetailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- HASAT                                                 -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".HarvestActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- SATIŞ                                                 -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".SaleActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- PİYASA                                                -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".MarketActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- SALAMURA                                              -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".BrineActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- İŞLEM GEÇMİŞİ                                        -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".OperationHistoryActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- RAPOR                                                 -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".ReportActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- ABONELİK                                              -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".SubscriptionActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- PROFİL / HESABIM                                      -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- ELEK                                                  -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".ElekActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+
+        <activity
+            android:name=".ElekArchiveActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        
+        <!-- ===================================================== -->
+<!-- PAYLAŞIM OLUŞTUR                                     -->
+<!-- ===================================================== -->
+
+<activity
+    android:name=".CreatePostActivity"
+    android:exported="false"
+    android:screenOrientation="portrait" />
+
+
+        <!-- ===================================================== -->
+        <!-- ONBOARDING                                            -->
+        <!-- ===================================================== -->
+
+        <activity
+            android:name=".OnboardingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Welcome" />
+
+
+    <activity android:name=".PostRepliesActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+    <service android:name=".ZeytinMessagingService" android:exported="false">
+            <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
+        </service>
+        <activity android:name=".PushOpenActivity" android:exported="false" android:screenOrientation="portrait" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="meydan_replies" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_bell_line" />
+        <activity android:name=".BlockedUsersActivity" android:exported="false" />
+        <activity android:name=".ModeratorManagementActivity" android:exported="false" />
+        <activity android:name=".ModerationActivity" android:exported="false" />
+    </application>
+
+
+</manifest>

@@ -1,0 +1,60 @@
+ZEYTİN DEFTERİ – İŞ EMRİ 02 / ONBOARDING YENİLEME
+
+ANA KAYNAK
+Zeytin-Defteri-IS-EMRI-01-1-UYELIK-IZLERI-TEMIZLIK-FINAL.zip
+
+SAYFA SIRASI
+1. Referans 1: Zeytin / Senin Hikâyen
+2. Mevcut Sulama, Gübre, Hasat, Elek kartları ve animasyonları
+3. Referans 2: Piyasayı / Anlık Takip Et
+4. Referans 3: Üreticilerle / Birlikte
+
+DEĞİŞTİRİLEN DOSYALAR
+- app/src/main/java/com/zeytindefteri/app/OnboardingActivity.java
+  Yeni tanıtım sayfaları mevcut ViewFlipper akışına bağlandı. Eski sosyal carousel ve artık kullanılmayan eski piyasa animasyonları kaldırıldı. Atla, Devam Et, son sayfanın marka geçişi, LoginActivity ve from_onboarding aktarımı korundu. Yeni sayfaların arka planı referansa uygun koyu yeşil; ikinci sayfada mevcut renk korunuyor.
+- app/src/main/res/layout/activity_onboarding.xml
+  Yalnızca 1, 3 ve 4. sayfalar yenilendi. İkinci sayfanın XML alt ağacı değişmedi; kısa ekranlarda taşmayı önlemek için dışına ScrollView eklendi. Üst bar, sayfa göstergesi ve ilerleme butonu kaydırılan içeriğin dışında. İlerleme butonu minHeight 62dp + wrap_content kullanıyor; büyük yazı boyutunda metne göre uzayabiliyor.
+
+EKLENEN DOSYALAR
+- app/src/main/java/com/zeytindefteri/app/OnboardingReferencePage.java
+  Yalnızca onboarding için görsel sunum sınıfı. Başlık, açıklama ve alt mesajlar yerel Android TextView bileşenleri. Veritabanı, Firebase, ağ veya kullanıcı verisi çağrısı yok. Manzara/defter ve telefon bölgeleri kaynak görsellerden orantılı çiziliyor; tam ekran screenshot yapıştırılmıyor. Alt ikonlar referansın görsel bölgelerinden gösteriliyor. Metinlerde sabit yükseklik veya satır sınırlaması yok. Kısa ekranlarda sayfa içeriği kaydırılıyor; telefon görselleri en-boy oranını koruyor. Mockup içeriği statik tanıtım görselidir, etkileşimli gerçek veri ekranı değildir.
+- app/src/main/res/drawable-nodpi/onboarding_reference_story.jpg
+- app/src/main/res/drawable-nodpi/onboarding_reference_market.jpg
+- app/src/main/res/drawable-nodpi/onboarding_reference_community.jpg
+  Üç referansın dosya içerikleri birebir korundu. Yüklenen dosyaların gerçek biçimi JPEG olduğundan uzantıları .jpg olarak adlandırıldı. Görsellerin yazılı tam sayfaları doğrudan gösterilmez; yalnızca ilgili görsel bölgeleri kullanılır.
+
+KALDIRILAN PARÇALAR
+- socialPostImages, socialLoopRunnable, sosyal döngü durumu, sosyal view alanları ve başlangıç bağlamaları.
+- showNextSocialPost, showSocialPost, updateSocialDots, startSocialLoop, stopSocialLoop ve eski sosyal giriş/hazırlama/durdurma metotları.
+- Eski piyasa kartına ait fiyat sayacı, grafik animatörleri ve kullanılmayan view bağlantıları.
+- onboarding_social_muammer.png, onboarding_social_volkan.png, onboarding_social_yusuf.png, onboarding_social_fatma.png, onboarding_social_cemil.png.
+- Ortak animationHandler kaldırılmadı: ikinci sayfa ve mevcut bitiş animasyonu hâlâ kullanıyor.
+
+KORUNANLAR
+İş Emri 01 ve 01.1 temizlikleri korunmuştur. WelcomeActivity, LoginActivity, Profil/Ayarlar, ProducerFeedActivity, gerçek Sohbet, Zeytin Ligi, Piyasa, Elek, Firebase, SQLite, abonelik altyapısı, Manifest ve Gradle dosyaları değişmedi. Tanıtımdaki isimler veya sohbet örnekleri herhangi bir veri kaynağına kaydedilmedi.
+
+KONTROLLER
+- 97 Java dosyasının JDK 17 JavacTask parse kontrolü: 0 sözdizimi hatası.
+- Android XML dosyaları ayrıştırıldı; değişen Java dosyalarının R referansları ve onboarding findViewById bağlantıları kontrol edildi.
+- ViewFlipper dört çocuk içeriyor; referans bağlamaları 1 / mevcut 2 / 3 / 4 sırasında.
+- İkinci sayfanın tüm XML alt ağacı orijinalle eşit.
+- İkinci sayfa ve bitiş/geçiş akışındaki 18 metot Java AST karşılaştırmasında değişmemiştir.
+- 15 eski görsel animasyon metodu kaldırıldı; bunlara kalan çağrı yok.
+- Welcome, Onboarding ve Login Manifest kayıtları mevcut; Atla ve son butonun Login bağlantıları korunmuş.
+- Orijinal dosyalarla bayt karşılaştırması: yalnızca yukarıdaki iki mevcut dosya değişti ve beş eski onboarding görseli silindi. Başka mevcut dosya değişmedi.
+- Yeni referans dosyalarının yüklenen görsellerle bayt eşitliği doğrulandı.
+- Alt buton, noktalar ve Atla kaydırılan sayfaların dışında; buton yüksekliği metne göre esnek.
+- Teslim ZIP bütünlüğü kontrol edildi.
+
+DOĞRULAMA SINIRLARI
+Tam Android derlemesi :app:compileDebugJavaWithJavac ile denendi. Yerel Gradle 8.7 olmadığı ve services.gradle.org adresine erişilemediği için derleme başlamadı (UnknownHostException). Sözdizimi kontrolü tam Android compile yerine geçmez. Gradle/targetSdk değiştirilmedi; yerel JDK yolu yalnızca kontrol komutuna geçici parametre olarak verildi.
+Cihaz/emülatörde çalıştırma ve piksel düzeyinde görsel doğrulama yapılamadı. Dolayısıyla gerçek cihaz açılış/tıklama ve farklı ekran boyutlarındaki görünüm doğrulanmış olarak sunulmaz.
+
+CİHAZDA KISA KABUL KONTROLÜ
+1. Welcome üzerinden onboarding aç; 1. sayfada yeni Zeytin/Senin Hikâyen başlığı, defter/manzara ve üç alt mesajı kontrol et.
+2. Devam Et: mevcut Sulama/Gübre/Hasat/Elek kartları ve vurgu döngüsü çalışmalı.
+3. Devam Et: Zeytin Ligi/Piyasa mockup'ında Muammer Çerdin, Volkan Afşar, Yusuf Soyaslan sırası görünmeli.
+4. Devam Et: Sohbet mockup'ında #Genel, #Piyasa, #Hastalık, #Hasat ve üç alt mesaj görünmeli. Eski sosyal carousel olmamalı.
+5. Dört nokta sırayla aktifleşmeli. Son buton mevcut marka geçişinden sonra Login açmalı. İlk üç sayfada Atla da Login açmalı; son sayfada önceki davranış gereği Atla gizlidir.
+6. Dar/kısa ekran, yatay yön ve büyük sistem yazı boyutunda içerik kaydırılabilmeli; ilerleme butonu erişilebilir kalmalı.
+7. İş Emri 01/01.1 profil temizliğinin korunduğunu kontrol et.

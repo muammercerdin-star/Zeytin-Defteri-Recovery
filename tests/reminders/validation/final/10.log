@@ -1,0 +1,1 @@
+PASS 18 fresh install / migration preservation / duplicate / owner / pending-delete fixtures; not Firestore emulator tests

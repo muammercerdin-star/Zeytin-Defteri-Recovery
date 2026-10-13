@@ -1,0 +1,10 @@
+Check supabase/functions/moderation-api/tests/security_test.ts
+running 5 tests from ./supabase/functions/moderation-api/tests/security_test.ts
+cryptographic verification rejects forged, wrong-project, expired, missing claims, future auth time and tenant tokens ... ok (30ms)
+HTTP gate denies missing/forged token, methods, media type, oversized body and extra role fields ... ok (12ms)
+live super role, disabled and session checks protect lookup/grant/revoke/list; claims and audit survive ... ok (27ms)
+server OAuth assertion signed and scoped, cached, and Admin REST claim merge/revoke payload ... ok (4ms)
+bounded per-caller mutation throttling and safe internal errors ... ok (2ms)
+
+ok | 5 passed | 0 failed (82ms)
+

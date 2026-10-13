@@ -1,0 +1,39 @@
+PASS 1850 kg / 120 trees = 15.4166667
+PASS 18450 TL / 1850 kg = 9.97297297
+PASS weighted price 100×50 + 900×70 = 68 TL/kg
+PASS per-decare yield
+PASS cost components; harvest operation not counted twice; net
+PASS sales and mirrored receivables counted once
+PASS actual six Elek grades and dominant
+PASS fixed 15 queries for two seasons; no per-garden queries
+PASS no fake percentage without previous data
+PASS empty garden zero/area/sales safety
+PASS all-garden yield not fabricated from partial area
+PASS clean fixture matches original production Report helper formulas
+PASS actual ReportActivity rendering receives same totals
+PASS garden boundary, other owner and foreign child excluded
+PASS real SALE only, foreign and previous sales excluded
+PASS foreign operation and Elek child excluded
+PASS previous season independently scoped
+PASS actual percentage (1950-1000)/1000
+PASS garden metadata owner isolation
+PASS legacy blank owner and dd.MM.yyyy season fallback
+PASS NULL components coalesce individually; net revenue versus gross average
+PASS latest owned receivable wins; foreign receipt and older duplicates excluded
+PASS legacy sale without receivable falls back to sale balance once
+PASS unassigned brine counted once in season only
+PASS standalone receivable by creation year, not garden or sales revenue
+PASS actual ReportActivity uses corrected NULL/owner totals too
+PASS query count unchanged after adding gardens/children
+PASS deterministic grade tie: Double before 1 No
+PASS guest isolation and zero trees
+PASS empty user supported
+PASS foreign keys intact
+PASS 400 extra operations, same query budget
+PASS all emitted values finite or explicitly missing
+PASS bound owner parameter resists SQL-shaped input
+PASS NULL guest owner/season and ISO date fallback
+PASS null guest cannot enter signed-in summary
+PASS empty current season does not fabricate percent drop
+PASS every repository call left committed SQLite file bytes unchanged
+PASS 38 analytics fixture checks; compiled full analytics classes and real Report projection, NOT Android build

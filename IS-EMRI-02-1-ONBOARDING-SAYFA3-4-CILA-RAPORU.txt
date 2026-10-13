@@ -1,0 +1,44 @@
+ZEYTİN DEFTERİ – İŞ EMRİ 02.1 / SAYFA 3–4 CİLASI
+
+Ana kaynak: Zeytin-Defteri-IS-EMRI-02-ONBOARDING-YENILEME-FINAL.zip
+
+DEĞİŞEN DOSYALAR
+1. app/src/main/java/com/zeytindefteri/app/OnboardingReferencePage.java
+2. app/src/main/res/drawable-nodpi/onboarding_reference_market.jpg
+3. app/src/main/res/drawable-nodpi/onboarding_reference_community.jpg
+Yeni görsel kaynak adı eklenmedi; mevcut iki kaynak yeni referanslarla değiştirildi. Bu rapor eklendi.
+
+SAYFA 3
+Yeni Referans 1 kullanıldı. Beyaz Piyasayı Anlık Takip Et başlığı tek metin bileşeninde, sola hizalı. Açıklamadaki zorunlu satır sonları kaldırıldı; metin ekran genişliğine göre sarılıyor. Telefon ve alt ikonların görsel bölgeleri yeni referansın 1095x1536 boyutlarına göre tanımlandı. Muammer Çerdin, Volkan Afşar ve Yusuf Soyaslan dahil sıralama görselin kendi içeriği olarak korundu.
+
+SAYFA 4
+Yeni Referans 2 kullanıldı. Beyaz Üreticilerle Birlikte başlığı ve açıklama referanstaki gibi ortalı. Metin ekran genişliğine göre sarılıyor. Sohbet telefonu ve alt ikon bölgeleri yeni referansın 1077x1536 boyutlarına göre güncellendi. Örnek sohbet yalnızca görsel sunumdur; veri üretilmedi.
+
+YERLEŞİM / TAŞMA
+- BalancedContent yalnızca sayfa 3 ve 4 için oluşturulur.
+- Ortak başlık alanı en az 110dp, alt özellik alanı en az 76dp; içerik büyürse doğal olarak uzar.
+- Başlık 22sp, açıklama 14sp; satır sınırı ve kesme/ellipsis yok. Referanstaki tek satır başlık, dar ekranda gerektiğinde sarılabilir.
+- Üst/alt içerik padding'i 6/8dp, açıklama aralığı 8dp, telefon üst aralığı 8dp, alt özellik üst aralığı 10dp.
+- ViewFlipper'ın kullanılabilir gerçek yüksekliğinden başlık, alt özellikler ve boşluklar çıkarılarak telefon yüksekliği hesaplanır. En-boy oranı korunur; görüntü merkezlenir, telefon kırpılmaz.
+- Görsel doğal boyutu ve 460dp üst sınırı aşmaz. Çok kısa ekranlarda okunabilirliği korumak için 160dp alt hedefi uygulanır; içerik sığmazsa mevcut ScrollView devreye girer. Her koşulda sıfır kaydırma iddia edilmez.
+- Ölçüm aynı onMeasure geçişinde çözülür; boyutlandırma için post/handler/timer veya animasyon eklenmedi.
+- Üst logo/Atla, sayfa noktaları ve CTA mevcut dış yerleşimde korunur.
+
+KORUNANLAR
+Sayfa 1'in kaynak görseli, switch verileri, orijinal metin boyutları/padding/boşlukları ve çizim yardımcıları korundu; BalancedContent kullanılmaz. Sayfa 2 ve animasyonları değiştirilmedi. OnboardingActivity.java ile activity_onboarding.xml ana kaynakla bayt bayt aynıdır. Dört sayfa, Atla, Devam Et ve son sayfanın marka geçişi/Login bağlantısı değiştirilmedi. Başka ekran/veri/backend/Gradle dosyasına dokunulmadı.
+
+KONTROLLER
+- 97 Java dosyası JDK 17 JavacTask parse kontrolü: 0 sözdizimi hatası.
+- Tüm Android XML dosyaları ayrıştırıldı; değişen sınıfın R kaynak referansları kontrol edildi.
+- ViewFlipper dört sayfa içeriyor; mevcut 1/2/3/4 bağlama sırası korunuyor.
+- Ana kaynakla dosya karşılaştırmasında yalnızca belirtilen üç dosya değişti; silinen dosya yok.
+- Sayfa 1 switch bloğu ve ortak text/dp/ReferenceRegion yardımcıları orijinalle birebir eşit.
+- İki yeni görselin dosya içerikleri yüklenen referanslarla eşit. Yüklenen dosyaların gerçek biçimi JPEG olduğu için mevcut .jpg uzantıları kullanıldı.
+- Telefon ve ikon bölgelerinin görsel sınırları içinde olduğu doğrulandı.
+- ZIP bütünlüğü doğrulandı.
+
+DOĞRULAMA SINIRLARI
+Tam :app:compileDebugJavaWithJavac derlemesi denendi. Gradle 8.7 yerelde bulunmadığı ve services.gradle.org adresine erişilemediği için başlamadı (UnknownHostException). Sözdizimi kontrolü tam Android compile değildir. Cihaz/emülatörde açılış, tıklama, görsel uyum ve kaydırma davranışı doğrulanamadı.
+
+KISA CİHAZ KONTROLÜ
+Welcome üzerinden ilerleyip ilk iki sayfanın aynı kaldığını kontrol et. Sayfa 3 ve 4'te yeni telefon görsellerini, başlıkları ve alt özellikleri incele. Dar/kısa ekran ve büyük yazı boyutunda metinlerin kesilmediğini, CTA'nın erişilebilir olduğunu ve gerekirse içeriğin kaydırıldığını doğrula. İlk üç sayfada Atla, sayfa noktaları, Devam Et ve son sayfada Zeytin Defteri'ne Başla akışını dene.

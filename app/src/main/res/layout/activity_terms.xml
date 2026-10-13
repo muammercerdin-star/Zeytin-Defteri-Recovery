@@ -1,0 +1,498 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/zd_bg"
+    android:fillViewport="true"
+    android:overScrollMode="never">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingEnd="22dp"
+        android:paddingTop="22dp"
+        android:paddingBottom="40dp">
+
+        <!-- ================================================= -->
+        <!-- ÜST BAR                                           -->
+        <!-- ================================================= -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btnBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:gravity="center"
+                android:text="‹"
+                android:textColor="@color/zd_text"
+                android:textSize="34sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Kullanım Koşulları"
+                android:textColor="@color/zd_text"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <!-- ================================================= -->
+        <!-- ANA BAŞLIK                                        -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Zeytin Defteri Kullanım Koşulları"
+            android:textColor="@color/zd_text"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- ================================================= -->
+        <!-- SON GÜNCELLEME                                    -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Son güncelleme: 21 Ağustos 2026"
+            android:textColor="@color/zd_muted"
+            android:textSize="12sp" />
+
+        <!-- ================================================= -->
+        <!-- GİRİŞ                                             -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Zeytin Defteri’ni kullanarak aşağıdaki kullanım koşullarını kabul etmiş olursunuz. Lütfen uygulamayı kullanmadan önce bu koşulları okuyunuz."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 1 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="1. Hizmetin Amacı"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Zeytin Defteri; zeytin üreticilerinin bahçelerini, bakım işlemlerini, masraflarını, hasatlarını, elek sonuçlarını, satışlarını ve diğer üretim kayıtlarını düzenli şekilde takip etmelerine yardımcı olmak amacıyla sunulan dijital bir kayıt ve takip uygulamasıdır. Uygulamanın temel amacı üreticinin sezon boyunca yaptığı işlemleri tek yerde toplamasına ve geçmiş kayıtlarına daha kolay ulaşmasına yardımcı olmaktır."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 2 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="2. Kullanıcı Hesabı ve Güvenliği"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Kullanıcı, hesap oluştururken verdiği bilgilerin doğru ve güncel olmasından sorumludur. Hesaba ait şifre ve diğer giriş bilgilerinin korunması kullanıcının sorumluluğundadır. Bir hesabın başka kişilere zarar vermek, sistemi yanıltmak veya uygulamanın güvenliğini bozmak amacıyla kullanılması yasaktır."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 3 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="3. Kullanıcı Tarafından Girilen Bilgiler"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Bahçe bilgileri, yapılan işlemler, masraflar, hasat miktarları, elek sonuçları, satış bilgileri, fiyatlar ve uygulamaya kullanıcı tarafından eklenen diğer kayıtların doğruluğundan kullanıcı sorumludur. Zeytin Defteri, kullanıcının yanlış veya eksik girdiği bilgilerden doğabilecek sonuçlardan sorumlu tutulamaz."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 4 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="4. Piyasa Verileri"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Zeytin Defteri’nde gösterilen piyasa fiyatları, bölgesel ortalamalar, istatistikler ve benzeri bilgiler bilgilendirme amaçlıdır. Bu verilerin bir bölümü kullanıcıların paylaşılmasına izin verdiği gerçek satış kayıtlarından ve sistem tarafından oluşturulan istatistiklerden meydana gelebilir. Sistem; hatalı, olağan dışı veya piyasa ortalamasından ciddi şekilde ayrılan kayıtları istatistiklerden hariç tutabilir. Gösterilen fiyatlar herhangi bir ürünün belirtilen fiyattan alınacağı veya satılacağı anlamına gelmez ve alım-satım garantisi oluşturmaz."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 5 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="5. Tarımsal Bilgiler ve Kararlar"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Uygulamada sunulan tarımsal bilgiler, hatırlatmalar, hesaplamalar, öneriler veya benzeri içerikler genel bilgilendirme amacı taşır. Bunlar profesyonel ziraat mühendisi, yetkili tarım danışmanı veya diğer uzmanların görüşlerinin yerine geçmez. Özellikle gübreleme, zirai ilaçlama, hastalık ve zararlı mücadelesi, sulama ve benzeri önemli uygulamalarda ürün etiketi, yürürlükteki mevzuat ve gerektiğinde yetkili uzman görüşü dikkate alınmalıdır. Nihai tarımsal karar kullanıcıya aittir."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 6 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="6. Hesaplamalar ve Raporlar"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Uygulama; kullanıcının girdiği bilgilerden hareketle masraf, gelir, kâr, verim, kilogram, fiyat ortalamaları ve benzeri hesaplamalar oluşturabilir. Bu sonuçların doğruluğu büyük ölçüde kullanıcı tarafından girilen verilerin doğruluğuna bağlıdır. Uygulamada gösterilen hesaplama ve raporlar resmi muhasebe, vergi veya finansal belge niteliğinde değildir."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 7 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="7. Kötüye Kullanım ve Yanıltıcı Veri"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Kullanıcıların piyasa sistemini veya diğer kullanıcıları yanıltmak amacıyla gerçeğe aykırı satış, fiyat, miktar veya başka bilgiler girmesi yasaktır. Zeytin Defteri; sistemin güvenilirliğini korumak amacıyla şüpheli veya olağan dışı kayıtları inceleyebilir, istatistiklerden çıkartabilir veya gerekli durumlarda ilgili hesabın belirli özelliklere erişimini sınırlandırabilir. Tekrarlanan veya kasıtlı kötüye kullanım durumunda kullanıcı hesabı geçici olarak sınırlandırılabilir veya kapatılabilir."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 8 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="8. Hizmetin Kullanılabilirliği"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Zeytin Defteri hizmetlerini mümkün olduğunca kesintisiz sunmayı amaçlar. Ancak bakım çalışmaları, güncellemeler, internet bağlantısı sorunları, sunucu arızaları veya kontrolümüz dışındaki teknik nedenlerle uygulamanın bazı özellikleri geçici olarak kullanılamayabilir. Hizmetin her zaman kesintisiz veya hatasız çalışacağı garanti edilmez."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 9 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="9. Uygulamanın Değiştirilmesi"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Zeytin Defteri zaman içerisinde geliştirilebilir. Yeni özellikler eklenebilir, mevcut özellikler değiştirilebilir veya teknik, güvenlik ya da yasal nedenlerle bazı özellikler kaldırılabilir. Önemli değişikliklerde kullanıcıların uygun yöntemlerle bilgilendirilmesi amaçlanır."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 10 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="10. Fikri Mülkiyet Hakları"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Zeytin Defteri uygulamasına ait yazılım, tasarım, logo, marka, grafikler ve uygulamaya özgü diğer içerikler ilgili hak sahiplerine aittir. Kullanıcıya yalnızca uygulamayı kişisel veya izin verilen amaçlarla kullanma hakkı verilir. Uygulamanın kaynak kodunun izinsiz kopyalanması, değiştirilmesi, yeniden dağıtılması veya ticari olarak kullanılması yasaktır. Kullanıcının uygulamaya kendisinin eklediği içerik ve kayıtlar üzerindeki hakları ise kullanıcıya aittir."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 11 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="11. Üçüncü Taraf Hizmetleri"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Uygulama ilerleyen dönemlerde harita, hava durumu, bildirim, yapay zekâ, ödeme veya benzeri üçüncü taraf hizmetlerinden yararlanabilir. Bu hizmetlerin çalışması ilgili sağlayıcıların sistemlerine ve kendi kullanım koşullarına bağlı olabilir. Zeytin Defteri, kontrolü dışındaki üçüncü taraf hizmetlerinde meydana gelen kesintilerden doğrudan sorumlu değildir."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 12 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="12. Ücretli Özellikler"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Zeytin Defteri’nin bazı temel özellikleri ücretsiz sunulabilirken gelecekte bazı ek özellikler ücretli olarak sunulabilir. Ücretli bir özellik kullanıma sunulması halinde ücret ve varsa abonelik şartları satın alma işleminden önce kullanıcıya açık şekilde gösterilir. Kullanıcının açık onayı olmadan ücretli abonelik başlatılmaz."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 13 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="13. Hesabın Kapatılması"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Kullanıcı, sunulan hesap yönetimi seçenekleri kapsamında hesabını kapatma veya silme talebinde bulunabilir. Hesap silme işlemlerinde kişisel verilerin nasıl işlendiği ve hangi verilerin yasal nedenlerle belirli sürelerle saklanabileceği Gizlilik Politikası kapsamında açıklanır."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 14 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="14. Sorumluluğun Sınırları"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Zeytin Defteri bir kayıt, takip ve bilgilendirme aracıdır. Uygulamadaki bilgilere dayanılarak verilen tarımsal, ticari veya finansal kararların nihai sorumluluğu kullanıcıya aittir. Kanunen sınırlandırılması mümkün olmayan sorumluluklar saklı kalmak üzere; kullanıcı tarafından girilen hatalı bilgilerden, piyasa değişikliklerinden veya uygulamanın kontrolü dışındaki olaylardan kaynaklanan dolaylı kayıplardan Zeytin Defteri sorumlu tutulamaz."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 15 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="15. Gizlilik ve Kişisel Veriler"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Kişisel verilerin hangi amaçlarla toplandığı, nasıl kullanıldığı, saklandığı ve kullanıcıların bu konudaki hakları ayrı bir Gizlilik Politikası içerisinde açıklanır. Kullanıcıların Gizlilik Politikası’nı da incelemeleri önerilir."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 16 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="16. Kullanım Koşullarındaki Değişiklikler"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Bu Kullanım Koşulları; uygulamadaki değişiklikler, yeni özellikler veya yasal gereklilikler nedeniyle zaman zaman güncellenebilir. Önemli değişiklikler olması halinde uygulama içerisinden veya uygun başka yöntemlerle kullanıcıların bilgilendirilmesi amaçlanır. Güncel koşullar uygulama içerisinden erişilebilir durumda tutulur."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- 17 -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="17. Uygulanacak Hukuk"
+            android:textColor="@color/zd_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Bu Kullanım Koşulları Türkiye Cumhuriyeti mevzuatına tabidir. Tüketicilerin yürürlükteki mevzuattan doğan zorunlu hakları saklıdır."
+            android:textColor="@color/zd_muted"
+            android:textSize="15sp" />
+
+        <!-- ================================================= -->
+        <!-- ALT AYIRICI                                       -->
+        <!-- ================================================= -->
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="30dp"
+            android:background="@color/zd_border" />
+
+        <!-- ================================================= -->
+        <!-- ALT BİLGİ                                         -->
+        <!-- ================================================= -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:text="🌿 Zeytin Defteri"
+            android:textColor="@color/zd_text"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:gravity="center"
+            android:text="Bahçenin hafızası cebinde."
+            android:textColor="@color/zd_muted"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+</ScrollView>

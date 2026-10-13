@@ -1,0 +1,25 @@
+ZEYTİN DEFTERİ – İŞ EMRİ 01 / PROFİL TEMİZLİĞİ
+
+Ana kaynak: Zeytin-Defteri-ELEK-ARSIVI-FINAL-V4-SON-CILA.zip
+
+Değişiklikler:
+1. ProducerFeedActivity.java: Ayarlar > Üretici bilgileri kartındaki Üyelik butonu, tıklama bağlantısı ve ona ait yerleşim kodu kaldırıldı. Profili yönet butonu ve ProfileActivity bağlantısı korundu.
+2. ProfileActivity.java: Eski beşli alt navigasyonu ekleyen ZdNav.attach(this, "Profil") çağrısı kaldırıldı. Profil içerikleri ve geri butonu korundu. Ortak ZdNav sınıfı değiştirilmedi.
+
+Kontroller:
+- 96 Java dosyası JDK 17 derleyicisinin parse aşamasıyla incelendi: sözdizimi hatası yok. Bu kontrol tam derleme değildir.
+- 144 XML dosyası ayrıştırıldı: hata yok.
+- Değiştirilen iki Java dosyasının R kaynak referansları kontrol edildi: eksik kaynak bulunmadı.
+- Profili yönet -> ProfileActivity Intent bağlantısı ve Manifest kaydı korundu.
+- Ayarlar kodunda Üyelik butonu, Profil kodunda ZdNav ekleme çağrısı kalmadığı doğrulandı.
+- Orijinal ZIP ile bayt karşılaştırması: yalnızca yukarıdaki iki Java dosyası değişti. Bu rapor yeni eklendi.
+- Welcome/Onboarding, ana yedili navigasyon, SQLite, Firebase/Firestore/Storage, Elek Arşivi, Zeytin Ligi, Piyasa ve Gradle yapılandırması değiştirilmedi.
+
+Doğrulama sınırları:
+Tam Android Java derlemesi denenmiştir; Gradle 8.7 yerel ortamda bulunmadığı ve services.gradle.org adresine erişilemediği için derleme başlayamadı (UnknownHostException). Tam compile başarısı iddia edilmez. gradle.properties içindeki mevcut kullanıcıya özel Java yolu değiştirilmedi; kontrol komutunda yerel JDK yolu geçici parametre olarak verildi.
+Cihaz/emülatör üzerinde uygulama çalıştırılmadı; görünürlük ve tıklama davranışı kaynak kod düzeyinde doğrulandı.
+
+Telefonda kısa kontrol:
+Ayarlar > Üretici bilgileri: Üyelik görünmemeli, Profili yönet çalışmalı.
+Profil: eski Ana Sayfa/Bahçem/+/Piyasa/Profil çubuğu görünmemeli.
+Profil fotoğrafı, isim/e-posta, istatistikler, Profili Düzenle, Gönderi, üretici bilgileri ve sekmeler korunmalı; geri ile Ayarlar ekranına dönülmeli.

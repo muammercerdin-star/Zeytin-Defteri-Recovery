@@ -1,0 +1,27 @@
+✔ region normalization is stable for Turkish spelling (2.696254ms)
+✔ normalizer rejects identity mismatch and keeps only priced grade rows (1.106662ms)
+✔ public market requires at least five distinct producers (2.45358ms)
+✔ outlier is removed and aggregate never publishes user identity (0.971397ms)
+✔ daily chart requires five producers for that day (14.839293ms)
+✔ previous period comparison is generated only from anonymous cohort (1.601687ms)
+✔ one producer cannot dominate the public median by submitting many records (1.08945ms)
+✔ region normalization is stable for Turkish spelling (2.698261ms)
+✔ invalid contribution is rejected (0.328709ms)
+✔ fewer than five producers never publishes (1.078709ms)
+✔ five producers publishes producer-balanced median (1.692628ms)
+✔ previous period comparison is calculated from the previous window (1.193746ms)
+✔ 1 distinct producers: HIDDEN in both retained server policies (1.651208ms)
+✔ 2 distinct producers: HIDDEN in both retained server policies (0.350318ms)
+✔ 3 distinct producers: HIDDEN in both retained server policies (1.611819ms)
+✔ 4 distinct producers: HIDDEN in both retained server policies (0.275501ms)
+✔ 5 distinct producers: PUBLIC in both retained server policies (1.110271ms)
+✔ one producer / ten different sales stays HIDDEN (4.197167ms)
+✔ Android and retained production server thresholds agree; old lowering entrypoint is disabled (0.63896ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 292.986219

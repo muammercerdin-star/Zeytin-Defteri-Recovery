@@ -1,0 +1,12 @@
+✔ actual Android page model: backend order, opaque cursor, dedup, filter reset, safe update (594.698156ms)
+✔ Android wiring retains backend boundary and lifecycle guards (static) (0.79447ms)
+✔ 06.3D real Java model: super gate, exact lookup, grant/revoke UI state, protected super targets and pagination (717.342696ms)
+✔ 06.3D Android wiring: private activity, force refresh, no client role writes, lifecycle and confirmations (1.765053ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 799.801538

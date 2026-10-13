@@ -1,0 +1,3 @@
+PASS actual ElekActivity calculation methods: empty, row totals, sum, average, comma decimal, changed price
+PASS actual price methods: invalid remains open, saved preferences, kg preserved, totals/average refreshed, success dismissed, canceled draft discarded
+PASS XML, all bound IDs, six quantity inputs, hidden prices and removed hero reference

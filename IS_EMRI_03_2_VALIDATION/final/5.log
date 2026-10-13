@@ -1,0 +1,1 @@
+PASS actual aggregate SQL: latest nested reply, deleted exclusion, legacy NULL parent, counts, visible-post isolation, stable timestamp tie, empty cache; no Firestore access in preview reader
