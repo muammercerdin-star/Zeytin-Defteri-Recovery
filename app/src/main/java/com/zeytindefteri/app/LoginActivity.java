@@ -12,6 +12,8 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
+import android.util.Patterns;
+import android.widget.ScrollView;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
@@ -37,6 +39,9 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.FirebaseNetworkException;
+import com.google.firebase.FirebaseTooManyRequestsException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.UserProfileChangeRequest;
@@ -108,8 +113,6 @@ public class LoginActivity extends Activity {
     // ============================================================
 
     private LinearLayout btnGoogle;
-    private LinearLayout btnFacebook;
-    private LinearLayout btnApple;
 
 
     // ============================================================
@@ -884,81 +887,7 @@ public class LoginActivity extends Activity {
         );
 
 
-        // ========================================================
-        // FACEBOOK
-        // ========================================================
-
-        btnFacebook =
-                createSocialButton(
-                        R.drawable.ic_facebook,
-                        "Facebook ile devam et"
-                );
-
-
-        root.addView(
-                btnFacebook,
-                socialButtonParams()
-        );
-
-
-        btnFacebook.setOnClickListener(
-                view -> {
-
-                    if (actionRunning) {
-
-                        return;
-                    }
-
-
-                    pressEffect(
-                            btnFacebook,
-                            () -> Toast.makeText(
-                                    LoginActivity.this,
-                                    "Facebook ile giriş yakında aktif olacak 🌿",
-                                    Toast.LENGTH_SHORT
-                            ).show()
-                    );
-                }
-        );
-
-
-        // ========================================================
-        // APPLE
-        // ========================================================
-
-        btnApple =
-                createSocialButton(
-                        R.drawable.ic_apple,
-                        "Apple ile devam et"
-                );
-
-
-        root.addView(
-                btnApple,
-                socialButtonParams()
-        );
-
-
-        btnApple.setOnClickListener(
-                view -> {
-
-                    if (actionRunning) {
-
-                        return;
-                    }
-
-
-                    pressEffect(
-                            btnApple,
-                            () -> Toast.makeText(
-                                    LoginActivity.this,
-                                    "Apple ile giriş yakında aktif olacak.",
-                                    Toast.LENGTH_SHORT
-                            ).show()
-                    );
-                }
-        );
-
+        // Unconfigured providers are deliberately absent from the UI.
 
         // ========================================================
         // E-POSTA AYRAÇ
@@ -1506,9 +1435,14 @@ public class LoginActivity extends Activity {
         // GÖSTER
         // ========================================================
 
-        setContentView(
-                root
-        );
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(GreenTheme.parse(COLOR_BG));
+        scroll.addView(root, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        setContentView(scroll);
 
 
         // ========================================================
@@ -2021,9 +1955,7 @@ public class LoginActivity extends Activity {
                     }
 
 
-                    if (!email.contains("@")
-                            ||
-                            !email.contains(".")) {
+                    if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
                         resetEmail.setError(
                                 "Geçerli bir e-posta adresi yaz"
@@ -2081,7 +2013,7 @@ public class LoginActivity extends Activity {
 
 
                                             showMessage(
-                                                    "Bağlantı gönderilemedi. E-posta adresini kontrol et."
+                                                    authErrorMessage(task.getException(), "reset")
                                             );
 
 
@@ -2104,9 +2036,9 @@ public class LoginActivity extends Activity {
         // DIALOG
         // ========================================================
 
-        dialog.setContentView(
-                card
-        );
+        ScrollView resetScroll = new ScrollView(this);
+        resetScroll.addView(card);
+        dialog.setContentView(resetScroll);
 
 
         dialog.setCancelable(
@@ -2166,6 +2098,7 @@ public class LoginActivity extends Activity {
 
 
         if (shownWindow != null) {
+            shownWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
             WindowManager.LayoutParams params =
                     shownWindow.getAttributes();
@@ -2300,7 +2233,7 @@ public class LoginActivity extends Activity {
 
 
         title.setText(
-                "Bağlantı gönderildi"
+                "İstek alındı"
         );
 
 
@@ -2355,11 +2288,8 @@ public class LoginActivity extends Activity {
 
 
         message.setText(
-                "Şifre yenileme bağlantısını\n"
-                        + email
-                        + "\n"
-                        + "adresine gönderdik.\n\n"
-                        + "E-posta kutunu kontrol et."
+                "Bu adres için şifre sıfırlama mümkünse bağlantı gönderilecektir.\n\n"
+                        + "E-posta kutunu ve spam klasörünü kontrol et."
         );
 
 
@@ -2670,6 +2600,8 @@ public class LoginActivity extends Activity {
     // ============================================================
 
     private void handleSubmit() {
+        // pressEffect posts a delayed callback; recheck to prevent duplicate requests.
+        if (actionRunning) return;
 
         String email =
                 etEmail
@@ -2696,9 +2628,7 @@ public class LoginActivity extends Activity {
         }
 
 
-        if (!email.contains("@")
-                ||
-                !email.contains(".")) {
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
 
             showMessage(
                     "Geçerli bir e-posta adresi gir."
@@ -2710,7 +2640,13 @@ public class LoginActivity extends Activity {
         }
 
 
-        if (password.length() < 6) {
+        if (password.isEmpty()) {
+            showMessage("Şifreni gir.");
+            etPassword.requestFocus();
+            return;
+        }
+
+        if (registerMode && password.length() < 6) {
 
             showMessage(
                     "Şifre en az 6 karakter olmalı."
@@ -2824,23 +2760,7 @@ public class LoginActivity extends Activity {
                                 );
 
 
-                                String message =
-                                        "Hesap oluşturulamadı.";
-
-
-                                if (task.getException() != null
-                                        &&
-                                        task.getException().getMessage() != null) {
-
-                                    message =
-                                            task.getException()
-                                                    .getMessage();
-                                }
-
-
-                                showMessage(
-                                        message
-                                );
+                                showMessage(authErrorMessage(task.getException(), "register"));
 
                                 return;
                             }
@@ -2879,12 +2799,17 @@ public class LoginActivity extends Activity {
                                     updates
                             )
                                     .addOnCompleteListener(
+                                            this,
                                             profileTask -> {
+                                                if (!profileTask.isSuccessful()) {
+                                                    showMessage("Hesabın oluşturuldu; adın kaydedilemedi. Profilinden güncelleyebilirsin.");
+                                                }
 
                                                 sessionManager
                                                         .startUserSession(
                                                                 name,
-                                                                email
+                                                                email,
+                                                                user.getUid()
                                                         );
 
 
@@ -2931,7 +2856,7 @@ public class LoginActivity extends Activity {
 
 
                                 showMessage(
-                                        "E-posta veya şifre hatalı. Bilgilerini kontrol et."
+                                        authErrorMessage(task.getException(), "login")
                                 );
 
                                 return;
@@ -2949,6 +2874,7 @@ public class LoginActivity extends Activity {
                                         null
                                 );
 
+                                showMessage("Kullanıcı bilgisi alınamadı. Lütfen tekrar dene.");
                                 return;
                             }
 
@@ -2979,7 +2905,8 @@ public class LoginActivity extends Activity {
 
                             sessionManager.startUserSession(
                                     userName,
-                                    userEmail
+                                    userEmail,
+                                    user.getUid()
                             );
 
 
@@ -3717,14 +3644,20 @@ public class LoginActivity extends Activity {
     // SOCIAL BUTTON STATE
     // ============================================================
 
+    private String authErrorMessage(Exception error, String operation) {
+        String code = error instanceof FirebaseAuthException
+                ? ((FirebaseAuthException) error).getErrorCode() : "";
+        return AuthErrorMessages.message(code,
+                error instanceof FirebaseNetworkException,
+                error instanceof FirebaseTooManyRequestsException, operation);
+    }
+
     private void setSocialButtonsEnabled(
             boolean enabled
     ) {
 
         LinearLayout[] buttons = {
-                btnGoogle,
-                btnFacebook,
-                btnApple
+                btnGoogle
         };
 
 
