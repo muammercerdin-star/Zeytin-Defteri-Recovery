@@ -11,6 +11,8 @@ assert set(re.findall(r'R.id.(\w+)',s))<=set(ids)
 for k in ['Double','1','2','3','4','Oil']:assert ids['etKg'+k].tag=='EditText'
 assert ids['elekPricePanel'].get(ns+'visibility')=='gone'
 assert 'elek_machine_hero' not in E.tostring(root).decode()
+assert 'elek_hero_olive' not in E.tostring(root).decode()
+for k in ['elekDistributionBar','tvElekDistributionLegend','tvElekSaveHint','tvElekGardenLabel']:assert k in ids
 for f in p.glob('app/src/main/**/*.xml'):E.parse(f)
 
 def method(name):
@@ -26,6 +28,8 @@ code+='static class TextView {String value="";void setText(String s){value=s;}St
 code+='Locale turkishLocale=new Locale("tr","TR");DecimalFormat numberFormat;\n'
 for k in keys:code+='EditText etKg'+k+'=new EditText();TextView tvCalc'+k+'=new TextView(),tvTotal'+k+'=new TextView();double price'+k+';\n'
 code+='TextView tvTotalKg=new TextView(),tvTotalRevenue=new TextView(),tvAveragePrice=new TextView();\n'
+# calculateAll ends with a display-only refresh (dağılım şeridi, kaydet durumu); tested in tests/elek_insights.
+code+='void refreshElekInsights(){}\n'
 for name in ['setupNumberFormat','calculateAll','readDouble','calculationText','money','formatNumber']:code+=method(name)+'\n'
 code+='''public static void main(String[] a){ElekMathTest t=new ElekMathTest();t.setupNumberFormat();
 t.priceDouble=100;t.price1=90;t.price2=70;t.price3=55;t.price4=40;t.priceOil=32;

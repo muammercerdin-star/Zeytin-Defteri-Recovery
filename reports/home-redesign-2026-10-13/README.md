@@ -134,3 +134,49 @@ Kaynak: tasarım tuvalindeki "Bahçelerim · hayal edilen" ekranı. Yayıncı bu
 - Ana Sayfa'da göster → Ana Sayfa'ya dönünce doğru bahçe ve hava.
 - Rapor bağlantısı.
 - Hiç bahçe olmayan hesap.
+
+## 9. Elek Kaydı — kabul edilen tasarım uygulandı
+
+Kaynak: tasarım tuvalindeki "Elek Kaydı · yeni tasarım" ekranı.
+
+### Ne değişti
+- **`activity_elek.xml` yeniden yazıldı.**
+  - Önceki 56 kimliğin tamamı korundu; 4 yeni kimlik eklendi: `elekDistributionBar`, `tvElekDistributionLegend`, `tvElekSaveHint`, `tvElekGardenLabel`.
+  - Gizli fiyat paneli (`elekPricePanel`) ve gizli hesaplama alanları birebir korundu.
+- **Kaldırılanlar:** "Emeğin bereketi" fotoğraflı afişi ve siyah zeminli kantar/para/trend ikonları.
+- **Özet kartı:**
+  - Büyük toplam tutar; değer varsa altın, sıfırsa soluk.
+  - Toplam kg ve "ort." TL/kg.
+  - Sınıf renkleriyle **dağılım şeridi** ve "Double %54 · 1 %45 · Yağlık %1" açıklaması; ekran okuyucu için tam cümle.
+- **Sınıf satırları (iki katlı):**
+  - Rozet, sınıf adı (sıkıştırılmış yazı tipi kaldırıldı) ve satır tutarı. Satır tutarı kilo girilmemişse soluk.
+  - Boş gelen kg alanı ("0 kg" yalnızca ipucu).
+  - Kesik çerçeveli **fiyat çipi** ("120 TL/kg"). Dokununca mevcut fiyat düzenleyici o sınıfın alanı seçili açılır.
+- **Bahçe:**
+  - Ana Sayfa alt menüsünden Elek açılırken aktif bahçe `garden_id` ile iletilir ve seçili gelir; etikette "Bahçe · aktif" yazar. Kullanıcı yine değiştirebilir.
+  - Çift "▼" sorunu giderildi.
+- **Kaydet:**
+  - Düz uygulama yeşili, tam genişlik. Hiç kilo yokken pasif ve altında "Kaydetmek için en az bir sınıfa kilo gir." yazar.
+  - Hazırken "Edremit · 13 Ekim 2026 olarak kaydedilecek." yazar.
+  - "Varsayılan fiyatları düzenle" nötr çerçeveli; kırmızı çerçeve kalktı. "Geçmiş" hap stilinde.
+
+### Korunanlar
+- `calculateAll`, `updatePrices`, `loadSavedPrices`, `saveElekRecord`, bulut eşitleme, arşiv, tarih seçici, durum geri yükleme.
+- Hesaplama mantığı değişmedi. `calculateAll` sonunda yalnızca gösterim yapan `refreshElekInsights()` çağrılıyor.
+- Fiyat çiplerinin metnine "/kg" eklendi; değer aynı.
+
+### Tasarımdan fark
+- **Bölge fiyatı satırı eklenmedi.** Piyasa verisi farklı bir ekrandan, ağ üzerinden geliyor; uydurma değer göstermemek için ayrı bir adıma bırakıldı.
+- **Fiyat düzenleme:** Fiyat satır içinde ayrı bir alan olarak değil, çipe dokununca açılan mevcut düzenleyiciyle değiştiriliyor. Böylece kayıtlı varsayılan fiyat mantığı bozulmuyor.
+
+### Testler
+- `tests/elek_insights` (yeni): 19 kontrol (paylar, yuvarlama, açıklama, kaydet ipucu, bahçe etiketi).
+- `tests/elek_ui/check_form.py`: yeni görünüm kimlikleri ve afiş görselinin kaldırılması kontrol ediliyor. `refreshElekInsights` için boş yer tutucu eklendi; gerçek hesaplama kontrolleri aynen geçiyor.
+- `tests/elek_popup/check_prices.py` değişmeden geçiyor.
+
+### Cihazda kontrol
+- Kg girince şerit, renkler ve kaydet durumunun güncellenmesi.
+- Fiyat çipinden düzenleyicinin doğru alanla açılması.
+- Kaydetme ve arşive düşmesi.
+- Alt menüden açınca aktif bahçenin seçili gelmesi.
+- Ekran döndürme ve geri dönüşte seçimlerin korunması.

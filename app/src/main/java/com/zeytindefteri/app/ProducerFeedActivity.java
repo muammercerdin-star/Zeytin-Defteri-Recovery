@@ -7056,7 +7056,13 @@ public class ProducerFeedActivity extends Activity {
         item.addView(title, labelParams);
         item.setOnClickListener(v -> {
             if ("ELEK".equals(section)) {
-                startActivity(new Intent(this, ElekActivity.class));
+                // Elek kaydı, Ana Sayfa'daki aktif bahçe seçili açılır (kullanıcı değiştirebilir).
+                long activeGarden = 0;
+                try {
+                    activeGarden = Long.parseLong(db.getSetting(homeActiveGardenSettingKey(), "0"));
+                } catch (Exception ignored) {
+                }
+                startActivity(new Intent(this, ElekActivity.class).putExtra("garden_id", activeGarden));
             } else {
                 showSection(section);
             }

@@ -202,6 +202,13 @@ public class ElekActivity extends Activity {
     private TextView btnUpdateElekPrices;
     private TextView btnSaveElek;
 
+    // Yeni özet kartı (13.10.2026 tasarımı)
+    private android.widget.LinearLayout elekDistributionBar;
+    private TextView tvElekDistributionLegend;
+    private TextView tvElekSaveHint;
+    private TextView tvElekGardenLabel;
+    private long homeActiveGardenId = 0;
+
 
     // ============================================================
     // AKTİF FİYATLAR
@@ -326,7 +333,13 @@ public class ElekActivity extends Activity {
         setupButtons();
 
         loadGardens();
+        homeActiveGardenId = getIntent().getLongExtra("garden_id", 0L);
+        if (savedInstanceState == null && selectedGardenId <= 0 && homeActiveGardenId > 0) {
+            int activeIndex = gardenIds.indexOf(homeActiveGardenId);
+            if (activeIndex >= 0) selectGarden(activeIndex);
+        }
         restoreFormSelection(savedInstanceState);
+        setupPriceChips();
         calculateAll();
 
         loadSeasonArchive();
@@ -702,6 +715,26 @@ public class ElekActivity extends Activity {
                 findViewById(
                         R.id.btnSaveElek
                 );
+
+        elekDistributionBar =
+                findViewById(
+                        R.id.elekDistributionBar
+                );
+
+        tvElekDistributionLegend =
+                findViewById(
+                        R.id.tvElekDistributionLegend
+                );
+
+        tvElekSaveHint =
+                findViewById(
+                        R.id.tvElekSaveHint
+                );
+
+        tvElekGardenLabel =
+                findViewById(
+                        R.id.tvElekGardenLabel
+                );
     }
 
 
@@ -719,6 +752,7 @@ public class ElekActivity extends Activity {
             Calendar date=Calendar.getInstance();date.set(year,month,day);
             recordDateIso=new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(date.getTime());
             tvElekDate.setText(new SimpleDateFormat("d MMMM yyyy",turkishLocale).format(date.getTime()));
+            refreshElekInsights();
         },selected.get(Calendar.YEAR),selected.get(Calendar.MONTH),selected.get(Calendar.DAY_OF_MONTH)).show();
     }
 
@@ -1056,6 +1090,8 @@ public class ElekActivity extends Activity {
                 selectedGardenName
                         + " ▼"
         );
+
+        refreshElekInsights();
     }
 
 
@@ -1217,44 +1253,32 @@ public class ElekActivity extends Activity {
     private void updatePriceLabels() {
 
         tvPriceDouble.setText(
-                moneyUnit(
-                        priceDouble
-                )
+                moneyUnit(priceDouble) + "/kg"
         );
 
 
         tvPrice1.setText(
-                moneyUnit(
-                        price1
-                )
+                moneyUnit(price1) + "/kg"
         );
 
 
         tvPrice2.setText(
-                moneyUnit(
-                        price2
-                )
+                moneyUnit(price2) + "/kg"
         );
 
 
         tvPrice3.setText(
-                moneyUnit(
-                        price3
-                )
+                moneyUnit(price3) + "/kg"
         );
 
 
         tvPrice4.setText(
-                moneyUnit(
-                        price4
-                )
+                moneyUnit(price4) + "/kg"
         );
 
 
         tvPriceOil.setText(
-                moneyUnit(
-                        priceOil
-                )
+                moneyUnit(priceOil) + "/kg"
         );
     }
 
@@ -1557,6 +1581,8 @@ public class ElekActivity extends Activity {
                 )
                         + " TL/kg"
         );
+
+        refreshElekInsights();
     }
 
 
@@ -2886,6 +2912,112 @@ public class ElekActivity extends Activity {
     // ============================================================
     // KAPANIŞ
     // ============================================================
+
+
+    // ============================================================
+    // ÖZET KARTI, DAĞILIM ŞERİDİ VE KAYDET DURUMU
+    // Hesaplama calculateAll'da kalır; bu yöntem yalnızca gösterimi günceller.
+    // ============================================================
+
+    private void refreshElekInsights() {
+        if (elekDistributionBar == null || tvElekDistributionLegend == null) {
+            return;
+        }
+
+        double[] kg = {
+                readDouble(etKgDouble),
+                readDouble(etKg1),
+                readDouble(etKg2),
+                readDouble(etKg3),
+                readDouble(etKg4),
+                readDouble(etKgOil)
+        };
+        int[] colors = {
+                getResources().getColor(R.color.elek_badge_double, null),
+                getResources().getColor(R.color.elek_badge_one, null),
+                getResources().getColor(R.color.elek_badge_two, null),
+                getResources().getColor(R.color.elek_badge_three, null),
+                getResources().getColor(R.color.elek_badge_four, null),
+                getResources().getColor(R.color.elek_badge_oil, null)
+        };
+        TextView[] rowTotals = {
+                tvTotalDouble, tvTotal1, tvTotal2, tvTotal3, tvTotal4, tvTotalOil
+        };
+
+        int text = getResources().getColor(R.color.zd_text, null);
+        int muted = getResources().getColor(R.color.zd_muted, null);
+        int gold = getResources().getColor(R.color.zd_warning, null);
+        double totalKg = ElekInsights.total(kg);
+
+        elekDistributionBar.removeAllViews();
+        float density = getResources().getDisplayMetrics().density;
+        boolean first = true;
+        for (int i = 0; i < kg.length; i++) {
+            if (rowTotals[i] != null) {
+                rowTotals[i].setTextColor(kg[i] > 0 ? text : muted);
+            }
+            if (kg[i] <= 0) {
+                continue;
+            }
+            android.view.View segment = new android.view.View(this);
+            segment.setBackgroundColor(colors[i]);
+            android.widget.LinearLayout.LayoutParams params =
+                    new android.widget.LinearLayout.LayoutParams(0, -1, (float) kg[i]);
+            if (!first) {
+                params.setMarginStart(Math.round(2 * density));
+            }
+            first = false;
+            elekDistributionBar.addView(segment, params);
+        }
+        elekDistributionBar.setClipToOutline(true);
+        elekDistributionBar.setContentDescription(ElekInsights.accessibleLegend(kg));
+        tvElekDistributionLegend.setText(ElekInsights.legend(kg));
+        tvTotalRevenue.setTextColor(totalKg > 0 ? gold : muted);
+
+        if (tvElekGardenLabel != null) {
+            tvElekGardenLabel.setText(
+                    ElekInsights.gardenLabel(selectedGardenId, homeActiveGardenId)
+            );
+        }
+
+        if (btnSaveElek != null && !saving) {
+            btnSaveElek.setEnabled(totalKg > 0);
+            btnSaveElek.setTextColor(totalKg > 0
+                    ? getResources().getColor(R.color.zd_bg, null)
+                    : muted);
+        }
+        if (tvElekSaveHint != null) {
+            tvElekSaveHint.setText(ElekInsights.saveHint(
+                    totalKg,
+                    selectedGardenId > 0,
+                    selectedGardenName,
+                    tvElekDate == null ? "" : tvElekDate.getText().toString()
+            ));
+        }
+    }
+
+    // Satırdaki fiyat çipine dokununca mevcut fiyat düzenleyici o sınıfın alanıyla açılır.
+    private void setupPriceChips() {
+        TextView[] chips = {
+                tvPriceDouble, tvPrice1, tvPrice2, tvPrice3, tvPrice4, tvPriceOil
+        };
+        for (int i = 0; i < chips.length; i++) {
+            final int index = i;
+            if (chips[i] == null) {
+                continue;
+            }
+            chips[i].setOnClickListener(view -> openPriceEditor(index));
+        }
+    }
+
+    private void openPriceEditor(int index) {
+        showPriceDialog();
+        EditText[] fields = priceFields();
+        if (index >= 0 && index < fields.length && fields[index] != null) {
+            fields[index].requestFocus();
+            fields[index].selectAll();
+        }
+    }
 
     @Override
     protected void onDestroy() {
