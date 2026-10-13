@@ -5524,33 +5524,33 @@ public class ProducerFeedActivity extends Activity {
     // =========================================================
 
     // =========================================================
-    // BAHÇELERİM (Ana Sayfa "Saha Defteri" kart diliyle)
+    // BAHÇELERİM (kabul edilen tasarım, 13.10.2026)
+    // Sezon özeti, kayıt uyarısı, sıralama ve bahçe kartları.
+    // Hesaplamalar GardenListModel'dedir (host testli).
     // =========================================================
 
-    private static final class GardenListItem {
-        long id;
-        String name, variety, last, photoUri;
-        int tree, age;
-        double harvestKg, cost;
-    }
+    private static final String GARDENS_SORT_SETTING = "gardens_sort";
 
     private View buildGardensSection() {
         ScrollView scroll = scroll();
         LinearLayout body = pageBody();
         scroll.addView(body);
 
-        List<GardenListItem> gardens = new ArrayList<>();
+        final Calendar now = Calendar.getInstance();
+        List<GardenListModel.Item> gardens = new ArrayList<>();
         Cursor c = null;
         try {
             c = gardenRepository.getGardenSummaries();
             while (c != null && c.moveToNext()) {
-                GardenListItem g = new GardenListItem();
+                GardenListModel.Item g = new GardenListModel.Item();
                 g.id = getLong(c, "id");
                 g.name = getString(c, "name", "Bahçe");
                 g.variety = getString(c, "variety", "");
-                g.tree = getInt(c, "tree_count");
+                g.trees = getInt(c, "tree_count");
                 g.age = getInt(c, "age");
-                g.last = getString(c, "last_operation", "");
+                g.lastOperation = getString(c, "last_operation", "");
+                g.lastOperationDate = getString(c, "last_operation_date", "");
+                g.lastHarvestDate = getString(c, "last_harvest_date", "");
                 g.photoUri = getString(c, "photo_uri", "");
                 g.harvestKg = getDouble(c, "total_harvest");
                 g.cost = getDouble(c, "total_cost");
@@ -5568,8 +5568,12 @@ public class ProducerFeedActivity extends Activity {
             activeId = Long.parseLong(db.getSetting(homeActiveGardenSettingKey(), "0"));
         } catch (Exception ignored) {
         }
-        if (activeId <= 0 && !gardens.isEmpty()) {
-            activeId = gardens.get(0).id;
+        boolean activeExists = false;
+        for (GardenListModel.Item g : gardens) activeExists |= g.id == activeId;
+        if (!activeExists) {
+            activeId = 0;
+            List<GardenListModel.Item> byName = GardenListModel.sort(gardens, GardenListModel.Sort.NAME, 0, now);
+            if (!byName.isEmpty()) activeId = byName.get(0).id;
         }
 
         // Başlık
@@ -5586,7 +5590,6 @@ public class ProducerFeedActivity extends Activity {
         title.setPadding(0, dp(3), 0, 0);
         titles.addView(title);
         header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
-
         TextView add = text("+ Bahçe ekle", 14, GREEN, true);
         add.setGravity(Gravity.CENTER);
         add.setMinHeight(dp(44));
@@ -5597,7 +5600,147 @@ public class ProducerFeedActivity extends Activity {
         header.addView(add, new LinearLayout.LayoutParams(-2, -2));
         body.addView(header);
 
-        // Hatırlatmalar
+        if (gardens.isEmpty()) {
+            LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(-1, -2);
+            ep.setMargins(0, dp(16), 0, 0);
+            body.addView(emptyCard(
+                    "Henüz bahçe yok",
+                    "İlk bahçeni ekleyerek Zeytin Defteri'ni kullanmaya başla."), ep);
+            body.addView(gardensRemindersRow(), gardensBlockParams(12));
+            return scroll;
+        }
+
+        body.addView(gardensSummaryCard(gardens), gardensBlockParams(16));
+
+        int stale = GardenListModel.staleCount(gardens, now);
+        if (stale > 0) {
+            body.addView(gardensStaleRow(stale), gardensBlockParams(12));
+        }
+
+        body.addView(gardensRemindersRow(), gardensBlockParams(12));
+
+        GardenListModel.Sort sort = GardenListModel.parseSort(db.getSetting(GARDENS_SORT_SETTING, "ACTIVE"));
+        body.addView(gardensSortChips(sort), gardensBlockParams(16));
+
+        List<GardenListModel.Item> ordered = GardenListModel.sort(gardens, sort, activeId, now);
+        for (int i = 0; i < ordered.size(); i++) {
+            GardenListModel.Item g = ordered.get(i);
+            View card = gardenCard(g, g.id == activeId, now);
+            body.addView(card, gardensBlockParams(i == 0 ? 12 : 10));
+        }
+        return scroll;
+    }
+
+    private LinearLayout.LayoutParams gardensBlockParams(int top) {
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
+        p.setMargins(0, dp(top), 0, 0);
+        return p;
+    }
+
+    private void refreshGardensKeepingScroll() {
+        int y = 0;
+        if (contentHost != null && contentHost.getChildCount() > 0
+                && contentHost.getChildAt(0) instanceof ScrollView) {
+            y = contentHost.getChildAt(0).getScrollY();
+        }
+        refreshCurrentSection();
+        final int target = y;
+        if (contentHost != null && contentHost.getChildCount() > 0
+                && contentHost.getChildAt(0) instanceof ScrollView) {
+            final ScrollView s = (ScrollView) contentHost.getChildAt(0);
+            s.post(() -> s.scrollTo(0, target));
+        }
+    }
+
+    private View gardensSummaryCard(List<GardenListModel.Item> gardens) {
+        int gold = GreenTheme.color(R.color.zd_warning);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(12), dp(16), dp(16));
+        card.setBackground(round(CARD, 20, BORDER));
+
+        LinearLayout head = row();
+        TextView label = text("SEZON ÖZETİ", 11, MUTED, true);
+        label.setLetterSpacing(0.08f);
+        head.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView report = text("Rapor  ›", 13, GREEN, true);
+        report.setGravity(Gravity.CENTER_VERTICAL);
+        report.setMinHeight(dp(44));
+        report.setPadding(dp(8), 0, 0, 0);
+        report.setContentDescription("Sezon raporunu aç");
+        report.setOnClickListener(v -> startActivity(new Intent(this, GardenAnalyticsActivity.class)));
+        head.addView(report, new LinearLayout.LayoutParams(-2, -2));
+        card.addView(head);
+
+        double harvest = GardenListModel.totalHarvest(gardens);
+        double cost = GardenListModel.totalCost(gardens);
+        double perKg = GardenListModel.costPerKg(cost, harvest);
+        card.addView(text("Kilogram başına maliyet", 12, MUTED, false));
+        TextView value = text(GardenListModel.formatCostPerKg(perKg), 28, Double.isNaN(perKg) ? TEXT : gold, true);
+        value.setPadding(0, dp(2), 0, 0);
+        card.addView(value);
+        TextView note = text(Double.isNaN(perKg)
+                        ? "Hasat ve masraf kaydı girildikçe hesaplanır."
+                        : "Bu sezonun masrafı ÷ hasadı",
+                12, MUTED, false);
+        note.setPadding(0, dp(2), 0, 0);
+        card.addView(note);
+
+        LinearLayout stats = row();
+        stats.setGravity(Gravity.TOP);
+        int trees = GardenListModel.totalTrees(gardens);
+        stats.addView(gardenStat("Ağaç", trees > 0 ? String.valueOf(trees) : "—", TEXT),
+                new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout.LayoutParams second = new LinearLayout.LayoutParams(0, -2, 1);
+        second.setMargins(dp(8), 0, 0, 0);
+        stats.addView(gardenStat("Hasat", harvest > 0 ? fmtKg(harvest) : "—", TEXT), second);
+        LinearLayout.LayoutParams third = new LinearLayout.LayoutParams(0, -2, 1);
+        third.setMargins(dp(8), 0, 0, 0);
+        stats.addView(gardenStat("Masraf", cost > 0 ? fmtTl(cost) : "—", TEXT), third);
+        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
+        sp.setMargins(0, dp(12), 0, 0);
+        card.addView(stats, sp);
+
+        card.setContentDescription("Sezon özeti. Kilogram başına maliyet "
+                + GardenListModel.formatCostPerKg(perKg) + ". Ağaç " + (trees > 0 ? trees : "yok")
+                + ", hasat " + (harvest > 0 ? fmtKg(harvest) : "yok")
+                + ", masraf " + (cost > 0 ? fmtTl(cost) : "yok") + ".");
+        return card;
+    }
+
+    private View gardensStaleRow(int count) {
+        int gold = GreenTheme.color(R.color.zd_warning);
+        LinearLayout row = row();
+        row.setPadding(dp(14), dp(10), dp(14), dp(10));
+        row.setMinimumHeight(dp(52));
+        row.setBackground(round(GreenTheme.color(R.color.zd_surface), 16, (gold & 0x00FFFFFF) | 0x66000000));
+        row.setClickable(true);
+        row.setFocusable(true);
+        View dot = new View(this);
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL);
+        shape.setColor(gold);
+        dot.setBackground(shape);
+        LinearLayout.LayoutParams dotParams = new LinearLayout.LayoutParams(dp(10), dp(10));
+        dotParams.setMargins(0, 0, dp(12), 0);
+        row.addView(dot, dotParams);
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        texts.addView(text(GardenListModel.staleText(count), 14, TEXT, true));
+        TextView sub = text(GardenTodayAdvisor.RECORD_REVIEW_DAYS + " günden uzun süredir kayıt girilmemiş", 12, MUTED, false);
+        sub.setPadding(0, dp(2), 0, 0);
+        texts.addView(sub);
+        row.addView(texts, new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(text("›", 22, gold, true), new LinearLayout.LayoutParams(-2, -2));
+        row.setContentDescription(GardenListModel.staleText(count) + ". Bu bahçeleri öne almak için dokun.");
+        row.setOnClickListener(v -> {
+            db.setSetting(GARDENS_SORT_SETTING, GardenListModel.Sort.STALE.name());
+            refreshGardensKeepingScroll();
+        });
+        return row;
+    }
+
+    private View gardensRemindersRow() {
         LinearLayout reminders = row();
         reminders.setPadding(dp(14), dp(12), dp(14), dp(12));
         reminders.setMinimumHeight(dp(64));
@@ -5624,34 +5767,53 @@ public class ProducerFeedActivity extends Activity {
         reminders.addView(text("›", 24, GREEN, true), new LinearLayout.LayoutParams(-2, -2));
         reminders.setOnClickListener(v -> startActivity(
                 new Intent(ProducerFeedActivity.this, RemindersActivity.class)));
-        LinearLayout.LayoutParams reminderParams = new LinearLayout.LayoutParams(-1, -2);
-        reminderParams.setMargins(0, dp(16), 0, dp(12));
-        body.addView(reminders, reminderParams);
-
-        for (GardenListItem g : gardens) {
-            body.addView(gardenCard(g, g.id == activeId));
-        }
-        if (gardens.isEmpty()) {
-            body.addView(emptyCard(
-                    "Henüz bahçe yok",
-                    "İlk bahçeni ekleyerek Zeytin Defteri'ni kullanmaya başla."));
-        }
-        return scroll;
+        return reminders;
     }
 
-    private View gardenCard(GardenListItem g, boolean active) {
+    private View gardensSortChips(GardenListModel.Sort selected) {
+        HorizontalScrollView scroller = new HorizontalScrollView(this);
+        scroller.setHorizontalScrollBarEnabled(false);
+        LinearLayout chips = row();
+        GardenListModel.Sort[] sorts = {
+                GardenListModel.Sort.ACTIVE, GardenListModel.Sort.NAME,
+                GardenListModel.Sort.YIELD, GardenListModel.Sort.STALE};
+        String[] labels = {"Aktif önce", "Ada göre", "Verime göre", "Kayıt bekleyen"};
+        for (int i = 0; i < sorts.length; i++) {
+            final GardenListModel.Sort sort = sorts[i];
+            boolean on = sort == selected;
+            TextView chip = text(labels[i], 12, on ? GREEN : MUTED, true);
+            chip.setGravity(Gravity.CENTER);
+            chip.setMinHeight(dp(40));
+            chip.setPadding(dp(14), 0, dp(14), 0);
+            chip.setBackground(round(on ? GREEN_SOFT : Color.TRANSPARENT, 20, on ? GREEN : BORDER));
+            chip.setSelected(on);
+            chip.setContentDescription("Sırala: " + labels[i] + (on ? ", seçili" : ""));
+            chip.setOnClickListener(v -> {
+                if (sort == selected) return;
+                db.setSetting(GARDENS_SORT_SETTING, sort.name());
+                refreshGardensKeepingScroll();
+            });
+            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-2, -2);
+            if (i > 0) cp.setMargins(dp(8), 0, 0, 0);
+            chips.addView(chip, cp);
+        }
+        scroller.addView(chips);
+        return scroller;
+    }
+
+    private View gardenCard(final GardenListModel.Item g, boolean active, Calendar now) {
         int gold = GreenTheme.color(R.color.zd_warning);
         int inner = GreenTheme.color(R.color.zd_surface);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(14), dp(14), dp(14), dp(14));
+        card.setPadding(dp(14), dp(14), dp(14), dp(10));
         card.setBackground(round(CARD, 20, active ? GreenTheme.color(R.color.zd_green_chip) : BORDER));
         card.setClickable(true);
         card.setFocusable(true);
 
+        // Üst satır: görsel, ad + meta, (aktif bahçede) hava
         LinearLayout top = row();
-
         if (!TextUtils.isEmpty(g.photoUri)) {
             ImageView image = new ImageView(this);
             image.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -5668,7 +5830,6 @@ public class ProducerFeedActivity extends Activity {
             }
             top.addView(image, new LinearLayout.LayoutParams(dp(56), dp(56)));
         } else {
-            // Fotoğraf yoksa her bahçeye aynı stok görsel yerine sade bir zeytin karosu.
             ImageView tile = new ImageView(this);
             tile.setImageResource(R.drawable.ic_olive_logo);
             tile.setPadding(dp(12), dp(12), dp(12), dp(12));
@@ -5680,72 +5841,159 @@ public class ProducerFeedActivity extends Activity {
         LinearLayout info = new LinearLayout(this);
         info.setOrientation(LinearLayout.VERTICAL);
         info.setPadding(dp(12), 0, dp(6), 0);
+        LinearLayout nameRow = row();
         TextView name = text(g.name, 17, TEXT, true);
         name.setMaxLines(2);
         name.setEllipsize(TextUtils.TruncateAt.END);
-        info.addView(name);
-        TextView meta = text(HomeDashboardModel.gardenMeta(g.variety, g.tree, g.age), 13, MUTED, false);
+        nameRow.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
+        if (active) {
+            TextView badge = text("AKTİF", 10, gold, true);
+            badge.setLetterSpacing(0.08f);
+            badge.setPadding(dp(7), dp(3), dp(7), dp(3));
+            badge.setBackground(round(inner, 8, Color.TRANSPARENT));
+            LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-2, -2);
+            bp.setMargins(dp(6), 0, 0, 0);
+            nameRow.addView(badge, bp);
+        }
+        info.addView(nameRow);
+        TextView meta = text(HomeDashboardModel.gardenMeta(g.variety, g.trees, g.age), 13, MUTED, false);
         meta.setPadding(0, dp(3), 0, 0);
         info.addView(meta);
         top.addView(info, new LinearLayout.LayoutParams(0, -2, 1));
 
-        if (active) {
-            TextView badge = text("AKTİF", 10, gold, true);
-            badge.setLetterSpacing(0.08f);
-            badge.setPadding(dp(8), dp(4), dp(8), dp(4));
-            badge.setBackground(round(inner, 10, Color.TRANSPARENT));
-            badge.setContentDescription("Ana Sayfa'da gösterilen bahçe");
-            top.addView(badge, new LinearLayout.LayoutParams(-2, -2));
-        } else {
-            top.addView(text("›", 24, MUTED, false), new LinearLayout.LayoutParams(-2, -2));
+        String weatherText = "";
+        if (active && homeWeather != null && homeWeather.today != null
+                && homeWeather.today.garden != null && homeWeather.today.garden.id == g.id
+                && homeWeather.current != null) {
+            WeatherRepository.WeatherSnapshot w = homeWeather.current;
+            LinearLayout weather = new LinearLayout(this);
+            weather.setOrientation(LinearLayout.VERTICAL);
+            weather.setGravity(Gravity.RIGHT);
+            weather.addView(text(Math.round(w.temperatureC) + "°", 15, TEXT, true));
+            double rain = w.precipitationProbability;
+            if (Double.isNaN(rain) && homeWeather.forecast != null && !homeWeather.forecast.daily.isEmpty()) {
+                rain = homeWeather.forecast.daily.get(0).precipitationProbability;
+            }
+            if (!Double.isNaN(rain)) {
+                weather.addView(text("Yağış %" + Math.round(rain), 11, GreenTheme.parse("#8FC0E0"), true));
+            }
+            weatherText = " Şimdi " + Math.round(w.temperatureC) + " derece"
+                    + (Double.isNaN(rain) ? "." : ", yağış ihtimali yüzde " + Math.round(rain) + ".");
+            top.addView(weather, new LinearLayout.LayoutParams(-2, -2));
         }
         card.addView(top);
 
+        // Göstergeler
+        double yield = GardenListModel.yieldPerTree(g.harvestKg, g.trees);
         LinearLayout stats = row();
         stats.setGravity(Gravity.TOP);
-        stats.addView(gardenStat("Hasat", g.harvestKg > 0 ? fmtKg(g.harvestKg) : "—"),
+        stats.addView(gardenStat("Hasat", g.harvestKg > 0 ? fmtKg(g.harvestKg) : "—", TEXT),
                 new LinearLayout.LayoutParams(0, -2, 1));
         LinearLayout.LayoutParams second = new LinearLayout.LayoutParams(0, -2, 1);
         second.setMargins(dp(8), 0, 0, 0);
-        stats.addView(gardenStat("Masraf", g.cost > 0 ? fmtTl(g.cost) : "—"), second);
+        stats.addView(gardenStat("Verim", GardenListModel.formatYield(yield), Double.isNaN(yield) ? TEXT : GREEN), second);
         LinearLayout.LayoutParams third = new LinearLayout.LayoutParams(0, -2, 1);
         third.setMargins(dp(8), 0, 0, 0);
-        stats.addView(gardenStat("Son işlem", g.last.isEmpty() ? "Kayıt yok" : g.last), third);
+        stats.addView(gardenStat("Masraf", g.cost > 0 ? fmtTl(g.cost) : "—", TEXT), third);
         LinearLayout.LayoutParams statsParams = new LinearLayout.LayoutParams(-1, -2);
         statsParams.setMargins(0, dp(12), 0, 0);
         card.addView(stats, statsParams);
 
-        card.setContentDescription(g.name + ". " + HomeDashboardModel.gardenMeta(g.variety, g.tree, g.age)
+        // Alt satır: son kayıt, Ana Sayfa'da göster, + İşlem
+        GardenListModel.Activity activity = GardenListModel.lastActivity(g, now);
+        boolean stale = GardenListModel.isStale(g, now);
+        LinearLayout bottom = row();
+        LinearLayout last = new LinearLayout(this);
+        last.setOrientation(LinearLayout.VERTICAL);
+        last.addView(text("Son kayıt", 11, MUTED, false));
+        LinearLayout lastRow = row();
+        TextView lastValue = text(activity.label, 13, TEXT, true);
+        lastValue.setSingleLine(true);
+        lastValue.setEllipsize(TextUtils.TruncateAt.END);
+        lastRow.addView(lastValue, new LinearLayout.LayoutParams(-2, -2));
+        if (stale) {
+            TextView waiting = text("Kayıt bekliyor", 10, BG, true);
+            waiting.setPadding(dp(6), dp(2), dp(6), dp(2));
+            waiting.setBackground(round(gold, 6, Color.TRANSPARENT));
+            LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(-2, -2);
+            wp.setMargins(dp(6), 0, 0, 0);
+            lastRow.addView(waiting, wp);
+        }
+        last.addView(lastRow);
+        bottom.addView(last, new LinearLayout.LayoutParams(0, -2, 1));
+
+        if (!active) {
+            TextView show = text("Ana Sayfa'da göster", 12, MUTED, true);
+            show.setGravity(Gravity.CENTER);
+            show.setMinHeight(dp(44));
+            show.setPadding(dp(8), 0, dp(8), 0);
+            show.setContentDescription(g.name + " bahçesini Ana Sayfa'da göster");
+            show.setOnClickListener(v -> {
+                db.setSetting(homeActiveGardenSettingKey(), String.valueOf(g.id));
+                Toast.makeText(this, "Ana Sayfa'da artık " + g.name + " gösteriliyor.", Toast.LENGTH_SHORT).show();
+                refreshGardensKeepingScroll();
+            });
+            bottom.addView(show, new LinearLayout.LayoutParams(-2, -2));
+        }
+
+        TextView addOperation = text("+ İşlem", 13, GREEN, true);
+        addOperation.setGravity(Gravity.CENTER);
+        addOperation.setMinHeight(dp(40));
+        addOperation.setPadding(dp(14), 0, dp(14), 0);
+        addOperation.setBackground(round(GREEN_SOFT, 20, GreenTheme.color(R.color.zd_green_chip)));
+        addOperation.setContentDescription(g.name + " için işlem ekle");
+        addOperation.setOnClickListener(v -> showGardenOperationMenu(g));
+        LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(-2, -2);
+        ap.setMargins(dp(4), 0, 0, 0);
+        bottom.addView(addOperation, ap);
+        LinearLayout.LayoutParams bottomParams = new LinearLayout.LayoutParams(-1, -2);
+        bottomParams.setMargins(0, dp(10), 0, 0);
+        card.addView(bottom, bottomParams);
+
+        card.setContentDescription(g.name + ". " + HomeDashboardModel.gardenMeta(g.variety, g.trees, g.age)
                 + ". Bu sezon hasat " + (g.harvestKg > 0 ? fmtKg(g.harvestKg) : "yok")
+                + ", verim " + GardenListModel.formatYield(yield)
                 + ", masraf " + (g.cost > 0 ? fmtTl(g.cost) : "yok")
-                + ", son işlem " + (g.last.isEmpty() ? "kayıt yok" : g.last)
-                + (active ? ". Ana Sayfa'da gösterilen bahçe." : ".") + " Açmak için dokun.");
+                + ". Son kayıt " + activity.label + (stale ? ", kayıt bekliyor" : "")
+                + (active ? ". Ana Sayfa'da gösterilen bahçe." : ".") + weatherText + " Açmak için dokun.");
         card.setOnClickListener(v -> {
             Intent i = new Intent(this, GardenDetailActivity.class);
             i.putExtra("garden_id", g.id);
             startActivity(i);
         });
-
-        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
-        cp.setMargins(0, 0, 0, dp(10));
-        card.setLayoutParams(cp);
         return card;
     }
 
-    private View gardenStat(String label, String value) {
+    private void showGardenOperationMenu(final GardenListModel.Item g) {
+        final String[] types = {"Sulama", "Gübreleme", "İlaçlama", "Hasat"};
+        new AlertDialog.Builder(this)
+                .setTitle(g.name + " · İşlem ekle")
+                .setItems(types, (dialog, which) -> {
+                    if ("Hasat".equals(types[which])) {
+                        openHarvestForGarden(g.id);
+                    } else {
+                        openOperationForGarden(types[which], g.id);
+                    }
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
+    private View gardenStat(String label, String value, int valueColor) {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(10), dp(8), dp(10), dp(8));
         box.setBackground(round(GreenTheme.color(R.color.zd_surface), 12, Color.TRANSPARENT));
         box.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         box.addView(text(label, 11, MUTED, false));
-        TextView v = text(value, 13, TEXT, true);
+        TextView v = text(value, 13, valueColor, true);
         v.setSingleLine(true);
         v.setEllipsize(TextUtils.TruncateAt.END);
         v.setPadding(0, dp(2), 0, 0);
         box.addView(v);
         return box;
     }
+
 
 
     // =========================================================

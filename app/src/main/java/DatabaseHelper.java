@@ -1675,6 +1675,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "ORDER BY o.created_at DESC " +
                         "LIMIT 1" +
                         ") AS last_operation," +
+                        "(" +
+                        "SELECT o3.operation_date " +
+                        "FROM operations o3 " +
+                        "WHERE o3.garden_id = g.id " +
+                        "AND " + activeSeasonCondition("o3", "operation_date") + " " +
+                        "ORDER BY o3.created_at DESC " +
+                        "LIMIT 1" +
+                        ") AS last_operation_date," +
+                        "(" +
+                        "SELECT h2.harvest_date " +
+                        "FROM harvests h2 " +
+                        "WHERE h2.garden_id = g.id " +
+                        "AND " + activeSeasonCondition("h2", "harvest_date") + " " +
+                        "ORDER BY h2.created_at DESC " +
+                        "LIMIT 1" +
+                        ") AS last_harvest_date," +
 
                         "(" +
                         "SELECT COALESCE(SUM(o2.cost), 0) " +

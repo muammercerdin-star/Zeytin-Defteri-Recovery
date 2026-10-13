@@ -95,3 +95,42 @@ Yeni ekranda yeni renk tanımı yok; tamamı mevcut `colors.xml` değerlerinden 
 - **Testler:** `gardenMeta` ve `gardensOverline` için 4 yeni kontrol eklendi (toplam 65).
 - **Eski ekran:** Kullanılmayan eski `GardensActivity` ekranına dokunulmadı (Manifest'te kayıtlı ama hiçbir yerden açılmıyor).
 - **Cihazda kontrol:** Kart dokunuşu → bahçe detayı; "+ Bahçe ekle"; Hatırlatmalar; fotoğraflı ve fotoğrafsız bahçe; AKTİF rozetinin Ana Sayfa'da bahçe değiştirince güncellenmesi.
+
+## 8. Bahçelerim — kabul edilen tasarım uygulandı
+
+Kaynak: tasarım tuvalindeki "Bahçelerim · hayal edilen" ekranı. Yayıncı bu ekranı proje tasarımı olarak kabul etti.
+
+### Eklenenler
+- **Sezon özeti kartı:**
+  - büyük altın renkte **kilogram başına maliyet** (bu sezonun toplam masrafı ÷ toplam hasadı); hasat veya masraf yoksa "—" ve "kayıt girildikçe hesaplanır" notu;
+  - toplam ağaç, hasat ve masraf;
+  - "Rapor ›" bağlantısı mevcut `GardenAnalyticsActivity`'yi tüm bahçeler için açar.
+- **Kayıt uyarısı:** "N bahçe kayıt bekliyor". Eşik `GardenTodayAdvisor.RECORD_REVIEW_DAYS` (30 gün); hiç kaydı olmayan bahçe de sayılır. Dokununca liste "Kayıt bekleyen" sırasına geçer.
+- **Sıralama:** Aktif önce / Ada göre (Türkçe alfabe) / Verime göre / Kayıt bekleyen. Seçim `gardens_sort` ayarında saklanır; yenilemede kaydırma konumu korunur.
+- **Bahçe kartı:**
+  - **Verim** (kg/ağaç) eklendi.
+  - Son kayıt artık tarihli: "Hasat · 40 gün önce". Son işlem ile son hasattan hangisi yeniyse o gösterilir.
+  - 30 gün ve üzerinde **Kayıt bekliyor** rozeti.
+  - Yalnızca aktif bahçede, Ana Sayfa'nın zaten yüklediği hava verisiyle anlık sıcaklık ve yağış; **ek ağ isteği yok**.
+  - **+ İşlem** menüsü (Sulama, Gübreleme, İlaçlama, Hasat) mevcut işlem ekranlarını o bahçe için açar.
+  - **Ana Sayfa'da göster**, Ana Sayfa'daki bahçe seçiciyle aynı ayarı yazar.
+
+### Veri değişikliği
+- `DatabaseHelper.getGardenSummaries()` sorgusuna iki sütun eklendi: `last_operation_date` ve `last_harvest_date`. İkisi de aktif sezon ve sahip filtresiyle sınırlı.
+- Mevcut sütunlar, sıralama ve sahip filtresi değişmedi. Bu, `tests/gardens/check_summary_query.py` ile gerçek SQL'in SQLite üzerinde çalıştırılmasıyla doğrulandı.
+
+### Yeni dosyalar ve testler
+- `GardenListModel.java` (saf Java): tarih, son kayıt, kayıt bekliyor, verim, kg başına maliyet, sıralama.
+- `tests/gardens/`: 36 model kontrolü ve 9 SQL kontrolü.
+
+### Tasarımdan farklar
+- Diğer bahçelerin kartında hava gösterilmez; her bahçe için ayrı istek atmamak için bilinçli bir tercih.
+- Tasarımdaki `[kg]`, `[TL]` yer tutucuları uygulamada gerçek kayıtlardan hesaplanır; veri yoksa "—" görünür.
+
+### Cihazda kontrol
+- Sıralama düğmeleri ve kaydırma konumu.
+- "Kayıt bekliyor" satırı.
+- + İşlem menüsünden işlem ve hasat açma.
+- Ana Sayfa'da göster → Ana Sayfa'ya dönünce doğru bahçe ve hava.
+- Rapor bağlantısı.
+- Hiç bahçe olmayan hesap.
