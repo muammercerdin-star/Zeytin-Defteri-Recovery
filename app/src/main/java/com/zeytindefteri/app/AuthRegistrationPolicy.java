@@ -21,10 +21,10 @@ final class AuthRegistrationPolicy {
     }
 
     static boolean documentsReady() {
-        // No approved KVKK notice exists in the repo. Add approved, versioned
-        // documents and bind BOTH links before enabling this registration UI.
-        // This is not a backend consent or account-creation restriction.
-        return false;
+        // Belgeler uygulamada mevcut (res/raw/legal_*.txt) ancak taslaktır.
+        // Kayıt; veri sorumlusunun adı doğrulanıp hukuki inceleme onaylandığında
+        // LegalDocuments üzerinden açılır. Bu, sunucu tarafı bir kısıt değildir.
+        return LegalDocuments.readyForRegistration();
     }
 
     static boolean canRegister(boolean accepted) {

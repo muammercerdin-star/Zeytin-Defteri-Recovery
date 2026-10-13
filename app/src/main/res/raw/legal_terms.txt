@@ -1,0 +1,53 @@
+Kullanım Koşulları
+Sürüm {{SURUM}} · {{TARIH}}
+
+Bu koşullar, Zeytin Defteri mobil uygulamasını kullanman için geçerli kuralları belirler. Hesap oluştururken bu koşulları kabul etmiş olursun. Kişisel verilerinin işlenmesi bu koşullarla değil, ayrıca sunulan KVKK Aydınlatma Metni ve Gizlilik Politikası ile açıklanır.
+
+Yayıncı: {{VERI_SORUMLUSU}} (bireysel geliştirici)
+İletişim: {{EPOSTA}}
+
+# 1. Uygulamanın amacı
+Zeytin Defteri; zeytin üreticilerinin bahçe, bakım, masraf, hasat, elek, salamura, stok ve satış kayıtlarını düzenli tutmasına, hava durumunu takip etmesine, diğer üreticilerle Meydan'da iletişim kurmasına ve isteğe bağlı olarak anonim bölgesel piyasa bilgilerine ulaşmasına yardımcı olan bir kayıt ve takip uygulamasıdır.
+
+# 2. Hesap kullanımı
+- Hesap oluştururken doğru bilgi vermelisin.
+- Giriş bilgilerini korumak ve başkalarıyla paylaşmamak senin sorumluluğundadır. Hesabının izinsiz kullanıldığını düşünürsen şifreni değiştirmeli ve {{EPOSTA}} adresine bildirmelisin.
+- Her hesap bir kişiye aittir; başkası adına veya başkasını taklit ederek hesap açılamaz.
+
+# 3. Kullanıcı sorumlulukları
+- Uygulamaya girdiğin bahçe, işlem, masraf, hasat, satış ve fiyat bilgilerinin doğruluğundan sen sorumlusun. Hesaplama ve raporlar bu bilgilere dayanır.
+- Uygulamadaki hesaplamalar ve raporlar resmi muhasebe, vergi veya finansal belge niteliği taşımaz.
+- Hava durumu, hatırlatma, asistan cevapları ve tarımsal bilgiler genel bilgilendirme amaçlıdır; ziraat mühendisi veya yetkili uzman görüşünün yerine geçmez. İlaçlama, gübreleme ve benzeri uygulamalarda ürün etiketine ve yürürlükteki mevzuata uymalısın.
+- Piyasa fiyatları ve Zeytin Ligi sıralamaları bilgilendirme amaçlıdır; alım veya satım garantisi ya da teklif değildir.
+
+# 4. Yasaklı kullanım
+Aşağıdakiler yasaktır:
+- Piyasa istatistiklerini veya Zeytin Ligi sıralamalarını yanıltmak için gerçeğe aykırı satış, fiyat veya miktar girmek,
+- Uygulamanın güvenliğini aşmaya, başka kullanıcıların verilerine erişmeye veya sistemi aşırı yüklemeye çalışmak,
+- Uygulamayı otomatik araçlarla izinsiz kullanmak, tersine mühendislikle kötüye kullanmak,
+- Hukuka aykırı amaçlarla veya başkalarının haklarını ihlal edecek şekilde kullanmak.
+
+# 5. Meydan ve topluluk kuralları
+- Saygılı ol. Hakaret, tehdit, taciz, nefret söylemi ve ayrımcılık içeren paylaşımlar yasaktır.
+- Başkalarının kişisel bilgilerini (telefon, adres, kimlik bilgisi vb.) izinleri olmadan paylaşma.
+- Reklam, istenmeyen toplu mesaj, dolandırıcılık ve yanıltıcı içerik paylaşma.
+- Hukuka aykırı ürün veya hizmet teklif etme.
+- Paylaştığın içeriklerin sorumluluğu sana aittir. Uygun olmayan içerikleri ve kullanıcıları şikâyet edebilir veya engelleyebilirsin.
+- Şikâyet edilen içerikler moderatörler tarafından incelenir; kurallara aykırı içerikler kaldırılabilir.
+
+# 6. Hesabın askıya alınması ve silinmesi
+- Bu koşulları veya topluluk kurallarını ihlal eden hesapların içerikleri kaldırılabilir, topluluk özellikleri kısıtlanabilir veya hesap askıya alınabilir. Ciddi veya tekrarlanan ihlallerde hesap kapatılabilir.
+- Bu kararlara itiraz etmek için {{EPOSTA}} adresine yazabilirsin.
+- Hesabının ve verilerinin silinmesini istediğin zaman talep edebilirsin. Silme talebinin nasıl yapılacağı Gizlilik Politikası'nda açıklanmıştır.
+
+# 7. Hizmet değişiklikleri
+Uygulama bireysel bir geliştirici tarafından sunulur. Özellikler zaman içinde eklenebilir, değiştirilebilir veya kaldırılabilir. Hizmetin kesintisiz veya hatasız olacağı garanti edilmez. Önemli kayıtlarının yedeğini almanı öneririz. Bu koşullar güncellendiğinde sürüm numarası ve tarih değişir; önemli değişiklikler uygulama içinde duyurulur.
+
+# 8. Sorumluluk
+Uygulama, yürürlükteki mevzuatın izin verdiği ölçüde "olduğu gibi" sunulur. Kullanıcının girdiği hatalı bilgilerden, uygulamadaki bilgilendirme amaçlı içeriklere dayanılarak verilen kararlardan ve üçüncü taraf hizmetlerdeki kesintilerden doğan dolaylı zararlardan yayıncı, mevzuatın izin verdiği ölçüde sorumlu tutulamaz. Bu madde; kast veya ağır ihmal hâlleri ile tüketici mevzuatı ve diğer emredici hükümlerden doğan sorumlulukları ve hakları ortadan kaldırmaz.
+
+# 9. Uygulanacak hukuk
+Bu koşullar Türkiye Cumhuriyeti hukukuna tabidir. Tüketici sıfatıyla sahip olduğun yasal haklar saklıdır.
+
+# 10. İletişim
+Soru, öneri ve şikâyetlerin için: {{EPOSTA}}

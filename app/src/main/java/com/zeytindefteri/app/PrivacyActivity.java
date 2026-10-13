@@ -2,40 +2,18 @@ package com.zeytindefteri.app;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.widget.TextView;
 
+/**
+ * Mevcut giriş noktalarını (Ayarlar, karşılama ekranı) korur ve tek kaynaktaki
+ * güncel belgeye yönlendirir. Eski activity_privacy.xml metni artık gösterilmez.
+ */
 public class PrivacyActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
-
-        // =========================================================
-        // LAYOUT
-        // =========================================================
-
-        setContentView(
-                R.layout.activity_privacy
-        );
-
-
-        // =========================================================
-        // GERİ BUTONU
-        // =========================================================
-
-        TextView btnBack =
-                findViewById(
-                        R.id.btnBack
-                );
-
-
-        btnBack.setOnClickListener(v -> {
-
-            finish();
-
-        });
-
+        LegalDocumentActivity.open(this, LegalDocuments.PRIVACY);
+        finish();
+        overridePendingTransition(0, 0);
     }
-
 }

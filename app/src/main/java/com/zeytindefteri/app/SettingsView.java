@@ -91,8 +91,12 @@ final class SettingsView extends ScrollView {
         addSection(body, activity, "DİĞER",
                 row(activity, R.drawable.ic_settings_document, "Gizlilik Politikası", "Kişisel verilerinizin kullanımı", null,
                         () -> open(activity, PrivacyActivity.class)),
+                row(activity, R.drawable.ic_settings_document, "KVKK Aydınlatma Metni", "Kişisel verilerin nasıl işlendiği", null,
+                        () -> LegalDocumentActivity.open(activity, LegalDocuments.KVKK)),
                 row(activity, R.drawable.ic_archive_document, "Kullanım Koşulları", "Uygulamayı kullanma şartları", null,
                         () -> open(activity, TermsActivity.class)),
+                row(activity, R.drawable.ic_settings_document, "Hesap ve Veri Silme Talebi", "Hesabının ve verilerinin silinmesini iste", null,
+                        () -> LegalDocumentActivity.requestDeletion(activity)),
                 row(activity, R.drawable.ic_settings_logout, "Çıkış Yap", "Hesabınızdan güvenli şekilde çıkış yapın", null,
                         () -> activity.startActivity(new Intent(activity, ProfileActivity.class)
                                 .putExtra(ProfileActivity.EXTRA_CONFIRM_LOGOUT, true))));

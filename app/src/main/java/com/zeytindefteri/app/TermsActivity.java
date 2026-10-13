@@ -2,22 +2,18 @@ package com.zeytindefteri.app;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.widget.TextView;
 
+/**
+ * Mevcut giriş noktalarını (Ayarlar, karşılama ekranı) korur ve tek kaynaktaki
+ * güncel belgeye yönlendirir. Eski activity_terms.xml metni artık gösterilmez.
+ */
 public class TermsActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
-
-        setContentView(R.layout.activity_terms);
-
-        TextView btnBack =
-                findViewById(R.id.btnBack);
-
-        btnBack.setOnClickListener(v -> finish());
-
+        LegalDocumentActivity.open(this, LegalDocuments.TERMS);
+        finish();
+        overridePendingTransition(0, 0);
     }
-
 }

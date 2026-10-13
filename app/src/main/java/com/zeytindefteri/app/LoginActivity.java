@@ -538,14 +538,21 @@ public class LoginActivity extends Activity {
         TextView privacy = findViewById(R.id.auth_privacy);
         terms.setPaintFlags(terms.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
         privacy.setPaintFlags(privacy.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
-        terms.setOnClickListener(v -> startActivity(new Intent(this, TermsActivity.class)));
-        privacy.setOnClickListener(v -> new AlertDialog.Builder(this)
-                .setTitle(R.string.auth_legal_dialog_title)
-                .setMessage(R.string.auth_legal_dialog_body)
-                .setPositiveButton(R.string.auth_close, null)
-                .setNeutralButton(R.string.auth_existing_privacy,
-                        (dialog, which) -> startActivity(new Intent(this, PrivacyActivity.class)))
-                .show());
+        terms.setOnClickListener(v -> LegalDocumentActivity.open(this, LegalDocuments.TERMS));
+        privacy.setOnClickListener(v -> LegalDocumentActivity.open(this, LegalDocuments.KVKK));
+        View acceptRow = findViewById(R.id.auth_accept_row);
+        acceptRow.setOnClickListener(v -> {
+            if (actionRunning) return;
+            if (!AuthRegistrationPolicy.documentsReady()) {
+                showMessage(LegalDocuments.registrationBlockReason());
+                return;
+            }
+            legalAcceptance.setChecked(!legalAcceptance.isChecked());
+        });
+        TextView legalStatus = findViewById(R.id.auth_legal_status);
+        String blockReason = LegalDocuments.registrationBlockReason();
+        legalStatus.setText(blockReason);
+        legalStatus.setVisibility(blockReason.isEmpty() ? View.GONE : View.VISIBLE);
         etName.setOnEditorActionListener((view, action, event) -> {
             if (action == EditorInfo.IME_ACTION_NEXT) { etEmail.requestFocus(); return true; }
             return false;
@@ -590,11 +597,11 @@ public class LoginActivity extends Activity {
 
     private boolean canStartRegistration() {
         if (!AuthRegistrationPolicy.documentsReady()) {
-            showMessage(getString(R.string.auth_legal_missing));
+            showMessage(LegalDocuments.registrationBlockReason());
             return false;
         }
         if (!legalAcceptance.isChecked()) {
-            showMessage("Kullanım koşullarını kabul ettiğini ve aydınlatma metnini okuduğunu belirt.");
+            showMessage(getString(R.string.auth_accept_required));
             return false;
         }
         return true;
@@ -615,6 +622,10 @@ public class LoginActivity extends Activity {
         passwordEye.setEnabled(!actionRunning);
         confirmEye.setEnabled(!actionRunning);
         legalAcceptance.setEnabled(!actionRunning && AuthRegistrationPolicy.documentsReady());
+        View acceptRow = findViewById(R.id.auth_accept_row);
+        acceptRow.setEnabled(!actionRunning);
+        acceptRow.setContentDescription(getString(R.string.auth_legal_checkbox)
+                + (legalAcceptance.isChecked() ? ", işaretli" : ", işaretli değil"));
         findViewById(R.id.auth_terms).setEnabled(!actionRunning);
         findViewById(R.id.auth_privacy).setEnabled(!actionRunning);
         authProgress.setVisibility(actionRunning ? View.VISIBLE : View.GONE);

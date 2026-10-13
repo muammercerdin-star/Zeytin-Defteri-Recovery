@@ -1,0 +1,93 @@
+package com.zeytindefteri.app;
+
+/**
+ * Hukuki belgelerin tek yapılandırma noktası.
+ *
+ * Yeni kayıt yalnızca şu iki gerçek ön koşul sağlandığında açılır:
+ *  1) CONTROLLER_NAME alanına veri sorumlusunun doğrulanmış ad soyadı yazılmış olmalı,
+ *  2) LEGAL_REVIEW_APPROVED, metinler hukuki incelemeden geçtikten sonra true yapılmalı.
+ * Bu sınıf Android bağımlılığı içermez; host testleriyle doğrulanır.
+ */
+final class LegalDocuments {
+    private LegalDocuments() {}
+
+    static final String KVKK = "kvkk";
+    static final String PRIVACY = "privacy";
+    static final String TERMS = "terms";
+
+    static final String CONTACT_EMAIL = "muammercerdin@gmail.com";
+    /** Veri sorumlusunun doğrulanmış ad soyadı. Doğrulanmadan doldurulmamalı. */
+    static final String CONTROLLER_NAME = "";
+    static final String VERSION = "0.1 (taslak)";
+    static final String DATE = "13 Ekim 2026";
+    /** Hukuki inceleme tamamlanmadan true yapılmamalı. */
+    static final boolean LEGAL_REVIEW_APPROVED = false;
+
+    static final String CONTROLLER_PENDING =
+            "Bireysel geliştirici (ad soyad yayın öncesinde eklenecektir)";
+
+    static boolean controllerVerified() {
+        return controllerVerified(CONTROLLER_NAME);
+    }
+
+    static boolean controllerVerified(String name) {
+        return name != null && name.trim().length() > 1;
+    }
+
+    static boolean isDraft() {
+        return !LEGAL_REVIEW_APPROVED;
+    }
+
+    static boolean readyForRegistration() {
+        return readyForRegistration(LEGAL_REVIEW_APPROVED, CONTROLLER_NAME);
+    }
+
+    static boolean readyForRegistration(boolean reviewApproved, String controllerName) {
+        return reviewApproved && controllerVerified(controllerName);
+    }
+
+    /** Kayıt kapalıysa kullanıcıya gösterilecek gerçek neden; açıksa boş metin. */
+    static String registrationBlockReason() {
+        return registrationBlockReason(LEGAL_REVIEW_APPROVED, CONTROLLER_NAME);
+    }
+
+    static String registrationBlockReason(boolean reviewApproved, String controllerName) {
+        if (readyForRegistration(reviewApproved, controllerName)) return "";
+        return "Hukuki metinler taslak; onaylanana kadar yeni kayıt kapalı. Mevcut hesabınla giriş yapabilirsin.";
+    }
+
+    static String fill(String text) {
+        return fill(text, CONTROLLER_NAME);
+    }
+
+    static String fill(String text, String controllerName) {
+        if (text == null) return "";
+        String controller = controllerVerified(controllerName) ? controllerName.trim() : CONTROLLER_PENDING;
+        return text.replace("{{VERI_SORUMLUSU}}", controller)
+                .replace("{{EPOSTA}}", CONTACT_EMAIL)
+                .replace("{{SURUM}}", VERSION)
+                .replace("{{TARIH}}", DATE);
+    }
+
+    static boolean isKnown(String document) {
+        return KVKK.equals(document) || PRIVACY.equals(document) || TERMS.equals(document);
+    }
+
+    static String title(String document) {
+        if (KVKK.equals(document)) return "KVKK Aydınlatma Metni";
+        if (TERMS.equals(document)) return "Kullanım Koşulları";
+        return "Gizlilik Politikası";
+    }
+
+    static String deletionSubject() {
+        return "Zeytin Defteri - Hesap ve veri silme talebi";
+    }
+
+    static String deletionBody() {
+        return "Merhaba,\n\n"
+                + "Zeytin Defteri hesabımın ve hesabımla ilişkili verilerin silinmesini talep ediyorum.\n\n"
+                + "Hesapta kayıtlı e-posta adresim:\n"
+                + "Ad soyad:\n\n"
+                + "Bu talebi hesabımda kayıtlı e-posta adresinden gönderiyorum.\n";
+    }
+}

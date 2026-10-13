@@ -111,6 +111,12 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Legal" />
 
+        <activity
+            android:name=".LegalDocumentActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Legal" />
+
 
         <!-- ===================================================== -->
         <!-- GİRİŞ / KAYIT                                        -->
