@@ -622,8 +622,11 @@ public final class MarketCloudRepository {
                 grade.saleCount = Math.max(0, row.optInt("sale_count", 0));
                 grade.kgPublished = !row.isNull("kg");
                 if (grade.kgPublished) grade.kg = Math.max(0d, row.optDouble("kg", 0d));
-                if (!row.isNull("average_price")) grade.averagePrice = Math.max(0d, row.optDouble("average_price", 0d));
-                if (!row.isNull("median_price")) grade.medianPrice = Math.max(0d, row.optDouble("median_price", 0d));
+                // Gizlilik: 5 farklı üreticiden az olan elekte fiyat tutulmaz (sunucu gönderse bile).
+                if (RegionGradePrice.visible(grade.producerCount)) {
+                    if (!row.isNull("average_price")) grade.averagePrice = Math.max(0d, row.optDouble("average_price", 0d));
+                    if (!row.isNull("median_price")) grade.medianPrice = Math.max(0d, row.optDouble("median_price", 0d));
+                }
                 grade.trendAvailable = row.optBoolean("trend_available", false);
                 if (!row.isNull("trend_pct")) grade.trendPct = row.optDouble("trend_pct", 0d);
                 if (!row.isNull("trend_current_median")) grade.trendCurrentMedian = Math.max(0d, row.optDouble("trend_current_median", 0d));

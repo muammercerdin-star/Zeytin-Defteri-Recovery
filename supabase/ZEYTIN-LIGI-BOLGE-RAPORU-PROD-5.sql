@@ -301,11 +301,11 @@ begin
                 'sale_count', case when coalesce(gs.pc, 0) >= v_threshold then coalesce(gs.sc, 0) else 0 end,
                 'kg', case when coalesce(gs.pc, 0) >= v_threshold then gs.kg_sum else null end,
                 'average_price', case
-                    when coalesce(gs.pc, 0) >= 1 then round(gs.balanced_average, 2)
+                    when coalesce(gs.pc, 0) >= v_threshold then round(gs.balanced_average, 2)
                     else null
                 end,
                 'median_price', case
-                    when coalesce(gs.pc, 0) >= 1 then round(gs.balanced_median, 2)
+                    when coalesce(gs.pc, 0) >= v_threshold then round(gs.balanced_median, 2)
                     else null
                 end,
                 'trend_available', coalesce(gt.trend_available, false),

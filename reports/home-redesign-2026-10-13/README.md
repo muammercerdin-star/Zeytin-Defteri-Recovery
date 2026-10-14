@@ -777,3 +777,22 @@ Sorun (14.10.2026, cihazda görüldü): Bu daldan derlenen APK'larda Supabase ad
 - `tests/security/MarketBackendConfigTest`: BuildConfig yok / boş / dolu (uydurma deneme değerleri) durumlarında 16 kontrol.
 - `check_static`: 56 kontrol. Repoda gerçek Supabase anahtarı ya da uygulama kodunda gerçek proje adresi olmadığını tarar.
 - Diğer test takımlarının sonuçları değişmedi.
+
+## 25. Zeytin Ligi bölge raporu: elek fiyatları (1 commit)
+
+Onaylanan tasarım ("Zeytin Ligi · Bölge raporu (elek fiyatları)" panosu) uygulandı.
+
+**Ekran:**
+- Bölge kartına dokununca açılan raporun en üstünde artık "Elek fiyatları • medyan" bölümü var. Double, 1 No, 2 No, 3 No, 4 No ve Yağlık için bölgedeki medyan kg fiyatı 3×2 kutuda büyük yazılıyor. Altında son 7 gün değişimi (▲/▼) ya da "trend yok" görünüyor.
+- Eski "Elek Dağılımı" kg kutuları ve çubukları silindi. 30 günlük grafik "Detaylı liste" penceresine taşındı; pencere kaydırılabilir.
+
+**Gizlilik:**
+- Bir elekte 5 farklı üretici yoksa o eleğin fiyatı gösterilmiyor; kutuda "— · n/5 üretici" yazıyor.
+- Bu kural `RegionGradePrice` sınıfında tanımlı. Veri katmanı (`MarketCloudRepository`) da eşik altındaki fiyatı hiç tutmuyor.
+- Sunucu tanımında (`ZEYTIN-LIGI-BOLGE-RAPORU-PROD-5.sql` / `TEST-2`) elek başına `average_price` ve `median_price` 1 üretici varken bile dönüyordu. Bu açık `v_threshold` ile kapatıldı.
+- Canlı veritabanı için `supabase/PATCH-BOLGE-RAPORU-ELEK-FIYAT-ESIGI.sql` hazırlandı: kontrol, düzeltme ve doğrulama adımları. Canlıya uygulamak yayıncının kararı.
+
+**Testler:**
+- `tests/league_region`: 35 + 13 kontrol.
+- `check_static`: moderasyon değişiklik kontrolü yalnız moderasyon dosyalarına daraltıldı.
+- Diğer test sonuçları değişmedi.

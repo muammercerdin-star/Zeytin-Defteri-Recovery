@@ -152,7 +152,7 @@ for rel in filter(None, tracked):
     if rel.startswith('app/') and re.search(r'https://(?!REPLACE_ME\.)(?!abcdefghijklmnopqrst\.)[a-z0-9]+\.supabase\.co', text):
         leaks.append(f'{rel}: gerçek Supabase adresi')
 check(not leaks, f'repoda Supabase değeri var: {leaks[:5]}')
-roles = subprocess.run(['git', 'diff', BASE, '--', 'functions/moderation', 'supabase', 'app/src/main/java/com/zeytindefteri/app/ModerationAccess.java'],
+roles = subprocess.run(['git', 'diff', BASE, '--', 'functions/moderation', 'supabase/functions/moderation-api', 'app/src/main/java/com/zeytindefteri/app/ModerationAccess.java'],
                        cwd=ROOT, capture_output=True, text=True).stdout
 check(roles == '', 'moderasyon yetki kodu değişmiş')
 

@@ -218,8 +218,32 @@ public final class ZeytinLeagueRegionReportDialog {
     private void bindReport(MarketCloudRepository.LeagueRegionReport report) {
         reportHost.removeAllViews();
 
+        List<MarketCloudRepository.LeagueGradeReport> grades = normalizedGrades(report.grades);
+        currentReport = report;
+        currentGrades = grades;
+        detailButton.setEnabled(!grades.isEmpty());
+        detailButton.setAlpha(grades.isEmpty() ? .45f : 1f);
+
+        // Elek fiyatları: her elek için bölgedeki medyan kg fiyatı (5 üretici eşiğiyle).
+        LinearLayout priceSection = box();
+        priceSection.addView(label("Elek fiyatları • medyan", 12, text, true));
+        TextView priceSub = label(year + " sezonu • TL/kg • her üretici bir kez sayılır", 8.5f, muted, false);
+        priceSub.setPadding(0, dp(1), 0, 0);
+        priceSection.addView(priceSub);
+        for (int start = 0; start < grades.size(); start += 3) {
+            LinearLayout priceRow = row();
+            for (int i = start; i < start + 3; i++) {
+                if (i < grades.size()) priceRow.addView(gradeCard(grades.get(i), report.dominantGrade), weight(1));
+                else priceRow.addView(new View(context), weight(1));
+            }
+            LinearLayout.LayoutParams priceRowLp = new LinearLayout.LayoutParams(-1, -2);
+            priceRowLp.topMargin = dp(6);
+            priceSection.addView(priceRow, priceRowLp);
+        }
+        reportHost.addView(priceSection);
+
         TextView seasonCaption = label(year + " sezon özeti", 10, muted, false);
-        seasonCaption.setPadding(dp(2), 0, 0, dp(5));
+        seasonCaption.setPadding(dp(2), dp(9), 0, dp(5));
         reportHost.addView(seasonCaption);
 
         LinearLayout summary = row();
@@ -237,53 +261,6 @@ public final class ZeytinLeagueRegionReportDialog {
         LinearLayout.LayoutParams insightsLp = new LinearLayout.LayoutParams(-1, -2);
         insightsLp.topMargin = dp(6);
         reportHost.addView(insights, insightsLp);
-
-        LinearLayout gradeSection = box();
-        TextView gradeTitle = label("Elek Dağılımı" + (report.totalKg > 0 ? " (Toplam " + n(report.totalKg) + " kg)" : ""), 12, text, true);
-        gradeSection.addView(gradeTitle);
-        LinearLayout gradeRow = row();
-        List<MarketCloudRepository.LeagueGradeReport> grades = normalizedGrades(report.grades);
-        currentReport = report;
-        currentGrades = grades;
-        detailButton.setEnabled(!grades.isEmpty());
-        detailButton.setAlpha(grades.isEmpty() ? .45f : 1f);
-        double maxKg = 0d;
-        for (MarketCloudRepository.LeagueGradeReport g : grades) if (g.kgPublished) maxKg = Math.max(maxKg, g.kg);
-        for (MarketCloudRepository.LeagueGradeReport g : grades) {
-            gradeRow.addView(gradeCard(g, maxKg, report.totalKg, report.dominantGrade), weight(1));
-        }
-        LinearLayout.LayoutParams gradeRowLp = new LinearLayout.LayoutParams(-1, -2);
-        gradeRowLp.topMargin = dp(6);
-        gradeSection.addView(gradeRow, gradeRowLp);
-        LinearLayout.LayoutParams gradeLp = new LinearLayout.LayoutParams(-1, -2);
-        gradeLp.topMargin = dp(7);
-        reportHost.addView(gradeSection, gradeLp);
-
-        LinearLayout chartBox = box();
-        LinearLayout chartTitle = row();
-        String chartGrade = safe(report.trendGrade, safe(report.dominantGrade, "Piyasa"));
-        chartTitle.addView(label("Son 30 Gün • " + chartGrade, 12, text, true), new LinearLayout.LayoutParams(0, -2, 1));
-        chartTitle.addView(label("TL/kg", 9, muted, false));
-        chartBox.addView(chartTitle);
-        TextView trendMeta = label(trendComparisonSentence(report), 8.5f, report.trendAvailable ? green : muted, false);
-        trendMeta.setPadding(0, dp(2), 0, 0);
-        chartBox.addView(trendMeta);
-        LeagueRegionReportChartView chart = new LeagueRegionReportChartView(context);
-        chart.setPoints(report.chart);
-        LinearLayout.LayoutParams chartLp = new LinearLayout.LayoutParams(-1, dp(122));
-        chartLp.topMargin = dp(4);
-        chartBox.addView(chart, chartLp);
-
-        LinearLayout facts = row();
-        facts.addView(factCard("En düşük", report.minPrice > 0 ? n(report.minPrice) + " TL" : "—", danger), weight(1));
-        facts.addView(factCard("Medyan", report.medianPrice > 0 ? n(report.medianPrice) + " TL" : "—", text), weight(1));
-        facts.addView(factCard("En yüksek", report.maxPrice > 0 ? n(report.maxPrice) + " TL" : "—", green), weight(1));
-        LinearLayout.LayoutParams factsLp = new LinearLayout.LayoutParams(-1, -2);
-        factsLp.topMargin = dp(5);
-        chartBox.addView(facts, factsLp);
-        LinearLayout.LayoutParams chartBoxLp = new LinearLayout.LayoutParams(-1, -2);
-        chartBoxLp.topMargin = dp(7);
-        reportHost.addView(chartBox, chartBoxLp);
 
         TextView note = label(summarySentence(report, grades), 10, text, false);
         note.setPadding(dp(9), dp(7), dp(9), dp(7));
@@ -334,55 +311,36 @@ public final class ZeytinLeagueRegionReportDialog {
 
     private LinearLayout gradeCard(
             MarketCloudRepository.LeagueGradeReport grade,
-            double maxKg,
-            double totalKg,
             String dominantGrade
     ) {
         LinearLayout box = column();
-        box.setPadding(dp(3), dp(6), dp(3), dp(6));
+        box.setPadding(dp(4), dp(8), dp(4), dp(8));
         box.setGravity(Gravity.CENTER_HORIZONTAL);
-        boolean dominant = grade.grade.equalsIgnoreCase(safe(dominantGrade, ""));
-        box.setBackground(round(dominant ? greenSoft : card, 10, dominant ? green : border));
+        boolean shown = RegionGradePrice.visible(grade.producerCount);
+        boolean dominant = shown && grade.grade.equalsIgnoreCase(safe(dominantGrade, ""));
+        box.setBackground(round(dominant ? greenSoft : card, 12, dominant ? green : border));
 
-        TextView name = label(grade.grade, 8, dominant ? green : text, dominant);
+        TextView name = label(grade.grade, 9.5f, dominant ? green : muted, true);
         name.setGravity(Gravity.CENTER);
         box.addView(name);
 
-        String kgText = grade.kgPublished && grade.kg > 0 ? n(grade.kg) + " kg" : "— kg";
-        TextView kg = label(kgText, 10, text, true);
-        kg.setGravity(Gravity.CENTER);
-        box.addView(kg);
+        TextView price = label(RegionGradePrice.priceText(grade.producerCount, grade.medianPrice, grade.averagePrice),
+                17, shown ? text : muted, true);
+        price.setGravity(Gravity.CENTER);
+        price.setSingleLine(true);
+        box.addView(price);
 
-        FrameLayout track = new FrameLayout(context);
-        track.setBackground(round(border, 99, border));
-        View fill = new View(context);
-        fill.setBackground(round(green, 99, green));
-        int width = dp(34);
-        if (grade.kgPublished && maxKg > 0d) {
-            width = Math.max(dp(4), Math.round(dp(34) * (float) (grade.kg / maxKg)));
-        }
-        track.addView(fill, new FrameLayout.LayoutParams(width, dp(5)));
-        LinearLayout.LayoutParams trackLp = new LinearLayout.LayoutParams(dp(34), dp(5));
-        trackLp.topMargin = dp(4);
-        box.addView(track, trackLp);
+        TextView unit = label("TL/kg", 8, muted, false);
+        unit.setGravity(Gravity.CENTER);
+        box.addView(unit);
 
-        String foot;
-        if (grade.kgPublished && totalKg > 0d) foot = Math.round(grade.kg * 100d / totalKg) + "%";
-        else if (grade.averagePrice > 0d) foot = n(grade.averagePrice) + "₺";
-        else foot = "—";
-        TextView f = label(foot, 8, grade.kgPublished ? green : muted, false);
-        f.setGravity(Gravity.CENTER);
-        box.addView(f);
-
-        String trendText = grade.trendAvailable ? signedPct(grade.trendPct) : "trend yok";
-        TextView t = label(
-                trendText,
-                7.5f,
-                grade.trendAvailable ? trendColor(grade.trendPct, true) : muted,
-                grade.trendAvailable
-        );
-        t.setGravity(Gravity.CENTER);
-        box.addView(t);
+        int direction = RegionGradePrice.trendDirection(grade.producerCount, grade.trendAvailable, grade.trendPct);
+        TextView foot = label(RegionGradePrice.footText(grade.producerCount, grade.trendAvailable, grade.trendPct),
+                8.5f, direction > 0 ? green : direction < 0 ? danger : muted, direction != 0);
+        foot.setGravity(Gravity.CENTER);
+        foot.setPadding(0, dp(2), 0, 0);
+        box.addView(foot);
+        box.setContentDescription(grade.grade + " " + (shown ? price.getText() + " TL/kg" : "fiyat " + foot.getText() + " ile açılır"));
         return box;
     }
 
@@ -408,6 +366,32 @@ public final class ZeytinLeagueRegionReportDialog {
         panel.addView(label(region.name + " • Elek Detayı", 17, text, true));
         TextView sub = label("Anonim bölgesel özet", 10, muted, false);
         sub.setPadding(0, 0, 0, dp(8)); panel.addView(sub);
+
+        // Son 30 gün grafiği (ana rapordan buraya taşındı).
+        LinearLayout chartBox = box();
+        LinearLayout chartTitle = row();
+        String chartGrade = safe(report.trendGrade, safe(report.dominantGrade, "Piyasa"));
+        chartTitle.addView(label("Son 30 Gün • " + chartGrade, 12, text, true), new LinearLayout.LayoutParams(0, -2, 1));
+        chartTitle.addView(label("TL/kg", 9, muted, false));
+        chartBox.addView(chartTitle);
+        TextView trendMeta = label(trendComparisonSentence(report), 8.5f, report.trendAvailable ? green : muted, false);
+        trendMeta.setPadding(0, dp(2), 0, 0);
+        chartBox.addView(trendMeta);
+        LeagueRegionReportChartView chart = new LeagueRegionReportChartView(context);
+        chart.setPoints(report.chart);
+        LinearLayout.LayoutParams chartLp = new LinearLayout.LayoutParams(-1, dp(122));
+        chartLp.topMargin = dp(4);
+        chartBox.addView(chart, chartLp);
+        LinearLayout facts = row();
+        facts.addView(factCard("En düşük", report.minPrice > 0 ? n(report.minPrice) + " TL" : "—", danger), weight(1));
+        facts.addView(factCard("Medyan", report.medianPrice > 0 ? n(report.medianPrice) + " TL" : "—", text), weight(1));
+        facts.addView(factCard("En yüksek", report.maxPrice > 0 ? n(report.maxPrice) + " TL" : "—", green), weight(1));
+        LinearLayout.LayoutParams factsLp = new LinearLayout.LayoutParams(-1, -2);
+        factsLp.topMargin = dp(5);
+        chartBox.addView(facts, factsLp);
+        LinearLayout.LayoutParams chartBoxLp = new LinearLayout.LayoutParams(-1, -2);
+        chartBoxLp.bottomMargin = dp(8);
+        panel.addView(chartBox, chartBoxLp);
 
         for (MarketCloudRepository.LeagueGradeReport g : grades) {
             LinearLayout line = row();
@@ -446,7 +430,10 @@ public final class ZeytinLeagueRegionReportDialog {
         TextView close = actionButton("Kapat", false);
         close.setOnClickListener(v -> detail.dismiss());
         panel.addView(close, new LinearLayout.LayoutParams(-1, dp(44)));
-        detail.setContentView(panel);
+        ScrollView scroll = new ScrollView(context);
+        scroll.setVerticalScrollBarEnabled(false);
+        scroll.addView(panel);
+        detail.setContentView(scroll);
         detail.show();
         Window w = detail.getWindow();
         if (w != null) {
