@@ -557,3 +557,52 @@ Kural: ekranların **düzenine, alanlarına, akışlarına ve kayıt mantığın
 - Rapor, Salamura, Profil ve İşlem geçmişi: yeşil vurgular okunuyor mu.
 - İşlem geçmişi ve eski Piyasa ekranında eski alt menü artık görünmemeli; geri tuşu çalışmalı.
 - Piyasa sekmesi başlığı.
+
+## 20. Aşama 2 — en çok kullanılan dört ekran (4 commit)
+
+Tuvaldeki onaylanan tasarımlar ("Aşama 2 · …" panoları) uygulandı. Her ekranda eski düzen ve eski kod aynı commit'te silindi.
+
+### Bahçe detayı
+- Başlıkta bahçe adı, "çeşit · mahalle / ilçe / il" ve Düzenle düğmesi var. Altında ağaç, yaş, dekar ve sulama kutuları duruyor.
+- Beş hızlı eylem var: İşlem, Hasat, Elek, Satış, Not. Hepsi bahçe kimliğiyle açılıyor.
+- "Bu Sezon" kartında Masraf, Hasat, **Elek** (yeni), **Satış** (yeni), ağaç başına verim ve kg başına maliyet var. Değerler Bahçe Karnesi ile aynı kaynaktan geliyor.
+- Son işlemin üzerinden 30 gün veya daha fazla geçtiyse sarı bir uyarı çıkıyor. En yeni tarih, sezonun bütün işlemleri taranarak bulunuyor; liste kayıt sırasına göre geldiği için ilk satır her zaman en yeni tarih olmuyor.
+- Son işlemler emoji yerine çizgi ikonlarla gösteriliyor. Notlar ayrı kutularda.
+- `GardenDetailActivity` 2.277 satırdan yaklaşık 390 satıra indi. Davranış aynı: sahip kontrolü, not penceresi ve taslağı, sezon/bahçe yarış koruması.
+
+### İşlem ekle
+- Tür, açılır liste yerine 10 ikonlu kutudan seçiliyor (4 sütun). Seçili kutu yeşil çerçeveli.
+- Ayrıntı kartının başlığı, miktar etiketi, birimleri ve ipucu seçilen türe göre değişiyor. Bu kurallar 250 satırlık if-zincirinden saf `OperationKinds.form()` sınıfına taşındı; birimler ve metinler aynı kaldı.
+- Kaydet düğmesi altta sabit; üstünde "Bahçe · Tür · Tarih" satırı var. Klavye açılınca düğme klavyenin üstüne çıkıyor (`adjustResize`).
+- Kayıt yolu değişmedi. Tür, tarih ve birim artık ekran döndürülünce kaybolmuyor.
+- Ana sayfadaki işlem seçici de aynı listeyi kullanıyor (tek kaynak: `OperationKinds.TYPES`).
+
+### Hasat ve Satış
+- İki form aynı boy satırlarını kullanıyor (`include_grade_rows`: Boy | Kilo | Birim fiyat | Tutar).
+- **Hata düzeltmesi:** Satış formu "2.400" yazılınca 2,4 TL okuyordu. Artık hasat formundaki Türkçe sayı okuyucusunu kullanıyor ve 2400 okuyor. Bu okuyucu saf `GradeFormModel.parse` sınıfına taşındı ve test edildi.
+- Hasat: özet kartı (toplam kilo, hasat masrafı, tahmini değer) ve katlanabilir masraf kartı var. Kayıt yine tek işlemde yapılıyor (hasat + boylar + "Hasat" hareketi). Son fiyat önerisi korundu.
+- Satış: "Gerçek satış | Fiyat teklifi" seçimi var. Ödeme için üç seçenek var: **Tamamı alındı / Bir kısmı / Henüz değil** (varsayılan "Henüz değil"; eski boş tahsilat ile aynı). "Bir kısmı" seçilince tutar girmek zorunlu. Tamamı alınan satışta vade kaydedilmiyor.
+- Piyasa izni artık anahtar (Switch) biçiminde. **Varsayılan kapalı** ve metni aynı. Bütün doğrulamalar, alıcı oluşturma ve geri alma, eşitleme korundu.
+
+### Emoji ikonlar
+- İşlem geçmişi, bahçe detayı ve profilde emoji kalmadı.
+- Profilde kapak, avatar yer tutucusu, kamera rozeti, kart ikonları ve "Hakkında" satırları çizgi ikonlarla değişti. Gönderi etiketleri " · " ile ayrılıyor.
+- Uygulamanın diğer yerlerinde (Meydan tepkileri, hava durumu, giriş ekranı vb.) hâlâ emoji var. Bunlar Aşama 2 kapsamında değildi.
+
+### Silinenler
+- Silinen kaynaklar: `ic_water`, `ic_profile_line`, `ic_search_line` (zaten kullanılmıyordu), `bg_market`.
+- Ekranların eski düzenleri ve emoji ikon metotları silindi.
+- Java toplamı: **97206 satır**.
+
+### Doğrulama
+- `tests/stage2/run.sh`: GardenDetailModelTest (75), GradeFormModelTest (34), check_wiring (215) geçti.
+- Ana sayfa, lig, sezon raporu, elek→satış, bahçe listesi, bahçe detayı SQLite ve bahçe analitiği takımları da geçti.
+- `android.jar` tip denetiminde yeni hata yok. 463 hatanın tamamı Firebase, Glide ve androidx kaynaklı; bu sayı önceki taban değeriyle aynı.
+- **APK derlenmedi ve telefonda denenmedi.**
+
+### Cihazda kontrol
+- Bahçe detayı: beş eylem doğru ekranı doğru bahçeyle açıyor mu? Elek ve Satış rakamları Bahçe Karnesi ile aynı mı? 30 günden eski işlemi olan bahçede uyarı çıkıyor mu?
+- İşlem ekle: kutu seçilince birimler değişiyor mu? Ana sayfadan "Gübre" ile gelince doğru kutu seçili mi? Klavye açıkken Kaydet görünüyor mu?
+- Hasat: boy satırları dar ekranda sığıyor mu? Masraf kartı katlanıyor mu? Kayıttan sonra hasat, boylar ve işlem hareketi oluşuyor mu?
+- Satış: "2.400" fiyatı 2400 olarak hesaplanıyor mu? Ödeme seçenekleri kalan alacağı doğru gösteriyor mu? Fiyat teklifinde alıcı, ödeme ve izin kartları gizleniyor mu?
+- Profil: misafir oturumunda avatar yerinde zeytin ikonu, kamera rozeti ve "Hakkında" ikonları görünüyor mu?

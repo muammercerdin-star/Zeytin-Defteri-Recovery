@@ -100,6 +100,14 @@ gr = (RES / 'layout/include_grade_rows.xml').read_text(encoding='utf8')
 for k in ['Double', '1', '2', '3', '4', 'Oil']:
     check(all(f'@+id/{p}{k}"' in gr for p in ['etKg', 'etPrice', 'tvValue']), f'boy satırı eksik: {k}')
 
+# Emoji tür/yer tutucu ikonları: İşlem geçmişi ve Profil çizgi ikon kullanıyor
+oh = (JAVA / 'OperationHistoryActivity.java').read_text(encoding='utf8')
+check('operationIcon(' not in oh and 'LineIcons.forType(type)' in oh, 'işlem geçmişi hâlâ emoji ikon kullanıyor')
+check(not EMOJI.search(oh), 'işlem geçmişinde emoji kaldı')
+pr = (APP / 'ProfileActivity.java').read_text(encoding='utf8')
+check(not EMOJI.search(pr), f'profilde emoji kaldı: {EMOJI.findall(pr)[:5]}')
+check('applyAvatarGlyph(' in pr and 'R.drawable.ic_op_pin' in pr and 'R.drawable.ic_op_camera' in pr, 'profil çizgi ikonları bağlı değil')
+
 if failures:
     print('\n'.join('HATA: ' + f for f in failures))
     sys.exit(1)

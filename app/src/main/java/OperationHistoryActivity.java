@@ -1166,19 +1166,43 @@ public class OperationHistoryActivity extends Activity {
         );
 
 
-        TextView icon =
-                createText(
-                        operationIcon(
-                                type
-                        ),
-                        24,
-                        COLOR_DARK_GREEN,
-                        false
+        // Tür ikonu: Bahçe detayıyla aynı çizgi ikon (OperationKinds + LineIcons).
+        android.widget.FrameLayout icon =
+                new android.widget.FrameLayout(
+                        this
                 );
+        icon.setBackgroundResource(
+                R.drawable.bg_icon_ring
+        );
+        android.widget.ImageView glyph =
+                new android.widget.ImageView(
+                        this
+                );
+        glyph.setImageResource(
+                LineIcons.forType(type)
+        );
+        glyph.setColorFilter(
+                LineIcons.toneColor(type)
+        );
+        glyph.setImportantForAccessibility(
+                View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        );
+        icon.addView(
+                glyph,
+                new android.widget.FrameLayout.LayoutParams(
+                        dp(20),
+                        dp(20),
+                        Gravity.CENTER
+                )
+        );
 
 
         top.addView(
-                icon
+                icon,
+                new LinearLayout.LayoutParams(
+                        dp(40),
+                        dp(40)
+                )
         );
 
 
@@ -1403,11 +1427,7 @@ public class OperationHistoryActivity extends Activity {
 
         content.addView(
                 createText(
-                        operationIcon(
-                                type
-                        )
-                                + " "
-                                + safeText(
+                        safeText(
                                 type,
                                 "İşlem"
                         ),
@@ -1604,98 +1624,6 @@ public class OperationHistoryActivity extends Activity {
         startActivity(
                 intent
         );
-    }
-
-
-    // ============================================================
-    // İŞLEM İKONU
-    // ============================================================
-
-    private String operationIcon(
-            String type
-    ) {
-
-        if ("Sulama".equals(
-                type
-        )) {
-
-            return "💧";
-        }
-
-
-        if ("Gübre".equals(
-                type
-        )) {
-
-            return "🌱";
-        }
-
-
-        if ("İlaçlama".equals(
-                type
-        )) {
-
-            return "🧪";
-        }
-
-
-        if ("Budama".equals(
-                type
-        )) {
-
-            return "✂️";
-        }
-
-
-        if ("Sinek Tuzağı".equals(
-                type
-        )) {
-
-            return "🪰";
-        }
-
-
-        if ("Toprak İşleme".equals(
-                type
-        )) {
-
-            return "🚜";
-        }
-
-
-        if ("İşçilik".equals(
-                type
-        )) {
-
-            return "👷";
-        }
-
-
-        if ("Mazot".equals(
-                type
-        )) {
-
-            return "⛽";
-        }
-
-
-        if ("Nakliye".equals(
-                type
-        )) {
-
-            return "🚚";
-        }
-
-
-        if ("Hasat".equals(
-                type
-        )) {
-
-            return "🧺";
-        }
-
-
-        return "📝";
     }
 
 

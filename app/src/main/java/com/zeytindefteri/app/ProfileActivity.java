@@ -654,11 +654,10 @@ public class ProfileActivity extends Activity {
 
 
         TextView coverIcon =
-                createText(
-                        "🌿  🫒  🌿",
-                        30,
-                        COLOR_WHITE,
-                        false
+                glyphText(
+                        R.drawable.ic_op_olive,
+                        34,
+                        COLOR_GREEN
                 );
 
         coverIcon.setGravity(
@@ -742,13 +741,15 @@ public class ProfileActivity extends Activity {
 
         tvProfilePhotoFallback =
                 createText(
-                        sessionManager.isGuest()
-                                ? "🫒"
-                                : getAvatarLetter(),
+                        avatarText(),
                         30,
                         COLOR_DARK,
                         true
                 );
+        applyAvatarGlyph(
+                tvProfilePhotoFallback,
+                30
+        );
 
         tvProfilePhotoFallback.setGravity(
                 Gravity.CENTER
@@ -784,12 +785,12 @@ public class ProfileActivity extends Activity {
 
 
         TextView cameraBadge =
-                createText(
-                        "📷",
-                        15,
-                        COLOR_DARK,
-                        false
+                glyphText(
+                        R.drawable.ic_op_camera,
+                        16,
+                        COLOR_DARK
                 );
+        
 
         cameraBadge.setGravity(
                 Gravity.CENTER
@@ -1531,9 +1532,11 @@ public class ProfileActivity extends Activity {
         if (tvProfilePhotoFallback != null) {
 
             tvProfilePhotoFallback.setText(
-                    sessionManager.isGuest()
-                            ? "🫒"
-                            : getAvatarLetter()
+                    avatarText()
+            );
+            applyAvatarGlyph(
+                    tvProfilePhotoFallback,
+                    30
             );
         }
 
@@ -1807,11 +1810,10 @@ public class ProfileActivity extends Activity {
 
 
         TextView icon =
-                createText(
-                        "🫒",
+                glyphText(
+                        R.drawable.ic_op_olive,
                         34,
-                        COLOR_DARK,
-                        false
+                        COLOR_GREEN
                 );
 
         icon.setGravity(
@@ -2645,11 +2647,10 @@ public class ProfileActivity extends Activity {
 
 
         TextView icon =
-                createText(
-                        "🌳",
-                        32,
-                        COLOR_DARK,
-                        false
+                glyphText(
+                        R.drawable.ic_op_tree,
+                        30,
+                        COLOR_GREEN
                 );
 
 
@@ -2788,7 +2789,7 @@ public class ProfileActivity extends Activity {
 
         addAboutRow(
                 card,
-                "👤",
+                R.drawable.ic_op_worker,
                 "Ad Soyad",
                 getCurrentDisplayName()
         );
@@ -2796,7 +2797,7 @@ public class ProfileActivity extends Activity {
 
         addAboutRow(
                 card,
-                "📍",
+                R.drawable.ic_op_pin,
                 "Konum",
                 getLocationText()
         );
@@ -2804,7 +2805,7 @@ public class ProfileActivity extends Activity {
 
         addAboutRow(
                 card,
-                "✉",
+                R.drawable.ic_op_mail,
                 "E-posta",
                 sessionManager.isGuest()
                         ? "Misafir oturumu"
@@ -2823,7 +2824,7 @@ public class ProfileActivity extends Activity {
 
     private void addAboutRow(
             LinearLayout parent,
-            String icon,
+            int icon,
             String title,
             String value
     ) {
@@ -2848,11 +2849,10 @@ public class ProfileActivity extends Activity {
 
 
         TextView iconView =
-                createText(
+                glyphText(
                         icon,
                         20,
-                        COLOR_DARK,
-                        false
+                        COLOR_GREEN
                 );
 
         iconView.setGravity(
@@ -2976,13 +2976,15 @@ public class ProfileActivity extends Activity {
 
         TextView fallback =
                 createText(
-                        sessionManager.isGuest()
-                                ? "🫒"
-                                : getAvatarLetter(),
+                        avatarText(),
                         fallbackTextSize,
                         COLOR_DARK,
                         true
                 );
+        applyAvatarGlyph(
+                fallback,
+                fallbackTextSize
+        );
 
         fallback.setGravity(
                 Gravity.CENTER
@@ -3246,7 +3248,7 @@ public class ProfileActivity extends Activity {
 
         Toast.makeText(
                 this,
-                "Profil fotoğrafın güncellendi ✓",
+                "Profil fotoğrafın güncellendi",
                 Toast.LENGTH_SHORT
         ).show();
     }
@@ -3258,9 +3260,11 @@ public class ProfileActivity extends Activity {
                 && tvProfilePhotoFallback != null) {
 
             tvProfilePhotoFallback.setText(
-                    sessionManager.isGuest()
-                            ? "🫒"
-                            : getAvatarLetter()
+                    avatarText()
+            );
+            applyAvatarGlyph(
+                    tvProfilePhotoFallback,
+                    30
             );
 
 
@@ -3964,7 +3968,7 @@ public class ProfileActivity extends Activity {
 
                             Toast.makeText(
                                     ProfileActivity.this,
-                                    "Profil güncellendi ✓",
+                                    "Profil güncellendi",
                                     Toast.LENGTH_SHORT
                             ).show();
                         }
@@ -4256,7 +4260,7 @@ public class ProfileActivity extends Activity {
         if (!safe(post.gardenName).isEmpty()) {
 
             tags.add(
-                    "🫒 " + post.gardenName.trim()
+                    post.gardenName.trim()
             );
         }
 
@@ -4264,7 +4268,7 @@ public class ProfileActivity extends Activity {
         if (!safe(post.variety).isEmpty()) {
 
             tags.add(
-                    "🌿 " + post.variety.trim()
+                    post.variety.trim()
             );
         }
 
@@ -4286,7 +4290,7 @@ public class ProfileActivity extends Activity {
             if (text.length() > 0) {
 
                 text.append(
-                        "   "
+                        "  ·  "
                 );
             }
 
@@ -4582,6 +4586,52 @@ public class ProfileActivity extends Activity {
     }
 
 
+    /** Avatar yer tutucu metni: misafir veya adsız kullanıcıda boş (zeytin ikonu gösterilir). */
+    private String avatarText() {
+        return sessionManager.isGuest()
+                ? ""
+                : getAvatarLetter();
+    }
+
+
+    /** Metin boşsa avatar alanına zeytin çizgi ikonu koyar; harf varsa ikonu kaldırır. */
+    private void applyAvatarGlyph(
+            TextView view,
+            int textSizeSp
+    ) {
+        if (view.getText() == null
+                || view.getText().length() == 0) {
+            android.graphics.drawable.Drawable olive =
+                    getDrawable(R.drawable.ic_op_olive).mutate();
+            olive.setTint(COLOR_GREEN);
+            int size = dp(Math.round(textSizeSp * 1.1f));
+            olive.setBounds(0, 0, size, size);
+            view.setCompoundDrawables(null, olive, null, null);
+        } else {
+            view.setCompoundDrawables(null, null, null, null);
+        }
+    }
+
+
+    /** Emoji yerine kullanılan çizgi ikon: metinsiz TextView, ikon üstte ve renklendirilmiş. */
+    private TextView glyphText(
+            int drawable,
+            int sizeDp,
+            int color
+    ) {
+        TextView view = new TextView(this);
+        android.graphics.drawable.Drawable icon =
+                getDrawable(drawable).mutate();
+        icon.setTint(color);
+        icon.setBounds(0, 0, dp(sizeDp), dp(sizeDp));
+        view.setCompoundDrawables(null, icon, null, null);
+        view.setImportantForAccessibility(
+                View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        );
+        return view;
+    }
+
+
     private String getAvatarLetter() {
 
         String name =
@@ -4592,7 +4642,7 @@ public class ProfileActivity extends Activity {
 
         if (name.isEmpty()) {
 
-            return "🫒";
+            return "";
         }
 
 
