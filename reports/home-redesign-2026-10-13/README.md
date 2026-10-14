@@ -678,17 +678,17 @@ Tuvaldeki onaylanan tasarımlar ("Aşama 2 · …" panoları) uygulandı. Her ek
 ### Hedef Android 16 (API 36)
 - Google Play, 31 Ağustos 2026'dan beri yeni uygulamalarda API 36 hedefini zorunlu tutuyor. Proje 34'teydi.
 - Yükseltmeler:
-  - \`compileSdk\` / \`targetSdk\`: 34 → 36.
+  - `compileSdk` / `targetSdk`: 34 → 36.
   - Android Gradle Plugin: 8.5.2 → 8.10.0 (API 36'yı destekleyen sürüm).
   - Gradle: 8.7 → 8.11.1. SHA-256 özeti gradle.org/release-checksums sayfasından alındı ve doğrulandı.
 - **Kenardan kenara ekran:** Android 15+ cihazlarda içerik durum ve gezinme çubuklarının altına uzanıyor; Android 16'da bu kapatılamıyor.
-  - Yeni \`SystemBarInsets\` sınıfı her ekrana çubuk ve klavye yüksekliği kadar boşluk veriyor. \`ZeytinApplication\` tek bir yerden kuruyor.
+  - Yeni `SystemBarInsets` sınıfı her ekrana çubuk ve klavye yüksekliği kadar boşluk veriyor. `ZeytinApplication` tek bir yerden kuruyor.
   - Çubukların arkasında koyu arka plan görünüyor; ekranlar eskisi gibi duruyor. Android 14 ve altında bir şey değişmiyor.
-- **Geri tuşu:** Android 16'da \`onBackPressed\` çağrılmıyor.
-  - Yeni \`BackCompat\` sınıfı Android 13+ için geri dinleyicisi kaydediyor.
+- **Geri tuşu:** Android 16'da `onBackPressed` çağrılmıyor.
+  - Yeni `BackCompat` sınıfı Android 13+ için geri dinleyicisi kaydediyor.
   - Sezon Raporum açıkken geri tuşu Lig'e dönüyor; dinleyici yalnızca rapor açıkken kayıtlı, böylece sistemin geri animasyonu korunuyor.
   - Konum seçici adım adım geri gidiyor.
-- \`tests/release/check_target_sdk.py\`: 11 kontrol.
+- `tests/release/check_target_sdk.py`: 11 kontrol.
 
 ### Uygulama içi hesap silme
 - **Düzeltme:** Daha önce "hesap silme yok" demiştim. Aslında Ayarlar'da e-posta ile silme talebi açan bir satır vardı. Play'in istediği web bağlantısı ise yoktu.
@@ -696,24 +696,24 @@ Tuvaldeki onaylanan tasarımlar ("Aşama 2 · …" panoları) uygulandı. Her ek
   1. Uyarı gösteriliyor ve kullanıcı "SİL" yazarak onaylıyor.
   2. Son giriş zamanı kontrol ediliyor.
   3. Telefonun bildiği piyasa katkıları Supabase'den geri çekiliyor; bağlantı yoksa hiçbir şey silinmeden duruluyor.
-  4. Sunucu fonksiyonu \`deleteAccount\` çağrılıyor.
+  4. Sunucu fonksiyonu `deleteAccount` çağrılıyor.
   5. Telefondaki veri siliniyor, oturum kapatılıyor ve giriş ekranı açılıyor.
 - Misafir oturumunda yalnızca telefondaki misafir verisi siliniyor. E-posta ile talep yedek yol olarak duruyor.
-- **Sunucu (\`functions/account\`):**
-  - Silinenler: gönderiler, fotoğraflar, engelleme ve şikayet kayıtları, lig kayıtları, \`users/{uid}\` altındaki her şey ve en son giriş hesabı.
+- **Sunucu (`functions/account`):**
+  - Silinenler: gönderiler, fotoğraflar, engelleme ve şikayet kayıtları, lig kayıtları, `users/{uid}` altındaki her şey ve en son giriş hesabı.
   - Başka gönderilere yazılmış yorumlar "Silinmiş kullanıcı" olarak boşaltılıyor; konuşma dizisi bozulmuyor.
   - Piyasa kaynaklarını mevcut tetikleyiciler temizliyor.
   - Son 10 dakikada giriş yapılmamışsa silme reddediliyor. İşlem tekrar çağrılabiliyor.
   - Testler: 6 yeni test; toplam 84 geçti, 0 başarısız, 10 emülatör testi atlandı.
-- **Telefon (\`LocalAccountWipe\`):**
+- **Telefon (`LocalAccountWipe`):**
   - Tek veritabanı işleminde yalnızca silinen hesaba ait satırlar siliniyor; aynı telefondaki diğer hesapların verisi korunuyor.
   - Gerçek SQLite üzerinde 18 kontrol yapıldı. Test bir hata yakaladı ve düzeltildi: misafir silmesi başka hesabın eski kayıtlarına dokunuyordu.
-- **Web sayfası:** \`hosting/hesap-silme/index.html\`. \`firebase deploy\` sonrası \`https://<proje-kimliği>.web.app/hesap-silme/\` adresinde yayınlanır.
+- **Web sayfası:** `hosting/hesap-silme/index.html`. `firebase deploy` sonrası `https://<proje-kimliği>.web.app/hesap-silme/` adresinde yayınlanır.
 - **Gizlilik politikası:** 10. bölüm uygulamanın gerçek davranışına göre güncellendi; metin sürümü 1.2. **Yayıncı okuması bekleniyor.**
 
 ### Senin yapman gerekenler
-1. Android Studio'da Gradle eşitlemesi ve derleme. \`gradle.properties\` içindeki \`org.gradle.java.home=/home/test/java17\` satırı senin bilgisayarında JDK 17'nin yoluyla eşleşmeli (AGP 8.10 JDK 17 ister).
-2. Firebase'e dağıtım: \`firebase deploy --only functions:deleteAccount,firestore:indexes,hosting\`.
+1. Android Studio'da Gradle eşitlemesi ve derleme. `gradle.properties` içindeki `org.gradle.java.home=/home/test/java17` satırı senin bilgisayarında JDK 17'nin yoluyla eşleşmeli (AGP 8.10 JDK 17 ister).
+2. Firebase'e dağıtım: `firebase deploy --only functions:deleteAccount,firestore:indexes,hosting`.
 3. Play Console > Veri güvenliği > Hesap silme alanına web sayfasının adresini yaz.
 4. Supabase: başka bir cihazdan ya da yeniden kurulumdan önce gönderilmiş katkıları sunucu tarafında silen bir RPC gerekiyor. V7 tanımları depoda olmadığı için yazılmadı.
 5. Cihaz testi:
@@ -721,5 +721,5 @@ Tuvaldeki onaylanan tasarımlar ("Aşama 2 · …" panoları) uygulandı. Her ek
    - Test hesabıyla hesap silme: yakın giriş yokken uyarı çıkıyor mu, varken silme tamamlanıyor mu? Silmeden sonra giriş yapılamıyor mu? Firestore'da veri kalmamış mı?
 
 ### Doğrulama
-- Mevcut 24 test takımının hepsi geçiyor. \`android.jar\` tip denetiminde yeni hata yok; yeni 10 hata yalnızca bu ortamda bulunmayan Firebase sınıflarından.
+- Mevcut 24 test takımının hepsi geçiyor. `android.jar` tip denetiminde yeni hata yok; yeni 10 hata yalnızca bu ortamda bulunmayan Firebase sınıflarından.
 - **Hiçbir şey canlı Firebase'e dağıtılmadı, APK derlenmedi, cihazda denenmedi.**
