@@ -486,3 +486,30 @@ Tuvaldeki **bahçe filtresi uygulanmadı**. Mevcut veritabanında bahçe bazınd
 4. Rapordan toplu dönüştürme.
 5. Aynı eleğin ikinci kez dönüştürülememesi.
 6. Uygulama güncellemesinde mevcut verinin korunması (veritabanı 20'ye geçiş).
+
+## 18. Ana Sayfa alt bölümü (tuvalsiz, doğrudan uygulandı)
+
+### Neler değişti
+- **"Piyasa Özeti" → "Senin elek fiyatların".**
+  - Eski kartlar bölge piyasası gibi görünüyordu, oysa yalnızca kullanıcının kendi elek kayıtlarını bahçe ilçesine göre gösteriyordu. Ayrıca elek kayıtlarına "satış" diyordu.
+  - Yeni kart, kilosu en yüksek iki sınıfın kendi ortalamasını gösteriyor. Örnek: "2 No ortalaman · 60 TL/kg · 11 elek kaydı · 235 kg".
+  - Altında "Yalnızca senin elek kayıtların; bölge piyasası değildir" notu var. "Bölge fiyatları ›" bağlantısı Piyasa sekmesini açıyor.
+- **Hızlı işlemler:** Emojili Sulama · Gübreleme · İlaçlama · Hasat kutularının yerini çizgi ikonlu **İşlem ekle · Hasat · Elek · Satış** kutuları aldı.
+  - "İşlem ekle", NewOperationActivity'deki türlerden birini seçtiriyor.
+  - **Eski hata:** Eski "Gübreleme" kutusu `operation_type=Gübreleme` gönderiyordu. İşlem ekranının listesinde bu tür "Gübre" olarak geçtiği için tür hiç seçili gelmiyordu. Yeni seçici, işlem ekranının listesindeki türleri birebir kullanıyor.
+- **Bu Sezon:**
+  - Kartta Hasat · Elek · Masraf · Satış var; Elek yeni eklendi.
+  - Masraf artık kırmızı değil, nötr renkte. Satış yoksa altın renkte görünüyor.
+  - Karta ya da "Sezon Raporum ›" bağlantısına dokununca Sezon Raporum açılıyor.
+- **Başlık stili:** Tüm bölüm başlıkları "ASİSTANA SOR" ile aynı küçük, büyük harfli üst başlık (overline) stiline geçti.
+- **Sıra:** Asistan → Hızlı işlem → Bu Sezon → Senin elek fiyatların. Zeytin Ligi kartı, daha önce kabul edilen tasarımdaki yerinde bırakıldı: hava kartının altı, "Bugün yapılacaklar"ın üstü.
+
+### Temizlik
+- Yeni bölüm ayrı dosyalarda: `HomeLowerSections` (görünüm) ve `HomeSummaryModel` (kurallar, testli).
+- `ProducerFeedActivity` içinden eski kod silindi: `quickButton`, `homeQuickCard`, `homeQuickCardWithLeft`, `homeMiniMetric`, `loadHomeMarketSnapshots`, `buildHomeMarketCard`, `HomeMarketSnapshot`.
+- Dosya 8.461 satırdan 7.858 satıra indi. Bunun bir kısmı önceki Elek ve rapor işlerinden geliyor.
+
+### Doğrulama
+- `tests/home_lower/run.sh`: 15 model kontrolü ve 10 kaynak kontrolü. Kaynak kontrolleri işlem türlerinin işlem ekranıyla birebir eşleştiğini de doğruluyor.
+- Ana Sayfa, lig, Sezon Raporum ve elek→satış testleri geçiyor.
+- Değişen dosyalar tip denetiminden geçti (Firebase ve Glide hariç). APK derlenmedi.

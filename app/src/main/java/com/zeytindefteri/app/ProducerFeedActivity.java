@@ -2554,388 +2554,28 @@ public class ProducerFeedActivity extends Activity {
                 buildHomeAssistantChips()
         );
 
-        LinearLayout quick = row();
-
-        quick.addView(
-                quickButton(
-                        "💧",
-                        "Sulama",
-                        v ->
-                                openOperationForGarden(
-                                        "Sulama",
-                                        garden.id
-                                )
-                ),
-                homeQuickCard()
-        );
-
-        quick.addView(
-                quickButton(
-                        "🌿",
-                        "Gübreleme",
-                        v ->
-                                openOperationForGarden(
-                                        "Gübreleme",
-                                        garden.id
-                                )
-                ),
-                homeQuickCardWithLeft()
-        );
-
-        quick.addView(
-                quickButton(
-                        "🧪",
-                        "İlaçlama",
-                        v ->
-                                openOperationForGarden(
-                                        "İlaçlama",
-                                        garden.id
-                                )
-                ),
-                homeQuickCardWithLeft()
-        );
-
-        quick.addView(
-                quickButton(
-                        "🧺",
-                        "Hasat",
-                        v ->
-                                openHarvestForGarden(
-                                        garden.id
-                                )
-                ),
-                homeQuickCardWithLeft()
-        );
-
-        LinearLayout.LayoutParams qp =
-                new LinearLayout.LayoutParams(
-                        -1,
-                        -2
-                );
-
-        qp.setMargins(
-                dp(16),
-                dp(8),
-                dp(16),
-                0
-        );
-
-        body.addView(
-                quick,
-                qp
-        );
-
-        LinearLayout marketTitleRow = row();
-
-        marketTitleRow.addView(
-                text(
-                        "Piyasa Özeti",
-                        22,
-                        TEXT,
-                        true
-                ),
-                new LinearLayout.LayoutParams(
-                        0,
-                        -2,
-                        1
-                )
-        );
-
-        TextView marketAll =
-                text(
-                        "Tümünü Gör  ›",
-                        13,
-                        MUTED,
-                        true
-                );
-
-        marketAll.setGravity(
-                Gravity.CENTER_VERTICAL
-                        | Gravity.RIGHT
-        );
-
-        marketAll.setOnClickListener(
-                v -> showSection("MARKET")
-        );
-
-        marketTitleRow.addView(
-                marketAll,
-                new LinearLayout.LayoutParams(
-                        -2,
-                        dp(40)
-                )
-        );
-
-        LinearLayout.LayoutParams mtp =
-                new LinearLayout.LayoutParams(
-                        -1,
-                        -2
-                );
-
-        mtp.setMargins(
-                dp(16),
-                dp(14),
-                dp(16),
-                dp(6)
-        );
-
-        body.addView(
-                marketTitleRow,
-                mtp
-        );
-
-        List<HomeMarketSnapshot> market =
-                loadHomeMarketSnapshots();
-
-        LinearLayout marketRow = row();
-
-        if (market.isEmpty()) {
-
-            LinearLayout empty =
-                    verticalCard();
-
-            empty.setPadding(
-                    dp(16),
-                    dp(15),
-                    dp(16),
-                    dp(15)
-            );
-
-            empty.addView(
-                    text(
-                            "Henüz piyasa verisi yok",
-                            16,
-                            TEXT,
-                            true
-                    )
-            );
-
-            TextView sub =
-                    text(
-                            "Piyasa izni verilen gerçek satışlar geldikçe burada 2 No bölgesel özet görünecek.",
-                            12,
-                            MUTED,
-                            false
-                    );
-
-            sub.setPadding(
-                    0,
-                    dp(5),
-                    0,
-                    0
-            );
-
-            empty.addView(sub);
-
-            empty.setOnClickListener(
-                    v -> showSection("MARKET")
-            );
-
-            LinearLayout.LayoutParams ep =
-                    new LinearLayout.LayoutParams(
-                            -1,
-                            dp(104)
-                    );
-
-            ep.setMargins(
-                    dp(16),
-                    0,
-                    dp(16),
-                    0
-            );
-
-            body.addView(
-                    empty,
-                    ep
-            );
-
-        } else {
-
-            marketRow.addView(
-                    buildHomeMarketCard(
-                            market.get(0)
-                    ),
-                    new LinearLayout.LayoutParams(
-                            0,
-                            dp(116),
-                            1
-                    )
-            );
-
-            if (market.size() > 1) {
-
-                LinearLayout.LayoutParams second =
-                        new LinearLayout.LayoutParams(
-                                0,
-                                dp(116),
-                                1
-                        );
-
-                second.setMargins(
-                        dp(8),
-                        0,
-                        0,
-                        0
-                );
-
-                marketRow.addView(
-                        buildHomeMarketCard(
-                                market.get(1)
-                        ),
-                        second
-                );
-
-            } else {
-
-                LinearLayout.LayoutParams second =
-                        new LinearLayout.LayoutParams(
-                                0,
-                                dp(116),
-                                1
-                        );
-
-                second.setMargins(
-                        dp(8),
-                        0,
-                        0,
-                        0
-                );
-
-                LinearLayout more =
-                        verticalCard();
-
-                more.setGravity(
-                        Gravity.CENTER
-                );
-
-                more.addView(
-                        text(
-                                "Piyasayı Gör",
-                                15,
-                                TEXT,
-                                true
-                        )
-                );
-
-                more.setOnClickListener(
-                        v -> showSection("MARKET")
-                );
-
-                marketRow.addView(
-                        more,
-                        second
-                );
-            }
-
-            LinearLayout.LayoutParams mrp =
-                    new LinearLayout.LayoutParams(
-                            -1,
-                            -2
-                    );
-
-            mrp.setMargins(
-                    dp(16),
-                    0,
-                    dp(16),
-                    0
-            );
-
-            body.addView(
-                    marketRow,
-                    mrp
-            );
-        }
-
-        double harvest =
-                db.getTotalHarvestKg();
-
-        double expenses =
-                db.getTotalExpenses();
-
-        double revenue =
-                db.getTotalSalesRevenue();
-
-        LinearLayout season =
-                verticalCard();
-
-        season.setPadding(
-                dp(16),
-                dp(15),
-                dp(16),
-                dp(15)
-        );
-
-        season.addView(
-                text(
-                        "Bu Sezon",
-                        19,
-                        TEXT,
-                        true
-                )
-        );
-
-        LinearLayout seasonRow = row();
-
-        seasonRow.addView(
-                homeMiniMetric(
-                        "Hasat",
-                        fmtKg(harvest),
-                        TEXT
-                ),
-                new LinearLayout.LayoutParams(
-                        0,
-                        -2,
-                        1
-                )
-        );
-
-        seasonRow.addView(
-                homeMiniMetric(
-                        "Masraf",
-                        fmtTl(expenses),
-                        expenses > 0
-                                ? RED
-                                : TEXT
-                ),
-                new LinearLayout.LayoutParams(
-                        0,
-                        -2,
-                        1
-                )
-        );
-
-        seasonRow.addView(
-                homeMiniMetric(
-                        "Satış",
-                        fmtTl(revenue),
-                        GREEN
-                ),
-                new LinearLayout.LayoutParams(
-                        0,
-                        -2,
-                        1
-                )
-        );
-
-        season.addView(seasonRow);
-
-        LinearLayout.LayoutParams sp =
-                new LinearLayout.LayoutParams(
-                        -1,
-                        -2
-                );
-
-        sp.setMargins(
-                dp(16),
-                dp(14),
-                dp(16),
-                dp(18)
-        );
-
-        body.addView(
-                season,
-                sp
-        );
+        // Alt bölüm: hızlı işlemler, Bu Sezon, Senin elek fiyatların (HomeLowerSections)
+        new HomeLowerSections(this).addTo(
+                body,
+                HomeSummaryModel.season(db.getTotalHarvestKg(), homeSeasonElekKg(),
+                        db.getTotalExpenses(), db.getTotalSalesRevenue()),
+                HomeSummaryModel.top(loadOwnGradePrices(), 2),
+                new HomeLowerSections.Actions() {
+                    @Override public void operation(String type) { openOperationForGarden(type, garden.id); }
+                    @Override public void harvest() { openHarvestForGarden(garden.id); }
+                    @Override public void elek() {
+                        Intent i = new Intent(ProducerFeedActivity.this, ElekActivity.class);
+                        if (garden.id > 0) i.putExtra("garden_id", garden.id);
+                        startActivity(i);
+                    }
+                    @Override public void sale() {
+                        Intent i = new Intent(ProducerFeedActivity.this, SaleActivity.class);
+                        if (garden.id > 0) i.putExtra("garden_id", (long) garden.id);
+                        startActivity(i);
+                    }
+                    @Override public void seasonReport() { showSection("REPORTS"); openSeasonReport(); }
+                    @Override public void market() { showSection("MARKET"); }
+                });
 
         return scroll;
     }
@@ -5122,150 +4762,7 @@ public class ProducerFeedActivity extends Activity {
         return box;
     }
 
-    private LinearLayout homeMiniMetric(
-            String label,
-            String value,
-            int valueColor
-    ) {
-        LinearLayout box =
-                new LinearLayout(this);
 
-        box.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        box.setPadding(
-                dp(4),
-                dp(10),
-                dp(4),
-                0
-        );
-
-        TextView l =
-                text(
-                        label,
-                        11,
-                        MUTED,
-                        false
-                );
-
-        l.setGravity(
-                Gravity.CENTER
-        );
-
-        box.addView(l);
-
-        TextView v =
-                text(
-                        value,
-                        15,
-                        valueColor,
-                        true
-                );
-
-        v.setGravity(
-                Gravity.CENTER
-        );
-
-        v.setPadding(
-                0,
-                dp(4),
-                0,
-                0
-        );
-
-        box.addView(v);
-
-        return box;
-    }
-
-    private View buildHomeMarketCard(
-            HomeMarketSnapshot item
-    ) {
-        LinearLayout card =
-                verticalCard();
-
-        card.setPadding(
-                dp(14),
-                dp(12),
-                dp(14),
-                dp(12)
-        );
-
-        card.addView(
-                text(
-                        item.region,
-                        16,
-                        TEXT,
-                        true
-                )
-        );
-
-        TextView grade =
-                text(
-                        "2 No",
-                        12,
-                        MUTED,
-                        false
-                );
-
-        grade.setPadding(
-                0,
-                dp(2),
-                0,
-                0
-        );
-
-        card.addView(grade);
-
-        TextView price =
-                text(
-                        item.median > 0
-                                ? fmtPrice(
-                                item.median
-                        )
-                                : "—",
-                        23,
-                        GREEN,
-                        true
-                );
-
-        price.setPadding(
-                0,
-                dp(4),
-                0,
-                0
-        );
-
-        card.addView(price);
-
-        TextView detail =
-                text(
-                        item.saleCount
-                                + " satış  •  "
-                                + fmtKg(
-                                item.totalKg
-                        ),
-                        11,
-                        MUTED,
-                        false
-                );
-
-        detail.setPadding(
-                0,
-                dp(5),
-                0,
-                0
-        );
-
-        card.addView(detail);
-
-        card.setOnClickListener(
-                v -> showSection("MARKET")
-        );
-
-        return card;
-    }
 
     private HomeGardenSnapshot loadHomeGardenSnapshot() {
         long preferredId = 0;
@@ -5560,106 +5057,6 @@ public class ProducerFeedActivity extends Activity {
         dialog.show();
     }
 
-    private List<HomeMarketSnapshot>
-    loadHomeMarketSnapshots() {
-        List<HomeMarketSnapshot> result =
-                new ArrayList<>();
-
-        Cursor regions = null;
-
-        try {
-            regions =
-                    marketRepository
-                            .getLocalMarketByGrade(
-                                    "2"
-                            );
-
-            while (
-                    regions != null
-                            && regions.moveToNext()
-                            && result.size() < 2
-            ) {
-                String region =
-                        getString(
-                                regions,
-                                "region",
-                                ""
-                        ).trim();
-
-                if (region.isEmpty()) {
-                    continue;
-                }
-
-                HomeMarketSnapshot item =
-                        new HomeMarketSnapshot();
-
-                item.region =
-                        region;
-
-                item.saleCount =
-                        getInt(
-                                regions,
-                                "sale_count"
-                        );
-
-                item.totalKg =
-                        getDouble(
-                                regions,
-                                "total_kg"
-                        );
-
-                Cursor raw = null;
-
-                List<Double> prices =
-                        new ArrayList<>();
-
-                try {
-                    raw =
-                            marketRepository
-                                    .getMarketSalesByGradeAndRegion(
-                                            "2",
-                                            region
-                                    );
-
-                    while (
-                            raw != null
-                                    && raw.moveToNext()
-                    ) {
-                        double p =
-                                getDouble(
-                                        raw,
-                                        "price_per_kg"
-                                );
-
-                        if (p > 0) {
-                            prices.add(p);
-                        }
-                    }
-
-                } finally {
-                    if (raw != null) {
-                        raw.close();
-                    }
-                }
-
-                Collections.sort(
-                        prices
-                );
-
-                item.median =
-                        median(prices);
-
-                result.add(item);
-            }
-
-        } finally {
-            if (regions != null) {
-                regions.close();
-            }
-        }
-
-        return result;
-    }
 
     private long daysSince(
             String rawDate
@@ -5731,6 +5128,45 @@ public class ProducerFeedActivity extends Activity {
     }
 
 
+    private double homeSeasonElekKg() {
+        String uid = db.getActiveOwnerUid() == null ? "" : db.getActiveOwnerUid();
+        Cursor c = null;
+        try {
+            c = new ElekRepository(db).getArchiveSummary(db.getActiveSeasonYear(), uid);
+            return c != null && c.moveToFirst() ? getDouble(c, "total_kg") : 0;
+        } catch (RuntimeException e) {
+            return 0;
+        } finally {
+            if (c != null) c.close();
+        }
+    }
+
+    /** Kullanıcının kendi elek kayıtlarından sınıf sınıf kg, tutar ve kayıt sayısı (bu sezon, bu hesap). */
+    private List<HomeSummaryModel.GradePrice> loadOwnGradePrices() {
+        List<HomeSummaryModel.GradePrice> out = new ArrayList<>();
+        for (int g = 0; g < HomeSummaryModel.GRADE_CODES.length; g++) {
+            HomeSummaryModel.GradePrice item = new HomeSummaryModel.GradePrice();
+            item.label = HomeSummaryModel.GRADE_LABELS[g];
+            java.util.Set<Long> records = new java.util.HashSet<>();
+            Cursor c = null;
+            try {
+                c = marketRepository.getScopedOwnSalesByGrade(HomeSummaryModel.GRADE_CODES[g]);
+                while (c != null && c.moveToNext()) {
+                    double kg = getDouble(c, "kg");
+                    item.kg += kg;
+                    item.revenue += kg * getDouble(c, "price_per_kg");
+                    records.add((long) getInt(c, "sale_id"));
+                }
+            } catch (RuntimeException ignored) {
+            } finally {
+                if (c != null) c.close();
+            }
+            item.records = records.size();
+            out.add(item);
+        }
+        return out;
+    }
+
     private void openOperationForGarden(
             String type,
             long gardenId
@@ -5785,12 +5221,6 @@ public class ProducerFeedActivity extends Activity {
         String neighborhood = "";
     }
 
-    private static class HomeMarketSnapshot {
-        String region = "Bölge";
-        int saleCount;
-        double totalKg;
-        double median;
-    }
 
     // =========================================================
     // BAHÇELER
@@ -7915,86 +7345,6 @@ public class ProducerFeedActivity extends Activity {
 
 
 
-    private LinearLayout quickButton(
-            String icon,
-            String label,
-            View.OnClickListener l
-    ) {
-        LinearLayout c =
-                verticalCard();
-
-        c.setGravity(
-                Gravity.CENTER
-        );
-
-        c.setPadding(
-                dp(5),
-                dp(10),
-                dp(5),
-                dp(9)
-        );
-
-        TextView i =
-                text(
-                        icon,
-                        23,
-                        GREEN,
-                        false
-                );
-
-        i.setGravity(
-                Gravity.CENTER
-        );
-
-        c.addView(i);
-
-        TextView txt =
-                text(
-                        label,
-                        11,
-                        TEXT,
-                        true
-                );
-
-        txt.setGravity(
-                Gravity.CENTER
-        );
-
-        txt.setPadding(
-                0,
-                dp(5),
-                0,
-                0
-        );
-
-        c.addView(txt);
-
-        c.setOnClickListener(l);
-
-        return c;
-    }
-
-    private LinearLayout.LayoutParams homeQuickCard() {
-        return new LinearLayout.LayoutParams(
-                0,
-                dp(96),
-                1
-        );
-    }
-
-    private LinearLayout.LayoutParams homeQuickCardWithLeft() {
-        LinearLayout.LayoutParams p =
-                homeQuickCard();
-
-        p.setMargins(
-                dp(7),
-                0,
-                0,
-                0
-        );
-
-        return p;
-    }
 
 
     private LinearLayout verticalCard() {
