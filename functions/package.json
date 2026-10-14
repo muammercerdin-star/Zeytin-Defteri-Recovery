@@ -7,7 +7,7 @@
   },
   "scripts": {
     "test": "node --test test/*.test.js",
-    "check": "node --check index.js && node --check league/functions.js && node --check league/runtime.js && node --check league/policy.js && node --check league/approval.js && node --check operator/role.js && node --check operator/submit.js && node --check market/functions.js && node --check market/policy.js && node --check moderation/functions.js && node --check moderation/service.js && node --check operator/moderation-role.js && node --check moderation/roles.js && node --check moderation/role-functions.js && node --check operator/super-admin-role.js && node --check operator/project-guard.js"
+    "check": "node --check index.js && node --check league/functions.js && node --check league/runtime.js && node --check league/policy.js && node --check league/approval.js && node --check operator/role.js && node --check operator/submit.js && node --check market/functions.js && node --check market/policy.js && node --check moderation/functions.js && node --check moderation/service.js && node --check operator/moderation-role.js && node --check moderation/roles.js && node --check moderation/role-functions.js && node --check operator/super-admin-role.js && node --check operator/project-guard.js && node --check account/service.js && node --check account/functions.js"
   },
   "dependencies": {
     "firebase-admin": "13.4.0",

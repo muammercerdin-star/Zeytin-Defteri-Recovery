@@ -97,8 +97,9 @@ final class SettingsView extends ScrollView {
                         () -> LegalDocumentActivity.open(activity, LegalDocuments.KVKK)),
                 row(activity, R.drawable.ic_archive_document, "Kullanım Koşulları", "Uygulamayı kullanma şartları", null,
                         () -> open(activity, TermsActivity.class)),
-                row(activity, R.drawable.ic_settings_document, "Hesap ve Veri Silme Talebi", "Hesabının ve verilerinin silinmesini iste", null,
-                        () -> LegalDocumentActivity.requestDeletion(activity)),
+                // Play "app account deletion": silme uygulama içinde yapılır; e-posta talebi diyalogda yedek yol.
+                row(activity, R.drawable.ic_settings_document, "Hesabımı Sil", "Hesabını ve tüm verilerini kalıcı olarak sil", null,
+                        () -> AccountDeletion.start(activity)),
                 row(activity, R.drawable.ic_settings_logout, "Çıkış Yap", "Hesabınızdan güvenli şekilde çıkış yapın", null,
                         () -> activity.startActivity(new Intent(activity, ProfileActivity.class)
                                 .putExtra(ProfileActivity.EXTRA_CONFIRM_LOGOUT, true))));

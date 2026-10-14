@@ -18,13 +18,15 @@ final class LegalDocuments {
     static final String CONTACT_EMAIL = "muammercerdin@gmail.com";
     /** Veri sorumlusunun doğrulanmış ad soyadı. Doğrulanmadan doldurulmamalı. */
     static final String CONTROLLER_NAME = "Muammer Çerdin";
-    static final String VERSION = "1.1";
+    static final String VERSION = "1.2";
     static final String DATE = "14 Ekim 2026";
     /**
      * Yayıncı onayı: 13.10.2026 tarihinde yayıncı (Muammer Çerdin) metinleri sürüm 1.0 olarak
      * yürürlüğe aldı. 14.10.2026 sürüm 1.1: piyasa katkısının varsayılan kapalı izinle çalıştığı
      * ve Zeytin Ligi'nin satıştaki paylaşım seçeneğine bağlı olduğu, uygulamadaki gerçek
-     * davranışa uygun biçimde açıklandı (yayıncının 14.10.2026 talimatıyla). Metinler bir hukukçu tarafından incelenmedi; bu bayrak yayıncı kararını gösterir.
+     * davranışa uygun biçimde açıklandı (yayıncının 14.10.2026 talimatıyla). 14.10.2026 sürüm 1.2: Gizlilik
+     * Politikası 10. bölüm, uygulamaya eklenen "Hesabımı Sil" (Play hesap silme şartı) davranışına göre
+     * güncellendi; yayıncının son okuması bekleniyor. Metinler bir hukukçu tarafından incelenmedi; bu bayrak yayıncı kararını gösterir.
      */
     static final boolean LEGAL_REVIEW_APPROVED = true;
 

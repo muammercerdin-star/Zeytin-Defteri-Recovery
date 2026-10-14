@@ -97,3 +97,5 @@ Object.assign(exports, require('./market/functions'));
 Object.assign(exports, require('./moderation/functions'));
 
 Object.assign(exports, require('./moderation/role-functions'));
+// Play account deletion: user-initiated, deletes the caller's own data and auth account.
+Object.assign(exports, require('./account/functions'));

@@ -25,7 +25,7 @@ public final class LegalDocumentsTest {
         check(!LegalDocuments.registrationBlockReason(false, "").isEmpty(), "reason when closed");
         // Current repository state must stay closed until the publisher verifies identity and review.
         // Publisher decision 13.10.2026: controller named, documents in force as v1.0.
-        // 14.10.2026 v1.1: market contribution is opt-in (default off); texts match the app.
+        // 14.10.2026 v1.1: market contribution texts match the app. v1.2: in-app account deletion.
         check(LegalDocuments.readyForRegistration(), "registration open");
         check(LegalDocuments.registrationBlockReason().isEmpty(), "no block reason shown");
         check(!LegalDocuments.isDraft(), "no draft banner");
@@ -41,7 +41,7 @@ public final class LegalDocumentsTest {
             check(filled.contains("Muammer Çerdin") && !filled.contains(LegalDocuments.CONTROLLER_PENDING), file + " controller name filled");
             check(LegalDocuments.fill(raw(file), "").contains(LegalDocuments.CONTROLLER_PENDING), file + " empty name is marked pending");
             check(filled.contains("Sürüm " + LegalDocuments.VERSION), file + " shows current version");
-            check("1.1".equals(LegalDocuments.VERSION), "version 1.1");
+            check("1.2".equals(LegalDocuments.VERSION), "version 1.2");
             String named = LegalDocuments.fill(raw(file), "Ad Soyad");
             check(named.contains("Ad Soyad") && !named.contains(LegalDocuments.CONTROLLER_PENDING), file + " name substitution");
             // No fabricated contact data or absolute guarantees.
@@ -59,7 +59,7 @@ public final class LegalDocumentsTest {
                 "Bildirimler", "Analitik", "Saklama ve silme", "Üçüncü taraf"}) {
             check(privacy.contains(section), "Privacy section: " + section);
         }
-        check(privacy.contains("tek adımda silen bir işlem bulunmaz"), "deletion limitation disclosed");
+        check(privacy.contains("Ayarlar > \"Hesabımı Sil\"") && privacy.contains("Silinmiş kullanıcı"), "in-app deletion disclosed");
         String terms = raw("legal_terms.txt");
         for (String section : new String[]{"amacı", "Hesap kullanımı", "Kullanıcı sorumlulukları", "Yasaklı kullanım",
                 "topluluk kuralları", "askıya", "Hizmet değişiklikleri", "Sorumluluk"}) {

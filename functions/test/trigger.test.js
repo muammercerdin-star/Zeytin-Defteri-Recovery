@@ -29,7 +29,7 @@ function fixture(options={}) {
       if(options.invalid)throw Object.assign(new Error('invalid'),{code:'messaging/registration-token-not-registered'});
       if(options.transient&&sends===1)throw Object.assign(new Error('retry'),{code:'messaging/internal-error'});
       return 'message-id';
-    }})},'./policy':policy,'./league/functions':{},'./market/functions':{},'./moderation/functions':{},'./moderation/role-functions':{}
+    }})},'./policy':policy,'./league/functions':{},'./market/functions':{},'./moderation/functions':{},'./moderation/role-functions':{},'./account/functions':{}
   };
   const context={exports:{},require:n=>{if(!modules[n])throw new Error(n);return modules[n]},Date,Promise,Error};
   vm.runInNewContext(fs.readFileSync(require.resolve('../index'),'utf8'),context);
