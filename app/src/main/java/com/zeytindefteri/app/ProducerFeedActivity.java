@@ -2388,6 +2388,11 @@ public class ProducerFeedActivity extends Activity {
 
         body.addView(hero);
 
+        View leagueCard = buildHomeLeagueCard();
+        LinearLayout.LayoutParams lcp = new LinearLayout.LayoutParams(-1, -2);
+        lcp.setMargins(dp(16), dp(12), dp(16), 0);
+        body.addView(leagueCard, lcp);
+
         final HomeWeatherState weatherState =
                 homeWeather;
 
@@ -3141,6 +3146,232 @@ public class ProducerFeedActivity extends Activity {
         hero.setLayoutParams(new LinearLayout.LayoutParams(-1,-2));
         state.hero=hero;
         return hero;
+    }
+
+    // ------------------------------------------------------------------
+    // Ana Sayfa · Zeytin Ligi kartı (HomeLeagueModel kuralları)
+    // ------------------------------------------------------------------
+    private static final long HOME_LEAGUE_CACHE_MS = 10 * 60 * 1000L;
+    private HomeLeagueModel.Input homeLeagueCache;
+    private String homeLeagueCacheKey = "";
+    private long homeLeagueCacheAt;
+    private int homeLeagueSerial;
+
+    private String homeLeagueHiddenKey(String uid) { return "home_league_card_hidden_" + uid; }
+
+    /** Kart yüklenene kadar görünmez; bölge bilinmiyorsa ya da gizlendiyse hiç görünmez. */
+    private View buildHomeLeagueCard() {
+        final FrameLayout host = new FrameLayout(this);
+        host.setVisibility(View.GONE);
+        final int year = db.getActiveSeasonYear();
+        final String uid = db.getActiveOwnerUid() == null ? "" : db.getActiveOwnerUid();
+        if (uid.isEmpty() || "1".equals(db.getSetting(homeLeagueHiddenKey(uid), "0"))) return host;
+        final String key = uid + "_" + year;
+        if (homeLeagueCache != null && key.equals(homeLeagueCacheKey)
+                && System.currentTimeMillis() - homeLeagueCacheAt < HOME_LEAGUE_CACHE_MS) {
+            renderHomeLeagueCard(host, homeLeagueCache, uid);
+            return host;
+        }
+        final int serial = ++homeLeagueSerial;
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            ZeytinLeagueRepository.Result local;
+            DatabaseHelper helper = new DatabaseHelper(app);
+            try {
+                local = new ZeytinLeagueRepository().local(helper, year, uid);
+            } catch (RuntimeException e) {
+                return; // Yerel arşiv okunamadı: kart gösterilmez.
+            } finally {
+                helper.close();
+            }
+            final ZeytinLeagueRepository.Result finalLocal = local;
+            runOnUiThread(() -> {
+                if (serial != homeLeagueSerial || isFinishing()) return;
+                new ZeytinLeagueRepository().published(year, uid, finalLocal, result -> {
+                    if (serial != homeLeagueSerial || isFinishing()) return;
+                    final HomeLeagueModel.Input in = homeLeagueInput(result, finalLocal);
+                    if (in.published && in.myRank > 0 || in.raceStarted) {
+                        finishHomeLeague(host, in, key, uid, serial);
+                        return;
+                    }
+                    MarketCloudRepository cloud = new MarketCloudRepository(db, uid);
+                    if (!cloud.canUseCloud()) { finishHomeLeague(host, in, key, uid, serial); return; }
+                    final String ownRegion = finalLocal.local == null ? "" : finalLocal.local.region;
+                    cloud.loadLeagueRegions(year, (regions, error) -> {
+                        if (error == null && regions != null) {
+                            for (MarketCloudRepository.LeagueRegionStat r : regions) {
+                                if (r != null && r.id.equals(ownRegion)) in.regionProducers = r.producerCount;
+                            }
+                        }
+                        finishHomeLeague(host, in, key, uid, serial);
+                    });
+                });
+            });
+        }, "home-league").start();
+        return host;
+    }
+
+    private void finishHomeLeague(FrameLayout host, HomeLeagueModel.Input in, String key, String uid, int serial) {
+        if (serial != homeLeagueSerial || isFinishing()) return;
+        homeLeagueCache = in; homeLeagueCacheKey = key; homeLeagueCacheAt = System.currentTimeMillis();
+        if (host.isAttachedToWindow() || host.getParent() != null) renderHomeLeagueCard(host, in, uid);
+    }
+
+    /** Yayın sonucu + yerel önizlemeden yalnızca kullanıcının kendi durumunu çıkarır. */
+    private HomeLeagueModel.Input homeLeagueInput(ZeytinLeagueRepository.Result result, ZeytinLeagueRepository.Result local) {
+        HomeLeagueModel.Input in = new HomeLeagueModel.Input();
+        ZeytinLeagueScore.Producer me = local.local;
+        in.localKg = me == null ? 0 : me.kg;
+        String regionId = me == null ? "" : me.region;
+        boolean fresh = result != null && result.published
+                && ZeytinLeagueRepository.fresh(result.publishedAtMs, System.currentTimeMillis());
+        in.published = fresh;
+        if (fresh && result.mine != null) { regionId = result.mine.region; in.myRank = result.mine.rank; in.myScore = result.mine.score; }
+        ZeytinLeagueRepository.Result source = fresh ? result : local;
+        for (ZeytinLeagueRepository.Region r : source.regions) {
+            if (r == null || r.id == null || !r.id.equals(regionId)) continue;
+            if (r.name != null) in.regionName = r.name;
+            if (fresh && !r.top.isEmpty()) {
+                in.raceStarted = true;
+                in.topScores = new double[r.top.size()];
+                for (int i = 0; i < r.top.size(); i++) in.topScores[i] = r.top.get(i).score;
+            }
+        }
+        if (in.regionName.isEmpty()) {
+            for (ZeytinLeagueRepository.Region r : local.regions) if (r != null && r.name != null) in.regionName = r.name;
+        }
+        return in;
+    }
+
+    private void renderHomeLeagueCard(FrameLayout host, HomeLeagueModel.Input in, String uid) {
+        host.removeAllViews();
+        final HomeLeagueModel.Card c = HomeLeagueModel.build(in);
+        if (c == null) { host.setVisibility(View.GONE); return; }
+        int gold = GreenTheme.color(R.color.zd_warning);
+        int bronze = 0xffc89470;
+        int cupColor = c.state == HomeLeagueModel.State.LEADER ? gold
+                : c.state == HomeLeagueModel.State.RANKED ? (in.myRank <= 3 ? bronze : GREEN) : 0xff5e767c;
+        boolean strong = c.state == HomeLeagueModel.State.LEADER || c.state == HomeLeagueModel.State.RANKED;
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(14), dp(12), dp(12), dp(12));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(dp(20));
+        bg.setColor(strong ? GREEN_SOFT : CARD);
+        bg.setStroke(dp(1), c.state == HomeLeagueModel.State.LEADER ? gold : strong ? GREEN : BORDER);
+        card.setBackground(bg);
+        card.setMinimumHeight(dp(64));
+
+        LinearLayout line = row();
+        FrameLayout cup = new FrameLayout(this);
+        GradientDrawable ring = new GradientDrawable();
+        ring.setShape(GradientDrawable.OVAL);
+        ring.setColor(GreenTheme.color(R.color.zd_bg));
+        if (strong) ring.setStroke(dp(1), cupColor); else ring.setStroke(dp(1), cupColor, dp(3), dp(3));
+        cup.setBackground(ring);
+        ImageView cupIcon = new ImageView(this);
+        cupIcon.setImageResource(R.drawable.ic_league_nav);
+        cupIcon.setColorFilter(cupColor);
+        cupIcon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        cup.addView(cupIcon, new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
+        line.addView(cup, new LinearLayout.LayoutParams(dp(44), dp(44)));
+
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        copy.setPadding(dp(12), 0, dp(8), 0);
+        copy.addView(text(c.overline, 11, c.state == HomeLeagueModel.State.LEADER ? gold : strong ? GREEN : MUTED, true));
+        TextView title = text(c.title, 15, TEXT, true);
+        title.setPadding(0, dp(2), 0, 0);
+        copy.addView(title);
+        TextView sub = text(c.sub, 12, GreenTheme.color(R.color.zd_text_soft), false);
+        sub.setPadding(0, dp(2), 0, 0);
+        copy.addView(sub);
+        line.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+
+        if (c.invite) {
+            TextView invite = text("Davet et", 13, GreenTheme.color(R.color.zd_bg), true);
+            invite.setGravity(Gravity.CENTER);
+            invite.setPadding(dp(14), 0, dp(14), 0);
+            GradientDrawable pill = new GradientDrawable();
+            pill.setCornerRadius(dp(20)); pill.setColor(GREEN);
+            invite.setBackground(pill);
+            invite.setContentDescription("Bölgendeki üreticileri davet et");
+            invite.setOnClickListener(v -> {
+                Intent share = new Intent(Intent.ACTION_SEND);
+                share.setType("text/plain");
+                share.putExtra(Intent.EXTRA_TEXT, HomeLeagueModel.inviteText(in.regionName));
+                startActivity(Intent.createChooser(share, "Davet et"));
+            });
+            line.addView(invite, new LinearLayout.LayoutParams(-2, dp(40)));
+        } else {
+            TextView chevron = text("›", 22, MUTED, false);
+            chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            line.addView(chevron);
+        }
+        card.addView(line);
+
+        if (c.progressText != null && !c.progressText.isEmpty()) {
+            if (c.progressPercent >= 0) {
+                FrameLayout track = new FrameLayout(this);
+                GradientDrawable trackBg = new GradientDrawable();
+                trackBg.setCornerRadius(dp(3)); trackBg.setColor(GreenTheme.color(R.color.zd_bg));
+                track.setBackground(trackBg);
+                View fill = new View(this);
+                GradientDrawable fillBg = new GradientDrawable();
+                fillBg.setCornerRadius(dp(3)); fillBg.setColor(MUTED);
+                fill.setBackground(fillBg);
+                track.addView(fill, new FrameLayout.LayoutParams(0, -1));
+                final int percent = c.progressPercent;
+                track.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+                    int w = Math.round((r - l) * percent / 100f);
+                    if (fill.getLayoutParams().width != w) { fill.getLayoutParams().width = w; fill.requestLayout(); }
+                });
+                LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-1, dp(6));
+                tp.topMargin = dp(10);
+                card.addView(track, tp);
+            }
+            TextView progress = text(c.progressText, 11, MUTED, false);
+            progress.setPadding(0, dp(4), 0, 0);
+            card.addView(progress);
+        }
+        if (c.checklist) {
+            LinearLayout chips = row();
+            chips.setPadding(0, dp(10), 0, 0);
+            chips.addView(homeLeagueChip(c.kgOk ? "✓ En az 100 kg" : "· En az 100 kg", c.kgOk));
+            View gap = new View(this);
+            chips.addView(gap, new LinearLayout.LayoutParams(dp(6), 1));
+            chips.addView(homeLeagueChip("· Paylaşılan satış", false));
+            card.addView(chips);
+        }
+
+        card.setContentDescription(c.accessibility + " Zeytin Ligi'ni açmak için dokun. Gizlemek için basılı tut.");
+        card.setOnClickListener(v -> showSection("REPORTS"));
+        card.setOnLongClickListener(v -> {
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("Zeytin Ligi kartı")
+                    .setMessage("Bu kartı Ana Sayfa'dan gizlemek ister misin? Zeytin Ligi ekranından yeniden açabilirsin.")
+                    .setPositiveButton("Gizle", (d, w) -> {
+                        db.setSetting(homeLeagueHiddenKey(uid), "1");
+                        host.removeAllViews();
+                        host.setVisibility(View.GONE);
+                    })
+                    .setNegativeButton("Vazgeç", null)
+                    .show();
+            return true;
+        });
+        host.addView(card, new FrameLayout.LayoutParams(-1, -2));
+        host.setVisibility(View.VISIBLE);
+    }
+
+    private TextView homeLeagueChip(String label, boolean ok) {
+        TextView chip = text(label, 11, ok ? GREEN : GreenTheme.color(R.color.zd_text_soft), true);
+        chip.setPadding(dp(10), dp(4), dp(10), dp(4));
+        GradientDrawable d = new GradientDrawable();
+        d.setCornerRadius(dp(12));
+        if (ok) d.setStroke(dp(1), GREEN); else d.setStroke(dp(1), BORDER, dp(3), dp(3));
+        chip.setBackground(d);
+        return chip;
     }
 
     private LinearLayout.LayoutParams homeCardParams(int topMargin) {

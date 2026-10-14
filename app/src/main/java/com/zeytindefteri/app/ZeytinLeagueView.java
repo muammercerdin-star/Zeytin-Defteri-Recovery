@@ -49,6 +49,7 @@ public final class ZeytinLeagueView extends ScrollView {
     private String observedPointer;
 
     private MarketCloudRepository leagueCloudRepository;
+    private DatabaseHelper settingsDb;
     private final List<MarketCloudRepository.LeagueRegionStat> cloudLeagueRegions = new ArrayList<>();
     private boolean cloudDirectoryLoaded;
     private int cloudDirectorySerial;
@@ -80,6 +81,7 @@ public final class ZeytinLeagueView extends ScrollView {
      */
     public void configureCloud(DatabaseHelper databaseHelper) {
         if (databaseHelper == null) return;
+        settingsDb = databaseHelper;
         leagueCloudRepository = new MarketCloudRepository(databaseHelper, uid);
         if (isAttachedToWindow() && localData != null) {
             refreshCloudDirectory();
@@ -469,7 +471,8 @@ public final class ZeytinLeagueView extends ScrollView {
         tile.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
 
         LinearLayout details = column(); details.setPadding(dp(10), dp(10), dp(10), dp(12));
-        details.setMinimumHeight(dp(150));
+        // Sabit min. yükseklik yok: kartlar satırdaki en uzun karta eşitlenir (MATCH_PARENT),
+        // eşik altındaki kısa kartların altında boşluk kalmaz.
         TextView district = label(parts[0], 15, text, true); district.setMaxLines(1);
         district.setEllipsize(android.text.TextUtils.TruncateAt.END); details.addView(district);
         if (!parts[1].isEmpty()) details.addView(label(parts[1], 12, muted, false));
@@ -584,7 +587,7 @@ public final class ZeytinLeagueView extends ScrollView {
             ZeytinLeagueRepository.Region r = data.regions.get(i);
             boolean active = r.id.equals(selected); if (active) selectedIndex = i;
             View tile = regionTile(r, active, badges.get(i));
-            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(tileWidth, -2);
+            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(tileWidth, -1);
             cp.rightMargin = dp(8); cards.addView(tile, cp);
         }
         carousel.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) ->
@@ -849,6 +852,17 @@ public final class ZeytinLeagueView extends ScrollView {
                 if (leagueCloudRepository.isContributionOptedIn()) refreshCloudDirectory();
             }));
             body.addView(consent);
+        }
+        final String homeKey = "home_league_card_hidden_" + uid;
+        if (settingsDb != null && !uid.isEmpty() && "1".equals(settingsDb.getSetting(homeKey, "0"))) {
+            TextView restore = label("Ana Sayfa'daki Zeytin Ligi kartını yeniden göster", 13, green, true);
+            restore.setMinHeight(dp(44)); restore.setGravity(Gravity.CENTER_VERTICAL);
+            restore.setOnClickListener(v -> {
+                settingsDb.setSetting(homeKey, "0");
+                android.widget.Toast.makeText(getContext(), "Kart Ana Sayfa'da yeniden görünecek.", android.widget.Toast.LENGTH_SHORT).show();
+                render();
+            });
+            body.addView(restore);
         }
         TextView reports = label("Kişisel raporlar ve işlem geçmişi", 14, green, true);
         reports.setPadding(0, dp(8), 0, dp(8)); reports.setOnClickListener(v -> personalReports.run());

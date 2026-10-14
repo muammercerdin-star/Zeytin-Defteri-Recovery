@@ -339,3 +339,43 @@ Cihazda tekrar görülürse adımlar ile birlikte bildirilmeli.
   - Lig'de bilgilendirme kartının bir kez çıkması.
   - Kapatınca panelde katkıların silinmesi.
   - Kapalıyken Lig'de "katkın kapalı · Aç" satırının görünmesi.
+
+## 14. Ana Sayfa · Zeytin Ligi kartı (tuvaldeki "Ana Sayfa · Zeytin Ligi kartı (4 hal)")
+
+### Yerleşim ve davranış
+- Kart, Ana Sayfa'da hava kartının altında, "Bugün yapılacaklar"ın üstünde duruyor.
+- Veri gelene kadar görünmüyor. Bölge bilinmiyorsa hiç gösterilmiyor.
+- Dokununca Zeytin Ligi sekmesi açılıyor.
+- Basılı tutunca "Gizle" seçeneği çıkıyor. Bu ayar kullanıcıya özel. Gizlenen kart, Zeytin Ligi ekranının altındaki "Ana Sayfa'daki Zeytin Ligi kartını yeniden göster" bağlantısıyla geri açılıyor.
+
+### Dört hal (`HomeLeagueModel`, saf sınıf)
+1. **Kupa açılmadı:** "<İlçe> kupası sahipsiz · Yarış bölgede 4 üretici sıralamaya girince başlar".
+   - Bölgedeki üretici sayısı biliniyorsa ilerleme çubuğu gösteriliyor.
+   - **Davet et** düğmesi düz metin paylaşıyor; uydurma bağlantı eklenmiyor.
+2. **Sıralamada:** "<İlçe>'de N. sıradasın".
+   - İlk üçteyse alt satır "Kürsüdesin · liderliğe X puan".
+   - Daha gerideyse "Kürsüye X puan kaldı".
+   - Türkçe bulunma eki doğru üretiliyor: Edremit'te, Alaşehir'de, Ayvalık'ta.
+3. **Lider:** Altın kupa ve "<İlçe> kupası şu an sende".
+4. **Şart eksik:** Yarış başlamış ama kullanıcı listede değil. "✓/· En az 100 kg" ve "· Paylaşılan satış" etiketleri gösteriliyor.
+
+### Kurallar
+- Yalnızca kullanıcının kendi sırası, puanı ve bölgesinin Top 20 puanları okunuyor. Başka üreticinin kilosu ya da tutarı karta hiç girmiyor.
+- Sıra yalnızca 24 saat içinde yayımlanmış sunucu sonucundan alınıyor. Telefondaki ön puan sıra gibi gösterilmiyor.
+- Firestore okumaları 10 dakika önbellekleniyor, Ana Sayfa'nın her açılışında yeniden indirilmiyor. Geç gelen eski cevaplar yok sayılıyor.
+
+### Bölge kartları
+Sabit 150dp yükseklik kaldırıldı. Kartlar satırdaki en uzun karta eşitleniyor; eşik altındaki kartların altında artık boşluk kalmıyor.
+
+### Doğrulama
+- `tests/home_league/run.sh`: 34 kontrol.
+- `tests/home_league/check_wiring.py`: 11 kaynak kontrolü.
+- Ana Sayfa (65) ve lig testleri geçiyor.
+- `ProducerFeedActivity`, `ZeytinLeagueView` ve `HomeLeagueModel` `android.jar` ile tip denetiminden geçti (Firebase ve Glide hariç).
+- APK derlenmedi.
+
+### Cihazda kontrol
+- Kartın bugünkü durumda "Alaşehir kupası sahipsiz" olarak çıkması.
+- Davet paylaşım penceresi.
+- Basılı tutup gizleme ve Lig ekranından geri açma.
+- Bölge kartlarının eşit yükseklikte olması.
