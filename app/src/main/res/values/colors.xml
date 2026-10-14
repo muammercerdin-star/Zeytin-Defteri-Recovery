@@ -15,6 +15,8 @@
     <color name="zd_border">#29434D</color>
     <color name="zd_danger">#FF6B63</color>
     <color name="zd_warning">#E5B455</color>
+    <color name="zd_water">#8FC0E0</color>
+    <color name="zd_soil">#C9A27A</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="ic_launcher_background">#0B1D28</color>
