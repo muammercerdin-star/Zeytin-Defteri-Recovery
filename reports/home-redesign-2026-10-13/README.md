@@ -257,3 +257,37 @@ Cihazda tekrar görülürse adımlar ile birlikte bildirilmeli.
 - Geçmiş listesi: yıl değiştirme, bahçe filtresi, ay başlıkları.
 - Makbuz açma, paylaşma, not ekleme ve not sonrası görünüm.
 - Kayıt silme: silince listeden ve Elek sekmesinden düşmesi, diğer cihazda senkron sonrası kaybolması.
+
+## 12. Zeytin Ligi — gizlilik eşiği + görselsiz tasarım
+
+### 12.1 Gizlilik düzeltmesi (ayrı commit)
+- **Sorun:** Ekran görüntüsünde 2 üreticili bölgelerde toplam kg ve ortalama TL/kg görünüyordu (ör. Edremit 456 kg · 56,89 TL/kg). İki üreticili bölgede biri kendi verisini çıkararak diğerinin kilosunu ve fiyatını tam bulabilir.
+- **Neden:** İstemci, sunucunun `published` bayrağına güveniyordu. Repoda `ZEYTIN-LIGI-*-TEST-2.sql` (eşik 2) ve `*-PROD-5.sql` (eşik 5) var; canlı veritabanında TEST-2'nin çalıştığı **tahmin ediliyor** (canlı DB buradan görülemedi).
+- **Uygulamada yapılan:**
+  - Bölge dizini: `published && producer_count >= 5` değilse kg/fiyat/baskın elek tutulmuyor.
+  - Bölge raporu: `enforceReportPrivacy` eşik altı bölgede tüm rakamları; eşik üstü bölgede bile 5'ten az üreticili elek satırlarını, trend pencerelerini ve grafik günlerini temizliyor.
+  - "Tek üreticili fiyat ön izlemesi" kaldırıldı (o üreticinin fiyatını herkese açıyordu).
+- **Senin yapman gereken:** Supabase'de PROD-5 SQL dosyalarını uygulamak. Uygulama artık 5 altını göstermese de verinin sunucudan hiç çıkmaması gerekir.
+
+### 12.2 Görselsiz tasarım (tuvaldeki "Zeytin Ligi · görselsiz (önerilen)")
+- **Başlık:** Fotoğraf yok; koyu yeşil geçiş, soluk kupa, altta yeşil→altın çizgi, tek açıklama satırı. Yükseklik 150 → 112dp.
+- **"Senin sıran" şeridi:** Başlığın altında. Kupa sıra yokken gri/kesik çizgili, doğrulanmış sırada altın. Dokununca alttaki "Senin Sıran" kartına kayar.
+- **Elek fiyatı + sezon** aynı satırda.
+- **Durum satırı:** "4 bölge • Bölge rakamları 5 üreticiyle açılır" / "Top 20 yayında".
+- **Bölge kartları (fotoğrafsız, 2,5 kart görünür):** Üst şeritte baş harf rozeti (aynı harfle başlayan bölgelerde iki harf: AY/AK) ve durum etiketi (EŞİK / ANONİM / TOP 20). Eşik altında yalnızca "2 / 5 üretici", ilerleme çubuğu, "3 üretici daha gerekli". Eşik üstünde fiyat büyük, altında kg ve baskın elek. En küçük yazı 12sp.
+- **Top 20:** "ⓘ Puan nasıl hesaplanır?" açılır açıklaması (%50 kalite, %35 fiyat, %15 hacim — `functions/league/policy.js` ile aynı). Boşken "<Bölge> kupası henüz sahipsiz" + sunucunun gerçek kuralı (en az 4 sıralanabilir üretici). Doluyken ilk üç için kürsü (altın/gümüş/bronz), 4. ve sonrası tabloda; kendi satırın yeşil.
+- **Korunanlar:** Lig | Piyasa sekmesi, sezon seçici, elek filtreleri, bölge kartına dokununca bölge raporu, "Diğer bölgeleri yükle", yerel önizleme / doğrulanmış sıra mantığı, kişisel raporlar bağlantısı, kaydırma konumu koruma.
+- **Performans:** Her kartta yüklenen 2,3 MB'lık fotoğraf kalktı (drawable Ana Sayfa'da kullanılmaya devam ediyor).
+
+### 12.3 Doğrulama
+- `tests/league/check_privacy.py`: gerçek `enforceReportPrivacy` gövdesi çıkarılıp çalıştırılıyor — 18 kontrol + kaynak kontrolleri.
+- `tests/league/LeagueBoardModelTest.java`: 34 kontrol.
+- `tests/league/check_view.py`: 14 kaynak kontrolü.
+- **Yeni:** Bu oturumda Android API 33 `android.jar` ile **tip denetimi** yapılabildi (Firebase/Glide kütüphaneleri olmadan). `ZeytinLeagueView`, `MarketCloudRepository`, `ZeytinLeagueRegionReportDialog` ve önceki turlarda değişen `ProducerFeedActivity`, `ElekActivity`, `ElekArchiveActivity`, `ElekReceiptActivity` dosyalarında Firebase/Glide dışında hata kalmadı (bir değişken çakışması bu denetimle yakalanıp düzeltildi). Bu tam bir `assembleDebug` değildir; APK üretilmedi, cihazda çalıştırılmadı.
+
+### 12.4 Cihazda kontrol
+- 2 üreticili bölgelerde kg/fiyatın artık "—" yerine görünmediği, kartta "2 / 5 üretici" yazdığı.
+- Bölge raporu penceresinde eşik altı rakamların gizlendiği.
+- Kart genişliği (ekranda ~2,5 kart), büyük yazı tipi ayarında başlık ve kartların taşmadığı.
+- "Senin sıran" şeridine dokununca alttaki karta kayması.
+- Top 20 yayımlandığında kürsü ve kendi satırının vurgusu.

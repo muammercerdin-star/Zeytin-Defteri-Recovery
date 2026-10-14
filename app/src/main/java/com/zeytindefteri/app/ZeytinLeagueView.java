@@ -40,6 +40,8 @@ public final class ZeytinLeagueView extends ScrollView {
     private ZeytinLeagueRepository.Result data;
     private boolean paging, loading;
     private boolean expanded; // Presentation only: reveal the already loaded Top 20.
+    private boolean scoreInfoOpen; // "Puan nasıl hesaplanır?" açıklaması
+    private View ownCardView;
     private int loadSerial;
     private ZeytinLeagueRepository.Result localData;
     private com.google.firebase.firestore.ListenerRegistration pointerListener;
@@ -266,8 +268,9 @@ public final class ZeytinLeagueView extends ScrollView {
                     + (cloudLeagueRegions.isEmpty() ? " bulunamadı"
                     : " • rakamlar " + MarketBackendConfig.PUBLIC_MARKET_MIN_PRODUCERS + " üreticiyle açılır");
         } else if (!cloudLeagueRegions.isEmpty()) {
-            target.status = "Bölgesel ağ • " + cloudLeagueRegions.size()
-                    + " bölge bulundu • Top 20 için lig verisi bekleniyor";
+            boolean anyTop = false;
+            for (ZeytinLeagueRepository.Region r : target.regions) if (r != null && !r.top.isEmpty()) anyTop = true;
+            target.status = LeagueBoardModel.statusLine(target.regions.size(), anyTop);
         }
     }
 
@@ -288,10 +291,6 @@ public final class ZeytinLeagueView extends ScrollView {
     }
 
     private void gradeFilters() {
-        TextView caption = label("Elek fiyatı", 10, muted, false);
-        caption.setPadding(dp(1), dp(7), 0, dp(4));
-        body.addView(caption);
-
         HorizontalScrollView scroll = new HorizontalScrollView(getContext());
         scroll.setHorizontalScrollBarEnabled(false);
         scroll.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) ->
@@ -329,47 +328,180 @@ public final class ZeytinLeagueView extends ScrollView {
     }
 
     private void header() {
+        // Fotoğrafsız başlık: koyu yeşil geçiş + soluk kupa + altta yeşil→altın çizgi.
         FrameLayout hero = new FrameLayout(getContext());
-        hero.setBackground(round(card, gold)); hero.setClipToOutline(true);
-        ImageView photo = new ImageView(getContext()); photo.setImageResource(R.drawable.home_hero_olive);
-        photo.setScaleType(ImageView.ScaleType.CENTER_CROP); photo.setScaleX(-1f);
-        photo.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        hero.addView(photo, new FrameLayout.LayoutParams(-1, -1));
-        View shade = new View(getContext());
-        shade.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{0xee061b20, 0xb0061b20, 0x30061b20}));
-        hero.addView(shade, new FrameLayout.LayoutParams(-1, -1));
+        GradientDrawable fill = new GradientDrawable(GradientDrawable.Orientation.TR_BL,
+                new int[]{0xff24503a, 0xff163428, GreenTheme.color(R.color.zd_surface)});
+        fill.setCornerRadius(dp(20)); fill.setStroke(dp(1), border);
+        hero.setBackground(fill); hero.setClipToOutline(true);
+        ImageView watermark = icon(R.drawable.ic_league_nav, green);
+        watermark.setAlpha(.13f);
+        FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(dp(120), dp(120), Gravity.END | Gravity.TOP);
+        wp.rightMargin = -dp(6); wp.topMargin = -dp(8);
+        hero.addView(watermark, wp);
+        View line = new View(getContext());
+        line.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{green, gold}));
+        hero.addView(line, new FrameLayout.LayoutParams(-1, dp(3), Gravity.BOTTOM));
         LinearLayout copy = column(); copy.setGravity(Gravity.CENTER_VERTICAL);
-        copy.setPadding(dp(12), dp(12), dp(12), dp(12));
-        LinearLayout heading = row(); ImageView trophy = new ImageView(getContext());
-        trophy.setImageResource(R.drawable.ic_league_nav); trophy.setColorFilter(gold);
-        trophy.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        copy.setPadding(dp(16), dp(12), dp(16), dp(14));
+        LinearLayout heading = row();
+        ImageView trophy = icon(R.drawable.ic_league_nav, gold);
         heading.addView(trophy, new LinearLayout.LayoutParams(dp(28), dp(28)));
         TextView title = label("Zeytin Ligi", 26, text, true); title.setPadding(dp(10), 0, 0, 0);
         heading.addView(title, new LinearLayout.LayoutParams(0, -2, 1)); copy.addView(heading);
-        TextView motto = label("Kaliteli üretim, güçlü üreticiler", 14, green, true);
-        motto.setPadding(0, dp(8), 0, dp(5)); copy.addView(motto);
-        copy.addView(label("Gerçek satış verileriyle, bölgemizin en iyi zeytin üreticileri.", 12, text, false));
-        // Fixed outer bounds prevent the bitmap's intrinsic height sizing the banner.
-        // Text alone can scroll at very large accessibility fonts / short landscape windows.
-        ScrollView heroText = new ScrollView(getContext()); heroText.setFillViewport(true);
-        heroText.setVerticalScrollBarEnabled(false); heroText.addView(copy);
-        hero.addView(heroText, new FrameLayout.LayoutParams(-1, -1));
-        float bannerDp = Math.min(170, 150 * Math.max(1, getResources().getConfiguration().fontScale));
-        bannerDp = Math.min(bannerDp, Math.max(140, getResources().getConfiguration().screenHeightDp * .28f));
-        body.addView(hero, new LinearLayout.LayoutParams(-1, dp(bannerDp)));
+        TextView motto = label("Gerçek satış verileriyle bölgenin en iyi üreticileri", 13,
+                GreenTheme.color(R.color.zd_text_soft), false);
+        motto.setPadding(0, dp(8), 0, 0); copy.addView(motto);
+        hero.addView(copy, new FrameLayout.LayoutParams(-1, -1));
+        float scale = Math.max(1, getResources().getConfiguration().fontScale);
+        body.addView(hero, new LinearLayout.LayoutParams(-1, dp(Math.min(150, 112 * scale))));
+    }
+
+    /** Başlığın altındaki "Senin sıran" şeridi; dokununca alttaki ayrıntılı karta kayar. */
+    private void ownStrip() {
+        if (data == null) return;
+        ZeytinLeagueScore.Producer published = data.mine;
+        boolean matches = data.published && published != null;
+        ZeytinLeagueScore.Producer p = matches ? published : data.local;
+        String regionId = matches ? published.region : (data.local == null ? "" : data.local.region);
+        String district = "";
+        for (ZeytinLeagueRepository.Region r : data.regions) {
+            if (r != null && r.id.equals(regionId)) district = LeagueBoardModel.splitRegion(r.name)[0];
+        }
+        LinearLayout strip = row();
+        strip.setPadding(dp(14), dp(10), dp(12), dp(10));
+        strip.setBackground(round(GreenTheme.color(R.color.zd_green_soft), green));
+        strip.setMinimumHeight(dp(60));
+
+        FrameLayout cup = new FrameLayout(getContext());
+        GradientDrawable ring = new GradientDrawable();
+        ring.setShape(GradientDrawable.OVAL); ring.setColor(bg);
+        if (matches) ring.setStroke(dp(1), gold); else ring.setStroke(dp(1), muted, dp(3), dp(3));
+        cup.setBackground(ring);
+        ImageView cupIcon = icon(R.drawable.ic_league_nav, matches ? gold : muted);
+        if (!matches) cupIcon.setAlpha(.7f);
+        cup.addView(cupIcon, new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
+        strip.addView(cup, new LinearLayout.LayoutParams(dp(40), dp(40)));
+
+        LinearLayout middle = column(); middle.setPadding(dp(12), 0, dp(8), 0);
+        String over = district.isEmpty() ? "SENİN SIRAN"
+                : "SENİN SIRAN · " + district.toUpperCase(new Locale("tr", "TR"));
+        middle.addView(label(over, 11, green, true));
+        middle.addView(label(matches ? "#" + published.rank + " · Doğrulanmış" : "Sıra henüz yok", 15, text, true));
+        strip.addView(middle, new LinearLayout.LayoutParams(0, -2, 1));
+
+        LinearLayout right = column(); right.setGravity(Gravity.END);
+        right.addView(label(matches ? "Puan" : "Ön puan", 11, muted, false));
+        boolean scored = p != null && p.kg > 0 && p.amount > 0;
+        right.addView(label(scored ? n(p.score) : "—", 15, green, true));
+        strip.addView(right, new LinearLayout.LayoutParams(-2, -2));
+        TextView chevron = label("›", 22, muted, false); chevron.setPadding(dp(8), 0, 0, 0);
+        chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        strip.addView(chevron);
+
+        strip.setContentDescription((matches ? "Senin sıran " + published.rank : "Sıra henüz yok")
+                + (scored ? ", " + (matches ? "puan " : "ön puan ") + n(p.score) : "") + ". Ayrıntılar için dokun.");
+        strip.setOnClickListener(v -> {
+            if (ownCardView != null) smoothScrollTo(0, Math.max(0, ownCardView.getTop() - dp(8)));
+        });
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2); lp.topMargin = dp(10);
+        body.addView(strip, lp);
+    }
+
+    /** Görselsiz bölge kartı: rozet + durum şeridi, eşik altında yalnızca ilerleme. */
+    private View regionTile(ZeytinLeagueRepository.Region r, boolean active, String badge) {
+        int greenSoft = GreenTheme.color(R.color.zd_green_soft);
+        LinearLayout tile = column();
+        tile.setBackground(round(active ? greenSoft : card, active ? green : border));
+        tile.setClipToOutline(true); tile.setSelected(active); tile.setElevation(active ? dp(3) : 0);
+
+        MarketCloudRepository.LeagueRegionStat cloud = cloudRegion(r.id);
+        int producers = cloud != null ? cloud.producerCount : r.count;
+        boolean open = cloud != null && LeagueBoardModel.publishable(cloud.published, cloud.producerCount);
+        boolean hasTop = !r.top.isEmpty();
+        String[] parts = LeagueBoardModel.splitRegion(r.name);
+
+        LinearLayout band = row(); band.setPadding(dp(10), 0, dp(10), 0);
+        band.setBackgroundColor(active ? 0xff21503a : GreenTheme.color(R.color.zd_surface));
+        TextView badgeView = label(badge, 12, active ? green : GreenTheme.color(R.color.zd_text_soft), true);
+        badgeView.setGravity(Gravity.CENTER); badgeView.setMinWidth(dp(28)); badgeView.setPadding(dp(4), 0, dp(4), 0);
+        badgeView.setBackground(round(bg, active ? green : border));
+        badgeView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        band.addView(badgeView, new LinearLayout.LayoutParams(-2, dp(28)));
+        View spacer = new View(getContext()); band.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1));
+        TextView tag = label(LeagueBoardModel.tag(hasTop, open), 12, hasTop ? gold : open ? green : muted, true);
+        tag.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        band.addView(tag);
+        tile.addView(band, new LinearLayout.LayoutParams(-1, dp(44)));
+        View divider = new View(getContext()); divider.setBackgroundColor(active ? green : border);
+        tile.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
+
+        LinearLayout details = column(); details.setPadding(dp(10), dp(10), dp(10), dp(12));
+        details.setMinimumHeight(dp(150));
+        TextView district = label(parts[0], 15, text, true); district.setMaxLines(1);
+        district.setEllipsize(android.text.TextUtils.TruncateAt.END); details.addView(district);
+        if (!parts[1].isEmpty()) details.addView(label(parts[1], 12, muted, false));
+        TextView count = label(r.shared || cloud != null ? LeagueBoardModel.countText(producers, open) : "Yerel önizleme",
+                13, text, true);
+        count.setPadding(0, dp(6), 0, dp(6)); details.addView(count);
+        String spoken;
+        if (open) {
+            double price = cloud.averagePrice, kg = cloud.totalKg;
+            details.addView(label(price > 0d ? n(price) + " TL/kg" : "— TL/kg", 16, text, true));
+            details.addView(label(kg > 0d ? n(kg) + " kg toplam" : "— kg", 12, GreenTheme.color(R.color.zd_text_soft), false));
+            String dominant = cloud.dominantGrade == null ? "" : cloud.dominantGrade.trim();
+            details.addView(label(isGradeSpecific() ? "Seçili: " + selectedLeagueGrade
+                    : "Baskın: " + (dominant.isEmpty() ? "—" : dominant), 12, muted, false));
+            spoken = (price > 0d ? ", ortalama " + n(price) + " TL/kg" : "") + (kg > 0d ? ", " + n(kg) + " kg" : "");
+        } else if (r.shared || cloud != null) {
+            FrameLayout track = new FrameLayout(getContext());
+            track.setBackground(round(bg, bg));
+            View progress = new View(getContext()); progress.setBackground(round(muted, muted));
+            track.addView(progress, new FrameLayout.LayoutParams(0, -1));
+            final int percent = LeagueBoardModel.progressPercent(producers);
+            track.addOnLayoutChangeListener((v, l, t, rr, b, ol, ot, orr, ob) -> {
+                int w = Math.round((rr - l) * percent / 100f);
+                if (progress.getLayoutParams().width != w) { progress.getLayoutParams().width = w; progress.requestLayout(); }
+            });
+            details.addView(track, new LinearLayout.LayoutParams(-1, dp(6)));
+            TextView need = label(LeagueBoardModel.needText(producers), 12, muted, false);
+            need.setPadding(0, dp(6), 0, 0); details.addView(need);
+            spoken = ", " + LeagueBoardModel.needText(producers) + " (gizlilik eşiği)";
+        } else {
+            details.addView(label("Yalnızca bu cihazdaki kayıtlar", 12, muted, false));
+            spoken = ", yalnızca bu cihazdaki kayıtlar";
+        }
+        tile.addView(details);
+        tile.setContentDescription(r.name + ", " + (r.shared || cloud != null ? producers + " üretici" : "yerel önizleme")
+                + spoken + (hasTop ? ", Top 20 yayında" : "") + (active ? ", seçili" : ""));
+        tile.setOnClickListener(v -> {
+            boolean changed = !r.id.equals(selected);
+            selected = r.id;
+            expanded = false;
+            if (changed) render();
+            post(() -> ZeytinLeagueRegionReportDialog.show(
+                    getContext(),
+                    leagueCloudRepository,
+                    year,
+                    r,
+                    cloudRegion(r.id)
+            ));
+        });
+        return tile;
     }
     private void render() {
         final int restoreScrollY = getScrollY();
         body.removeAllViews();
+        ownCardView = null;
         header();
+        ownStrip();
         filters();
         gradeFilters();
         LinearLayout statusRow = row();
         String status = loading ? "Doğrulanmış sonuçlar yükleniyor…" : data.status
                 .replace("Bölgesel bağlantı kullanılamıyor", "Sonuçlara şu anda ulaşılamıyor")
                 .replace("Sunucuda yayımlanan sonuçlar", "Bölgesel lig sonuçları");
-        TextView state = label(status, 11, muted, false);
+        TextView state = label(status, 12, muted, false);
         state.setMinHeight(dp(36));
         state.setMaxLines(2);
         state.setGravity(Gravity.CENTER_VERTICAL);
@@ -402,86 +534,18 @@ public final class ZeytinLeagueView extends ScrollView {
         }
         HorizontalScrollView carousel = new HorizontalScrollView(getContext());
         carousel.setHorizontalScrollBarEnabled(false); LinearLayout cards = row();
+        cards.setGravity(Gravity.TOP);
         int selectedIndex = 0;
+        List<String> districts = new ArrayList<>();
+        for (ZeytinLeagueRepository.Region r : data.regions) districts.add(LeagueBoardModel.splitRegion(r.name)[0]);
+        List<String> badges = LeagueBoardModel.badges(districts);
+        int tileWidth = cardWidth(getResources().getDisplayMetrics().widthPixels - dp(16));
         for (int i = 0; i < data.regions.size(); i++) {
             ZeytinLeagueRepository.Region r = data.regions.get(i);
             boolean active = r.id.equals(selected); if (active) selectedIndex = i;
-            LinearLayout tile = column(); tile.setPadding(dp(1), dp(1), dp(1), dp(1));
-            tile.setMinimumHeight(dp(238));
-            tile.setBackground(round(active ? GreenTheme.color(R.color.zd_green_soft) : card, active ? green : border));
-            tile.setClipToOutline(true); tile.setSelected(active); tile.setElevation(active ? dp(3) : 0);
-            MarketCloudRepository.LeagueRegionStat cloud = cloudRegion(r.id);
-            int displayProducerCount = cloud != null ? cloud.producerCount : r.count;
-            tile.setContentDescription(r.name + ", " + displayProducerCount
-                    + (r.shared ? " üretici" : " yerel üretici"));
-            ImageView landscape = new ImageView(getContext());
-            landscape.setImageResource(R.drawable.home_hero_olive);
-            landscape.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            landscape.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            tile.addView(landscape, new LinearLayout.LayoutParams(-1, dp(54)));
-            LinearLayout details = column(); details.setPadding(dp(6), dp(5), dp(6), dp(6));
-            details.setMinimumHeight(dp(180));
-            TextView name = label(r.name, 11, text, true); name.setMinHeight(dp(28)); details.addView(name);
-            details.addView(label("Bölgesi", 10, muted, false));
-            regionLine(details, R.drawable.ic_profile_nav, displayProducerCount + (r.shared ? " üretici" : " yerel üretici"));
-
-            boolean cloudPriceVisible = cloud != null && cloud.published && cloud.averagePrice > 0d;
-            boolean cloudKgVisible = cloud != null && cloud.published && cloud.totalKg > 0d;
-            boolean localGeneralPreview = !isGradeSpecific() && r.localPreview && cloud == null;
-
-            double displayKg = cloudKgVisible ? cloud.totalKg : (localGeneralPreview ? r.kg : 0d);
-            double displayPrice = cloudPriceVisible
-                    ? cloud.averagePrice
-                    : (localGeneralPreview && r.kg > 0d ? r.amount / r.kg : 0d);
-
-            regionLine(details, R.drawable.ic_garden_nav, displayKg > 0d ? n(displayKg) + " kg" : "— kg");
-            regionLine(details, R.drawable.ic_league_nav, displayPrice > 0d ? n(displayPrice) + " TL/kg" : "— TL/kg");
-
-            if (isGradeSpecific()) {
-                details.addView(label("Seçili elek: " + selectedLeagueGrade, 9, muted, false));
-            } else {
-                String dominant = cloud != null && cloud.published && cloud.dominantGrade != null
-                        && !cloud.dominantGrade.trim().isEmpty()
-                        ? cloud.dominantGrade
-                        : r.dominant;
-                details.addView(label("Baskın elek: "
-                        + (dominant != null && !dominant.trim().isEmpty() ? dominant : "—"),
-                        9, muted, false));
-            }
-
-            String confidenceText;
-            if (!r.top.isEmpty()) confidenceText = "Doğrulanmış lig sonucu";
-            else if (isGradeSpecific() && cloudPriceVisible && displayProducerCount == 1)
-                confidenceText = selectedLeagueGrade + " • 1 üretici • fiyat ön izlemesi";
-            else if (isGradeSpecific() && cloudPriceVisible)
-                confidenceText = selectedLeagueGrade + " • anonim bölgesel fiyat";
-            else if (isGradeSpecific() && r.shared) confidenceText = selectedLeagueGrade + " • veri yok";
-            else if (cloud != null && cloud.published) confidenceText = "Anonim bölgesel veri";
-            else if (r.shared) confidenceText = "Bölge aktif • eşik bekleniyor";
-            else confidenceText = "Geçici / yetersiz veri";
-            TextView confidence = label(confidenceText, 9, active ? green : muted, false);
-            confidence.setMinHeight(dp(42));
-            confidence.setGravity(Gravity.CENTER_VERTICAL);
-            confidence.setMaxLines(2);
-            confidence.setPadding(dp(5), dp(5), dp(5), dp(5)); confidence.setBackground(round(bg, active ? green : border));
-            LinearLayout.LayoutParams trust = new LinearLayout.LayoutParams(-1, -2); trust.topMargin = dp(4);
-            details.addView(confidence, trust); tile.addView(details);
-            tile.setOnClickListener(v -> {
-                boolean changed = !r.id.equals(selected);
-                selected = r.id;
-                expanded = false;
-                if (changed) render();
-                post(() -> ZeytinLeagueRegionReportDialog.show(
-                        getContext(),
-                        leagueCloudRepository,
-                        year,
-                        r,
-                        cloudRegion(r.id)
-                ));
-            });
-            int initialWidth = cardWidth(getResources().getDisplayMetrics().widthPixels - dp(16));
-            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(initialWidth, -2);
-            cp.rightMargin = dp(5); cards.addView(tile, cp);
+            View tile = regionTile(r, active, badges.get(i));
+            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(tileWidth, -2);
+            cp.rightMargin = dp(8); cards.addView(tile, cp);
         }
         carousel.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) ->
                 regionCarouselScrollX = scrollX);
@@ -536,8 +600,9 @@ public final class ZeytinLeagueView extends ScrollView {
         // Bölgelere Göre / Tüm Türkiye / Harita satırı kaldırıldı.
         // Sezon seçici tek başına sağda kalır; mevcut sezon davranışı korunur.
         LinearLayout controls = row();
-        controls.setPadding(0, dp(6), 0, 0);
-        controls.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        controls.setPadding(dp(2), dp(14), 0, dp(8));
+        TextView caption = label("Elek fiyatı", 13, GreenTheme.color(R.color.zd_text_soft), false);
+        controls.addView(caption, new LinearLayout.LayoutParams(0, -2, 1));
 
         TextView season = pill(year + " Sezonu", gold, card, gold);
         android.graphics.drawable.Drawable arrow = getContext().getDrawable(R.drawable.ic_dropdown_arrow).mutate();
@@ -564,18 +629,53 @@ public final class ZeytinLeagueView extends ScrollView {
         order.setCompoundDrawables(null, null, orderArrow, null);
         order.setEnabled(false); order.setContentDescription("Backend puan sıralaması; başka sıralama seçeneği yok");
         LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(-2, -2); op.leftMargin = dp(6); heading.addView(order, op); body.addView(heading);
+        TextView how = label((scoreInfoOpen ? "ⓘ Açıklamayı gizle" : "ⓘ Puan nasıl hesaplanır?"), 12, green, true);
+        how.setMinHeight(dp(36)); how.setGravity(Gravity.CENTER_VERTICAL);
+        how.setOnClickListener(v -> { scoreInfoOpen = !scoreInfoOpen; render(); });
+        body.addView(how);
+        if (scoreInfoOpen) {
+            LinearLayout info = column(); info.setPadding(dp(14), dp(12), dp(14), dp(12));
+            info.setBackground(round(GreenTheme.color(R.color.zd_surface), border));
+            int soft = GreenTheme.color(R.color.zd_text_soft);
+            info.addView(label("%50 Kalite — kilonun hangi elek sınıflarına düştüğü", 12, soft, false));
+            info.addView(label("%35 Fiyat — bölgedeki aynı sınıfların ortanca fiyatına göre", 12, soft, false));
+            info.addView(label("%15 Hacim — toplam kilo", 12, soft, false));
+            TextView rule = label("Sıralamaya girmek için sezonda en az 100 kg fiyatlı, geçerli elek kaydı gerekir. "
+                    + "Bölge fiyatından çok sapan kayıtlar sıralamaya alınmaz.", 12, muted, false);
+            rule.setPadding(0, dp(6), 0, 0); info.addView(rule);
+            LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(-1, -2); ip.bottomMargin = dp(8);
+            body.addView(info, ip);
+        }
         LinearLayout table = column(); table.setBackground(round(card, border)); table.setClipToOutline(true);
         LinearLayout columns = row(); columns.setPadding(dp(5), dp(8), dp(5), dp(8));
         String[] titles = {"#", "Üretici", "Baskın\nElek", "Ort. Fiyat\nTL/kg", "Toplam\nkg", "Puan"};
         for (int i = 0; i < titles.length; i++) cell(columns, titles[i], i, muted, false, 9);
         table.addView(columns);
         if (region == null || region.top.isEmpty()) {
-            LinearLayout empty = column(); empty.setPadding(dp(10), dp(9), dp(10), dp(9));
-            empty.addView(label(loading ? "Top 20 yükleniyor…" : "Bölgesel sıralama henüz oluşmadı.", 13, text, true));
-            empty.addView(label("Yeterli doğrulanmış üretici verisi oluştuğunda Top 20 burada görünecek.", 11, muted, false)); table.addView(empty);
+            LinearLayout empty = column(); empty.setGravity(Gravity.CENTER_HORIZONTAL);
+            empty.setPadding(dp(16), dp(20), dp(16), dp(20));
+            if (loading) {
+                empty.addView(label("Top 20 yükleniyor…", 14, text, true));
+            } else {
+                FrameLayout cup = new FrameLayout(getContext());
+                GradientDrawable ring = new GradientDrawable(); ring.setShape(GradientDrawable.OVAL);
+                ring.setColor(card); ring.setStroke(dp(1), border, dp(3), dp(3)); cup.setBackground(ring);
+                ImageView cupIcon = icon(R.drawable.ic_league_nav, muted); cupIcon.setAlpha(.7f);
+                cup.addView(cupIcon, new FrameLayout.LayoutParams(dp(32), dp(32), Gravity.CENTER));
+                LinearLayout.LayoutParams cupLp = new LinearLayout.LayoutParams(dp(60), dp(60)); cupLp.bottomMargin = dp(8);
+                empty.addView(cup, cupLp);
+                String district = region == null ? "" : LeagueBoardModel.splitRegion(region.name)[0];
+                TextView emptyTitle = label(LeagueBoardModel.emptyTitle(district), 14, text, true); emptyTitle.setGravity(Gravity.CENTER);
+                empty.addView(emptyTitle);
+                TextView note = label(LeagueBoardModel.emptyBody(), 12, muted, false); note.setGravity(Gravity.CENTER);
+                note.setPadding(0, dp(4), 0, 0); empty.addView(note);
+            }
+            table.addView(empty);
         } else {
+            podium(table, region.top);
+            int first = Math.min(3, region.top.size());
             int visible = expanded ? region.top.size() : Math.min(7, region.top.size());
-            for (int i = 0; i < visible; i++) producerRow(table, region.top.get(i));
+            for (int i = first; i < visible; i++) producerRow(table, region.top.get(i));
             if (region.top.size() > 7) {
                 TextView all = pill(expanded ? "İlk 7 Satırı Göster" : "Tüm Listeyi Gör (İlk 20)", text, bg, border);
                 all.setOnClickListener(v -> { expanded = !expanded; render(); });
@@ -594,14 +694,49 @@ public final class ZeytinLeagueView extends ScrollView {
             placeholder.addView(bar, bp); placeholder.setContentDescription(title + ", yükleniyor"); body.addView(placeholder);
         }
     }
+    /** İlk üç üretici için kürsü: ortada 1. (altın kupa), solda 2., sağda 3. */
+    private void podium(LinearLayout table, List<ZeytinLeagueScore.Producer> top) {
+        LinearLayout stage = row(); stage.setGravity(Gravity.BOTTOM);
+        stage.setPadding(dp(12), dp(14), dp(12), 0);
+        stage.setBackgroundColor(GreenTheme.color(R.color.zd_surface));
+        for (int rank : LeagueBoardModel.podiumOrder(Math.min(3, top.size()))) {
+            ZeytinLeagueScore.Producer p = top.get(rank - 1);
+            int medal = rank == 1 ? gold : rank == 2 ? 0xffc4d0d8 : 0xffc89470;
+            LinearLayout column = column(); column.setGravity(Gravity.CENTER_HORIZONTAL);
+            if (rank == 1) column.addView(icon(R.drawable.ic_league_nav, gold), new LinearLayout.LayoutParams(dp(28), dp(28)));
+            TextView name = label(isMine(p) ? "Sen" : p.name, 12, text, true);
+            name.setMaxLines(1); name.setEllipsize(android.text.TextUtils.TruncateAt.END); name.setGravity(Gravity.CENTER);
+            column.addView(name, new LinearLayout.LayoutParams(-1, -2));
+            column.addView(label(n(p.score), 12, green, true));
+            TextView block = label(String.valueOf(rank), 17, medal, true);
+            block.setGravity(Gravity.CENTER_HORIZONTAL); block.setPadding(0, dp(6), 0, 0);
+            GradientDrawable step = new GradientDrawable();
+            step.setColor(isMine(p) ? GreenTheme.color(R.color.zd_green_soft) : card);
+            step.setStroke(dp(1), medal);
+            float rr = dp(12); step.setCornerRadii(new float[]{rr, rr, rr, rr, 0, 0, 0, 0});
+            block.setBackground(step);
+            LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, dp(rank == 1 ? 64 : rank == 2 ? 48 : 38));
+            bp.topMargin = dp(4); column.addView(block, bp);
+            column.setContentDescription(rank + ". sıra, " + (isMine(p) ? "sen" : p.name) + ", puan " + n(p.score));
+            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, -2, 1);
+            cp.leftMargin = dp(4); cp.rightMargin = dp(4);
+            stage.addView(column, cp);
+        }
+        table.addView(stage);
+    }
+    private boolean isMine(ZeytinLeagueScore.Producer p) {
+        return p != null && data != null && data.published && data.mine != null
+                && p.rank == data.mine.rank && p.region != null && p.region.equals(data.mine.region);
+    }
     private void producerRow(LinearLayout table, ZeytinLeagueScore.Producer p) {
         int medal = p.rank == 1 ? gold : p.rank == 2 ? 0xffc4d0d8 : p.rank == 3 ? 0xffc89470 : muted;
         View divider = new View(getContext()); divider.setBackgroundColor(border); divider.setAlpha(.35f);
         table.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
-        LinearLayout line = row(); line.setPadding(dp(5), dp(4), dp(5), dp(4)); line.setMinimumHeight(dp(34));
+        LinearLayout line = row(); line.setPadding(dp(5), dp(4), dp(5), dp(4)); line.setMinimumHeight(dp(40));
+        if (isMine(p)) line.setBackgroundColor(GreenTheme.color(R.color.zd_green_soft));
         TextView rank = cell(line, String.valueOf(p.rank), 0, medal, true, 12);
         if (p.rank >= 1 && p.rank <= 3) rank.setBackground(round(bg, medal));
-        cell(line, p.name, 1, text, true, 11);
+        cell(line, isMine(p) ? "Sen" : p.name, 1, text, true, 12);
         cell(line, p.dominant(), 2, text, false, 10);
         cell(line, n(p.average()), 3, text, false, 10);
         cell(line, n(p.kg), 4, text, false, 10);
@@ -616,6 +751,7 @@ public final class ZeytinLeagueView extends ScrollView {
     }
     private void ownCard(ZeytinLeagueRepository.Region chosen) {
         LinearLayout box = box(); box.setBackground(round(GreenTheme.color(R.color.zd_green_soft), green));
+        ownCardView = box;
         LinearLayout band = row(); LinearLayout identity = column();
         identity.addView(label("Senin Sıran", 11, green, true));
         band.addView(identity, new LinearLayout.LayoutParams(0, -2, 1.2f)); box.addView(band);
@@ -707,21 +843,16 @@ public final class ZeytinLeagueView extends ScrollView {
     }
 
     private int cardWidth(int available) {
-        return Math.round(Math.max(dp(88), Math.min(dp(110), available / 4.3f))
-                * Math.max(1, getResources().getConfiguration().fontScale));
+        // ~2,5 kart görünür; yarım kart yana kaydırılabildiğini gösterir.
+        return Math.round(Math.max(dp(118), Math.min(dp(136), available / 2.6f))
+                * Math.min(1.3f, Math.max(1, getResources().getConfiguration().fontScale)));
     }
     private ImageView icon(int resource, int tint) {
         ImageView v = new ImageView(getContext()); v.setImageResource(resource); v.setColorFilter(tint);
         v.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); return v;
     }
-    private void regionLine(LinearLayout parent, int resource, String value) {
-        LinearLayout line = row(); line.setPadding(0, dp(2), 0, dp(2));
-        line.addView(icon(resource, gold), new LinearLayout.LayoutParams(dp(11), dp(11)));
-        TextView t = label(value, 10, text, false); t.setPadding(dp(4), 0, 0, 0);
-        line.addView(t, new LinearLayout.LayoutParams(0, -2, 1)); parent.addView(line);
-    }
     private TextView pill(String title, int foreground, int fill, int stroke) {
-        TextView t = label(title, 10, foreground, true); t.setGravity(Gravity.CENTER);
+        TextView t = label(title, 12, foreground, true); t.setGravity(Gravity.CENTER);
         t.setMinHeight(dp(36)); t.setPadding(dp(8), dp(6), dp(8), dp(6));
         t.setBackground(round(fill, stroke)); return t;
     }
