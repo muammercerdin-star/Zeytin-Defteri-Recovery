@@ -160,10 +160,73 @@ public final class ModerationActivity extends Activity {
                 +"\nOluşturulma: "+date(value(row,"created_at"))+"\nDurum: "+label(value(row,"status"))
                 +(value(row,"reviewed_by").isEmpty()?"":"\nİnceleyen UID: "+value(row,"reviewed_by"))
                 +(value(row,"reviewed_at").isEmpty()?"":"\nİncelenme: "+date(value(row,"reviewed_at")));
-        TextView body=text(detail,15);body.setPadding(dp(20),dp(12),dp(20),dp(12));body.setTextIsSelectable(true);
-        ScrollView scroll=new ScrollView(this);scroll.addView(body);
-        dialog=new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert).setTitle("Şikâyet detayı").setView(scroll)
-                .setNegativeButton("Kapat",null).setPositiveButton("Durumu değiştir",(d,w)->choose(row)).create();showDialog();
+        LinearLayout box=new LinearLayout(this);box.setOrientation(1);box.setPadding(dp(20),dp(12),dp(20),dp(12));
+        final boolean hasContent=ModerationPage.hasContent(row);
+        final TextView content=text(hasContent?"İçerik yükleniyor…":"",16);content.setTextIsSelectable(true);
+        if(hasContent){
+            TextView heading=text("Şikâyet edilen içerik",13);heading.setTextColor(GreenTheme.color(R.color.zd_muted));box.addView(heading);
+            content.setPadding(dp(12),dp(10),dp(12),dp(10));content.setBackground(background());box.addView(content);
+        }
+        TextView body=text(detail,14);body.setPadding(0,dp(12),0,0);body.setTextIsSelectable(true);box.addView(body);
+        ScrollView scroll=new ScrollView(this);scroll.addView(box);
+        AlertDialog.Builder builder=new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert).setTitle("Şikâyet detayı").setView(scroll)
+                .setNegativeButton("Kapat",null).setNeutralButton("Durumu değiştir",(d,w)->choose(row));
+        if(hasContent)builder.setPositiveButton("İçeriği kaldır",(d,w)->confirmRemove(row));
+        final AlertDialog shown=builder.create();dialog=shown;showDialog();
+        if(!hasContent)return;
+        // İçerik okunana ve hâlâ yayında olduğu görülene kadar kaldırma kapalı: moderatör görmediği metni kaldırmasın.
+        shown.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+        final int request=generation;
+        try{
+            functions.operation("moderationGetReportedContent").withTimeout(30,TimeUnit.SECONDS)
+                    .call(ModerationPage.content(row)).addOnCompleteListener(this,task->{
+                if(!current(request)||!shown.isShowing())return;
+                if(!task.isSuccessful()){
+                    Exception error=task.getException();
+                    if(error instanceof ModerationBackendException){
+                        ModerationBackendException.Code code=((ModerationBackendException)error).getCode();
+                        if(code==ModerationBackendException.Code.PERMISSION_DENIED||code==ModerationBackendException.Code.UNAUTHENTICATED){deny();return;}
+                        if(code==ModerationBackendException.Code.UNAVAILABLE){content.setText(ModerationBackendException.UNAVAILABLE_MESSAGE);return;}
+                    }
+                    content.setText("İçerik okunamadı. Pencereyi kapatıp tekrar açın.");return;
+                }
+                Object data=task.getResult().getData();
+                content.setText(ModerationPage.contentText(data));
+                shown.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(ModerationPage.removable(data));
+            });
+        }catch(RuntimeException e){content.setText("İçerik okunamadı. Pencereyi kapatıp tekrar açın.");}
+    }
+    private void confirmRemove(Map<String,Object> row) {
+        if(!authorized || busy || !current(generation))return;
+        String what="POST".equals(value(row,"target_type"))?"Bu gönderi":"Bu yanıt";
+        dialog=new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert).setTitle("İçeriği kaldır")
+                .setMessage(what+" Sohbet'te herkesten gizlenecek ve şikâyet “İşlem Yapıldı” olarak kapanacak. "
+                        +"Yazan kişi içeriği yeniden yayına alamaz. Devam edilsin mi?")
+                .setNegativeButton("Vazgeç",null).setPositiveButton("Kaldır",(x,w)->remove(row)).create();showDialog();
+    }
+    private void remove(Map<String,Object> row) {
+        if(!authorized || busy || !current(generation))return;
+        busy=true;controls();message.setText("İçerik kaldırılıyor…");
+        final int request=generation;
+        try {
+            functions.operation("moderationRemoveContent").withTimeout(30,TimeUnit.SECONDS)
+                    .call(ModerationPage.remove(row)).addOnCompleteListener(this,task->{
+                if(!current(request))return;
+                busy=false;
+                if(!task.isSuccessful()){
+                    Exception error=task.getException();
+                    if(error instanceof ModerationBackendException
+                            &&((ModerationBackendException)error).getCode()==ModerationBackendException.Code.NOT_FOUND){
+                        controls();message.setText("İçerik bulunamadı; yazan kişi kalıcı olarak silmiş olabilir. Şikâyetin durumunu elle değiştirebilirsiniz.");return;
+                    }
+                    failure(error,true);return;
+                }
+                Object data=task.getResult().getData();
+                boolean removed=data instanceof Map&&Boolean.TRUE.equals(((Map<?,?>)data).get("removed"));
+                page.rows.remove(ModerationPage.key(row));render();
+                Toast.makeText(this,removed?"İçerik kaldırıldı. Şikâyet kapatıldı.":"İçerik zaten yayında değildi. Şikâyet kapatıldı.",Toast.LENGTH_LONG).show();reload();
+            });
+        }catch(RuntimeException e){busy=false;failure(e,true);}
     }
     private void choose(Map<String,Object> row) {
         if(!authorized || busy || !current(generation))return;

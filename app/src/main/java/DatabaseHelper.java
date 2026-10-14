@@ -7862,7 +7862,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    /** Bulutta silinmiş (is_active=0 ya da hiç yok) gönderileri telefonda kapatır. */
+    /**
+     * Bulutta silinmiş (is_active=0 ya da hiç yok; moderatör kaldırması dahil) gönderileri telefonda
+     * kapatır. Bekleyen yerel değişiklik de kapanır: bulut zaten kapalıysa silme isteği tamamlanmıştır,
+     * kapalı gönderiye yazma ise kurallarca reddedilir ve sonsuza dek yeniden denenirdi.
+     */
     public int deactivatePostsFromCloud(java.util.Collection<String> cloudIds) {
         if (cloudIds == null || cloudIds.isEmpty()) return 0;
         SQLiteDatabase db = getWritableDatabase();
@@ -7874,7 +7878,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             values.put("sync_state", 2);
             for (String cloudId : cloudIds) {
                 if (safe(cloudId).isEmpty()) continue;
-                changed += db.update("posts", values, "cloud_id = ? AND is_active = 1", new String[]{safe(cloudId)});
+                changed += db.update("posts", values, "cloud_id = ? AND (is_active = 1 OR sync_state = 1)",
+                        new String[]{safe(cloudId)});
             }
             db.setTransactionSuccessful();
         } finally {

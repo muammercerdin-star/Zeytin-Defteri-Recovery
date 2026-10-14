@@ -45,7 +45,9 @@ base_posts = block(base_rules, 'match /social_posts/{postId} {')
 base_comments = block(base_posts, 'match /comments/{commentId} {')
 check(rules.replace(posts, '<POSTS>') == base_rules.replace(base_posts, '<POSTS>'),
       'social_posts dışında firestore.rules değişmiş (diğer modüller etkilenebilir)')
-check(comments == base_comments, 'yorum kuralları değişmiş')
+# Yorum kurallarına yalnızca moderatör kaldırması koruması eklendi (sahibi kaldırılan yanıtı geri açamaz).
+MOD_GUARD = "          && resource.data.get('moderated_by', '') == ''\n"
+check(comments.replace(MOD_GUARD, '') == base_comments, 'yorum kuralları moderasyon koruması dışında değişmiş')
 check('allow read: if request.auth != null;' in post_only, 'gönderi okuma kuralı değişmiş')
 check(re.search(r'allow delete: if request\.auth != null && resource\.data\.user_id == request\.auth\.uid;', post_only),
       'gönderi silme kuralı değişmiş')
@@ -152,9 +154,17 @@ for rel in filter(None, tracked):
     if rel.startswith('app/') and re.search(r'https://(?!REPLACE_ME\.)(?!abcdefghijklmnopqrst\.)[a-z0-9]+\.supabase\.co', text):
         leaks.append(f'{rel}: gerçek Supabase adresi')
 check(not leaks, f'repoda Supabase değeri var: {leaks[:5]}')
-roles = subprocess.run(['git', 'diff', BASE, '--', 'functions/moderation', 'supabase/functions/moderation-api', 'app/src/main/java/com/zeytindefteri/app/ModerationAccess.java'],
+# Yetki kodu (rol verme/alma, oturum doğrulama, authorize) değişmemeli. İçerik kaldırma işlemi
+# service dosyalarına eklendi; authorize gövdesi ise aynı kalmalı.
+roles = subprocess.run(['git', 'diff', BASE, '--', 'functions/moderation/roles.js', 'functions/moderation/role-functions.js',
+                        'supabase/functions/moderation-api/roles.mjs', 'supabase/functions/moderation-api/firebase.ts',
+                        'app/src/main/java/com/zeytindefteri/app/ModerationAccess.java'],
                        cwd=ROOT, capture_output=True, text=True).stdout
 check(roles == '', 'moderasyon yetki kodu değişmiş')
+def authorize_body(text):
+    i = text.index('async function authorize('); return text[i:text.index('\n}\n', i)]
+for rel in ['functions/moderation/service.js', 'supabase/functions/moderation-api/service.mjs']:
+    check(authorize_body(read(ROOT / rel)) == authorize_body(at_base(rel)), f'{rel}: moderatör yetki denetimi değişmiş')
 
 # 8) Yedi menü korunur
 feed = read(APP / 'ProducerFeedActivity.java')

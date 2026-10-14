@@ -110,5 +110,16 @@ test('Meydan gönderileri: kimlik, ad, tarih, metin sınırı, alan beyaz listes
 
   // Kendi gönderisini silme: İZİN (değişmedi)
   await assertSucceeds(deleteDoc(doc(a,'social_posts/p9')));
+
+  // Moderatörün kaldırdığı gönderi ve yanıt: sahibi yeniden açamaz, düzenleyemez (sunucu yazdı, kural dışı).
+  await env.withSecurityRulesDisabled(async ctx=>{
+   const db=ctx.firestore();
+   await setDoc(doc(db,'social_posts/mod-post'),{...post('mod-post'),is_active:0,moderated_by:'mod-uid',moderated_at:now});
+   await setDoc(doc(db,'social_posts/p1/comments/kmod'),{...comment('kmod','p1'),is_active:0,moderated_by:'mod-uid'});
+  });
+  await assertFails(updateDoc(doc(a,'social_posts/mod-post'),{is_active:1,updated_at:now+5}));
+  await assertFails(updateDoc(doc(a,'social_posts/mod-post'),{content:'geri açtım',updated_at:now+5}));
+  await assertFails(setDoc(doc(b,'social_posts/p1/comments/kmod'),{...comment('kmod','p1'),is_active:1,updated_at:now+5}));
+  await assertSucceeds(getDoc(doc(b,'social_posts/mod-post')));
  }finally{await env.cleanup();}
 });

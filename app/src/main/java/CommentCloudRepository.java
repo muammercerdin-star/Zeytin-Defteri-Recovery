@@ -160,7 +160,9 @@ public final class CommentCloudRepository {
         try (Cursor c = db.getPostCommentByCloudId(doc.getId())) {
             if (c.moveToFirst()) {
                 if (!post.equals(string(c,"post_cloud_id"))) return;
-                if (number(c,"sync_state") == 1) return;
+                // Bulutta kapatılmış yanıt (moderatör ya da sahibi) yerel bekleyen değişikliği geçersiz kılar:
+                // kapalı yanıta yazma kurallarca reddedilir ve sonsuza dek yeniden denenirdi.
+                if (number(c,"sync_state") == 1 && !cloudRemoved(doc)) return;
             }
         }
         long id = db.upsertPostCommentFromCloud(post, doc.getId(), value(doc,"user_id"),
@@ -171,9 +173,13 @@ public final class CommentCloudRepository {
                 value(doc,"reply_to_uid"), value(doc,"reply_to_name"));
         if (id > 0) {
             ContentValues v = new ContentValues(); v.put("sync_state", 2);
-            db.getWritableDatabase().update("post_comments", v, "id = ? AND sync_state <> 1",
+            db.getWritableDatabase().update("post_comments", v,
+                    cloudRemoved(doc) ? "id = ?" : "id = ? AND sync_state <> 1",
                     new String[]{String.valueOf(id)});
         }
+    }
+    private static boolean cloudRemoved(DocumentSnapshot doc) {
+        return doc.contains("is_active") && numeric(doc, "is_active") == 0;
     }
     public void stop() {
         generation++;

@@ -18,3 +18,5 @@ function endpoint(method){return onCall(options,async request=>{
 });}
 exports.moderationListReports=endpoint('list');
 exports.moderationUpdateReportStatus=endpoint('update');
+exports.moderationGetReportedContent=endpoint('content');
+exports.moderationRemoveContent=endpoint('remove');

@@ -14,7 +14,7 @@ export function createLimiter(now=()=>Date.now()){
  const buckets=new Map<string,{start:number,count:number}>();
  return (uid:string,action:string)=>{
   const time=now();for(const [key,b] of buckets)if(time-b.start>=60000)buckets.delete(key);
-  const key=uid+':'+(['moderationGrantModerator','moderationRevokeModerator'].includes(action)?'write':'read');
+  const key=uid+':'+(['moderationGrantModerator','moderationRevokeModerator','moderationRemoveContent'].includes(action)?'write':'read');
   let bucket=buckets.get(key);
   if(!bucket){if(buckets.size>=2048)throw new ServiceError('RATE_LIMITED');bucket={start:time,count:0};buckets.set(key,bucket);}
   if(++bucket.count>(key.endsWith(':write')?10:60))throw new ServiceError('RATE_LIMITED');
@@ -34,6 +34,7 @@ export function createHandler(deps:any,verify:(token:string)=>Promise<any>,limit
  const reports=createService({...deps,getUser:(uid:string)=>deps.auth.getUser(uid)}),roles=createRoleService(deps);
  const routes:Record<string,(r:any)=>Promise<any>>={
   moderationListReports:reports.list,moderationUpdateReportStatus:reports.update,
+  moderationGetReportedContent:reports.content,moderationRemoveContent:reports.remove,
   moderationLookupUser:roles.lookup,moderationGrantModerator:roles.grant,
   moderationRevokeModerator:roles.revoke,moderationListModerators:roles.list
  };

@@ -865,3 +865,34 @@ Sohbet mesaj denetiminde bulunan dört sorun düzeltildi. Firebase'e deploy yap�
 - Çözüm: Buluta yazılmamış yerel değişikliği olan gönderi (`sync_state=1`: yeni mesaj, düzenleme ya da silme) buluttan gelen kopyayla ezilmiyor (`isPostLocalChangePending`). Yeniden deneme, yalnızca gönderi gerçekten senkron olduysa sıradakine geçiyor.
 - Takılı kalan mesaj, yeni sürümle uygulama bir sonraki açılışta yeniden gönderilince düzelir.
 - Testler: `tests/meydan_sync` 18 + 17 + 29 kontrol geçti; diğer sonuçlar değişmedi. Cihazda yeniden denenmedi.
+
+## 28. Moderatör içerik kaldırma (1 commit)
+
+Önceden moderatör şikâyetleri görüp yalnızca durumlarını değiştirebiliyordu; şikâyet edilen mesaj yayında kalıyordu. Artık Moderasyon Merkezi'nden kaldırılabiliyor. Canlıya hiçbir şey gönderilmedi: Supabase fonksiyonu ve Firestore kuralları kullanıcı tarafından yayımlanacak.
+
+**Sunucu (Supabase `moderation-api` ve aynı kodun Firebase Functions kopyası):**
+- `moderationGetReportedContent`: Şikâyet edilen gönderinin ya da yanıtın metnini, yazarını ve durumunu (yayında / sahibi sildi / moderatör kaldırdı) döndürür.
+- `moderationRemoveContent`: İçeriği `is_active=0` yapar; `moderated_by` ve `moderated_at` alanlarını yazar. Aynı işlemde şikâyeti "İşlem Yapıldı" olarak kapatır ve `moderation_content_audit` koleksiyonuna denetim kaydı ekler.
+- **Güvenlik:**
+  - Yalnızca canlı moderatör yetkisi doğrulanan hesap kullanabilir; mevcut `authorize` denetimi aynen kullanılıyor.
+  - Hedef istemciden alınmaz, şikâyet kaydından türetilir: moderatör yalnızca şikâyet edilmiş içeriği kaldırabilir.
+  - Şikâyetteki kişi içeriğin sahibi değilse işlem reddedilir.
+  - Durum değişmişse çakışma hatası döner.
+  - Kaldırma, rol değişiklikleriyle aynı yazma sınırına (dakikada 10) tabi.
+- Belge silinmez, metin kanıt olarak bulutta kalır. Zaten kapalı içerik yeniden yazılmaz, yalnızca şikâyet kapanır.
+
+**Kurallar (`firestore.rules`):** `moderated_by` alanı olan gönderi ya da yanıtı sahibi artık güncelleyemez; kaldırılan içerik geri açılamaz. Başka kural değişmedi.
+
+**Uygulama:**
+- Şikâyet detayında önce içerik metni gösteriliyor. **İçeriği kaldır** düğmesi yalnızca metin okunduktan ve içerik hâlâ yayındaysa açılıyor. Onay penceresi var.
+- Kullanıcı şikâyetlerinde kaldırma düğmesi çıkmıyor.
+- Moderasyon Merkezi Firestore'a hâlâ doğrudan erişmiyor, her şey sunucu üzerinden.
+- Telefon: bulutta kapatılan gönderi ve yanıt, yerel bekleyen değişikliği geçersiz kılıyor. Kapalı içeriğe yazma kurallarca reddedileceği için sonsuz yeniden deneme oluşmuyor.
+
+**Testler:**
+- `functions/test/moderation.content.test.js`: 7 test geçti (yetki, hedef türetme, kaldırma, yanıt, çakışma, eski belgeler, iki kopyanın birebir aynılığı).
+- `tests/moderation_content`: 19 mantık + 11 bağlantı kontrolü geçti.
+- `functions` toplam 91 geçti, 0 başarısız, 12 atlandı. Emülatör yok; yeni kural senaryoları `posts.rules.test.js`'e yazıldı ama çalıştırılmadı.
+- `tests/security/check_static.py` güncellendi: yorum kurallarında yalnızca moderasyon korumasına, moderasyon kodunda yetki denetimi dışındaki eklemelere izin veriyor.
+- Deno bu ortamda kurulamadı; Supabase fonksiyonu derleyiciyle denetlenmedi. Değişiklik iki yönlendirme satırı ve Firebase kopyasıyla birebir aynı servis kodu.
+- Cihazda denenmedi.

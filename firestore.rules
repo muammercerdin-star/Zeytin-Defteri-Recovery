@@ -81,6 +81,8 @@ service cloud.firestore {
                     && validPostFields(request.resource.data, request.resource.data.keys());
       allow update: if request.auth != null
                     && resource.data.user_id == request.auth.uid
+                    // Moderatörün kaldırdığı gönderiyi sahibi yeniden açamaz ve değiştiremez.
+                    && resource.data.get('moderated_by', '') == ''
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(postFields())
                     // Sahip hiçbir zaman değişmez; kimlik ve oluşturma zamanı eski belgede yoksa bir kez eklenebilir.
                     && !('user_id' in request.resource.data.diff(resource.data).affectedKeys())
@@ -150,6 +152,7 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/social_posts/$(postId));
         // Soft deletion is a durable tombstone so offline readers learn about it.
         allow update: if signedIn() && resource.data.user_id == request.auth.uid
+          && resource.data.get('moderated_by', '') == ''
           && validComment() && sameThread()
           && request.resource.data.user_id == resource.data.user_id
           && request.resource.data.created_at == resource.data.created_at;

@@ -19,7 +19,7 @@ final class ModerationBackendClient {
     private static final ModerationBackendClient INSTANCE=new ModerationBackendClient();
     static ModerationBackendClient getInstance(){return INSTANCE;}
     Operation operation(String name){
-        if(!Arrays.asList("moderationListReports","moderationUpdateReportStatus","moderationLookupUser","moderationGrantModerator","moderationRevokeModerator","moderationListModerators").contains(name))throw new IllegalArgumentException();
+        if(!Arrays.asList("moderationListReports","moderationUpdateReportStatus","moderationGetReportedContent","moderationRemoveContent","moderationLookupUser","moderationGrantModerator","moderationRevokeModerator","moderationListModerators").contains(name))throw new IllegalArgumentException();
         return new Operation(name);
     }
     static final class Result {

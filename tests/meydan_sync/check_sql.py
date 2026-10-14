@@ -62,7 +62,9 @@ check(con.execute(q_publish, ('1',)).fetchone() is None, 'publishPostDeletion et
 for cid in ['c4', 'c7', '']:
     con.execute(f'UPDATE posts SET is_active=0, sync_state=2 WHERE {w_deact}', (cid,))
 check(con.execute('SELECT is_active, sync_state FROM posts WHERE id=4').fetchone() == (0, 2), 'buluttan kapatma çalışmıyor')
-check(con.execute('SELECT sync_state FROM posts WHERE id=7').fetchone()[0] == 1, 'bekleyen silme buluttan kapatmayla kayboldu')
+check(con.execute('SELECT is_active, sync_state FROM posts WHERE id=7').fetchone() == (0, 2),
+      'bulutta zaten kapalı gönderinin bekleyen silmesi tamamlanmadı (sonsuz yeniden deneme)')
+check(con.execute('SELECT is_active, sync_state FROM posts WHERE id=2').fetchone() == (1, 1), 'ilgisiz bekleyen gönderi etkilendi')
 check(con.execute('SELECT COUNT(*) FROM posts WHERE is_active=1').fetchone()[0] == 5, 'boş kimlik başka satırları kapattı')
 
 print(f'check_sql: {n} kontrol, {len(fails)} hata')

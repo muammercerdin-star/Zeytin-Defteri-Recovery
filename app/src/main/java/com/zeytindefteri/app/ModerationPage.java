@@ -40,6 +40,40 @@ final class ModerationPage {
     static String string(Map<String, Object> row, String key) {
         Object value = row.get(key); return value instanceof String ? (String) value : "";
     }
+    /** Şikâyetin içerik hedefi var mı (kullanıcı şikâyetinde kaldırılacak içerik yoktur). */
+    static boolean hasContent(Map<String, Object> row) {
+        String type = string(row, "target_type");
+        return "POST".equals(type) || "COMMENT".equals(type) || "REPLY".equals(type);
+    }
+    /** Yalnızca şikâyet kimliği gönderilir; kaldırılacak içerik sunucuda şikâyet kaydından bulunur. */
+    static Map<String, Object> content(Map<String, Object> row) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("reporter_uid", row.get("reporter_uid")); data.put("report_id", row.get("report_id"));
+        return data;
+    }
+    static Map<String, Object> remove(Map<String, Object> row) {
+        Map<String, Object> data = content(row);
+        data.put("expected_status", row.get("status"));
+        return data;
+    }
+    /** Sunucunun içerik yanıtından ekranda gösterilecek metin. */
+    static String contentText(Object response) {
+        if (!(response instanceof Map)) return "İçerik okunamadı.";
+        Map<?, ?> data = (Map<?, ?>) response;
+        if (!Boolean.TRUE.equals(data.get("exists"))) return "İçerik bulunamadı (yazan kişi kalıcı olarak silmiş olabilir).";
+        Object text = data.get("content"), author = data.get("author_name");
+        String body = text instanceof String && !((String) text).trim().isEmpty() ? ((String) text).trim() : "(metin yok)";
+        String who = author instanceof String && !((String) author).isEmpty() ? (String) author : "Üretici";
+        String state = Boolean.TRUE.equals(data.get("moderated")) ? "Moderatör tarafından kaldırıldı"
+                : Boolean.TRUE.equals(data.get("is_active")) ? "Yayında" : "Yazan kişi tarafından silindi";
+        return "Yazan: " + who + "\nDurum: " + state + "\n\n" + body;
+    }
+    /** Kaldırma düğmesi yalnızca içerik bulutta varsa ve hâlâ yayındaysa açılır. */
+    static boolean removable(Object response) {
+        if (!(response instanceof Map)) return false;
+        Map<?, ?> data = (Map<?, ?>) response;
+        return Boolean.TRUE.equals(data.get("exists")) && Boolean.TRUE.equals(data.get("is_active"));
+    }
     static Map<String, Object> update(Map<String, Object> row, String next) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("reporter_uid", row.get("reporter_uid")); data.put("report_id", row.get("report_id"));

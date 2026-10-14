@@ -47,6 +47,17 @@ function readCursor(c,wanted){
 function cursorFor(doc,wanted){const t=doc.data().created_at;
  return {version:1,status:wanted,created_at:{seconds:t.seconds,nanoseconds:t.nanoseconds},path:doc.ref.path};
 }
+// Moderatör içerik kaldırma: hedef istemciden alınmaz, şikâyet kaydından türetilir. Böylece
+// moderatör yalnızca şikâyet edilmiş içeriği kaldırabilir; belge silinmez, is_active=0 olur.
+function contentId(value){if(typeof value!=='string'||! /^[A-Za-z0-9_-]{1,128}$/.test(value))fail('failed-precondition','Report has no content target');return value;}
+function contentPath(report){
+ if(report.target_type==='POST')return 'social_posts/'+contentId(report.post_cloud_id);
+ if(report.target_type==='COMMENT'||report.target_type==='REPLY')
+  return 'social_posts/'+contentId(report.post_cloud_id)+'/comments/'+contentId(report.comment_cloud_id);
+ fail('failed-precondition','Report has no content target');
+}
+function activeValue(value){return value===undefined||value===null?true:Number(value)!==0;}
+function millis(value){return Number.isFinite(value)&&value>0?Math.trunc(value):null;}
 function createService({db,getUser,documentId,serverTimestamp,timestamp}){
  return {
   async list(request){
@@ -89,6 +100,42 @@ function createService({db,getUser,documentId,serverTimestamp,timestamp}){
     tx.update(ref,{status:next,reviewed_by:uid,reviewed_at:serverTimestamp()});
    });
    return {reporter_uid:d.reporter_uid,report_id:d.report_id,status:next,reviewed_by:uid};
+  },
+  async content(request){
+   await authorize(request.auth,getUser);
+   const d=request.data;object(d,['reporter_uid','report_id']);
+   const report=await db.doc(reportPath(d.reporter_uid,d.report_id)).get();
+   if(!report.exists)fail('not-found','Report not found');
+   const before=summary(report),path=contentPath(before);
+   const target=await db.doc(path).get();
+   if(!target.exists)return {target_type:before.target_type,exists:false,is_active:false,content:'',author_name:'',author_uid:'',created_at:null,moderated:false};
+   const t=target.data()||{};
+   return {target_type:before.target_type,exists:true,is_active:activeValue(t.is_active),
+    content:typeof t.content==='string'?t.content.slice(0,5000):'',author_name:typeof t.user_name==='string'?t.user_name.slice(0,200):'',
+    author_uid:typeof t.user_id==='string'?t.user_id:'',created_at:millis(t.created_at),moderated:typeof t.moderated_by==='string'&&t.moderated_by.length>0};
+  },
+  async remove(request){
+   const uid=await authorize(request.auth,getUser);
+   const d=request.data;object(d,['reporter_uid','report_id','expected_status']);
+   const path=reportPath(d.reporter_uid,d.report_id);
+   if(d.expected_status!==undefined)status(d.expected_status);
+   const reportRef=db.doc(path),audit=db.collection('moderation_content_audit').doc();
+   return db.runTransaction(async tx=>{
+    const report=await tx.get(reportRef);if(!report.exists)fail('not-found','Report not found');
+    const before=summary(report);
+    if(d.expected_status!==undefined&&before.status!==d.expected_status)fail('failed-precondition','Report status changed; reload');
+    const targetPath=contentPath(before),targetRef=db.doc(targetPath),target=await tx.get(targetRef);
+    if(!target.exists)fail('not-found','Content not found');
+    const t=target.data()||{};
+    // Şikâyet kaydı başka bir kişinin içeriğini göstermemeli.
+    if(t.user_id!==before.reported_uid)fail('failed-precondition','Report does not match content owner');
+    const wasActive=activeValue(t.is_active);
+    if(wasActive)tx.update(targetRef,{is_active:0,updated_at:Date.now(),moderated_by:uid,moderated_at:serverTimestamp()});
+    tx.update(reportRef,{status:'ACTIONED',reviewed_by:uid,reviewed_at:serverTimestamp()});
+    tx.set(audit,{action:'REMOVE_CONTENT',actor_uid:uid,target_uid:before.reported_uid,target_type:before.target_type,
+     target_path:targetPath,report_path:path,was_active:wasActive,timestamp:serverTimestamp()});
+    return {reporter_uid:d.reporter_uid,report_id:d.report_id,status:'ACTIONED',removed:wasActive,reviewed_by:uid};
+   });
   }
  };
 }
