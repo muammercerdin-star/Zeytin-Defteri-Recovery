@@ -1,1 +1,0 @@
-<shape xmlns:android="http://schemas.android.com/apk/res/android"><gradient android:startColor="@color/zd_green" android:endColor="@color/elek_badge_one" android:angle="0"/><corners android:radius="14dp"/></shape>

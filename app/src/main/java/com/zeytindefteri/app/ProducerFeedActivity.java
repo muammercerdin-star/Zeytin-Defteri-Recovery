@@ -5761,24 +5761,6 @@ public class ProducerFeedActivity extends Activity {
         return "İyi akşamlar";
     }
 
-    private String firstName(
-            String fullName
-    ) {
-        if (TextUtils.isEmpty(
-                fullName
-        )) {
-            return "Üretici";
-        }
-
-        String[] p =
-                fullName
-                        .trim()
-                        .split("\\s+");
-
-        return p.length == 0
-                ? "Üretici"
-                : p[0];
-    }
 
     private void openOperationForGarden(
             String type,
@@ -7948,52 +7930,6 @@ public class ProducerFeedActivity extends Activity {
         return b;
     }
 
-    private View sectionTitle(
-            String title,
-            String subtitle
-    ) {
-        LinearLayout box =
-                new LinearLayout(this);
-
-        box.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        box.setPadding(
-                0,
-                dp(2),
-                0,
-                dp(18)
-        );
-
-        box.addView(
-                text(
-                        title,
-                        30,
-                        GREEN_DARK,
-                        true
-                )
-        );
-
-        TextView sub =
-                text(
-                        subtitle,
-                        15,
-                        MUTED,
-                        false
-                );
-
-        sub.setPadding(
-                0,
-                dp(4),
-                0,
-                0
-        );
-
-        box.addView(sub);
-
-        return box;
-    }
 
     private View sectionTitleWithAction(
             String title,
@@ -8283,23 +8219,6 @@ public class ProducerFeedActivity extends Activity {
         return c;
     }
 
-    private LinearLayout rowCard() {
-        LinearLayout c = row();
-
-        c.setBackground(
-                round(
-                        CARD,
-                        20,
-                        BORDER
-                )
-        );
-
-        c.setElevation(
-                dp(1)
-        );
-
-        return c;
-    }
 
     private View emptyCard(
             String title,
