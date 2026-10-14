@@ -86,7 +86,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="💰  Satış Bilgileri"
+                android:text="Satış Bilgileri"
                 android:textColor="@color/zd_text"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -233,7 +233,7 @@
                 android:id="@+id/tvSaleKindInfo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="✅ Gerçek satışlar gelir hesabına ve izin verirsen anonim piyasa verisine dahil edilir."
+                android:text="✓ Gerçek satışlar gelir hesabına ve izin verirsen anonim piyasa verisine dahil edilir."
                 android:textColor="@color/zd_muted"
                 android:textSize="13sp" />
 
@@ -257,7 +257,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="👤  Alıcı"
+                android:text="Alıcı"
                 android:textColor="@color/zd_text"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -305,7 +305,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🫒  Elek ve Fiyat"
+                android:text="Elek ve Fiyat"
                 android:textColor="@color/zd_text"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -759,7 +759,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="💳  Tahsilat"
+                android:text="Tahsilat"
                 android:textColor="@color/zd_text"
                 android:textSize="20sp"
                 android:textStyle="bold" />

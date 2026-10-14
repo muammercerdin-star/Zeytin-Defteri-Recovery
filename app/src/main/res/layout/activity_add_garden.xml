@@ -46,7 +46,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🫒  Zeytin Defteri"
+                android:text="Zeytin Defteri"
                 android:textColor="@color/zd_text"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -337,7 +337,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🌳  Ağaç sayısı"
+                    android:text="Ağaç sayısı"
                     android:textColor="@color/zd_text"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -371,7 +371,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📅  Ağaç yaşı"
+                    android:text="Ağaç yaşı"
                     android:textColor="@color/zd_text"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -466,7 +466,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="💧  Sulama tipi"
+                android:text="Sulama tipi"
                 android:textColor="@color/zd_text"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -553,7 +553,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📝  Not"
+                android:text="Not"
                 android:textColor="@color/zd_text"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -597,7 +597,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="13dp"
             android:gravity="center"
-            android:text="🔒  Bahçe bilgilerin hesabında güvende."
+            android:text="Bahçe bilgilerin hesabında güvende."
             android:textColor="@color/zd_muted"
             android:textSize="10sp" />
 

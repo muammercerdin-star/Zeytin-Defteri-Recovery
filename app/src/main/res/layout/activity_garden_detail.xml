@@ -294,7 +294,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📊  Bu Sezon"
+                android:text="Bu Sezon"
                 android:textColor="@color/zd_text"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -501,7 +501,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="📝  Son İşlemler"
+                    android:text="Son İşlemler"
                     android:textColor="@color/zd_text"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -557,7 +557,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📌  Bahçe Notları"
+                android:text="Bahçe Notları"
                 android:textColor="@color/zd_text"
                 android:textSize="20sp"
                 android:textStyle="bold" />

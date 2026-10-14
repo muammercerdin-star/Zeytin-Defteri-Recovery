@@ -272,7 +272,7 @@
                 android:id="@+id/tvOperationHint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="💧 Sulamada miktarı litre, m³ veya çalışma süresi olarak kaydedebilirsin."
+                android:text="Sulamada miktarı litre, m³ veya çalışma süresi olarak kaydedebilirsin."
                 android:textColor="@color/zd_muted"
                 android:textSize="13sp" />
 

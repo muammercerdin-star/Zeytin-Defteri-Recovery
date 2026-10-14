@@ -384,7 +384,7 @@ public class PostMediaManager {
 
             addMediaErrorView(
                     card,
-                    "📷 Fotoğraf açılamadı"
+                    "Fotoğraf açılamadı"
             );
         }
     }

@@ -348,7 +348,7 @@ public class MarketActivity extends Activity {
 
         TextView filterTitle =
                 createText(
-                        "🔎  Piyasa Filtresi",
+                        "Piyasa Filtresi",
                         19,
                         COLOR_DARK_GREEN,
                         true
@@ -696,7 +696,7 @@ public class MarketActivity extends Activity {
 
         TextView regionsTitle =
                 createText(
-                        "📍  Bölgelere Göre",
+                        "Bölgelere Göre",
                         20,
                         COLOR_DARK_GREEN,
                         true
@@ -754,7 +754,7 @@ public class MarketActivity extends Activity {
 
         infoCard.addView(
                 createText(
-                        "🛡️ Piyasa nasıl hesaplanıyor?",
+                        "Piyasa nasıl hesaplanıyor?",
                         15,
                         COLOR_DARK_GREEN,
                         true
@@ -1997,18 +1997,18 @@ public class MarketActivity extends Activity {
         if (count >= 10
                 && kg >= 5000) {
 
-            return "🟢 Yüksek veri güveni";
+            return "Yüksek veri güveni";
         }
 
 
         if (count >= 5
                 && kg >= 1500) {
 
-            return "🟡 Orta veri güveni";
+            return "Orta veri güveni";
         }
 
 
-        return "🟠 Sınırlı veri";
+        return "Sınırlı veri";
     }
 
 

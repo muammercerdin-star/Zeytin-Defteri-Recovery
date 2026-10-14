@@ -383,7 +383,7 @@ public class BrineActivity extends Activity {
 
         summaryCard.addView(
                 createText(
-                        "🫙 Salamura Özeti",
+                        "Salamura Özeti",
                         20,
                         COLOR_DARK_GREEN,
                         true
@@ -626,7 +626,7 @@ public class BrineActivity extends Activity {
 
         infoCard.addView(
                 createText(
-                        "💡 Salamura Defteri",
+                        "Salamura Defteri",
                         15,
                         COLOR_DARK_GREEN,
                         true
@@ -4002,7 +4002,7 @@ public class BrineActivity extends Activity {
                 eventType
         )) {
 
-            return "💧 Su Değişimi";
+            return "Su Değişimi";
         }
 
 
@@ -4010,7 +4010,7 @@ public class BrineActivity extends Activity {
                 eventType
         )) {
 
-            return "🧂 Tuz İlavesi";
+            return "Tuz İlavesi";
         }
 
 
@@ -4018,7 +4018,7 @@ public class BrineActivity extends Activity {
                 eventType
         )) {
 
-            return "🔎 Kontrol";
+            return "Kontrol";
         }
 
 
@@ -4026,7 +4026,7 @@ public class BrineActivity extends Activity {
                 eventType
         )) {
 
-            return "🫒 Tat Kontrolü";
+            return "Tat Kontrolü";
         }
 
 
@@ -4034,7 +4034,7 @@ public class BrineActivity extends Activity {
                 eventType
         )) {
 
-            return "📦 Ambalajlama";
+            return "Ambalajlama";
         }
 
 

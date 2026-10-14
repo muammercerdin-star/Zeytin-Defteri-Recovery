@@ -1662,7 +1662,7 @@ public class LoginActivity extends Activity {
         if (email.isEmpty()) {
 
             showMessage(
-                    "E-posta adresini gir 🌿"
+                    "E-posta adresini gir"
             );
 
             etEmail.requestFocus();

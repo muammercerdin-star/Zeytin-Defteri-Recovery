@@ -1028,8 +1028,8 @@ public class GardenDetailActivity extends Activity {
 
         tvLocation.setText(
                 location.length() == 0
-                        ? "📍 Konum belirtilmedi"
-                        : "📍 " + location
+                        ? "Konum belirtilmedi"
+                        : location
         );
 
 
@@ -1037,8 +1037,8 @@ public class GardenDetailActivity extends Activity {
                 isEmpty(
                         irrigation
                 )
-                        ? "💧 Sulama tipi belirtilmedi"
-                        : "💧 " + irrigation
+                        ? "Sulama tipi belirtilmedi"
+                        : irrigation
         );
 
 

@@ -142,7 +142,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="💰 Fiyatlar değiştirilebilir"
+                android:text="Fiyatlar değiştirilebilir"
                 android:textColor="@color/zd_text"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -174,7 +174,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🫒  Elek Sonucu"
+                android:text="Elek Sonucu"
                 android:textColor="@color/zd_text"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -616,7 +616,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="💸  Hasat Masrafları"
+                android:text="Hasat Masrafları"
                 android:textColor="@color/zd_text"
                 android:textSize="20sp"
                 android:textStyle="bold" />

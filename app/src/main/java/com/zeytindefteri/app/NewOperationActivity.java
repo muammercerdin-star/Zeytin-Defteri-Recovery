@@ -590,7 +590,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "💧 Sulamada çalışma süresi veya verilen su miktarını kaydedebilirsin."
+                    "Sulamada çalışma süresi veya verilen su miktarını kaydedebilirsin."
             );
 
         } else if (type.equals("Gübre")) {
@@ -613,7 +613,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "🌱 Gübre adını açıklamaya yazabilirsin. Örn. MKP 0-52-34, 18 kg."
+                    "Gübre adını açıklamaya yazabilirsin. Örn. MKP 0-52-34, 18 kg."
             );
 
         } else if (type.equals("İlaçlama")) {
@@ -636,7 +636,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "🧴 Kullanılan ilacın veya yaprak ürününün adını açıklamaya kaydet."
+                    "Kullanılan ilacın veya yaprak ürününün adını açıklamaya kaydet."
             );
 
         } else if (type.equals("Budama")) {
@@ -658,7 +658,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "✂ Budanan ağaç sayısını veya harcanan çalışma süresini kaydedebilirsin."
+                    "Budanan ağaç sayısını veya harcanan çalışma süresini kaydedebilirsin."
             );
 
         } else if (
@@ -682,7 +682,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "🪰 Asılan veya yenilenen zeytin sineği tuzağı sayısını kaydet."
+                    "Asılan veya yenilenen zeytin sineği tuzağı sayısını kaydet."
             );
 
         } else if (
@@ -708,7 +708,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "🚜 Sürüm, çapalama veya diğer toprak işlemlerini kaydedebilirsin."
+                    "Sürüm, çapalama veya diğer toprak işlemlerini kaydedebilirsin."
             );
 
         } else if (
@@ -734,7 +734,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "👷 İşçilik süresini veya çalışan kişi sayısını kaydet."
+                    "İşçilik süresini veya çalışan kişi sayısını kaydet."
             );
 
         } else if (
@@ -758,7 +758,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "⛽ Bahçede kullanılan mazot miktarı ve masrafını kaydet."
+                    "Bahçede kullanılan mazot miktarı ve masrafını kaydet."
             );
 
         } else if (
@@ -784,7 +784,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "🚚 Nakliye seferini, mesafesini veya taşınan miktarı kaydedebilirsin."
+                    "Nakliye seferini, mesafesini veya taşınan miktarı kaydedebilirsin."
             );
 
         } else {
@@ -808,7 +808,7 @@ public class NewOperationActivity extends Activity {
             );
 
             tvOperationHint.setText(
-                    "📝 Diğer bahçe işlemlerini açıklamasıyla birlikte kaydedebilirsin."
+                    "Diğer bahçe işlemlerini açıklamasıyla birlikte kaydedebilirsin."
             );
         }
     }

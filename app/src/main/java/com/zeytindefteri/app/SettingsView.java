@@ -114,7 +114,7 @@ final class SettingsView extends ScrollView {
             String current = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName;
             if (current != null && !current.trim().isEmpty()) version = " v" + current;
         } catch (android.content.pm.PackageManager.NameNotFoundException ignored) { }
-        TextView footer = label(activity, "Zeytin Defteri" + version + "\nDoğadan ilhamla, geleceğe 🌿", 10, MUTED, false);
+        TextView footer = label(activity, "Zeytin Defteri" + version + "\nDoğadan ilhamla, geleceğe", 10, MUTED, false);
         footer.setGravity(Gravity.CENTER);
         footer.setPadding(0, dp(activity, 10), 0, 0);
         body.addView(footer);

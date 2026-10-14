@@ -294,7 +294,7 @@ public class ReportActivity extends Activity {
 
         generalCard.addView(
                 createText(
-                        "📊 Genel Durum",
+                        "Genel Durum",
                         20,
                         COLOR_DARK_GREEN,
                         true
@@ -442,7 +442,7 @@ public class ReportActivity extends Activity {
 
         salesCard.addView(
                 createText(
-                        "💰 Satış & Tahsilat",
+                        "Satış & Tahsilat",
                         20,
                         COLOR_DARK_GREEN,
                         true
@@ -590,7 +590,7 @@ public class ReportActivity extends Activity {
 
         brineCard.addView(
                 createText(
-                        "🫙 Salamura",
+                        "Salamura",
                         20,
                         COLOR_DARK_GREEN,
                         true
@@ -738,7 +738,7 @@ public class ReportActivity extends Activity {
 
         gardenCard.addView(
                 createText(
-                        "🌳 Bahçe Performansı",
+                        "Bahçe Performansı",
                         20,
                         COLOR_DARK_GREEN,
                         true
@@ -789,7 +789,7 @@ public class ReportActivity extends Activity {
 
         infoCard.addView(
                 createText(
-                        "💡 Rapor Notu",
+                        "Rapor Notu",
                         15,
                         COLOR_DARK_GREEN,
                         true

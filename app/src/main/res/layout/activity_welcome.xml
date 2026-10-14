@@ -255,7 +255,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="11dp"
                 android:gravity="center"
-                android:text="🔒 Verilerin güvende. Gizliliğin bizim için önemli."
+                android:text="Verilerin güvende. Gizliliğin bizim için önemli."
                 android:textColor="@color/zd_muted"
                 android:textSize="11sp" />
 

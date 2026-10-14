@@ -366,7 +366,7 @@
                 android:paddingTop="5dp"
                 android:paddingEnd="17dp"
                 android:paddingBottom="5dp"
-                android:text="📒  Bahçenin hafızası artık kaybolmaz."
+                android:text="Bahçenin hafızası artık kaybolmaz."
                 android:textColor="@color/zd_muted"
                 android:textSize="11sp" />
 

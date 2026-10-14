@@ -427,7 +427,7 @@ public class OperationHistoryActivity extends Activity {
 
         filterCard.addView(
                 createText(
-                        "🔎 İşlemleri Filtrele",
+                        "İşlemleri Filtrele",
                         18,
                         COLOR_DARK_GREEN,
                         true
@@ -531,7 +531,7 @@ public class OperationHistoryActivity extends Activity {
 
         summaryCard.addView(
                 createText(
-                        "📋 Seçili Kayıtlar",
+                        "Seçili Kayıtlar",
                         18,
                         COLOR_DARK_GREEN,
                         true

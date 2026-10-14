@@ -1143,7 +1143,7 @@ public class ProfileActivity extends Activity {
 
         TextView edit =
                 createPillButton(
-                        "✏️  Profili Düzenle",
+                        "Profili Düzenle",
                         COLOR_GREEN,
                         COLOR_BG
                 );
@@ -1279,7 +1279,7 @@ public class ProfileActivity extends Activity {
 
         TextView title =
                 createText(
-                        "🌿 Üretici bilgileri",
+                        "Üretici bilgileri",
                         14,
                         COLOR_DARK,
                         true
@@ -2220,13 +2220,13 @@ public class ProfileActivity extends Activity {
 
         TextView reaction =
                 createActionText(
-                        "👍 Faydalı"
+                        "Faydalı"
                 );
 
 
         TextView comment =
                 createActionText(
-                        "💬 Yorum"
+                        "Yorum"
                 );
 
 
@@ -2331,9 +2331,9 @@ public class ProfileActivity extends Activity {
     ) {
 
         String[] items = {
-                "💬 Yorumları aç",
+                "Yorumları aç",
                 "↗ Gönderiyi paylaş",
-                "🗑 Gönderiyi sil"
+                "Gönderiyi sil"
         };
 
 
@@ -2524,7 +2524,7 @@ public class ProfileActivity extends Activity {
 
         if (!safe(post.gardenName).isEmpty()) {
 
-            text.append("\n\n🫒 ");
+            text.append("\n\n");
             text.append(post.gardenName.trim());
         }
 
@@ -3059,20 +3059,20 @@ public class ProfileActivity extends Activity {
 
 
         options.add(
-                "🖼 Galeriden fotoğraf seç"
+                "Galeriden fotoğraf seç"
         );
 
 
         if (googlePhotoAvailable) {
 
             options.add(
-                    "🔄 Google profil fotoğrafını kullan"
+                    "Google profil fotoğrafını kullan"
             );
         }
 
 
         options.add(
-                "👤 Varsayılan simgeyi kullan"
+                "Varsayılan simgeyi kullan"
         );
 
 
@@ -3092,14 +3092,14 @@ public class ProfileActivity extends Activity {
                                     items[which];
 
 
-                            if (selected.startsWith("🖼")) {
+                            if (selected.startsWith("Galeriden")) {
 
                                 openProfilePhotoPicker();
                                 return;
                             }
 
 
-                            if (selected.startsWith("🔄")) {
+                            if (selected.startsWith("Google")) {
 
                                 setProfilePhotoMode(
                                         PHOTO_MODE_GOOGLE
@@ -3119,7 +3119,7 @@ public class ProfileActivity extends Activity {
                             }
 
 
-                            if (selected.startsWith("👤")) {
+                            if (selected.startsWith("Varsayılan")) {
 
                                 setProfilePhotoMode(
                                         PHOTO_MODE_DEFAULT
@@ -3246,7 +3246,7 @@ public class ProfileActivity extends Activity {
 
         Toast.makeText(
                 this,
-                "Profil fotoğrafın güncellendi ✅",
+                "Profil fotoğrafın güncellendi ✓",
                 Toast.LENGTH_SHORT
         ).show();
     }
@@ -3771,7 +3771,7 @@ public class ProfileActivity extends Activity {
 
         TextView photoButton =
                 createPillButton(
-                        "📷  Profil fotoğrafını değiştir",
+                        "Profil fotoğrafını değiştir",
                         COLOR_SOFT_GREEN,
                         COLOR_DARK
                 );
@@ -3964,7 +3964,7 @@ public class ProfileActivity extends Activity {
 
                             Toast.makeText(
                                     ProfileActivity.this,
-                                    "Profil güncellendi ✅",
+                                    "Profil güncellendi ✓",
                                     Toast.LENGTH_SHORT
                             ).show();
                         }
@@ -3979,10 +3979,10 @@ public class ProfileActivity extends Activity {
     private void showAccountMenu() {
 
         String[] items = {
-                "✏️ Profili düzenle",
-                "📷 Profil fotoğrafı",
-                "⚙ Hesap bilgileri",
-                "🚪 Çıkış yap"
+                "Profili düzenle",
+                "Profil fotoğrafı",
+                "Hesap bilgileri",
+                "Çıkış yap"
         };
 
 
@@ -4328,9 +4328,6 @@ public class ProfileActivity extends Activity {
 
         if (likes > 0) {
 
-            text.append(
-                    "👍 "
-            );
 
             text.append(
                     likes
@@ -4352,9 +4349,6 @@ public class ProfileActivity extends Activity {
             }
 
 
-            text.append(
-                    "💬 "
-            );
 
             text.append(
                     comments

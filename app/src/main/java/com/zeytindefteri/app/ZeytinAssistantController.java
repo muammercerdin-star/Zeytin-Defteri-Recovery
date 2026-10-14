@@ -82,7 +82,7 @@ public final class ZeytinAssistantController {
         Button send=panelButton("Sor");send.setOnClickListener(v->submit(input.getText().toString()));typed.addView(send,new LinearLayout.LayoutParams(dp(64),dp(48)));root.addView(typed);
         write=panelButton("Yazarak sor");write.setOnClickListener(v->{typed.setVisibility(View.VISIBLE);input.requestFocus();});root.addView(write);
         LinearLayout buttons=new LinearLayout(activity);
-        mic=panelButton("🎙 Tekrar Sor");mic.setOnClickListener(v->{
+        mic=panelButton("Tekrar Sor");mic.setOnClickListener(v->{
             if(conversation.state()==State.LISTENING){conversation.nextTurn();stopRecognizer();stopTts();transition(State.IDLE,"Dinleme durduruldu.");}
             else listen();
         });
@@ -156,7 +156,7 @@ public final class ZeytinAssistantController {
         heard.setMaxLines(next==State.LISTENING?2:8);
         if(next!=State.LISTENING)hint.setText("");
         if(changed)wave.listening(false); // Orb is the visible RMS surface.
-        String caption=next==State.LISTENING?"Durdur":"🎙 Tekrar Sor";
+        String caption=next==State.LISTENING?"Durdur":"Tekrar Sor";
         if(permissionStage==PermissionStage.BLOCKED)caption="Ayarlar";
         else if(next==State.IDLE && permissionStage==PermissionStage.READY && activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED)caption="İzin Ver";
         mic.setText(caption);mic.setContentDescription(next==State.LISTENING?"Dinlemeyi durdur":caption);

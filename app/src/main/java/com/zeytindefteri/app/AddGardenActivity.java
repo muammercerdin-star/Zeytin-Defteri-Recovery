@@ -488,7 +488,7 @@ public class AddGardenActivity extends Activity {
             if (btnSaveGarden != null) {
 
                 btnSaveGarden.setText(
-                        "🌿  Bahçemi Kaydet"
+                        "Bahçemi Kaydet"
                 );
             }
 
@@ -513,7 +513,7 @@ public class AddGardenActivity extends Activity {
             if (btnSaveGarden != null) {
 
                 btnSaveGarden.setText(
-                        "🌿  Bahçeyi Kaydet"
+                        "Bahçeyi Kaydet"
                 );
             }
         }
@@ -905,7 +905,7 @@ public class AddGardenActivity extends Activity {
 
             Toast.makeText(
                     this,
-                    "📍 " + location,
+                    location,
                     Toast.LENGTH_SHORT
             ).show();
         }
@@ -1032,7 +1032,7 @@ public class AddGardenActivity extends Activity {
 
         Toast.makeText(
                 this,
-                "Bahçe fotoğrafı hazır 📷",
+                "Bahçe fotoğrafı hazır",
                 Toast.LENGTH_SHORT
         ).show();
     }
@@ -1247,7 +1247,7 @@ public class AddGardenActivity extends Activity {
 
             Toast.makeText(
                     this,
-                    "İlk bahçenin konumunu seçelim 📍",
+                    "İlk bahçenin konumunu seçelim",
                     Toast.LENGTH_SHORT
             ).show();
 
@@ -1537,13 +1537,13 @@ public class AddGardenActivity extends Activity {
                 if (firstGarden) {
 
                     btnSaveGarden.setText(
-                            "🌿  Bahçemi Kaydet"
+                            "Bahçemi Kaydet"
                     );
 
                 } else {
 
                     btnSaveGarden.setText(
-                            "🌿  Bahçeyi Kaydet"
+                            "Bahçeyi Kaydet"
                     );
                 }
             }
@@ -2001,7 +2001,7 @@ public class AddGardenActivity extends Activity {
 
 
         savedMessage.setText(
-                "🌿  Bahçen başarıyla kaydedildi.\n"
+                "Bahçen başarıyla kaydedildi.\n"
                         + "Şimdi ilk sezon kaydını oluşturmaya hazırsın."
         );
 
@@ -2224,9 +2224,6 @@ public class AddGardenActivity extends Activity {
 
         if (savedTreeCount > 0) {
 
-            builder.append(
-                    "🌳 "
-            );
 
             builder.append(
                     savedTreeCount
@@ -2245,9 +2242,6 @@ public class AddGardenActivity extends Activity {
             );
 
 
-            builder.append(
-                    "📅 "
-            );
 
             builder.append(
                     savedAge
@@ -2268,9 +2262,6 @@ public class AddGardenActivity extends Activity {
             );
 
 
-            builder.append(
-                    "🫒 "
-            );
 
             builder.append(
                     savedVariety
@@ -2296,9 +2287,6 @@ public class AddGardenActivity extends Activity {
             }
 
 
-            builder.append(
-                    "📍 "
-            );
 
             builder.append(
                     location

@@ -793,11 +793,11 @@ public class CreatePostActivity extends Activity {
         String[] options =
                 new String[]{
 
-                        "📷 Fotoğraf ekle",
+                        "Fotoğraf ekle",
 
-                        "🎥 Video ekle",
+                        "Video ekle",
 
-                        "🗑 Seçilen medyaları temizle"
+                        "Seçilen medyaları temizle"
                 };
 
 
@@ -1201,7 +1201,7 @@ public class CreatePostActivity extends Activity {
             Toast.makeText(
                     this,
                     added
-                            + " fotoğraf eklendi 📷",
+                            + " fotoğraf eklendi",
                     Toast.LENGTH_SHORT
             ).show();
 
@@ -1295,7 +1295,7 @@ public class CreatePostActivity extends Activity {
 
         Toast.makeText(
                 this,
-                "Video eklendi 🎥",
+                "Video eklendi",
                 Toast.LENGTH_SHORT
         ).show();
     }
@@ -1503,11 +1503,11 @@ public class CreatePostActivity extends Activity {
         String[] options =
                 new String[]{
 
-                        "➕ Yeni medya ekle",
+                        "Yeni medya ekle",
 
-                        "🗑 Son medyayı kaldır",
+                        "Son medyayı kaldır",
 
-                        "🗑 Tüm medyaları kaldır"
+                        "Tüm medyaları kaldır"
                 };
 
 
@@ -1934,7 +1934,7 @@ public class CreatePostActivity extends Activity {
                     if (success) {
                         Toast.makeText(this,
                                 mediaLocalOk
-                                        ? "Paylaşım buluta kaydedildi 🌿☁️"
+                                        ? "Paylaşım buluta kaydedildi"
                                         : "Paylaşım buluta kaydedildi; bazı medya dosyaları atlandı.",
                                 Toast.LENGTH_SHORT).show();
                     } else {

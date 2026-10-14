@@ -298,8 +298,8 @@ public class SaleActivity extends Activity {
         cardMarketConsent.setVisibility(visibility);
         if (!realSale) checkMarketConsent.setChecked(false);
         tvSaleKindInfo.setText(realSale
-                ? "✅ Gerçek satış seçili sezondaki gelir ve tahsilat hesabına eklenir. İzin verirsen fiyatlar anonim piyasa verisine katılır."
-                : "ℹ️ Fiyat teklifi gelir ve alacak hesabına eklenmez; yalnızca karşılaştırma kaydı olarak saklanır.");
+                ? "✓ Gerçek satış seçili sezondaki gelir ve tahsilat hesabına eklenir. İzin verirsen fiyatlar anonim piyasa verisine katılır."
+                : "Fiyat teklifi gelir ve alacak hesabına eklenmez; yalnızca karşılaştırma kaydı olarak saklanır.");
         btnSaveSale.setText(realSale ? "Satışı Kaydet" : "Teklifi Kaydet");
         recalculate();
     }
