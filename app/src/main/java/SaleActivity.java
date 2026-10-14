@@ -5,7 +5,6 @@ import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -13,9 +12,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,7 +21,6 @@ import android.widget.Toast;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -31,12 +28,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/** Gerçek satış ve fiyat teklifi kayıt formu. */
+/**
+ * Gerçek satış ve fiyat teklifi kayıt formu. Boy satırları hasat formuyla ortaktır (include_grade_rows);
+ * sayı okuma ve ödeme kuralı GradeFormModel'dedir. Kayıt SaleRepository.addSaleWithGrades ile tek işlemdir.
+ * Anonim piyasa izni her açılışta kapalı başlar ve yalnızca gerçek satışta gösterilir.
+ */
 public class SaleActivity extends Activity {
 
     private static final String SALE = "SALE";
     private static final String OFFER = "OFFER";
     private static final int COLOR_TEXT = GreenTheme.color(R.color.zd_text);
+    private static final int COLOR_MUTED = GreenTheme.color(R.color.zd_muted);
     private static final int COLOR_SURFACE = GreenTheme.color(R.color.zd_surface);
 
     private final Locale trLocale = new Locale("tr", "TR");
@@ -47,35 +49,20 @@ public class SaleActivity extends Activity {
     private DatabaseHelper databaseHelper;
     private SaleRepository saleRepository;
 
-    private Spinner spinnerSaleKind;
     private Spinner spinnerGarden;
-    private EditText etSaleDate;
-    private EditText etRegion;
-    private EditText etVariety;
-    private EditText etBuyerName;
-    private EditText etBuyerPhone;
-    private EditText etTransportCost;
-    private EditText etDeductions;
-    private EditText etAmountReceived;
-    private EditText etDueDate;
-    private EditText etNote;
-    private TextView tvSaleKindInfo;
-    private TextView tvTotalKg;
-    private TextView tvGrossTotal;
-    private TextView tvNetTotal;
-    private TextView tvRemaining;
-    private TextView btnSaveSale;
-    private LinearLayout cardBuyer;
-    private LinearLayout cardPayment;
-    private LinearLayout cardMarketConsent;
-    private CheckBox checkMarketConsent;
+    private EditText etSaleDate, etRegion, etVariety, etBuyerName, etBuyerPhone;
+    private EditText etTransportCost, etDeductions, etAmountReceived, etDueDate, etNote;
+    private TextView tvSaleKindInfo, tvTotalKg, tvGrossTotal, tvDeductionTotal, tvNetLabel, tvNetTotal, tvRemaining;
+    private TextView tvSaveSummary, btnSaveSale, btnKindSale, btnKindOffer, chipPayFull, chipPayPartial, chipPayNone;
+    private View cardBuyer, cardPayment, cardMarketConsent, boxAmountReceived, boxDueDate;
+    private CompoundButton checkMarketConsent;
 
-    private final EditText[] kgFields = new EditText[6];
-    private final EditText[] priceFields = new EditText[6];
-    private final TextView[] valueViews = new TextView[6];
-    private final String[] gradeCodes = {"DOUBLE", "1", "2", "3", "4", "YAGLIK"};
+    private final EditText[] kgFields = new EditText[GradeFormModel.CODES.length];
+    private final EditText[] priceFields = new EditText[GradeFormModel.CODES.length];
+    private final TextView[] valueViews = new TextView[GradeFormModel.CODES.length];
 
-    private long requestedGardenId = -1L;
+    private boolean realSale = true;
+    private GradeFormModel.Payment payment = GradeFormModel.Payment.NONE;
     private boolean saving;
 
     @Override
@@ -91,24 +78,34 @@ public class SaleActivity extends Activity {
         saleRepository = new SaleRepository(databaseHelper);
         saleCalendar.set(Calendar.YEAR, databaseHelper.getActiveSeasonYear());
         dueCalendar.setTime(saleCalendar.getTime());
-        requestedGardenId = getIntent() == null
-                ? -1L
-                : getIntent().getLongExtra("garden_id", -1L);
+        if (savedInstanceState != null) {
+            realSale = savedInstanceState.getBoolean("sale_real", true);
+            payment = GradeFormModel.Payment.valueOf(savedInstanceState.getString("sale_payment", payment.name()));
+            saleCalendar.setTimeInMillis(savedInstanceState.getLong("sale_date", saleCalendar.getTimeInMillis()));
+            dueCalendar.setTimeInMillis(savedInstanceState.getLong("sale_due", dueCalendar.getTimeInMillis()));
+        }
 
         bindViews();
-        setupSaleKinds();
+        setupChoices();
         setupDates();
         setupCalculations();
-        loadGardens();
+        loadGardens(getIntent() == null ? -1L : getIntent().getLongExtra("garden_id", -1L));
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         btnSaveSale.setOnClickListener(v -> saveSale());
         updateSaleKindUi();
-        recalculate();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putBoolean("sale_real", realSale);
+        state.putString("sale_payment", payment.name());
+        state.putLong("sale_date", saleCalendar.getTimeInMillis());
+        state.putLong("sale_due", dueCalendar.getTimeInMillis());
     }
 
     private void bindViews() {
-        spinnerSaleKind = findViewById(R.id.spinnerSaleKind);
         spinnerGarden = findViewById(R.id.spinnerGarden);
         etSaleDate = findViewById(R.id.etSaleDate);
         etRegion = findViewById(R.id.etRegion);
@@ -123,47 +120,44 @@ public class SaleActivity extends Activity {
         tvSaleKindInfo = findViewById(R.id.tvSaleKindInfo);
         tvTotalKg = findViewById(R.id.tvTotalKg);
         tvGrossTotal = findViewById(R.id.tvGrossTotal);
+        tvDeductionTotal = findViewById(R.id.tvDeductionTotal);
+        tvNetLabel = findViewById(R.id.tvNetLabel);
         tvNetTotal = findViewById(R.id.tvNetTotal);
         tvRemaining = findViewById(R.id.tvRemaining);
+        tvSaveSummary = findViewById(R.id.tvSaveSummary);
         btnSaveSale = findViewById(R.id.btnSaveSale);
+        btnKindSale = findViewById(R.id.btnKindSale);
+        btnKindOffer = findViewById(R.id.btnKindOffer);
+        chipPayFull = findViewById(R.id.chipPayFull);
+        chipPayPartial = findViewById(R.id.chipPayPartial);
+        chipPayNone = findViewById(R.id.chipPayNone);
         cardBuyer = findViewById(R.id.cardBuyer);
         cardPayment = findViewById(R.id.cardPayment);
         cardMarketConsent = findViewById(R.id.cardMarketConsent);
+        boxAmountReceived = findViewById(R.id.boxAmountReceived);
+        boxDueDate = findViewById(R.id.boxDueDate);
         checkMarketConsent = findViewById(R.id.checkMarketConsent);
 
-        int[] kgIds = {
-                R.id.etKgDouble, R.id.etKg1, R.id.etKg2,
-                R.id.etKg3, R.id.etKg4, R.id.etKgOil
-        };
-        int[] priceIds = {
-                R.id.etPriceDouble, R.id.etPrice1, R.id.etPrice2,
-                R.id.etPrice3, R.id.etPrice4, R.id.etPriceOil
-        };
-        int[] valueIds = {
-                R.id.tvValueDouble, R.id.tvValue1, R.id.tvValue2,
-                R.id.tvValue3, R.id.tvValue4, R.id.tvValueOil
-        };
-        for (int i = 0; i < gradeCodes.length; i++) {
+        int[] kgIds = {R.id.etKgDouble, R.id.etKg1, R.id.etKg2, R.id.etKg3, R.id.etKg4, R.id.etKgOil};
+        int[] priceIds = {R.id.etPriceDouble, R.id.etPrice1, R.id.etPrice2, R.id.etPrice3, R.id.etPrice4, R.id.etPriceOil};
+        int[] valueIds = {R.id.tvValueDouble, R.id.tvValue1, R.id.tvValue2, R.id.tvValue3, R.id.tvValue4, R.id.tvValueOil};
+        for (int i = 0; i < GradeFormModel.CODES.length; i++) {
             kgFields[i] = findViewById(kgIds[i]);
             priceFields[i] = findViewById(priceIds[i]);
             valueViews[i] = findViewById(valueIds[i]);
         }
     }
 
-    private void setupSaleKinds() {
-        List<String> kinds = new ArrayList<>();
-        kinds.add("Gerçek satış");
-        kinds.add("Fiyat teklifi");
-        spinnerSaleKind.setAdapter(darkAdapter(kinds));
-        spinnerSaleKind.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                updateSaleKindUi();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) { }
+    private void setupChoices() {
+        btnKindSale.setOnClickListener(v -> { realSale = true; updateSaleKindUi(); });
+        btnKindOffer.setOnClickListener(v -> { realSale = false; updateSaleKindUi(); });
+        chipPayFull.setOnClickListener(v -> { payment = GradeFormModel.Payment.FULL; recalculate(); });
+        chipPayPartial.setOnClickListener(v -> {
+            payment = GradeFormModel.Payment.PARTIAL;
+            recalculate();
+            etAmountReceived.requestFocus();
         });
+        chipPayNone.setOnClickListener(v -> { payment = GradeFormModel.Payment.NONE; recalculate(); });
     }
 
     private void setupDates() {
@@ -173,27 +167,19 @@ public class SaleActivity extends Activity {
     }
 
     private void showDatePicker(EditText target, Calendar calendar, boolean allowClear) {
-        DatePickerDialog dialog = new DatePickerDialog(
-                this,
-                (view, year, month, day) -> {
-                    calendar.set(year, month, day);
-                    target.setText(formatDate(calendar.getTime()));
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
+        DatePickerDialog dialog = new DatePickerDialog(this, (view, year, month, day) -> {
+            calendar.set(year, month, day);
+            target.setText(formatDate(calendar.getTime()));
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
         if (allowClear) {
             dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "Temizle", (d, which) -> target.setText(""));
         } else {
             Calendar firstDay = Calendar.getInstance();
             firstDay.clear();
             firstDay.set(databaseHelper.getActiveSeasonYear(), Calendar.JANUARY, 1);
-
             Calendar lastDay = Calendar.getInstance();
             lastDay.clear();
             lastDay.set(databaseHelper.getActiveSeasonYear(), Calendar.DECEMBER, 31, 23, 59, 59);
-
             dialog.getDatePicker().setMinDate(firstDay.getTimeInMillis());
             dialog.getDatePicker().setMaxDate(lastDay.getTimeInMillis());
         }
@@ -213,20 +199,15 @@ public class SaleActivity extends Activity {
         etAmountReceived.addTextChangedListener(watcher);
     }
 
-    private void loadGardens() {
+    private void loadGardens(long requestedGardenId) {
         gardens.clear();
         Cursor cursor = null;
         int requestedPosition = -1;
         try {
             cursor = databaseHelper.getGardens();
             while (cursor != null && cursor.moveToNext()) {
-                GardenOption option = new GardenOption(
-                        valueLong(cursor, "id"),
-                        value(cursor, "name"),
-                        value(cursor, "province"),
-                        value(cursor, "district"),
-                        value(cursor, "variety")
-                );
+                GardenOption option = new GardenOption(valueLong(cursor, "id"), value(cursor, "name"),
+                        value(cursor, "province"), value(cursor, "district"), value(cursor, "variety"));
                 gardens.add(option);
                 if (option.id == requestedGardenId) requestedPosition = gardens.size() - 1;
             }
@@ -246,32 +227,28 @@ public class SaleActivity extends Activity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (position < 0 || position >= gardens.size()) return;
-                GardenOption option = gardens.get(position);
-                if (text(etRegion).isEmpty()) etRegion.setText(option.region());
-                if (text(etVariety).isEmpty()) etVariety.setText(option.variety);
+                fillGardenDefaults(gardens.get(position));
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) { }
         });
-        if (!gardens.isEmpty()) {
-            GardenOption option = gardens.get(Math.max(0, requestedPosition));
-            if (text(etRegion).isEmpty()) etRegion.setText(option.region());
-            if (text(etVariety).isEmpty()) etVariety.setText(option.variety);
-        }
+        if (!gardens.isEmpty()) fillGardenDefaults(gardens.get(Math.max(0, requestedPosition)));
+    }
+
+    /** Bölge ve çeşit boşsa bahçeden önerilir; kullanıcının yazdığı değer ezilmez. */
+    private void fillGardenDefaults(GardenOption option) {
+        if (text(etRegion).isEmpty()) etRegion.setText(option.region());
+        if (text(etVariety).isEmpty()) etVariety.setText(option.variety);
     }
 
     private ArrayAdapter<String> darkAdapter(List<String> items) {
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-                this,
-                android.R.layout.simple_spinner_item,
-                items
-        ) {
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, items) {
             private View style(View view, boolean dropdown) {
                 TextView textView = (TextView) view;
                 textView.setTextColor(COLOR_TEXT);
                 textView.setTextSize(15);
-                textView.setPadding(dp(14), dp(dropdown ? 14 : 8), dp(14), dp(dropdown ? 14 : 8));
+                textView.setPadding(dp(dropdown ? 14 : 0), dp(dropdown ? 14 : 8), dp(14), dp(dropdown ? 14 : 8));
                 if (dropdown) textView.setBackgroundColor(COLOR_SURFACE);
                 return textView;
             }
@@ -291,37 +268,54 @@ public class SaleActivity extends Activity {
     }
 
     private void updateSaleKindUi() {
-        boolean realSale = isRealSale();
+        btnKindSale.setSelected(realSale);
+        btnKindOffer.setSelected(!realSale);
+        btnKindSale.setContentDescription("Gerçek satış" + (realSale ? ", seçili" : ""));
+        btnKindOffer.setContentDescription("Fiyat teklifi" + (realSale ? "" : ", seçili"));
         int visibility = realSale ? View.VISIBLE : View.GONE;
         cardBuyer.setVisibility(visibility);
         cardPayment.setVisibility(visibility);
         cardMarketConsent.setVisibility(visibility);
         if (!realSale) checkMarketConsent.setChecked(false);
         tvSaleKindInfo.setText(realSale
-                ? "✓ Gerçek satış seçili sezondaki gelir ve tahsilat hesabına eklenir. İzin verirsen fiyatlar anonim piyasa verisine katılır."
+                ? "Gerçek satış seçili sezondaki gelir ve tahsilat hesabına eklenir. İzin verirsen fiyatlar anonim piyasa verisine katılır."
                 : "Fiyat teklifi gelir ve alacak hesabına eklenmez; yalnızca karşılaştırma kaydı olarak saklanır.");
+        ((TextView) findViewById(R.id.tvScreenTitle)).setText(realSale ? "Satış kaydı" : "Fiyat teklifi");
         btnSaveSale.setText(realSale ? "Satışı Kaydet" : "Teklifi Kaydet");
         recalculate();
     }
 
     private void recalculate() {
-        double totalKg = 0;
-        double gross = 0;
-        for (int i = 0; i < gradeCodes.length; i++) {
+        double totalKg = 0, gross = 0;
+        for (int i = 0; i < GradeFormModel.CODES.length; i++) {
             double kg = number(kgFields[i]);
             double price = number(priceFields[i]);
-            double line = kg * price;
             totalKg += kg;
-            gross += line;
-            if (valueViews[i] != null) valueViews[i].setText(formatMoney(line));
+            gross += kg * price;
+            valueViews[i].setText(GradeFormModel.lineValue(kg, price));
+            valueViews[i].setTextColor(kg > 0 && price > 0 ? COLOR_TEXT : COLOR_MUTED);
         }
-        double net = Math.max(0, gross - number(etTransportCost) - number(etDeductions));
-        double received = isRealSale() ? number(etAmountReceived) : 0;
+        double cuts = number(etTransportCost) + number(etDeductions);
+        double net = Math.max(0, gross - cuts);
+        double received = GradeFormModel.received(payment, net, number(etAmountReceived), realSale);
         double remaining = Math.max(0, net - received);
-        tvTotalKg.setText("Toplam miktar: " + formatKg(totalKg));
-        tvGrossTotal.setText("Brüt satış: " + formatMoney(gross));
-        tvNetTotal.setText((isRealSale() ? "Net satış: " : "Teklif toplamı: ") + formatMoney(net));
-        tvRemaining.setText("Kalan alacak: " + formatMoney(remaining));
+
+        tvTotalKg.setText(GradeFormModel.kg(totalKg));
+        tvGrossTotal.setText(GradeFormModel.money(gross));
+        tvDeductionTotal.setText(cuts > 0 ? "− " + GradeFormModel.money(cuts) : GradeFormModel.money(0));
+        tvNetLabel.setText(realSale ? "Net satış" : "Teklif toplamı");
+        tvNetTotal.setText(GradeFormModel.money(net));
+        tvRemaining.setText(GradeFormModel.money(remaining));
+
+        chipPayFull.setSelected(payment == GradeFormModel.Payment.FULL);
+        chipPayPartial.setSelected(payment == GradeFormModel.Payment.PARTIAL);
+        chipPayNone.setSelected(payment == GradeFormModel.Payment.NONE);
+        boxAmountReceived.setVisibility(payment == GradeFormModel.Payment.PARTIAL ? View.VISIBLE : View.GONE);
+        boxDueDate.setVisibility(payment == GradeFormModel.Payment.FULL ? View.INVISIBLE : View.VISIBLE);
+
+        tvSaveSummary.setText(realSale
+                ? "Net " + GradeFormModel.money(net) + " · kalan alacak " + GradeFormModel.money(remaining)
+                : "Teklif toplamı " + GradeFormModel.money(net) + " · gelire eklenmez");
     }
 
     private void saveSale() {
@@ -336,14 +330,8 @@ public class SaleActivity extends Activity {
             return;
         }
         String saleDate = text(etSaleDate);
-        if (!isValidDate(saleDate)) {
-            etSaleDate.setError("Geçerli tarih seçin");
-            return;
-        }
-        if (yearOf(saleDate) != databaseHelper.getActiveSeasonYear()) {
-            etSaleDate.setError("Tarih aktif sezonda olmalı");
-            return;
-        }
+        if (!isValidDate(saleDate)) { etSaleDate.setError("Geçerli tarih seçin"); return; }
+        if (yearOf(saleDate) != databaseHelper.getActiveSeasonYear()) { etSaleDate.setError("Tarih aktif sezonda olmalı"); return; }
         String region = text(etRegion);
         if (region.isEmpty()) {
             etRegion.setError("Piyasa bölgesi gerekli");
@@ -351,11 +339,10 @@ public class SaleActivity extends Activity {
             return;
         }
 
-        double[] kilograms = new double[gradeCodes.length];
-        double[] prices = new double[gradeCodes.length];
-        double totalKg = 0;
-        double gross = 0;
-        for (int i = 0; i < gradeCodes.length; i++) {
+        double[] kilograms = new double[GradeFormModel.CODES.length];
+        double[] prices = new double[GradeFormModel.CODES.length];
+        double totalKg = 0, gross = 0;
+        for (int i = 0; i < GradeFormModel.CODES.length; i++) {
             kilograms[i] = number(kgFields[i]);
             prices[i] = number(priceFields[i]);
             if (kilograms[i] > 0 && prices[i] <= 0) {
@@ -380,7 +367,12 @@ public class SaleActivity extends Activity {
         double transport = number(etTransportCost);
         double deductions = number(etDeductions);
         double net = Math.max(0, gross - transport - deductions);
-        double received = isRealSale() ? number(etAmountReceived) : 0;
+        if (realSale && payment == GradeFormModel.Payment.PARTIAL && number(etAmountReceived) <= 0) {
+            etAmountReceived.setError("Alınan tutarı girin");
+            etAmountReceived.requestFocus();
+            return;
+        }
+        double received = GradeFormModel.received(payment, net, number(etAmountReceived), realSale);
         if (received > net + 0.01d) {
             etAmountReceived.setError("Tahsilat net satıştan büyük olamaz");
             etAmountReceived.requestFocus();
@@ -391,55 +383,28 @@ public class SaleActivity extends Activity {
             etBuyerName.requestFocus();
             return;
         }
-        String dueDate = isRealSale() ? text(etDueDate) : "";
-        if (!dueDate.isEmpty() && !isValidDate(dueDate)) {
-            etDueDate.setError("Geçerli vade tarihi seçin");
-            return;
-        }
+        // Tamamı alındıysa vade anlamsızdır; kaydedilmez.
+        String dueDate = realSale && payment != GradeFormModel.Payment.FULL ? text(etDueDate) : "";
+        if (!dueDate.isEmpty() && !isValidDate(dueDate)) { etDueDate.setError("Geçerli vade tarihi seçin"); return; }
         Date saleDay = parseDate(saleDate);
         Date dueDay = parseDate(dueDate);
-        if (saleDay != null && dueDay != null && dueDay.before(saleDay)) {
-            etDueDate.setError("Vade satış tarihinden önce olamaz");
-            return;
-        }
+        if (saleDay != null && dueDay != null && dueDay.before(saleDay)) { etDueDate.setError("Vade satış tarihinden önce olamaz"); return; }
 
         saving = true;
         btnSaveSale.setEnabled(false);
         btnSaveSale.setText("Kaydediliyor…");
 
         Long buyerId = null;
-        if (isRealSale() && !text(etBuyerName).isEmpty()) {
-            long createdBuyer = databaseHelper.addBuyer(
-                    text(etBuyerName),
-                    text(etBuyerPhone),
-                    region,
-                    "Satış formundan oluşturuldu"
-            );
-            if (createdBuyer <= 0) {
-                failSave("Alıcı kaydı oluşturulamadı.");
-                return;
-            }
+        if (realSale && !text(etBuyerName).isEmpty()) {
+            long createdBuyer = databaseHelper.addBuyer(text(etBuyerName), text(etBuyerPhone), region, "Satış formundan oluşturuldu");
+            if (createdBuyer <= 0) { failSave("Alıcı kaydı oluşturulamadı."); return; }
             buyerId = createdBuyer;
         }
 
         long saleId = saleRepository.addSaleWithGrades(
-                (int) gardens.get(gardenPosition).id,
-                buyerId,
-                saleDate,
-                isRealSale() ? SALE : OFFER,
-                region,
-                text(etVariety),
-                "SOFRALIK",
-                transport,
-                deductions,
-                received,
-                dueDate,
-                text(etNote),
-                isRealSale() && checkMarketConsent.isChecked(),
-                gradeCodes,
-                kilograms,
-                prices
-        );
+                (int) gardens.get(gardenPosition).id, buyerId, saleDate, realSale ? SALE : OFFER, region,
+                text(etVariety), "SOFRALIK", transport, deductions, received, dueDate, text(etNote),
+                realSale && checkMarketConsent.isChecked(), GradeFormModel.CODES, kilograms, prices);
         if (saleId <= 0) {
             if (buyerId != null) databaseHelper.deleteBuyerIfUnused(buyerId);
             failSave("Kayıt tamamlanamadı. Bilgileri kontrol edip tekrar deneyin.");
@@ -447,11 +412,7 @@ public class SaleActivity extends Activity {
         }
 
         syncSavedSale(saleId);
-        Toast.makeText(
-                this,
-                (isRealSale() ? "Satış" : "Fiyat teklifi") + " kaydedildi ✓",
-                Toast.LENGTH_SHORT
-        ).show();
+        Toast.makeText(this, (realSale ? "Satış" : "Fiyat teklifi") + " kaydedildi", Toast.LENGTH_SHORT).show();
         Intent result = new Intent();
         result.putExtra("sale_id", saleId);
         result.putExtra("season_year", yearOf(saleDate));
@@ -463,8 +424,7 @@ public class SaleActivity extends Activity {
         try {
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             if (user == null || user.getUid() == null || user.getUid().trim().isEmpty()) return;
-            new ProductionCloudRepository(databaseHelper)
-                    .syncSaleByLocalId(user.getUid().trim(), saleId);
+            new ProductionCloudRepository(databaseHelper).syncSaleByLocalId(user.getUid().trim(), saleId);
         } catch (Exception ignored) {
             // Offline-first: yerel kayıt tamamlandı; sonraki genel senkron yeniden dener.
         }
@@ -473,12 +433,8 @@ public class SaleActivity extends Activity {
     private void failSave(String message) {
         saving = false;
         btnSaveSale.setEnabled(true);
-        btnSaveSale.setText(isRealSale() ? "Satışı Kaydet" : "Teklifi Kaydet");
+        btnSaveSale.setText(realSale ? "Satışı Kaydet" : "Teklifi Kaydet");
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-    }
-
-    private boolean isRealSale() {
-        return spinnerSaleKind == null || spinnerSaleKind.getSelectedItemPosition() != 1;
     }
 
     private boolean isValidDate(String value) {
@@ -508,41 +464,18 @@ public class SaleActivity extends Activity {
         return new SimpleDateFormat("dd.MM.yyyy", trLocale).format(date);
     }
 
-    private String formatMoney(double value) {
-        NumberFormat format = NumberFormat.getNumberInstance(trLocale);
-        format.setMinimumFractionDigits(0);
-        format.setMaximumFractionDigits(2);
-        return format.format(value) + " TL";
-    }
-
-    private String formatKg(double value) {
-        NumberFormat format = NumberFormat.getNumberInstance(trLocale);
-        format.setMaximumFractionDigits(2);
-        return format.format(value) + " kg";
-    }
-
+    /** Türkçe sayı girişi: "2.400" → 2400, "8,5" → 8.5; negatif veya okunamayan → 0. */
     private double number(EditText field) {
-        if (field == null) return 0;
-        String value = text(field).replace(',', '.');
-        if (value.isEmpty()) return 0;
-        try {
-            return Math.max(0, Double.parseDouble(value));
-        } catch (Exception ignored) {
-            return 0;
-        }
+        return field == null ? 0 : GradeFormModel.parse(text(field));
     }
 
     private String text(EditText field) {
-        return field == null || field.getText() == null
-                ? ""
-                : field.getText().toString().trim();
+        return field == null || field.getText() == null ? "" : field.getText().toString().trim();
     }
 
     private String value(Cursor cursor, String column) {
         int index = cursor.getColumnIndex(column);
-        return index < 0 || cursor.isNull(index) || cursor.getString(index) == null
-                ? ""
-                : cursor.getString(index).trim();
+        return index < 0 || cursor.isNull(index) || cursor.getString(index) == null ? "" : cursor.getString(index).trim();
     }
 
     private long valueLong(Cursor cursor, String column) {
@@ -562,10 +495,7 @@ public class SaleActivity extends Activity {
 
     private static final class GardenOption {
         final long id;
-        final String name;
-        final String province;
-        final String district;
-        final String variety;
+        final String name, province, district, variety;
 
         GardenOption(long id, String name, String province, String district, String variety) {
             this.id = id;
@@ -576,8 +506,7 @@ public class SaleActivity extends Activity {
         }
 
         String region() {
-            if (!district.isEmpty()) return district;
-            return province;
+            return !district.isEmpty() ? district : province;
         }
     }
 }

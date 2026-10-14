@@ -12,6 +12,8 @@ APP = JAVA / 'com/zeytindefteri/app'
 SCREENS = {
     'GardenDetailActivity': (APP / 'GardenDetailActivity.java', ['activity_garden_detail', 'item_action_tile']),
     'NewOperationActivity': (APP / 'NewOperationActivity.java', ['activity_new_operation']),
+    'HarvestActivity': (JAVA / 'HarvestActivity.java', ['activity_harvest', 'include_grade_rows']),
+    'SaleActivity': (JAVA / 'SaleActivity.java', ['activity_sale', 'include_grade_rows']),
 }
 EMOJI = re.compile('[\U0001F300-\U0001FAFF☀-➿⭐✅✎]')
 failures = []
@@ -71,6 +73,32 @@ check('if (type.equals(' not in no, 'eski if-zinciri form kuralları kaldı')
 man = (ROOT / 'app/src/main/AndroidManifest.xml').read_text(encoding='utf8')
 for act in ['NewOperationActivity', 'HarvestActivity', 'SaleActivity']:
     check(re.search(r'android:name="\.' + act + r'"[^>]*adjustResize', man) is not None, f'{act} klavyede yeniden boyutlanmıyor')
+
+# Hasat: tek işlem, boylar, "Hasat" hareketi, son fiyat önerisi, ortak sayı okuyucu
+hv = (JAVA / 'HarvestActivity.java').read_text(encoding='utf8')
+check('db.beginTransaction()' in hv and 'db.setTransactionSuccessful()' in hv and 'db.endTransaction()' in hv, 'hasat tek işlemde değil')
+check('databaseHelper.addHarvestGrade(' in hv and 'addOperation(gardenId, "Hasat"' in hv, 'hasat boyları/hareketi yazılmıyor')
+check('getLastHarvestReferencePrice' in hv and 'syncHarvestByLocalId' in hv, 'son fiyat önerisi veya eşitleme kaldı')
+check('GradeFormModel.parse(' in hv and 'private double readNumber' not in hv, 'hasat ortak sayı okuyucuyu kullanmıyor')
+check('<include layout="@layout/include_grade_rows" />' in (RES / 'layout/activity_harvest.xml').read_text(encoding='utf8'), 'hasat ortak boy satırlarını kullanmıyor')
+
+# Satış: kayıt yolu, izin varsayılan kapalı, eski tür listesi ve onay kutusu gitti, ödeme kuralı
+sa = (JAVA / 'SaleActivity.java').read_text(encoding='utf8')
+sl = (RES / 'layout/activity_sale.xml').read_text(encoding='utf8')
+check('saleRepository.addSaleWithGrades(' in sa and 'deleteBuyerIfUnused' in sa and 'syncSaleByLocalId' in sa, 'satış kayıt yolu değişmiş')
+check('realSale && checkMarketConsent.isChecked()' in sa, 'piyasa izni yalnızca gerçek satışta gönderilmiyor')
+check(re.search(r'<Switch[^>]*checkMarketConsent[^>]*android:checked="false"', sl, re.S) is not None, 'piyasa izni varsayılan kapalı değil')
+check('Alıcı adı ve telefon gibi kişisel bilgiler piyasa verisine dahil edilmez.' in sl, 'izin açıklaması değişmiş')
+check('spinnerSaleKind' not in sa and 'spinnerSaleKind' not in sl and '<CheckBox' not in sl, 'eski tür listesi / onay kutusu kaldı')
+check('GradeFormModel.received(payment, net' in sa, 'tahsilat ödeme seçeneğinden hesaplanmıyor')
+check('Tahsilat net satıştan büyük olamaz' in sa and 'Vade satış tarihinden önce olamaz' in sa and 'Tarih aktif sezonda olmalı' in sa, 'satış doğrulamaları eksik')
+check('GradeFormModel.parse(' in sa and ".replace(',', '.')" not in sa, 'satış eski sayı okuyucuyu kullanıyor (2.400 → 2,4 hatası)')
+check('<include layout="@layout/include_grade_rows" />' in sl, 'satış ortak boy satırlarını kullanmıyor')
+
+# Ortak boy satırları: altı boy, kimlikler tam
+gr = (RES / 'layout/include_grade_rows.xml').read_text(encoding='utf8')
+for k in ['Double', '1', '2', '3', '4', 'Oil']:
+    check(all(f'@+id/{p}{k}"' in gr for p in ['etKg', 'etPrice', 'tvValue']), f'boy satırı eksik: {k}')
 
 if failures:
     print('\n'.join('HATA: ' + f for f in failures))
