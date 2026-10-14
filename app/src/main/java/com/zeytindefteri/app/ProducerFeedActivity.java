@@ -513,6 +513,7 @@ public class ProducerFeedActivity extends Activity {
                 && contentHost.getChildCount()>0 && contentHost.getChildAt(0) instanceof ScrollView)
             previousHomeY=contentHost.getChildAt(0).getScrollY();
         currentSection = section;
+        seasonReportOpen = false;
 
         if (contentHost == null) {
             return;
@@ -630,9 +631,21 @@ public class ProducerFeedActivity extends Activity {
             refreshMeydanPulse();
             loadFeed();
 
+        } else if (seasonReportOpen && "REPORTS".equals(currentSection)) {
+            openSeasonReport(); // satış ekleyip dönünce rapor açık ve güncel kalsın
         } else {
             showSection(currentSection);
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Sezon Raporum açıkken geri tuşu uygulamadan çıkmasın, Zeytin Ligi'ne dönsün.
+        if (seasonReportOpen && "REPORTS".equals(currentSection)) {
+            showSection("REPORTS");
+            return;
+        }
+        super.onBackPressed();
     }
 
     // =========================================================
@@ -7016,13 +7029,7 @@ public class ProducerFeedActivity extends Activity {
                         activeYear,
                         activeUid,
                         this::showSeasonPicker,
-                        () -> {
-                            contentHost.removeAllViews();
-                            contentHost.addView(
-                                    buildLegacyReportsSection(),
-                                    match()
-                            );
-                        }
+                        this::openSeasonReport
                 );
 
         String marketInitialRegion =
@@ -7069,496 +7076,75 @@ public class ProducerFeedActivity extends Activity {
         return container;
     }
 
-    private View buildLegacyReportsSection() {
-        ScrollView scroll = scroll();
+    // =========================================================
+    // SEZON RAPORUM (Zeytin Ligi → "Kişisel raporlar ve işlem geçmişi")
+    // Görünüm SeasonReportView'da, kurallar SeasonReportModel'de; burada yalnızca
+    // mevcut sezon/sahip filtreli DatabaseHelper toplamları okunur.
+    // =========================================================
+    private boolean seasonReportOpen;
 
-        LinearLayout body =
-                pageBody();
-
-        scroll.addView(body);
-
-        body.addView(
-                sectionTitle(
-                        "Zeytin Ligi",
-                        db.getActiveSeasonYear()
-                                + " sezonu • yalnızca bu hesaba ait kayıtlar"
-                )
-        );
-
-        LinearLayout reportLinks =
-                row();
-
-        reportLinks.addView(
-                button(
-                        "Ayrıntılı rapor",
-                        v ->
-                                startActivity(
-                                        new Intent(
-                                                this,
-                                                ReportActivity.class
-                                        )
-                                )
-                ),
-                new LinearLayout.LayoutParams(
-                        0,
-                        dp(48),
-                        1
-                )
-        );
-
-        TextView historyLink =
-                button(
-                        "İşlem geçmişi",
-                        v ->
-                                startActivity(
-                                        new Intent(
-                                                this,
-                                                OperationHistoryActivity.class
-                                        )
-                                )
-                );
-
-        LinearLayout.LayoutParams historyParams =
-                new LinearLayout.LayoutParams(
-                        0,
-                        dp(48),
-                        1
-                );
-
-        historyParams.setMargins(
-                dp(8),
-                0,
-                0,
-                dp(14)
-        );
-
-        reportLinks.addView(
-                historyLink,
-                historyParams
-        );
-
-        body.addView(reportLinks);
-
-        double expenses =
-                db.getTotalExpenses();
-
-        double harvest =
-                db.getTotalHarvestKg();
-
-        double revenue =
-                db.getTotalSalesRevenue();
-
-        body.addView(
-                reportBlock(
-                        "📊  Genel Durum",
-                        new String[][]{
-                                {
-                                        "Toplam Masraf",
-                                        fmtTl(expenses)
-                                },
-                                {
-                                        "Toplam Hasat",
-                                        fmtKg(harvest)
-                                },
-                                {
-                                        "Satış Geliri",
-                                        fmtTl(revenue)
-                                },
-                                {
-                                        "Net Sonuç",
-                                        fmtTl(
-                                                revenue
-                                                        - expenses
-                                        )
-                                }
-                        },
-                        revenue - expenses < 0
-                                ? 3
-                                : -1
-                )
-        );
-
-        body.addView(
-                reportBlock(
-                        "💰  Satış & Tahsilat",
-                        new String[][]{
-                                {
-                                        "Satılan",
-                                        fmtKg(
-                                                db.getTotalSoldKg()
-                                        )
-                                },
-                                {
-                                        "Gerçek Satış",
-                                        db.getRealSaleCount()
-                                                + " kayıt"
-                                },
-                                {
-                                        "Tahsil Edilen",
-                                        fmtTl(
-                                                db.getTotalAmountReceived()
-                                        )
-                                },
-                                {
-                                        "Açık Alacak",
-                                        fmtTl(
-                                                db.getTotalOpenReceivableBalance()
-                                        )
-                                }
-                        },
-                        -1
-                )
-        );
-
-        body.addView(
-                reportBlock(
-                        "🫙  Salamura",
-                        new String[][]{
-                                {
-                                        "Salamuraya Giren",
-                                        fmtKg(
-                                                db.getTotalBrineOliveKg()
-                                        )
-                                },
-                                {
-                                        "Hazır Ürün",
-                                        fmtKg(
-                                                db.getTotalReadyBrineKg()
-                                        )
-                                },
-                                {
-                                        "Salamura Maliyeti",
-                                        fmtTl(
-                                                db.getTotalBrineCost()
-                                        )
-                                },
-                                {
-                                        "Aktif Parti",
-                                        db.getActiveBrineBatchCount()
-                                                + ""
-                                }
-                        },
-                        -1
-                )
-        );
-
-        body.addView(
-                buildGardenPerformanceBlock()
-        );
-
-        return scroll;
+    private void openSeasonReport() {
+        if (contentHost == null) return;
+        contentHost.removeAllViews();
+        contentHost.addView(new SeasonReportView(this, loadSeasonReportData(), new SeasonReportView.Actions() {
+            @Override public void back() { showSection("REPORTS"); }
+            @Override public void addSale() { startActivity(new Intent(ProducerFeedActivity.this, SaleActivity.class)); }
+            @Override public void addElek() { showSection("ELEK"); }
+            @Override public void detailedReport() { startActivity(new Intent(ProducerFeedActivity.this, ReportActivity.class)); }
+            @Override public void operationHistory() { startActivity(new Intent(ProducerFeedActivity.this, OperationHistoryActivity.class)); }
+            @Override public void seasonPicker() { showSeasonPicker(); }
+        }), match());
+        seasonReportOpen = true;
     }
 
-    private View reportBlock(
-            String title,
-            String[][] values,
-            int redIndex
-    ) {
-        LinearLayout card =
-                verticalCard();
-
-        card.setPadding(
-                dp(18),
-                dp(16),
-                dp(18),
-                dp(16)
-        );
-
-        card.addView(
-                text(
-                        title,
-                        20,
-                        GREEN_DARK,
-                        true
-                )
-        );
-
-        for (int r = 0;
-             r < 2;
-             r++) {
-
-            LinearLayout row = row();
-
-            for (int col = 0;
-                 col < 2;
-                 col++) {
-
-                int i =
-                        r * 2
-                                + col;
-
-                LinearLayout cell =
-                        new LinearLayout(this);
-
-                cell.setOrientation(
-                        LinearLayout.VERTICAL
-                );
-
-                cell.addView(
-                        text(
-                                values[i][0],
-                                13,
-                                MUTED,
-                                false
-                        )
-                );
-
-                TextView value =
-                        text(
-                                values[i][1],
-                                22,
-                                i == redIndex
-                                        ? RED
-                                        : GREEN_DARK,
-                                true
-                        );
-
-                value.setPadding(
-                        0,
-                        dp(3),
-                        0,
-                        0
-                );
-
-                cell.addView(value);
-
-                row.addView(
-                        cell,
-                        new LinearLayout.LayoutParams(
-                                0,
-                                dp(76),
-                                1
-                        )
-                );
-            }
-
-            card.addView(row);
-        }
-
-        LinearLayout.LayoutParams cp =
-                new LinearLayout.LayoutParams(
-                        -1,
-                        -2
-                );
-
-        cp.setMargins(
-                0,
-                0,
-                0,
-                dp(12)
-        );
-
-        card.setLayoutParams(cp);
-
-        return card;
-    }
-
-    private View buildGardenPerformanceBlock() {
-        LinearLayout wrap =
-                verticalCard();
-
-        wrap.setPadding(
-                dp(18),
-                dp(16),
-                dp(18),
-                dp(16)
-        );
-
-        wrap.addView(
-                text(
-                        "🌳  Bahçe Performansı",
-                        20,
-                        TEXT,
-                        true
-                )
-        );
-
-        TextView sub =
-                text(
-                        "Her bahçenin hasat ve masraf özeti",
-                        13,
-                        MUTED,
-                        false
-                );
-
-        sub.setPadding(
-                0,
-                dp(4),
-                0,
-                dp(10)
-        );
-
-        wrap.addView(sub);
-
-        Cursor c = null;
-        boolean any = false;
-
+    private SeasonReportModel.Data loadSeasonReportData() {
+        SeasonReportModel.Data d = new SeasonReportModel.Data();
+        d.season = db.getActiveSeasonYear();
+        d.expenses = db.getTotalExpenses();
+        d.harvestKg = db.getTotalHarvestKg();
+        d.salesRevenue = db.getTotalSalesRevenue();
+        d.soldKg = db.getTotalSoldKg();
+        d.realSaleCount = db.getRealSaleCount();
+        d.received = db.getTotalAmountReceived();
+        d.openReceivable = db.getTotalOpenReceivableBalance();
+        d.brineInKg = db.getTotalBrineOliveKg();
+        d.brineReadyKg = db.getTotalReadyBrineKg();
+        d.brineCost = db.getTotalBrineCost();
+        d.brineBatches = db.getActiveBrineBatchCount();
+        String uid = db.getActiveOwnerUid() == null ? "" : db.getActiveOwnerUid();
+        java.util.Map<String, Double> elekByGarden = new java.util.HashMap<>();
+        Cursor elek = null;
         try {
-            c =
-                    gardenRepository
-                            .getGardenSummaries();
-
-            while (
-                    c != null
-                            && c.moveToNext()
-            ) {
-                any = true;
-
-                String name =
-                        getString(
-                                c,
-                                "name",
-                                "Bahçe"
-                        );
-
-                String variety =
-                        getString(
-                                c,
-                                "variety",
-                                ""
-                        );
-
-                int tree =
-                        getInt(
-                                c,
-                                "tree_count"
-                        );
-
-                double totalCost =
-                        getDouble(
-                                c,
-                                "total_cost"
-                        );
-
-                double totalHarvest =
-                        getDouble(
-                                c,
-                                "total_harvest"
-                        );
-
-                LinearLayout item =
-                        new LinearLayout(this);
-
-                item.setOrientation(
-                        LinearLayout.VERTICAL
-                );
-
-                item.setPadding(
-                        dp(14),
-                        dp(12),
-                        dp(14),
-                        dp(12)
-                );
-
-                item.setBackground(
-                        round(
-                                GreenTheme.color(R.color.zd_surface),
-                                16,
-                                BORDER
-                        )
-                );
-
-                item.addView(
-                        text(
-                                name,
-                                16,
-                                TEXT,
-                                true
-                        )
-                );
-
-                item.addView(
-                        padded(
-                                text(
-                                        tree
-                                                + " ağaç"
-                                                + (
-                                                TextUtils.isEmpty(
-                                                        variety
-                                                )
-                                                        ? ""
-                                                        : "  •  "
-                                                        + variety
-                                        ),
-                                        12,
-                                        MUTED,
-                                        false
-                                ),
-                                3
-                        )
-                );
-
-                item.addView(
-                        padded(
-                                text(
-                                        "Hasat: "
-                                                + fmtKg(
-                                                totalHarvest
-                                        )
-                                                + "   •   Masraf: "
-                                                + fmtTl(
-                                                totalCost
-                                        ),
-                                        13,
-                                        GREEN_DARK,
-                                        true
-                                ),
-                                8
-                        )
-                );
-
-                LinearLayout.LayoutParams ip =
-                        new LinearLayout.LayoutParams(
-                                -1,
-                                -2
-                        );
-
-                ip.setMargins(
-                        0,
-                        0,
-                        0,
-                        dp(8)
-                );
-
-                wrap.addView(
-                        item,
-                        ip
-                );
+            elek = new ElekRepository(db).getArchiveRecords(d.season, -1, uid);
+            while (elek != null && elek.moveToNext()) {
+                double kg = getDouble(elek, "total_kg");
+                d.elekKg += kg;
+                d.elekRevenue += getDouble(elek, "total_revenue");
+                String name = getString(elek, "garden_name", "");
+                elekByGarden.put(name, (elekByGarden.containsKey(name) ? elekByGarden.get(name) : 0d) + kg);
             }
-
+        } catch (RuntimeException ignored) {
+            // Elek arşivi okunamazsa özet elek olmadan gösterilir.
         } finally {
-            if (c != null) {
-                c.close();
+            if (elek != null) elek.close();
+        }
+        Cursor c = null;
+        try {
+            c = gardenRepository.getGardenSummaries();
+            while (c != null && c.moveToNext()) {
+                SeasonReportModel.Garden g = new SeasonReportModel.Garden();
+                g.name = getString(c, "name", "Bahçe");
+                g.operationCost = getDouble(c, "total_cost");
+                g.harvestKg = getDouble(c, "total_harvest");
+                Double kg = elekByGarden.get(g.name);
+                g.elekKg = kg == null ? 0 : kg;
+                d.gardens.add(g);
             }
+        } catch (RuntimeException ignored) {
+        } finally {
+            if (c != null) c.close();
         }
-
-        if (!any) {
-            wrap.addView(
-                    text(
-                            "Henüz bahçe verisi yok.",
-                            13,
-                            MUTED,
-                            false
-                    )
-            );
-        }
-
-        LinearLayout.LayoutParams wp =
-                new LinearLayout.LayoutParams(
-                        -1,
-                        -2
-                );
-
-        wp.setMargins(
-                0,
-                0,
-                0,
-                dp(18)
-        );
-
-        wrap.setLayoutParams(wp);
-
-        return wrap;
+        return d;
     }
 
     // =========================================================

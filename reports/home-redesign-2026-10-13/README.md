@@ -408,3 +408,42 @@ Bunların toplamı, uygulamaya dönüşte ve ilk açılışta görülen "zıplam
 - Uygulamayı açınca ve başka ekrandan Ana Sayfa'ya dönünce sayfanın kaymaması.
 - Hava kartının yer tutucudan gerçek veriye geçerken boyunun değişmemesi.
 - Lig kartının sayfa açılırken hazır görünmesi.
+
+## 16. Sezon Raporum (Zeytin Ligi → "Kişisel raporlar ve işlem geçmişi")
+
+### Yaklaşım: temiz yeniden yazım
+- Yeni ekran ayrı dosyada: `SeasonReportView` (görünüm) ve `SeasonReportModel` (kurallar, Android'siz, testli).
+- `ProducerFeedActivity` içindeki eski `buildLegacyReportsSection`, `reportBlock` ve `buildGardenPerformanceBlock` **silindi**. Dosya 9.218 satırdan 8.804 satıra indi.
+- Veri katmanına dokunulmadı. Mevcut sezon ve sahip filtreli `DatabaseHelper` toplamları aynen kullanılıyor. Elek toplamı, arşiv ve ligin de kullandığı ortak `ElekRepository.getArchiveRecords` sorgusundan geliyor.
+
+### Düzeltilen hatalar
+- **Başlık:** "Zeytin Ligi" yazıyordu; artık "Sezon Raporum · yalnızca senin kayıtların".
+- **Geri dönüş:** Geri oku eklendi. Android geri tuşu artık uygulamadan çıkmıyor, Zeytin Ligi'ne dönüyor.
+- **Butonlar:** İki butonun hizasızlığı, "İşlem geçmişi" butonuna yanlışlıkla verilmiş 14dp alt boşluktan kaynaklanıyordu. Butonların yerini artık liste satırları alıyor.
+- **Satış sonrası dönüş:** "Satış kaydı ekle" ile satış girip geri dönünce rapor açık kalıyor ve rakamlar güncelleniyor (`refreshCurrentSection`). Sezon değiştirince de rapor açık kalıyor.
+
+### İçerik
+- **Özet:** Masraf, hasat, elek (tahmini tutarıyla) ve satış dört kutuda. Satış kaydı yoksa satış kutusu altın renkte.
+- **"Sezon nerede?":** Hasat → elek → satış kilo çubukları.
+  - Elek var ama satış yoksa "Eksik halka: satış kaydı" uyarısı ve "+ Satış kaydı ekle" butonu çıkıyor.
+  - Hiç kayıt yoksa "Elek kaydı ekle" önerisi çıkıyor.
+  - Elek hasattan fazlaysa nedenini açıklayan not gösteriliyor.
+- **Para:** Masraf, satış geliri, tahsil edilen / açık alacak ve net sonuç. Satış yokken net sonuç kırmızı değil gri, "satış girilmediği için eksik" notuyla.
+- **Salamura:** Giren, hazır, maliyet ve aktif parti.
+- **Bahçelere göre:** Her bahçe için elek kg, hasat kg ve işlem masrafı.
+- **Ayrıntılı rapor ve İşlem geçmişi:** Liste satırları olarak duruyor.
+
+### Tasarımdan bilinçli sapma
+Tuvaldeki **bahçe filtresi uygulanmadı**. Mevcut veritabanında bahçe bazında satış ve tahsilat toplamı yok. Filtreyi bu haliyle eklemek bazı rakamların filtreye uymadığı yanıltıcı bir ekran üretirdi. Bahçe kırılımı "Bahçelere göre" kartında. Filtre istenirse bahçe bazlı sorgular ayrıca eklenmeli.
+
+### Doğrulama
+- `tests/season_report/run.sh`: 31 kontrol.
+- `tests/season_report/check_wiring.py`: 12 kontrol.
+- Ana Sayfa (65), lig kartı (43) ve bağlantı (17) testleri geçiyor.
+- Yeni dosyalar ve `ProducerFeedActivity` tip denetiminden geçti (Firebase ve Glide hariç). APK derlenmedi.
+
+### Cihazda kontrol
+- Lig ekranında "Kişisel raporlar ve işlem geçmişi"ne dokununca yeni ekranın açılması.
+- Geri oku ve Android geri tuşunun Lig'e döndürmesi.
+- Satış ekleyip dönünce raporun güncel olması.
+- Bahçe satırlarının ve salamura rakamlarının doğruluğu.
