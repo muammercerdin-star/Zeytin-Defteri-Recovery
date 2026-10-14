@@ -230,14 +230,51 @@ public final class MarketCloudRepository {
     }
 
     /**
-     * V8 otomatik anonim katkı:
-     * Firebase ile oturum açmış ve Supabase bağlantısı hazır her kullanıcı,
-     * Piyasa/Zeytin Ligi toplu istatistiklerine otomatik olarak katılır.
-     * İsim, Firebase UID, bahçe adı ve tekil ham kayıtlar istemcilere
-     * yayınlanmaz; yalnız anonim sunucu toplulaştırmaları okunabilir.
+     * Anonim katkı yalnızca kullanıcı açıkça izin verdiğinde (Ayarlar → Piyasaya Anonim
+     * Katkı) gönderilir; varsayılan KAPALI. KVKK/Gizlilik metinleri bu davranışı anlatır.
+     * (Eski V8 sürümü izin sormadan herkesi otomatik katıyordu.)
      */
     public boolean localContributionEnabled() {
-        return canUseCloud();
+        return canUseCloud() && isContributionOptedIn();
+    }
+
+    public static final String CONTRIBUTION_OPT_IN_PREFIX = "market_contribution_opt_in_";
+
+    public boolean isContributionOptedIn() {
+        return !uid.isEmpty() && "1".equals(databaseHelper.getSetting(CONTRIBUTION_OPT_IN_PREFIX + uid, "0"));
+    }
+
+    /** Katkı anahtarı sonucu: hata yoksa null. Ana iş parçacığında çağrılır. */
+    public interface OptInCallback {
+        void onComplete(Exception error);
+    }
+
+    /**
+     * İzni açar/kapatır. Kapatınca bu cihazdan gönderilmiş tüm katkılar sunucudan geri
+     * çekilir ve senkron izi sıfırlanır; tekrar açılınca kayıtlar baştan gönderilir.
+     */
+    public void setContributionOptIn(boolean enabled, OptInCallback callback) {
+        if (uid.isEmpty()) {
+            if (callback != null) callback.onComplete(new IllegalStateException("Oturum yok"));
+            return;
+        }
+        databaseHelper.setSetting(CONTRIBUTION_OPT_IN_PREFIX + uid, enabled ? "1" : "0");
+        bumpSyncEpoch();
+        if (enabled || !canUseCloud()) {
+            if (callback != null) callback.onComplete(enabled || loadUploadedRefs().isEmpty()
+                    ? null : new IllegalStateException("Bulut bağlantısı yok; katkılar daha sonra geri çekilecek"));
+            return;
+        }
+        withdrawAllTracked(error -> {
+            if (callback != null) callback.onComplete(error);
+        });
+    }
+
+    private void bumpSyncEpoch() {
+        String key = "market_supabase_rpc_sync_epoch_" + uid;
+        int epoch = 0;
+        try { epoch = Integer.parseInt(databaseHelper.getSetting(key, "0")); } catch (NumberFormatException ignored) { }
+        databaseHelper.setSetting(key, String.valueOf(epoch + 1));
     }
 
     /**
@@ -951,8 +988,16 @@ public final class MarketCloudRepository {
             int year,
             SyncCallback callback
     ) {
-        if (!canUseCloud() || !localContributionEnabled()) {
+        if (!canUseCloud()) {
             if (callback != null) callback.onComplete(null);
+            return;
+        }
+        if (!isContributionOptedIn()) {
+            // İzin yok: eski otomatik sürümün gönderdiği katkılar dahil, bu cihazın
+            // izlediği katkıları geri çek. Liste boşsa hemen döner; ekranı bekletmez.
+            withdrawAllTracked(error -> {
+                if (callback != null) callback.onComplete(null);
+            });
             return;
         }
 
@@ -1427,7 +1472,9 @@ public final class MarketCloudRepository {
     }
 
     private String syncHashSettingKey(int year) {
-        return "market_supabase_rpc_sync_hash_" + uid + "_" + year;
+        // Epoch, izin kapatılıp açıldığında eski "zaten gönderildi" izini geçersiz kılar.
+        String epoch = databaseHelper.getSetting("market_supabase_rpc_sync_epoch_" + uid, "0");
+        return "market_supabase_rpc_sync_hash_" + uid + "_" + year + ("0".equals(epoch) ? "" : "_e" + epoch);
     }
 
     private String uploadedRefsSettingKey() {

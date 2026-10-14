@@ -164,7 +164,9 @@ public final class ZeytinLeagueRepository {
         return FirebaseFirestore.getInstance().collection("zeytin_leagues").document(String.valueOf(year))
                 .addSnapshotListener(com.google.firebase.firestore.MetadataChanges.INCLUDE, (snapshot, error) -> {
                     if (error != null) { changed.accept(null); return; }
-                    if (snapshot == null || snapshot.getMetadata().isFromCache()) { changed.accept(null); return; }
+                    // Önbellekten gelen ilk olay "bağlantı yok" demek değildir; sunucu cevabını bekle.
+                    // Gerçek bağlantı sorununu published() içindeki 15 sn zaman aşımı ve hata dalları yakalar.
+                    if (snapshot == null || snapshot.getMetadata().isFromCache()) return;
                     Object value = snapshot.get("current_snapshot");
                     changed.accept(value instanceof String ? (String) value : "");
                 });

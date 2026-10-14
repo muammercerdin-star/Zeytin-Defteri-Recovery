@@ -291,3 +291,40 @@ Cihazda tekrar görülürse adımlar ile birlikte bildirilmeli.
 - Kart genişliği (ekranda ~2,5 kart), büyük yazı tipi ayarında başlık ve kartların taşmadığı.
 - "Senin sıran" şeridine dokununca alttaki karta kayması.
 - Top 20 yayımlandığında kürsü ve kendi satırının vurgusu.
+
+## 13. Piyasaya anonim katkı artık izinli (varsayılan kapalı) + lig izleyicisi düzeltmesi
+
+### 13.1 Sorun
+- `localContributionEnabled()` yalnızca `canUseCloud()` döndürüyordu. Supabase bağlantısı hazır her kullanıcının fiyatlı tüm elek kayıtları, Lig/Piyasa ekranı açılınca **izin sorulmadan** Supabase'e gönderiliyordu.
+- Geri çekme kodu (`withdrawAllTracked`) yazılmıştı ama hiçbir yerden çağrılmıyordu.
+- KVKK ve Gizlilik metinleri (sürüm 1.0) ise "yalnızca paylaşımı açarsan, satış kayıtlarından" diyordu.
+
+### 13.2 Yapılan (yayıncının "A" kararı)
+- **İzin anahtarı:** Kullanıcıya özel `market_contribution_opt_in_<uid>`, varsayılan `0` (kapalı). Katkı yalnızca `canUseCloud() && isContributionOptedIn()` olduğunda gönderiliyor.
+- **Kapatınca:** Bu cihazın izlediği tüm katkılar `market_withdraw` ile geri çekiliyor. Geri çekme başarısız olursa bir sonraki Lig/Piyasa açılışında yeniden deneniyor.
+- **Eski otomatik katkılar:** İzin vermemiş kullanıcıda, önceki sürümün gönderdiği katkılar ilk Lig/Piyasa açılışında otomatik geri çekiliyor. Bu yalnızca bu cihazda izi tutulan katkılar için çalışır; uygulama yeniden kurulduysa iz kaybolmuştur.
+- **Tekrar açınca:** Senkron izi (epoch) sıfırlandığı için kayıtlar baştan gönderiliyor.
+- **Arayüz:**
+  - Ayarlar → ÜRETİM → **Piyasaya Anonim Katkı** (Açık/Kapalı). Dokununca ne gönderildiğini, 5 üretici eşiğini ve kapatınca ne olacağını anlatan bir onay penceresi açılıyor.
+  - Zeytin Ligi'nde izin kapalıyken "Bölge istatistiklerine anonim katkın kapalı · Aç" satırı görünüyor.
+  - Kapalıyken bölge istatistiklerini görmek mümkün.
+- **Hukuki metinler 1.1:** Gizlilik ve KVKK artık gerçek davranışı anlatıyor:
+  - Bölge istatistikleri: elek kayıtları, Ayarlar'daki izinle, varsayılan kapalı, 5 üretici eşiği.
+  - Zeytin Ligi sıralaması: satış kaydındaki piyasa paylaşımı onay kutusu (varsayılan işaretsiz), ad yerine sıra etiketi, en az 4 üretici.
+  - Geri çekme ve silme talebi.
+  - Metinler bir hukukçu tarafından incelenmedi.
+
+### 13.3 Lig izleyicisi
+`ZeytinLeagueRepository.watch` önbellekten gelen ilk olayı "bağlantı yok" sayıyordu. Bu yüzden ekran açılırken yayımlanmış sonuçları bir an yerel önizlemeye düşürüyor ve her şeyi iki kez indiriyordu. Artık önbellek olayları yok sayılıyor; gerçek bağlantı sorununu mevcut 15 saniyelik zaman aşımı ve hata dalları yakalıyor.
+
+### 13.4 Doğrulama
+- `tests/league/check_consent.py`: 15 kaynak kontrolü.
+- `tests/auth`: yasal metin testleri 1.1'e güncellendi, 69 kontrol geçiyor.
+- Değişen dosyalar `android.jar` ile tip denetiminden geçti (Firebase hariç).
+- Canlı Supabase'de `market_withdraw` çağrısı denenmedi.
+
+### 13.5 Cihazda kontrol
+- Ayarlar'da satırın "Kapalı" görünmesi; açıp kapatınca değerin ve Toast mesajının değişmesi.
+- İzin kapalıyken Lig/Piyasa açıldığında Supabase'e yeni katkı gitmemesi (Supabase panelinde `market_contributions` satır sayısı).
+- Kapatınca önceki katkıların panelde silinmesi.
+- Ekran açılırken artık "Bölgesel bağlantı kullanılamıyor" yazısının görünmemesi.

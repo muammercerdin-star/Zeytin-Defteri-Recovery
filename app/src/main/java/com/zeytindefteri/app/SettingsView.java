@@ -83,7 +83,8 @@ final class SettingsView extends ScrollView {
         addSection(body, activity, "ÜRETİM",
                 row(activity, R.drawable.ic_archive_calendar, "Aktif Sezon", "Üretim sezonunuzu seçin", String.valueOf(season), seasonPicker),
                 row(activity, R.drawable.ic_bell_line, "Bildirimler ve Hatırlatmalar", "Üretim dönemine özel hatırlatmalar", null,
-                        () -> open(activity, RemindersActivity.class)));
+                        () -> open(activity, RemindersActivity.class)),
+                contributionRow(activity));
         addSection(body, activity, "UYGULAMA",
                 row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant));
         View management = ModerationAccess.settingsSection(activity, access);
@@ -116,6 +117,20 @@ final class SettingsView extends ScrollView {
         footer.setGravity(Gravity.CENTER);
         footer.setPadding(0, dp(activity, 10), 0, 0);
         body.addView(footer);
+    }
+
+    /** Piyasaya anonim katkı izni; değer pencere kapanınca yerinde güncellenir. */
+    private static View contributionRow(Activity activity) {
+        final TextView[] value = new TextView[1];
+        View row = row(activity, R.drawable.ic_settings_shield, "Piyasaya Anonim Katkı",
+                "Elek kayıtların bölge istatistiklerine katılsın (varsayılan kapalı)",
+                MarketContributionPrompt.stateLabel(activity),
+                () -> MarketContributionPrompt.show(activity, () -> {
+                    if (value[0] != null) value[0].setText(MarketContributionPrompt.stateLabel(activity));
+                }));
+        LinearLayout line = (LinearLayout) row;
+        value[0] = (TextView) line.getChildAt(2);
+        return row;
     }
 
     private View profile(Activity activity, View avatar, String name, String phone, String email, String region) {

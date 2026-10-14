@@ -806,6 +806,17 @@ public final class ZeytinLeagueView extends ScrollView {
         TextView info = label("%50 elek kalitesi • %35 fiyat • %15 hacim\n"
                 + "Elek tutarları tahmini olabilir; doğrulanmış satış değildir.", 11, muted, false);
         info.setPadding(0, dp(6), 0, 0); body.addView(info);
+        if (leagueCloudRepository != null && leagueCloudRepository.canUseCloud()
+                && !leagueCloudRepository.isContributionOptedIn() && getContext() instanceof android.app.Activity) {
+            TextView consent = label("Bölge istatistiklerine anonim katkın kapalı · Aç", 13, green, true);
+            consent.setMinHeight(dp(44)); consent.setGravity(Gravity.CENTER_VERTICAL);
+            consent.setContentDescription("Piyasaya anonim katkı kapalı. Açmak için dokun.");
+            consent.setOnClickListener(v -> MarketContributionPrompt.show((android.app.Activity) getContext(), () -> {
+                render();
+                if (leagueCloudRepository.isContributionOptedIn()) refreshCloudDirectory();
+            }));
+            body.addView(consent);
+        }
         TextView reports = label("Kişisel raporlar ve işlem geçmişi", 14, green, true);
         reports.setPadding(0, dp(8), 0, dp(8)); reports.setOnClickListener(v -> personalReports.run());
         body.addView(reports);

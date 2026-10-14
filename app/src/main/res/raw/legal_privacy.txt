@@ -22,7 +22,10 @@ Meydan'da paylaştığın gönderiler ve yanıtlar, görünen adın ve gönderid
 Bir içeriği veya kullanıcıyı şikâyet edebilir, kullanıcıları engelleyebilirsin. Şikâyetler ve moderasyon işlemleri kayıt altına alınır ve yetkili moderatörler tarafından incelenir.
 
 # 5. Piyasa ve Zeytin Ligi
-Piyasa paylaşımını açarsan satış kayıtlarından elek sınıfı, miktar, kilogram fiyatı, tarih ve bölge bilgisi bölgesel piyasa istatistiklerine ve Zeytin Ligi hesaplamalarına katılır. Bu katkılar Supabase'de, kullanıcı kimliğin yerine geri döndürülemez bir üretici koduyla saklanır. Bir bölgede yeterli sayıda üretici olmadan bölgesel sonuç yayınlanmaz. Paylaşımı istediğin zaman kapatabilirsin.
+Bu özellikler iki ayrı tercihle çalışır; ikisi de senin açmana bağlıdır.
+- Bölge istatistikleri (Piyasa ve Zeytin Ligi bölge kartları): Ayarlar → "Piyasaya Anonim Katkı" seçeneğini açarsan elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi Supabase'e gönderilir. Bu katkılar kullanıcı kimliğin yerine geri döndürülemez bir üretici koduyla saklanır. Seçenek varsayılan olarak kapalıdır. Bir bölgede en az 5 farklı üretici olmadan o bölgenin rakamları yayınlanmaz.
+- Zeytin Ligi sıralaması: Satış kaydında piyasa paylaşımını işaretlediğin satışlar ve bunlara bağlı elek kayıtları doğrulandıktan sonra sıralama hesabına katılır. Sıralamada adın gösterilmez; "Üretici 3" gibi bir sıra etiketiyle kilogram, tutar ve puan görünür. Bir bölgenin sıralaması, en az 4 üretici sıralama şartlarını sağladığında yayınlanır.
+İki tercihi de istediğin zaman kapatabilirsin.
 
 # 6. Bildirimler
 Meydan yanıtları gibi bildirimleri gönderebilmek için cihazının Firebase Cloud Messaging bildirim anahtarı hesabınla ilişkilendirilir. Çıkış yaptığında bu anahtar silinir. Hatırlatmalar cihazında yerel olarak planlanır. Bildirim iznini Android ayarlarından istediğin zaman kapatabilirsin.
@@ -46,7 +49,7 @@ Bu hizmetler verileri kendi gizlilik koşullarına göre işler ve sunucuları y
 Kayıtların, hesabın açık olduğu ve sen silmediğin sürece saklanır.
 - Tek tek kayıtlar: Bahçe ve işlem kayıtlarını uygulama içinden silebilirsin; silinen kayıtlar diğer cihazlarına da silme bilgisi olarak iletilir.
 - Meydan içerikleri: Kendi gönderi ve yanıtlarını uygulama içinden kaldırabilirsin.
-- Piyasa katkıları: Paylaşımı kapattığında yeni katkı gönderilmez. Önceki katkılarının kaldırılmasını da {{EPOSTA}} adresinden talep edebilirsin.
+- Piyasa katkıları: "Piyasaya Anonim Katkı"yı kapattığında yeni katkı gönderilmez ve bu cihazdan gönderilmiş katkıların sunucudan geri çekilir. Başka bir cihazdan ya da uygulamayı yeniden kurmadan önce gönderilmiş katkıların kaldırılmasını {{EPOSTA}} adresinden talep edebilirsin.
 - Hesabın tamamı: Uygulamada şu anda hesabı ve tüm bulut verilerini tek adımda silen bir işlem bulunmaz. Hesabının ve ilişkili verilerinin silinmesini, hesabında kayıtlı e-posta adresinden {{EPOSTA}} adresine yazarak talep edebilirsin. Talebin, kimliğin doğrulandıktan sonra işleme alınır ve sonucu sana bildirilir.
 Kanunen saklanması zorunlu olan bilgiler ile hizmet sağlayıcıların yedeklerinde kalan kopyalar, ilgili yükümlülük ve sağlayıcı süreçleri çerçevesinde ayrıca değerlendirilir.
 

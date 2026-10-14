@@ -25,6 +25,7 @@ public final class LegalDocumentsTest {
         check(!LegalDocuments.registrationBlockReason(false, "").isEmpty(), "reason when closed");
         // Current repository state must stay closed until the publisher verifies identity and review.
         // Publisher decision 13.10.2026: controller named, documents in force as v1.0.
+        // 14.10.2026 v1.1: market contribution is opt-in (default off); texts match the app.
         check(LegalDocuments.readyForRegistration(), "registration open");
         check(LegalDocuments.registrationBlockReason().isEmpty(), "no block reason shown");
         check(!LegalDocuments.isDraft(), "no draft banner");
@@ -39,7 +40,8 @@ public final class LegalDocumentsTest {
             check(filled.contains(LegalDocuments.CONTACT_EMAIL), file + " contact email");
             check(filled.contains("Muammer Çerdin") && !filled.contains(LegalDocuments.CONTROLLER_PENDING), file + " controller name filled");
             check(LegalDocuments.fill(raw(file), "").contains(LegalDocuments.CONTROLLER_PENDING), file + " empty name is marked pending");
-            check(filled.contains("Sürüm 1.0"), file + " version 1.0");
+            check(filled.contains("Sürüm " + LegalDocuments.VERSION), file + " shows current version");
+            check("1.1".equals(LegalDocuments.VERSION), "version 1.1");
             String named = LegalDocuments.fill(raw(file), "Ad Soyad");
             check(named.contains("Ad Soyad") && !named.contains(LegalDocuments.CONTROLLER_PENDING), file + " name substitution");
             // No fabricated contact data or absolute guarantees.
