@@ -513,3 +513,47 @@ Tuvaldeki **bahçe filtresi uygulanmadı**. Mevcut veritabanında bahçe bazınd
 - `tests/home_lower/run.sh`: 15 model kontrolü ve 10 kaynak kontrolü. Kaynak kontrolleri işlem türlerinin işlem ekranıyla birebir eşleştiğini de doğruluyor.
 - Ana Sayfa, lig, Sezon Raporum ve elek→satış testleri geçiyor.
 - Değişen dosyalar tip denetiminden geçti (Firebase ve Glide hariç). APK derlenmedi.
+
+## 19. Aşama 1 — eski ekranlarda görünüm uyumu (3 commit)
+
+Kural: ekranların **düzenine, alanlarına, akışlarına ve kayıt mantığına dokunulmadı**. Yalnızca görünüm değişti.
+
+### 1/3 — Ortak çizimler ve renkler (`e4afb69`)
+- **XML ekranlarının ortak arka plan dosyaları (drawable):**
+  - `bg_card`, `bg_market` ve `bg_soft_circle` gradyandan düz renge geçti; köşe yarıçapı 20dp.
+  - `bg_green_button` düz parlak yeşil, 26dp köşe ve koyu yazı oldu. Bu düğmenin kullanıldığı 9 yerin yazı rengi güncellendi.
+  - Etkilenen ekranlar: Bahçe ekle, Bahçe detayı, İşlem ekle, Hasat, Satış, Gönderi yaz, Konum seçici.
+- **Eski koyu zeytin yeşili vurgular → uygulama paleti.** Bu tonlar (#416A25, #2F6B3F, #3C7A4B, #4A7441, #52713B…) koyu zeminde okunmuyordu.
+  - Değişen ekranlar: Rapor, Salamura, Profil, eski Piyasa, İşlem geçmişi, tepkiler, fiyat grafiği.
+  - Yeşil düğmelerdeki beyaz yazı koyu yazıya çevrildi.
+- **Ayarlar ve Hatırlatmalar:** Kendilerine özgü tonların yerine uygulama paleti kullanılıyor.
+- **Konum seçici:** Yeşil başlık çubuğu ve **beyaz liste satırları** koyu palete çekildi.
+- **Piyasa sekmesi başlığı:** Fotoğrafın yerine Zeytin Ligi ile aynı yeşil geçiş geldi.
+- **ZdNav silindi.** Eski Piyasa ekranında ve İşlem geçmişinde hâlâ görünen, metin simgeli eski 5 öğeli alt menüydü.
+
+### 2/3 — Emojiler (`e477676`)
+- Başlık, düğme, ipucu, menü ve bildirimlerdeki süs emojileri kaldırıldı. Örnek: "🌿  Bahçemi Kaydet" → "Bahçemi Kaydet". "✅" yerine "✓" kullanıldı.
+- Durum işaretleri korundu: ✓ ⚠ ve oklar.
+- Profil fotoğrafı menüsünde seçim, menü metinleriyle karşılaştırılarak yapılıyordu (`startsWith`). Bu karşılaştırma yeni metinlere göre güncellendi.
+- **Bilerek bırakılanlar (Aşama 2'de çizgi ikonlarla değişecek):**
+  - Liste ve avatar simgesi olarak kullanılan tek emojiler: İşlem geçmişi ve Bahçe detayındaki işlem türü simgeleri, profil ve bahçe yer tutucuları, Bahçe ekle ve tanıtım ekranlarındaki büyük simgeler.
+  - Hava simgeleri ve Meydan tepkileri.
+  - Ana Sayfa "Bugün" kartındaki öneri başlıkları. Bu kart daha önce kabul edildi.
+
+### 3/3 — Ölü kod (`46b760d`)
+- `GardenHomeManager` (1.901 satır) ve `activity_main.xml` silindi.
+- `GardensActivity`, `SubscriptionActivity` ve `SubscriptionManager` silindi; manifest kayıtları da kaldırıldı. Bu ekranlara hiçbir yerden geçiş yoktu.
+- Artık kullanılmayan `ui_*` çizim dosyaları ve `onboarding_garden_1.png` (3 MB) silindi.
+- Java kodu toplamı 105.481 satırdan **100.718** satıra indi.
+
+### Doğrulama
+- `android.jar` tip denetiminde yeni hata yok. Kalan hatalar yalnızca burada bulunmayan Firebase ve Glide kütüphanelerinden.
+- Python test paketlerinde sonuç değişmedi: eski 3 hata dışında hepsi geçiyor. Java test paketlerinin hepsi geçiyor.
+- **APK derlenmedi.** Ekranların görünümü telefonda kontrol edilmeli.
+
+### Cihazda kontrol
+- Bahçe ekle, Bahçe detayı, İşlem ekle, Hasat ve Satış: kartlar düz mü, ana düğme parlak yeşil ve yazısı okunuyor mu.
+- Konum seçici: liste satırları koyu ve okunaklı mı.
+- Rapor, Salamura, Profil ve İşlem geçmişi: yeşil vurgular okunuyor mu.
+- İşlem geçmişi ve eski Piyasa ekranında eski alt menü artık görünmemeli; geri tuşu çalışmalı.
+- Piyasa sekmesi başlığı.
