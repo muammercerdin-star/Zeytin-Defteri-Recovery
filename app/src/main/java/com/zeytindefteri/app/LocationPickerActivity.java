@@ -235,6 +235,8 @@ public class LocationPickerActivity extends Activity {
                 savedInstanceState
         );
 
+        BackCompat.register(this, this::handleBack);
+
 
         if (getActionBar() != null) {
 
@@ -1856,6 +1858,7 @@ public class LocationPickerActivity extends Activity {
     // TELEFON GERİ TUŞU
     // ============================================================
 
+    /** Android 12 ve altı; 13+ için onCreate'te BackCompat ile aynı handleBack kaydedilir. */
     @Override
     public void onBackPressed() {
 

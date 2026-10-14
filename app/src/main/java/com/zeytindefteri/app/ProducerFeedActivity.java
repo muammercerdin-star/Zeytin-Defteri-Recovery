@@ -513,7 +513,7 @@ public class ProducerFeedActivity extends Activity {
                 && contentHost.getChildCount()>0 && contentHost.getChildAt(0) instanceof ScrollView)
             previousHomeY=contentHost.getChildAt(0).getScrollY();
         currentSection = section;
-        seasonReportOpen = false;
+        setSeasonReportOpen(false);
 
         if (contentHost == null) {
             return;
@@ -6427,6 +6427,22 @@ public class ProducerFeedActivity extends Activity {
     // mevcut sezon/sahip filtreli DatabaseHelper toplamları okunur.
     // =========================================================
     private boolean seasonReportOpen;
+    private Object seasonReportBack;
+
+    /**
+     * Sezon Raporum açıkken geri tuşu uygulamadan çıkmasın, Zeytin Ligi'ne dönsün.
+     * Android 13+ için geri dinleyicisi yalnızca rapor açıkken kayıtlıdır (BackCompat);
+     * Android 12 ve altında onBackPressed aynı işi yapar.
+     */
+    private void setSeasonReportOpen(boolean open) {
+        seasonReportOpen = open;
+        if (open && seasonReportBack == null) {
+            seasonReportBack = BackCompat.register(this, () -> showSection("REPORTS"));
+        } else if (!open && seasonReportBack != null) {
+            BackCompat.unregister(this, seasonReportBack);
+            seasonReportBack = null;
+        }
+    }
 
     private void openSeasonReport() {
         if (contentHost == null) return;
@@ -6439,7 +6455,7 @@ public class ProducerFeedActivity extends Activity {
             @Override public void operationHistory() { startActivity(new Intent(ProducerFeedActivity.this, OperationHistoryActivity.class)); }
             @Override public void seasonPicker() { showSeasonPicker(); }
         }), match());
-        seasonReportOpen = true;
+        setSeasonReportOpen(true);
     }
 
     /** Sezon Raporum → satışı olmayan elekleri seçip toplu satışa dönüştür (tahsilat: henüz değil). */

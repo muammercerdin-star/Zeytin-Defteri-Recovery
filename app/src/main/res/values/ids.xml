@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SystemBarInsets: içerik çerçevesine boşluk dinleyicisi bir kez kurulsun diye işaret. -->
+    <item name="tagSystemBarInsets" type="id" />
+</resources>

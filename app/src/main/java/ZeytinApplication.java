@@ -19,6 +19,9 @@ public final class ZeytinApplication extends Application {
                 if(last==0 || now-last>60000){last=now;LocalReminderScheduler.requestReschedule(ZeytinApplication.this);}
             }
             public void onActivityCreated(android.app.Activity a,android.os.Bundle b){}
+            // Android 15+ (targetSdk 36): içerik çubukların altına uzanır; ekranlar setContentView'i
+            // onCreate içinde çağırdığı için içerik çerçevesi burada hazırdır.
+            @Override public void onActivityPostCreated(android.app.Activity a,android.os.Bundle b){SystemBarInsets.install(a);}
             public void onActivityStarted(android.app.Activity a){}
             public void onActivityPaused(android.app.Activity a){}
             public void onActivityStopped(android.app.Activity a){}
