@@ -46,6 +46,20 @@ check('openForGarden(AddGardenActivity.class)' in gd, 'Bahçe detayındaki Düze
 lp = (APP / 'LocationPickerActivity.java').read_text(encoding='utf8')
 check('EXTRA_STREET' not in lp and 'START_STREET' not in lp, 'konum seçicide eski sokak uyumluluk kodu kaldı')
 
+# ---- Bahçe Karnesi
+ga = (APP / 'GardenAnalyticsActivity.java').read_text(encoding='utf8')
+check(not EMOJI.search(ga) and '‹' not in ga and 'SERIF' not in ga and 'Color.rgb' not in ga, 'Bahçe Karnesi: emoji / eski geri / serif / gömülü renk kaldı')
+check('new GardenAnalyticsRepository(helper).load(screenOwner, season, true)' in ga, 'Bahçe Karnesi veri kaynağı değişmiş')
+check('ticket != generation' in ga and 'isSameOwner()' in ga, 'Bahçe Karnesi yarış/sahip korumaları eksik')
+check('<Spinner' not in ga and 'new Spinner(' not in ga and 'scopeChips' in ga, 'kapsam seçimi hâlâ açılır liste')
+for metric in ['Kayıtlı ağaç', 'Ağaç başı verim', 'Dekar başı verim', 'Kg başı maliyet', 'Satılan', 'Ortalama fiyat',
+               'Tahsil edilen', 'Kalan alacak', 'Baskın boy', 'Özete dahil salamura masrafı', 'Özete dahil diğer alacak']:
+    check(metric in ga, f'Bahçe Karnesi: "{metric}" kaybolmuş')
+for row in ['"Hasat"', '"Masraf"', '"Satış geliri"', '"Ağaç başı verim"', '"Kg başı maliyet"', '"Satılan"', '"Ortalama fiyat"']:
+    check(f'compare(card, {row}' in ga, f'karşılaştırma satırı kaybolmuş: {row}')
+check('GRADE_LABELS[i], current.gradeKg(i), previous.gradeKg(i)' in ga, 'boy karşılaştırması kaybolmuş')
+check('Geçmiş ağaç sayısı saklanmadığı için' in ga and 'Kaydetmediğin emek' in ga, 'Bahçe Karnesi açıklama notları kaybolmuş')
+
 if failures:
     print('\n'.join('HATA: ' + f for f in failures))
     sys.exit(1)

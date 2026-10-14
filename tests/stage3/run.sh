@@ -6,4 +6,6 @@ D=$(mktemp -d); J=app/src/main/java/com/zeytindefteri/app
 export JAVA_TOOL_OPTIONS=
 java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" $J/GardenFormModel.java tests/stage3/GardenFormModelTest.java
 java -cp "$D" com.zeytindefteri.app.GardenFormModelTest
+java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" $J/GardenReportModel.java tests/stage3/GardenReportModelTest.java
+java -cp "$D" com.zeytindefteri.app.GardenReportModelTest
 python3 tests/stage3/check_wiring.py
