@@ -416,7 +416,10 @@ public final class MarketCloudRepository {
                         stat.name = safe(item.optString("region_label", ""));
                         stat.grade = gradeSpecific ? apiGrade : "";
                         stat.producerCount = Math.max(0, item.optInt("producer_count", 0));
-                        stat.published = item.optBoolean("published", false);
+                        // İstemci de gizlilik eşiğini uygular: sunucu test eşiğiyle
+                        // (ör. 2 üretici) yayımlasa bile 5'in altı gösterilmez.
+                        stat.published = item.optBoolean("published", false)
+                                && stat.producerCount >= MarketBackendConfig.PUBLIC_MARKET_MIN_PRODUCERS;
 
                         if (!item.isNull("total_kg")) {
                             stat.totalKg = Math.max(0d, item.optDouble("total_kg", 0d));
@@ -428,10 +431,9 @@ public final class MarketCloudRepository {
                             stat.dominantGrade = safe(item.optString("dominant_grade", ""));
                         }
 
-                        // Genel görünümde eski gizlilik davranışı korunur. Elek
-                        // görünümünde sunucu published=true ise tek üreticili
-                        // düşük-güven fiyat önizlemesi gelebilir; kg sunucu
-                        // tarafından ayrıca NULL bırakılabilir.
+                        // Eşik altı bölgede kg/fiyat/baskın elek hiç tutulmaz.
+                        // (Eski "tek üreticili fiyat önizlemesi" o üreticinin
+                        // fiyatını herkese açtığı için kaldırıldı.)
                         if (!stat.published) {
                             stat.totalKg = 0d;
                             stat.averagePrice = 0d;
@@ -599,6 +601,7 @@ public final class MarketCloudRepository {
             }
         }
 
+        enforceReportPrivacy(out);
         applyDominantGradeTrend(out);
 
         if (out.trustLabel.isEmpty()) out.trustLabel = trustForProducerCount(out.producerCount);
@@ -677,7 +680,52 @@ public final class MarketCloudRepository {
         }
 
         out.trustLabel = out.producerCount > 0 ? "Düşük" : "Veri yok";
+        enforceReportPrivacy(out);
         return out;
+    }
+
+    /**
+     * Bölge raporunda gizlilik eşiği (PUBLIC_MARKET_MIN_PRODUCERS farklı üretici).
+     * Eşik altı bölgede hiçbir rakam tutulmaz; eşik üstü bölgede bile az üreticili
+     * elek satırları, az üreticili trend pencereleri ve grafik günleri temizlenir.
+     * Aksi halde örn. tek üreticinin olduğu bir elek satırı o kişinin fiyatını açar.
+     */
+    static void enforceReportPrivacy(LeagueRegionReport out) {
+        if (out == null) return;
+        final int min = MarketBackendConfig.PUBLIC_MARKET_MIN_PRODUCERS;
+        if (out.producerCount < min) out.available = false;
+        if (!out.available) {
+            out.saleCount = 0;
+            out.totalKg = 0d;
+            out.averagePrice = 0d;
+            out.medianPrice = 0d;
+            out.minPrice = 0d;
+            out.maxPrice = 0d;
+            out.dominantGrade = "";
+            out.trendPct = 0d;
+            out.chart.clear();
+        }
+        for (LeagueGradeReport grade : out.grades) {
+            if (grade == null) continue;
+            if (!out.available || grade.producerCount < min) {
+                grade.saleCount = 0;
+                grade.kg = 0d;
+                grade.kgPublished = false;
+                grade.averagePrice = 0d;
+                grade.medianPrice = 0d;
+            }
+            if (!out.available || grade.producerCount < min
+                    || grade.trendCurrentProducers < min || grade.trendPreviousProducers < min) {
+                grade.trendAvailable = false;
+                grade.trendPct = 0d;
+                grade.trendCurrentMedian = 0d;
+                grade.trendPreviousMedian = 0d;
+            }
+        }
+        for (int i = out.chart.size() - 1; i >= 0; i--) {
+            ChartPoint point = out.chart.get(i);
+            if (point == null || point.producerCount < min) out.chart.remove(i);
+        }
     }
 
     private String trustForProducerCount(int count) {

@@ -263,7 +263,8 @@ public final class ZeytinLeagueView extends ScrollView {
         if (isGradeSpecific()) {
             target.status = selectedLeagueGrade + " • " + cloudLeagueRegions.size()
                     + " bölgede anonim fiyat verisi"
-                    + (cloudLeagueRegions.isEmpty() ? " bulunamadı" : " • 1 üreticili fiyatlar ön izleme");
+                    + (cloudLeagueRegions.isEmpty() ? " bulunamadı"
+                    : " • rakamlar " + MarketBackendConfig.PUBLIC_MARKET_MIN_PRODUCERS + " üreticiyle açılır");
         } else if (!cloudLeagueRegions.isEmpty()) {
             target.status = "Bölgesel ağ • " + cloudLeagueRegions.size()
                     + " bölge bulundu • Top 20 için lig verisi bekleniyor";

@@ -294,7 +294,7 @@ public final class ZeytinLeagueRegionReportDialog {
 
         if (!report.available) {
             TextView privacy = label(
-                    "Ayrıntılı kg ve satış toplamları anonimlik eşiği sağlandığında açılır. Tek üreticili eleklerde fiyat ön izlemesi görülebilir.",
+                    "Kg, fiyat ve satış rakamları bölgede ve elekte en az " + MarketBackendConfig.PUBLIC_MARKET_MIN_PRODUCERS + " farklı üretici olduğunda açılır.",
                     9,
                     gold,
                     false
