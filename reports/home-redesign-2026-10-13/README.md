@@ -328,3 +328,14 @@ Cihazda tekrar görülürse adımlar ile birlikte bildirilmeli.
 - İzin kapalıyken Lig/Piyasa açıldığında Supabase'e yeni katkı gitmemesi (Supabase panelinde `market_contributions` satır sayısı).
 - Kapatınca önceki katkıların panelde silinmesi.
 - Ekran açılırken artık "Bölgesel bağlantı kullanılamıyor" yazısının görünmemesi.
+
+### 13.6 Güncelleme — katkı varsayılan AÇIK (yayıncı kararı, 14.10.2026)
+- **Neden:** Yayıncı, kullanıcının ayarı hemen bulamayabileceği için katkının başlangıçta açık olmasını istedi.
+- **Kodda:** `isContributionOptedIn()` artık ayar yoksa `true` döndürüyor; yalnızca kullanıcı "Kapat" derse (`0`) katkı duruyor ve geri çekme çalışıyor. Önceki sürümün gönderdiği katkılar artık **geri çekilmiyor**, çünkü ayar varsayılan olarak açık sayılıyor.
+- **Şeffaflık:** Zeytin Ligi ilk açıldığında bir kez "Anonim katkın açık" kartı gösteriliyor. Kart neyin paylaşıldığını, 5 üretici eşiğini ve Ayarlar'dan kapatılabileceğini anlatıyor; "Tamam" ve "Ayarı değiştir" düğmeleri var. Kart kullanıcıya özel, bir kez gösteriliyor.
+- **Hukuki metinler (1.1):** "varsayılan olarak açıktır, ilk kullanımda bildirilir, Ayarlar'dan kapatılabilir" şeklinde güncellendi. Hukuki dayanak maddesi (açık rıza / meşru menfaat) metinde **adlandırılmadı**. Varsayılan açık bir seçenek KVKK anlamında açık rıza sayılmayabilir; dayanağın yayıncı veya bir hukukçu tarafından belirlenmesi gerekir.
+- **Cihazda kontrol (13.5'in yerine):**
+  - Yeni kullanıcıda Ayarlar satırının "Açık" görünmesi.
+  - Lig'de bilgilendirme kartının bir kez çıkması.
+  - Kapatınca panelde katkıların silinmesi.
+  - Kapalıyken Lig'de "katkın kapalı · Aç" satırının görünmesi.

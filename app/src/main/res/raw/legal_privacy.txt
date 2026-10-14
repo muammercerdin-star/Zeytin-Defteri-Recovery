@@ -22,8 +22,8 @@ Meydan'da paylaştığın gönderiler ve yanıtlar, görünen adın ve gönderid
 Bir içeriği veya kullanıcıyı şikâyet edebilir, kullanıcıları engelleyebilirsin. Şikâyetler ve moderasyon işlemleri kayıt altına alınır ve yetkili moderatörler tarafından incelenir.
 
 # 5. Piyasa ve Zeytin Ligi
-Bu özellikler iki ayrı tercihle çalışır; ikisi de senin açmana bağlıdır.
-- Bölge istatistikleri (Piyasa ve Zeytin Ligi bölge kartları): Ayarlar → "Piyasaya Anonim Katkı" seçeneğini açarsan elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi Supabase'e gönderilir. Bu katkılar kullanıcı kimliğin yerine geri döndürülemez bir üretici koduyla saklanır. Seçenek varsayılan olarak kapalıdır. Bir bölgede en az 5 farklı üretici olmadan o bölgenin rakamları yayınlanmaz.
+Bu özellikler iki ayrı tercihle çalışır.
+- Bölge istatistikleri (Piyasa ve Zeytin Ligi bölge kartları): "Piyasaya Anonim Katkı" seçeneği varsayılan olarak açıktır ve Zeytin Ligi ekranını ilk açtığında sana bildirilir. Açıkken elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi Supabase'e gönderilir. Bu katkılar kullanıcı kimliğin yerine geri döndürülemez bir üretici koduyla saklanır. Seçeneği Ayarlar → "Piyasaya Anonim Katkı" bölümünden istediğin zaman kapatabilirsin. Bir bölgede en az 5 farklı üretici olmadan o bölgenin rakamları yayınlanmaz.
 - Zeytin Ligi sıralaması: Satış kaydında piyasa paylaşımını işaretlediğin satışlar ve bunlara bağlı elek kayıtları doğrulandıktan sonra sıralama hesabına katılır. Sıralamada adın gösterilmez; "Üretici 3" gibi bir sıra etiketiyle kilogram, tutar ve puan görünür. Bir bölgenin sıralaması, en az 4 üretici sıralama şartlarını sağladığında yayınlanır.
 İki tercihi de istediğin zaman kapatabilirsin.
 

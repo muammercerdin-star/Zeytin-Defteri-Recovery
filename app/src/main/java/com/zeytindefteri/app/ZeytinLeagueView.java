@@ -357,6 +357,38 @@ public final class ZeytinLeagueView extends ScrollView {
         body.addView(hero, new LinearLayout.LayoutParams(-1, dp(Math.min(150, 112 * scale))));
     }
 
+    /**
+     * Varsayılan açık anonim katkıyı ilk açılışta bir kez bildirir: ne paylaşıldığı ve
+     * nasıl kapatılacağı. "Tamam" ya da ayar değişince bir daha gösterilmez.
+     */
+    private void contributionNotice() {
+        if (leagueCloudRepository == null || !leagueCloudRepository.canUseCloud()
+                || leagueCloudRepository.contributionNoticeSeen()
+                || !(getContext() instanceof android.app.Activity)) return;
+        LinearLayout box = column(); box.setPadding(dp(14), dp(12), dp(14), dp(10));
+        box.setBackground(round(GreenTheme.color(R.color.zd_surface), green));
+        box.addView(label("Anonim katkın açık", 14, text, true));
+        TextView copy = label("Elek kayıtlarındaki sınıf, kg, kg fiyatı, tarih ve il/ilçe; adın olmadan bölge "
+                + "istatistiklerine katılır. Bir bölgede en az " + LeagueBoardModel.MIN_PRODUCERS
+                + " üretici olmadan hiçbir rakam yayınlanmaz. İstediğin zaman Ayarlar'dan kapatabilirsin.",
+                12, GreenTheme.color(R.color.zd_text_soft), false);
+        copy.setPadding(0, dp(4), 0, dp(6)); box.addView(copy);
+        LinearLayout actions = row(); actions.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        TextView change = label("Ayarı değiştir", 13, muted, true);
+        change.setMinHeight(dp(44)); change.setGravity(Gravity.CENTER); change.setPadding(dp(12), 0, dp(12), 0);
+        change.setOnClickListener(v -> {
+            leagueCloudRepository.markContributionNoticeSeen();
+            MarketContributionPrompt.show((android.app.Activity) getContext(), this::render);
+            render();
+        });
+        TextView ok = label("Tamam", 13, green, true);
+        ok.setMinHeight(dp(44)); ok.setGravity(Gravity.CENTER); ok.setPadding(dp(12), 0, dp(4), 0);
+        ok.setOnClickListener(v -> { leagueCloudRepository.markContributionNoticeSeen(); render(); });
+        actions.addView(change); actions.addView(ok); box.addView(actions);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2); lp.topMargin = dp(10);
+        body.addView(box, lp);
+    }
+
     /** Başlığın altındaki "Senin sıran" şeridi; dokununca alttaki ayrıntılı karta kayar. */
     private void ownStrip() {
         if (data == null) return;
@@ -501,6 +533,7 @@ public final class ZeytinLeagueView extends ScrollView {
         body.removeAllViews();
         ownCardView = null;
         header();
+        contributionNotice();
         ownStrip();
         filters();
         gradeFilters();

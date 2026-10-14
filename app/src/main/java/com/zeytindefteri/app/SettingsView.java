@@ -123,7 +123,7 @@ final class SettingsView extends ScrollView {
     private static View contributionRow(Activity activity) {
         final TextView[] value = new TextView[1];
         View row = row(activity, R.drawable.ic_settings_shield, "Piyasaya Anonim Katkı",
-                "Elek kayıtların bölge istatistiklerine katılsın (varsayılan kapalı)",
+                "Elek kayıtların adın olmadan bölge istatistiklerine katılır",
                 MarketContributionPrompt.stateLabel(activity),
                 () -> MarketContributionPrompt.show(activity, () -> {
                     if (value[0] != null) value[0].setText(MarketContributionPrompt.stateLabel(activity));

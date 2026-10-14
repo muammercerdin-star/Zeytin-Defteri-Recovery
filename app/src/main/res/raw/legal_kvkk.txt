@@ -15,7 +15,7 @@ Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlen
 - Topluluk (Meydan) içerikleri: paylaştığın gönderi ve yanıt metinleri, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisi.
 - Güvenlik ve topluluk kayıtları: oluşturduğun şikâyetler ve engellediğin kullanıcılar; sana yönelik şikâyet ve moderasyon kayıtları.
 - Cihaz ve bildirim bilgileri: bildirim gönderebilmek için cihazına ait bildirim anahtarı (FCM token) ve oturum kimliği.
-- Piyasa katkısı (yalnızca Ayarlar → "Piyasaya Anonim Katkı" seçeneğini açarsan; varsayılan kapalı): elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi. Bu kayıtlar kullanıcı kimliğin yerine geri döndürülemez şekilde dönüştürülmüş bir üretici koduyla saklanır.
+- Piyasa katkısı ("Piyasaya Anonim Katkı" seçeneği açıkken; varsayılan açık, Ayarlar'dan kapatılabilir): elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi. Bu kayıtlar kullanıcı kimliğin yerine geri döndürülemez şekilde dönüştürülmüş bir üretici koduyla saklanır.
 - Zeytin Ligi (yalnızca satış kaydında piyasa paylaşımını işaretlediğin satışlar için): ilgili satış ve elek kaydının miktar, tutar ve sınıf bilgileri; sıralamada adın yerine sıra etiketi gösterilir.
 - Sesli asistan: mikrofon iznini verirsen konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.
 
@@ -25,14 +25,14 @@ Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlen
 - Bahçe konumuna göre hava durumu bilgisi göstermek,
 - Meydan topluluk özelliğini sunmak, yanıt bildirimleri göndermek,
 - Şikâyetleri incelemek, kötüye kullanımı önlemek ve topluluk kurallarını uygulamak,
-- Paylaşıma izin verdiğin durumda anonim bölgesel piyasa istatistikleri ve Zeytin Ligi sıralamaları oluşturmak,
+- Anonim bölgesel piyasa istatistikleri ve (satışta paylaşımı işaretlediğinde) Zeytin Ligi sıralamaları oluşturmak,
 - Taleplerine ve başvurularına yanıt vermek, hukuki yükümlülükleri yerine getirmek.
 
 # 4. Hukuki sebepler
 - Hesap, bahçe kayıtları, eşitleme, bildirimler ve topluluk özelliği: bir sözleşmenin kurulması veya ifasıyla doğrudan ilgili olması (KVKK m. 5/2-c).
 - Güvenlik, kötüye kullanımın önlenmesi ve moderasyon: temel hak ve özgürlüklerine zarar vermemek kaydıyla veri sorumlusunun meşru menfaati (KVKK m. 5/2-f) ve bir hakkın tesisi, kullanılması veya korunması (KVKK m. 5/2-e).
 - Kanundan doğan talepler ve yükümlülükler: hukuki yükümlülüğün yerine getirilmesi (KVKK m. 5/2-ç).
-- Piyasa katkısı ve Zeytin Ligi: yalnızca "Piyasaya Anonim Katkı" ayarını veya satıştaki piyasa paylaşımı seçeneğini açman hâlinde ve bu tercih doğrultusunda işlenir. Tercihini istediğin zaman kapatabilirsin; kapattığında bu cihazdan gönderilen anonim katkıların geri çekilir. Kapatman uygulamanın diğer özelliklerini kullanmanı engellemez.
+- Piyasa katkısı ve Zeytin Ligi: "Piyasaya Anonim Katkı" ayarı varsayılan olarak açıktır ve ilk kullanımda bildirilir; Zeytin Ligi sıralaması ise yalnızca satıştaki piyasa paylaşımı seçeneğini işaretlediğin satışları kapsar. Tercihlerini istediğin zaman kapatabilirsin; kapattığında bu cihazdan gönderilen anonim katkıların geri çekilir. Kapatman uygulamanın diğer özelliklerini kullanmanı engellemez.
 
 # 5. Toplama yöntemi
 Veriler; uygulamadaki formlara girdiğin bilgilerden, Google ile giriş yaptığında Google hesabından, uygulamanın çalışması sırasında otomatik olarak (bildirim anahtarı, eşitleme bilgileri) ve elektronik ortamda toplanır.

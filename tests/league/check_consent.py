@@ -12,8 +12,9 @@ priv = read("app/src/main/res/raw/legal_privacy.txt"); kvkk = read("app/src/main
 ld = read("app/src/main/java/com/zeytindefteri/app/LegalDocuments.java")
 sync = m[m.index("private void syncContributionsIfNeeded("):m.index("private void withdrawAllTracked(")]
 checks = {
-    "contribution requires explicit opt-in": re.search(r"localContributionEnabled\(\) \{\s*return canUseCloud\(\) && isContributionOptedIn\(\);", m) is not None,
-    "opt-in defaults to off": 'getSetting(CONTRIBUTION_OPT_IN_PREFIX + uid, "0")' in m,
+    "contribution follows the user setting": re.search(r"localContributionEnabled\(\) \{\s*return canUseCloud\(\) && isContributionOptedIn\(\);", m) is not None,
+    "contribution defaults to on (publisher decision), off only when set to 0": '!"0".equals(databaseHelper.getSetting(CONTRIBUTION_OPT_IN_PREFIX + uid, "1"))' in m,
+    "one-time notice shown in league until acknowledged": "contributionNotice();" in lv and "markContributionNoticeSeen()" in lv and "contributionNoticeSeen()" in lv,
     "opt-in is per user": "CONTRIBUTION_OPT_IN_PREFIX + uid" in m,
     "sync withdraws (does not upload) when not opted in": re.search(r"if \(!isContributionOptedIn\(\)\) \{.*?withdrawAllTracked\(", sync, re.S) is not None
         and sync.index("isContributionOptedIn()") < sync.index("loadLocalContributions(year)"),
@@ -25,9 +26,10 @@ checks = {
     "prompt states 5-producer floor": "PUBLIC_MARKET_MIN_PRODUCERS" in pr,
     "watcher ignores cache snapshots": re.search(r"isFromCache\(\)\) return;", lr) is not None
         and "isFromCache()) { changed.accept(null)" not in lr,
-    "privacy text: opt-in, default off, elek source": "Piyasaya Anonim Katkı" in priv and "varsayılan olarak kapalıdır" in priv and "elek kayıtlarındaki" in priv,
+    "privacy text: default on, notified, can be turned off, elek source": "Piyasaya Anonim Katkı" in priv and "varsayılan olarak açıktır" in priv and "kapatabilirsin" in priv and "elek kayıtlarındaki" in priv,
+    "texts no longer claim default off": "varsayılan kapalı" not in priv + kvkk and "varsayılan olarak kapalıdır" not in priv,
     "privacy text: no stale 'satış kayıtlarından' claim for stats": "Piyasa paylaşımını açarsan satış kayıtlarından" not in priv,
-    "kvkk text updated": "Piyasaya Anonim Katkı" in kvkk and "varsayılan kapalı" in kvkk,
+    "kvkk text updated": "Piyasaya Anonim Katkı" in kvkk and "varsayılan açık" in kvkk,
     "legal version bumped": 'VERSION = "1.1"' in ld,
 }
 for k, ok in checks.items(): print(("PASS " if ok else "FAIL ") + k)

@@ -230,9 +230,9 @@ public final class MarketCloudRepository {
     }
 
     /**
-     * Anonim katkı yalnızca kullanıcı açıkça izin verdiğinde (Ayarlar → Piyasaya Anonim
-     * Katkı) gönderilir; varsayılan KAPALI. KVKK/Gizlilik metinleri bu davranışı anlatır.
-     * (Eski V8 sürümü izin sormadan herkesi otomatik katıyordu.)
+     * Anonim katkı varsayılan olarak AÇIK (yayıncı kararı, 14.10.2026); kullanıcı
+     * Ayarlar → Piyasaya Anonim Katkı'dan kapatabilir. Lig ekranı ilk açılışta bunu bir kez
+     * bildirir. KVKK/Gizlilik metinleri bu davranışı anlatır. Kapatınca geri çekme çalışır.
      */
     public boolean localContributionEnabled() {
         return canUseCloud() && isContributionOptedIn();
@@ -241,7 +241,18 @@ public final class MarketCloudRepository {
     public static final String CONTRIBUTION_OPT_IN_PREFIX = "market_contribution_opt_in_";
 
     public boolean isContributionOptedIn() {
-        return !uid.isEmpty() && "1".equals(databaseHelper.getSetting(CONTRIBUTION_OPT_IN_PREFIX + uid, "0"));
+        return !uid.isEmpty() && !"0".equals(databaseHelper.getSetting(CONTRIBUTION_OPT_IN_PREFIX + uid, "1"));
+    }
+
+    public static final String CONTRIBUTION_NOTICE_PREFIX = "market_contribution_notice_seen_";
+
+    /** Varsayılan açık katkının bir kez bildirilip bildirilmediği (kullanıcıya özel). */
+    public boolean contributionNoticeSeen() {
+        return uid.isEmpty() || "1".equals(databaseHelper.getSetting(CONTRIBUTION_NOTICE_PREFIX + uid, "0"));
+    }
+
+    public void markContributionNoticeSeen() {
+        if (!uid.isEmpty()) databaseHelper.setSetting(CONTRIBUTION_NOTICE_PREFIX + uid, "1");
     }
 
     /** Katkı anahtarı sonucu: hata yoksa null. Ana iş parçacığında çağrılır. */
@@ -993,8 +1004,8 @@ public final class MarketCloudRepository {
             return;
         }
         if (!isContributionOptedIn()) {
-            // İzin yok: eski otomatik sürümün gönderdiği katkılar dahil, bu cihazın
-            // izlediği katkıları geri çek. Liste boşsa hemen döner; ekranı bekletmez.
+            // Kullanıcı kapattı: bu cihazın izlediği katkıları geri çek (önceki denemesi
+            // başarısız olduysa burada tamamlanır). Liste boşsa hemen döner; ekranı bekletmez.
             withdrawAllTracked(error -> {
                 if (callback != null) callback.onComplete(null);
             });
