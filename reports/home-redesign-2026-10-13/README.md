@@ -568,7 +568,7 @@ Tuvaldeki onaylanan tasarımlar ("Aşama 2 · …" panoları) uygulandı. Her ek
 - "Bu Sezon" kartında Masraf, Hasat, **Elek** (yeni), **Satış** (yeni), ağaç başına verim ve kg başına maliyet var. Değerler Bahçe Karnesi ile aynı kaynaktan geliyor.
 - Son işlemin üzerinden 30 gün veya daha fazla geçtiyse sarı bir uyarı çıkıyor. En yeni tarih, sezonun bütün işlemleri taranarak bulunuyor; liste kayıt sırasına göre geldiği için ilk satır her zaman en yeni tarih olmuyor.
 - Son işlemler emoji yerine çizgi ikonlarla gösteriliyor. Notlar ayrı kutularda.
-- `GardenDetailActivity` 2.277 satırdan yaklaşık 390 satıra indi. Davranış aynı: sahip kontrolü, not penceresi ve taslağı, sezon/bahçe yarış koruması.
+- `GardenDetailActivity` 2.277 satırdan 450 satıra indi. Davranış aynı: sahip kontrolü, not penceresi ve taslağı, sezon/bahçe yarış koruması.
 
 ### İşlem ekle
 - Tür, açılır liste yerine 10 ikonlu kutudan seçiliyor (4 sütun). Seçili kutu yeşil çerçeveli.
