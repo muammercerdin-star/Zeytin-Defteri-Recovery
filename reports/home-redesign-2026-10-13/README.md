@@ -723,3 +723,42 @@ Tuvaldeki onaylanan tasarımlar ("Aşama 2 · …" panoları) uygulandı. Her ek
 ### Doğrulama
 - Mevcut 24 test takımının hepsi geçiyor. `android.jar` tip denetiminde yeni hata yok; yeni 10 hata yalnızca bu ortamda bulunmayan Firebase sınıflarından.
 - **Hiçbir şey canlı Firebase'e dağıtılmadı, APK derlenmedi, cihazda denenmedi.**
+
+## 23. Güvenlik sertleştirmesi — 1. aşama (1 commit)
+
+Kapsam: Meydan gönderi kuralları, Firebase Storage kuralları ve moderasyon istemcisinin yapılandırma koruması. Canlı Firebase/Supabase'e dağıtım yapılmadı.
+
+**Meydan gönderileri (`firestore.rules` → `social_posts`):**
+- Gerçek veri modeli: buluta tek yazan `SocialCloudRepository.publishLocalPost`, `set(..., merge)` ile yazıyor. Bu yüzden aynı istek ilk seferde create, sonra update kuralına düşüyor.
+- Oluşturma kuralı:
+  - Zorunlu alanlar ve alan beyaz listesi.
+  - `user_id` oturumdaki kullanıcıyla aynı olmalı; `cloud_id` belge kimliğiyle aynı olmalı.
+  - `created_at` sunucu saatinden en fazla 10 dakika ileride olabilir.
+- Güncelleme kuralı:
+  - Yalnızca beyaz listedeki alanlar değişebilir.
+  - Sahip (`user_id`) hiç değişmez. `cloud_id` ve `created_at` eski belgede yoksa bir kez eklenebilir, sonra değişmez.
+- Görünen ad: `request.auth.token.name` ile aynı olmalı, ad yoksa "Üretici". İstemci de adı aynı oturum belgesinden alır. Ad değişince ve kayıtta oturum belgesi yenilenir.
+- Metin: boş olamaz, en fazla 5.000 karakter. İl, ilçe ve mahalle 100; bahçe adı 200; çeşit 100; elek 20 karakterle sınırlı.
+- Türler: gönderi türleri sabit bir listeden seçilir. `is_real_sale` istemciden yalnızca 0 olabilir.
+- Okuma, silme ve yorum kuralları değişmedi.
+- Eski belgelerde dokunulmayan alanlar (`photo_uri`, `media_urls`) korunur.
+- İstemci: boş ya da 5.000 karakterden uzun gönderi buluta hiç gönderilmez. Gönderi oluşturma ekranı 5.000 karakterle sınırlı. Meydan'a fotoğraf yüklenmediği için medya eklenmiş olsa da metin istenir.
+
+**Storage:** Uygulama Storage kullanmıyor (Senaryo A). İstemcilerin okuma ve yazma erişimi tamamen kapatıldı. Hesap silmedeki `social_posts/{uid}/` temizliği Admin SDK ile çalışır, kurallardan etkilenmez.
+
+**Moderasyon:**
+- Yeni `ModerationTransport` sınıfı (saf Java) adresi doğrular. Boş, `REPLACE_ME` içeren, HTTPS olmayan, `*.supabase.co` dışında olan, kullanıcı bilgisi / sorgu / farklı port / yol içeren adresler reddedilir.
+- Adres geçersizse oturum belgesi hiç istenmez ve bağlantı açılmaz. Yönlendirme (3xx) hata sayılır.
+- Ağ hatasında kullanıcıya şu gösterilir: "Moderasyon servisine şu anda bağlanılamıyor. Lütfen daha sonra tekrar deneyin."
+- `MarketBackendConfig` ve yetki kodu değişmedi.
+
+**Testler:**
+
+| Test | Durum |
+|---|---|
+| `tests/security/run.sh` (masaüstü Java + statik) | 15 + 100 + 49 kontrol, geçti |
+| `functions` (`npm test`) | 96 test: 84 geçti, 0 başarısız, 12 atlandı (emülatör yok) |
+| `posts.rules.test.js`, `storage.rules.test.js` | Yazıldı, emülatör olmadığı için **çalıştırılmadı** |
+| `blocks.rules.test.js`, `reports.rules.test.js` | Eksik alanlı gönderi yerine kurala uygun gönderi kullanacak şekilde güncellendi (emülatör yok, çalıştırılmadı) |
+
+Değişiklikten önce de başarısız olan üç test aynı kaldı: `tests/blocks/check_blocks.py`, `tests/feed_thread/check_preview.py`, `tests/market-production-five-java.py` (`JSON_JAR` yok).

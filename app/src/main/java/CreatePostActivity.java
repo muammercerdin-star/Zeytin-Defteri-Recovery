@@ -1627,16 +1627,18 @@ public class CreatePostActivity extends Activity {
         // ========================================================
         // İÇERİK YOK
         //
-        // Medya varsa yazısız paylaşmaya izin veriyoruz.
+        // Meydan'a yalnızca metin yüklenir (fotoğraf/video telefonda kalır).
+        // Yazısız gönderi diğer üreticilere boş görünürdü; firestore.rules
+        // de boş metni reddeder. Bu yüzden medya olsa da metin gerekir.
         // ========================================================
 
-        if (content.isEmpty()
-                &&
-                selectedMediaList.isEmpty()) {
+        if (content.isEmpty()) {
 
 
             etPostContent.setError(
-                    "Bir şey yaz veya fotoğraf/video ekle"
+                    selectedMediaList.isEmpty()
+                            ? "Bir şey yaz"
+                            : "Fotoğraflar Meydan'da paylaşılmıyor; gönderine birkaç kelime ekle"
             );
 
 
@@ -1663,6 +1665,19 @@ public class CreatePostActivity extends Activity {
 
             etPostContent.requestFocus();
 
+
+            return;
+        }
+
+
+        // Düzen 5.000 karakterle sınırlar; yapıştırma gibi yollara karşı kuralla aynı sınır.
+        if (!MeydanPostPolicy.isPublishableContent(content)) {
+
+            etPostContent.setError(
+                    "Paylaşım en fazla " + MeydanPostPolicy.MAX_CONTENT + " karakter olabilir"
+            );
+
+            etPostContent.requestFocus();
 
             return;
         }

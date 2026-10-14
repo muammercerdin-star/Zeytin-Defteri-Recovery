@@ -2306,6 +2306,10 @@ public class ProfileActivity extends Activity {
                                     email
                             );
 
+                            // Meydan gönderisindeki ad oturum belgesinden doğrulanır (firestore.rules);
+                            // yeni adın hemen geçerli olması için belge yenilenir.
+                            user.getIdToken(true);
+
 
                             dialog.dismiss();
 

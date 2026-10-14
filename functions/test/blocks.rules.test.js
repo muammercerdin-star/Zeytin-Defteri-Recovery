@@ -33,7 +33,9 @@ test('Blocks: owner privacy, self/spoof protection, duplicates, delete, offline 
   assert.equal((await getDoc(ref(a))).exists(),false);
   await assertSucceeds(block());
   // A block is personal presentation state, not destruction or a social permission change.
-  await assertSucceeds(setDoc(doc(b,'social_posts/b-post'),{user_id:'B',is_active:1,content:'korunur'}));
+  const at=Date.now();
+  await assertSucceeds(setDoc(doc(b,'social_posts/b-post'),{cloud_id:'b-post',user_id:'B',user_name:'Üretici',post_type:'GENERAL',
+    is_active:1,content:'korunur',created_at:at,updated_at:at},{merge:true}));
   assert.equal((await getDoc(doc(a,'social_posts/b-post'))).data().content,'korunur');
   await assertSucceeds(setDoc(ref(c,'C','B'),{...data,blocker_uid:'C'}));
   assert.equal((await getDocs(collection(c,'user_blocks/C/items'))).size,1);

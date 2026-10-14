@@ -2,14 +2,10 @@ package com.zeytindefteri.app;
 
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.TaskCompletionSource;
+import com.google.firebase.FirebaseNetworkException;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -37,10 +33,13 @@ final class ModerationBackendClient {
             TaskCompletionSource<Result> result=new TaskCompletionSource<>();
             FirebaseUser user=FirebaseAuth.getInstance().getCurrentUser();
             if(user==null||user.isAnonymous()){result.setException(new ModerationBackendException(ModerationBackendException.Code.UNAUTHENTICATED));return result.getTask();}
+            // Moderasyon adresi geçerli değilse oturum belgesi hiç istenmez ve hiçbir yere gönderilmez.
+            if(!ModerationTransport.isConfigured(MarketBackendConfig.SUPABASE_URL)){result.setException(new ModerationBackendException(ModerationBackendException.Code.UNAVAILABLE));return result.getTask();}
             final String payload;
             try{payload=new JSONObject().put("action",action).put("data",new JSONObject(data)).toString();}
             catch(Exception e){result.setException(new ModerationBackendException(ModerationBackendException.Code.INVALID_ARGUMENT));return result.getTask();}
             user.getIdToken(true).addOnCompleteListener(task->{
+                if(!task.isSuccessful()&&task.getException() instanceof FirebaseNetworkException){result.trySetException(new ModerationBackendException(ModerationBackendException.Code.UNAVAILABLE));return;}
                 if(!task.isSuccessful()||task.getResult()==null||task.getResult().getToken()==null){result.trySetException(new ModerationBackendException(ModerationBackendException.Code.UNAUTHENTICATED));return;}
                 final String token=task.getResult().getToken();
                 try{IO.execute(()->{
@@ -54,22 +53,8 @@ final class ModerationBackendClient {
             return result.getTask();
         }
     }
-    private static Object send(String payload,String token,int timeout)throws Exception{
-        HttpURLConnection connection=null;
-        try{
-            URL endpoint=new URL(MarketBackendConfig.SUPABASE_URL+"/functions/v1/moderation-api");
-            if(!"https".equals(endpoint.getProtocol()))throw new IllegalArgumentException();
-            connection=(HttpURLConnection)endpoint.openConnection();connection.setInstanceFollowRedirects(false);
-            connection.setRequestMethod("POST");connection.setConnectTimeout(12000);connection.setReadTimeout(timeout);connection.setDoOutput(true);
-            connection.setRequestProperty("Authorization","Bearer "+token);connection.setRequestProperty("Content-Type","application/json; charset=utf-8");connection.setRequestProperty("Accept","application/json");
-            byte[] bytes=payload.getBytes(StandardCharsets.UTF_8);if(bytes.length>8192)throw new ModerationBackendException(ModerationBackendException.Code.INVALID_ARGUMENT);
-            connection.setFixedLengthStreamingMode(bytes.length);try(OutputStream out=connection.getOutputStream()){out.write(bytes);}
-            int status=connection.getResponseCode();InputStream stream=status>=200&&status<300?connection.getInputStream():connection.getErrorStream();
-            String response="";
-            if(stream!=null)try(InputStream in=stream;ByteArrayOutputStream out=new ByteArrayOutputStream()){
-                byte[] chunk=new byte[4096];int n;while((n=in.read(chunk))!=-1){if(out.size()+n>1024*1024)throw new IllegalStateException();out.write(chunk,0,n);}response=new String(out.toByteArray(),StandardCharsets.UTF_8);
-            }
-            return ModerationWire.parse(status,response);
-        }finally{if(connection!=null)connection.disconnect();}
+    private static Object send(String payload,String token,int timeout)throws ModerationBackendException{
+        return ModerationTransport.send(MarketBackendConfig.SUPABASE_URL,payload,token,timeout,
+                url->(HttpURLConnection)url.openConnection(),ModerationWire::parse);
     }
 }

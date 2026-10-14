@@ -1,9 +1,13 @@
 rules_version = '2';
+// Zeytin Defteri istemcisi Firebase Storage kullanmaz (Meydan yalnızca metin yükler; profil fotoğrafı
+// Google hesabının adresinden gelir). Bu yüzden istemcilerin okuma ve yazma erişimi tamamen kapalıdır.
+// Sunucu işlemleri (ör. hesap silmede social_posts/{uid}/ temizliği) Admin SDK ile çalışır ve bu
+// kurallardan etkilenmez. İleride istemci yüklemesi gerekirse yalnızca o yol; sahiplik, boyut ve
+// MIME türü sınırlarıyla açılmalıdır.
 service firebase.storage {
   match /b/{bucket}/o {
-    match /social_posts/{uid}/{postId}/{fileName} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

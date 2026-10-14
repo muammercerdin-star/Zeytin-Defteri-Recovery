@@ -204,6 +204,7 @@
             android:gravity="top|start"
             android:hint="Örneğin: Bu sabah zeytin sineği tuzaklarında hareketlilik gördüm. Bölgede durum nasıl?"
             android:inputType="textCapSentences|textMultiLine"
+            android:maxLength="5000"
             android:padding="15dp"
             android:textColor="@color/zd_text"
             android:textColorHint="@color/zd_muted"

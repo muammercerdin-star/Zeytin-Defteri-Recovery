@@ -154,6 +154,7 @@ public final class ModeratorManagementActivity extends Activity {
         if(e instanceof ModerationBackendException){
             ModerationBackendException.Code code=((ModerationBackendException)e).getCode();
             if(code==ModerationBackendException.Code.PERMISSION_DENIED||code==ModerationBackendException.Code.UNAUTHENTICATED){deny();return;}
+            if(code==ModerationBackendException.Code.UNAVAILABLE){message.setText(ModerationBackendException.UNAVAILABLE_MESSAGE);controls();return;}
             if(code==ModerationBackendException.Code.NOT_FOUND){message.setText("Kullanıcı bulunamadı.");controls();return;}
             if(code==ModerationBackendException.Code.FAILED_PRECONDITION){
                 state.selected=null;result.removeAllViews();state.resetList();renderList();

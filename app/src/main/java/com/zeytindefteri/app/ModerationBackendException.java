@@ -1,7 +1,9 @@
 package com.zeytindefteri.app;
 
 final class ModerationBackendException extends Exception {
-    enum Code { UNAUTHENTICATED, PERMISSION_DENIED, INVALID_ARGUMENT, NOT_FOUND, FAILED_PRECONDITION, INTERNAL }
+    /** UNAVAILABLE: servis yapılandırılmamış ya da ağa ulaşılamıyor; kullanıcıya "şu anda bağlanılamıyor" gösterilir. */
+    enum Code { UNAUTHENTICATED, PERMISSION_DENIED, INVALID_ARGUMENT, NOT_FOUND, FAILED_PRECONDITION, INTERNAL, UNAVAILABLE }
+    static final String UNAVAILABLE_MESSAGE = "Moderasyon servisine şu anda bağlanılamıyor. Lütfen daha sonra tekrar deneyin.";
     private final Code code;
     ModerationBackendException(Code code){super(code.name());this.code=code;}
     Code getCode(){return code;}

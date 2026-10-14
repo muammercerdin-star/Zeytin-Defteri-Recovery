@@ -76,6 +76,9 @@ test('Reports: ownership, targets, duplicate races, privacy, immutable status an
     parent_comment_id:'',root_comment_id:'new-c',reply_to_uid:'',reply_to_name:''};
   await assertSucceeds(setDoc(doc(a,'social_posts/p/comments/new-c'),root));
   await assertSucceeds(setDoc(doc(a,'social_posts/p/comments/new-r'),{...root,cloud_id:'new-r',parent_comment_id:'new-c',reply_to_uid:'A',reply_to_name:'A'}));
-  await assertSucceeds(setDoc(doc(a,'social_posts/new-post'),{user_id:'A',content:'Yeni gönderi',is_active:1}));
+  // Gönderi kuralları sertleştirildi: eksik alanlı eski biçim artık reddedilir, istemcinin gerçek biçimi kabul edilir.
+  await assertFails(setDoc(doc(a,'social_posts/new-post'),{user_id:'A',content:'Yeni gönderi',is_active:1}));
+  await assertSucceeds(setDoc(doc(a,'social_posts/new-post'),{cloud_id:'new-post',user_id:'A',user_name:'Üretici',
+    post_type:'GENERAL',content:'Yeni gönderi',created_at:now,updated_at:now,is_active:1},{merge:true}));
  }finally{await env.cleanup();}
 });

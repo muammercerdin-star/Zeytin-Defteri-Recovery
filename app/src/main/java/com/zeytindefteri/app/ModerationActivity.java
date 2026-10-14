@@ -196,6 +196,9 @@ public final class ModerationActivity extends Activity {
         if(error instanceof ModerationBackendException) {
             ModerationBackendException.Code code=((ModerationBackendException)error).getCode();
             if(code==ModerationBackendException.Code.PERMISSION_DENIED || code==ModerationBackendException.Code.UNAUTHENTICATED){deny();return;}
+            if(code==ModerationBackendException.Code.UNAVAILABLE){
+                controls();message.setText(ModerationBackendException.UNAVAILABLE_MESSAGE);retry.setVisibility(updating?View.GONE:View.VISIBLE);return;
+            }
             if(updating && code==ModerationBackendException.Code.FAILED_PRECONDITION){
                 Toast.makeText(this,"Kayıt değişmiş olabilir. Liste yenileniyor.",Toast.LENGTH_LONG).show();reload();return;
             }

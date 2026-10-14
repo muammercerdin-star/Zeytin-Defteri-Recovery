@@ -30,12 +30,65 @@ service cloud.firestore {
       }
     }
     match /social_posts/{postId} {
+      // Meydan gönderisi. Tek istemci yazarı SocialCloudRepository.publishLocalPost; aynı belgeye
+      // merge ile yazdığı için aynı istek ilk seferde create, sonra update kuralına düşer.
+      // Alanlar yalnızca yazıldıklarında doğrulanır; eski belgelerdeki dokunulmayan alanlar
+      // (photo_uri, media_urls gibi) okunmaya devam eder ve güncellemeyi engellemez.
+      function postFields() {
+        return ['cloud_id','user_id','user_name','province','district','neighborhood','garden_name',
+                'variety','post_type','content','is_real_sale','sale_grade','sale_kg','sale_price',
+                'created_at','updated_at','is_active'];
+      }
+      function postTypes() {
+        return ['GENERAL','QUESTION','GARDEN','PEST','IRRIGATION','FERTILIZER','SPRAY','HARVEST','MARKET','SALE'];
+      }
+      // Görünen ad doğrulanmış oturum belgesinden gelir; istemci başka bir ad yazamaz.
+      function postAuthorName() {
+        let name = request.auth.token.get('name', '');
+        return (name is string && name.size() > 0) ? name : 'Üretici';
+      }
+      // İstemci saati ile sunucu saati arasındaki küçük farka 10 dakika tolerans.
+      function notInFuture(value) {
+        return value is int && value > 0 && value <= request.time.toMillis() + 600000;
+      }
+      function shortText(value, max) { return value is string && value.size() <= max; }
+      function validPostFields(d, keys) {
+        return (!('user_name' in keys) || d.user_name == postAuthorName())
+          && (!('content' in keys) || (d.content is string && d.content.size() <= 5000
+                                       && d.content.matches('[\\s\\S]*[^\\s][\\s\\S]*')))
+          && (!('post_type' in keys) || d.post_type in postTypes())
+          && (!('province' in keys) || shortText(d.province, 100))
+          && (!('district' in keys) || shortText(d.district, 100))
+          && (!('neighborhood' in keys) || shortText(d.neighborhood, 100))
+          && (!('garden_name' in keys) || shortText(d.garden_name, 200))
+          && (!('variety' in keys) || shortText(d.variety, 100))
+          // Gerçek satış işareti doğrulama gibi görünür; istemci yalnızca 0 yazabilir.
+          && (!('is_real_sale' in keys) || d.is_real_sale == 0)
+          && (!('sale_grade' in keys) || shortText(d.sale_grade, 20))
+          && (!('sale_kg' in keys) || (d.sale_kg is number && d.sale_kg >= 0 && d.sale_kg <= 1000000000))
+          && (!('sale_price' in keys) || (d.sale_price is number && d.sale_price >= 0 && d.sale_price <= 10000000))
+          && (!('updated_at' in keys) || notInFuture(d.updated_at))
+          && (!('is_active' in keys) || d.is_active in [0, 1]);
+      }
       allow read: if request.auth != null;
       allow create: if request.auth != null
-                    && request.resource.data.user_id == request.auth.uid;
+                    && request.resource.data.keys().hasAll(['cloud_id','user_id','user_name','post_type',
+                                                            'content','created_at','updated_at'])
+                    && request.resource.data.keys().hasOnly(postFields())
+                    && request.resource.data.user_id == request.auth.uid
+                    && request.resource.data.cloud_id == postId
+                    && notInFuture(request.resource.data.created_at)
+                    && validPostFields(request.resource.data, request.resource.data.keys());
       allow update: if request.auth != null
                     && resource.data.user_id == request.auth.uid
-                    && request.resource.data.user_id == resource.data.user_id;
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(postFields())
+                    // Sahip hiçbir zaman değişmez; kimlik ve oluşturma zamanı eski belgede yoksa bir kez eklenebilir.
+                    && !('user_id' in request.resource.data.diff(resource.data).affectedKeys())
+                    && (!('cloud_id' in request.resource.data.diff(resource.data).affectedKeys())
+                        || (!('cloud_id' in resource.data) && request.resource.data.cloud_id == postId))
+                    && (!('created_at' in request.resource.data.diff(resource.data).affectedKeys())
+                        || (!('created_at' in resource.data) && notInFuture(request.resource.data.created_at)))
+                    && validPostFields(request.resource.data, request.resource.data.diff(resource.data).affectedKeys());
       // Delete has no request.resource; checking it used to reject every deletion.
       allow delete: if request.auth != null && resource.data.user_id == request.auth.uid;
 

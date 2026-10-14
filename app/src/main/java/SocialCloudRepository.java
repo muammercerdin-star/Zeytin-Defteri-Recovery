@@ -259,6 +259,11 @@ public class SocialCloudRepository {
             if (!firebaseUid.equals(str(post, "user_id"))) {
                 finishStored(callbackKey, false); return;
             }
+            // firestore.rules ile aynı sınır: boş ya da 5.000 karakterden uzun metin buluta yazılamaz.
+            // Böyle bir gönderi telefonda kalır; ağa hiç istek gitmez.
+            if (!isPublishableContent(str(post, "content"))) {
+                finishStored(callbackKey, false); return;
+            }
             android.content.ContentValues local = new android.content.ContentValues();
             local.put("cloud_id", cloudId);
             local.put("sync_state", 1);
@@ -282,18 +287,8 @@ public class SocialCloudRepository {
             );
 
 
-            data.put(
-                    "user_name",
-                    safeOr(
-                            str(
-                                    post,
-                                    "user_name"
-                            ),
-                            getFirebaseDisplayName(
-                                    user
-                            )
-                    )
-            );
+            // user_name aşağıda, doğrulanmış oturum belgesindeki addan eklenir (firestore.rules
+            // postAuthorName ile aynı kaynak). Yerel kayıttaki ad buluta yazılmaz.
 
 
             data.put(
@@ -366,12 +361,10 @@ public class SocialCloudRepository {
             // REAL SALE DATA
             // ====================================================
 
+            // Doğrulama işareti sunucunun işidir; kurallar istemciden yalnızca 0 kabul eder.
             data.put(
                     "is_real_sale",
-                    integer(
-                            post,
-                            "is_real_sale"
-                    )
+                    0
             );
 
 
@@ -458,41 +451,52 @@ public class SocialCloudRepository {
             // FIRESTORE WRITE
             // ====================================================
 
-            firestore
-                    .collection(
-                            COLLECTION_POSTS
-                    )
-                    .document(
-                            cloudId
-                    )
-                    .set(
-                            data,
-                            com.google.firebase.firestore
-                                    .SetOptions
-                                    .merge()
-                    )
-                    .addOnSuccessListener(
-                            unused -> {
-                        if (!closed) {
-                            android.content.ContentValues synced = new android.content.ContentValues();
-                            synced.put("sync_state", 2);
-                            databaseHelper.getWritableDatabase().update("posts", synced,
-                                    "id = ? AND updated_at = ?", new String[]{String.valueOf(postId),String.valueOf(localVersion)});
-                            finishStored(callbackKey, true);
-                        }
-                    }
-                    )
-                    .addOnFailureListener(
-                            error -> {
-
-                                error.printStackTrace();
-
-
-                                finishStored(callbackKey,
-                                        false
-                                );
+            final String targetCloudId = cloudId;
+            // Firestore aynı önbellekteki oturum belgesini kullanır; ad buradan okunursa
+            // kuraldaki request.auth.token.name ile aynı olur.
+            user.getIdToken(false).addOnCompleteListener(tokenTask -> {
+                if (closed) return;
+                if (!tokenTask.isSuccessful() || tokenTask.getResult() == null) {
+                    finishStored(callbackKey, false);
+                    return;
+                }
+                data.put("user_name", authorNameFromClaims(tokenTask.getResult().getClaims()));
+                firestore
+                        .collection(
+                                COLLECTION_POSTS
+                        )
+                        .document(
+                                targetCloudId
+                        )
+                        .set(
+                                data,
+                                com.google.firebase.firestore
+                                        .SetOptions
+                                        .merge()
+                        )
+                        .addOnSuccessListener(
+                                unused -> {
+                            if (!closed) {
+                                android.content.ContentValues synced = new android.content.ContentValues();
+                                synced.put("sync_state", 2);
+                                databaseHelper.getWritableDatabase().update("posts", synced,
+                                        "id = ? AND updated_at = ?", new String[]{String.valueOf(postId),String.valueOf(localVersion)});
+                                finishStored(callbackKey, true);
                             }
-                    );
+                        }
+                        )
+                        .addOnFailureListener(
+                                error -> {
+
+                                    error.printStackTrace();
+
+
+                                    finishStored(callbackKey,
+                                            false
+                                    );
+                                }
+                        );
+            });
 
 
         } catch (Exception e) {
@@ -796,6 +800,14 @@ public class SocialCloudRepository {
     // FIREBASE DISPLAY NAME
     // ============================================================
 
+    private static boolean isPublishableContent(String content) {
+        return MeydanPostPolicy.isPublishableContent(content);
+    }
+
+    private static String authorNameFromClaims(Map<String, Object> claims) {
+        return MeydanPostPolicy.authorNameFromClaims(claims);
+    }
+
     private String getFirebaseDisplayName(
             FirebaseUser user
     ) {
@@ -904,22 +916,6 @@ public class SocialCloudRepository {
 
         return cursor.getLong(
                 index
-        );
-    }
-
-
-    // ============================================================
-    // CURSOR INT
-    // ============================================================
-
-    private static int integer(
-            Cursor cursor,
-            String name
-    ) {
-
-        return (int) number(
-                cursor,
-                name
         );
     }
 

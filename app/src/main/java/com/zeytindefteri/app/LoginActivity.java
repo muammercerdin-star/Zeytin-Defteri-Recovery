@@ -1848,6 +1848,10 @@ public class LoginActivity extends Activity {
                                             profileTask -> {
                                                 if (!profileTask.isSuccessful()) {
                                                     showMessage("Hesabın oluşturuldu; adın kaydedilemedi. Profilinden güncelleyebilirsin.");
+                                                } else {
+                                                    // Meydan gönderisindeki ad oturum belgesinden doğrulanır;
+                                                    // kayıt anındaki belge adı içermediği için yenilenir.
+                                                    user.getIdToken(true);
                                                 }
 
                                                 sessionManager
