@@ -60,6 +60,22 @@ for row in ['"Hasat"', '"Masraf"', '"Satış geliri"', '"Ağaç başı verim"', 
 check('GRADE_LABELS[i], current.gradeKg(i), previous.gradeKg(i)' in ga, 'boy karşılaştırması kaybolmuş')
 check('Geçmiş ağaç sayısı saklanmadığı için' in ga and 'Kaydetmediğin emek' in ga, 'Bahçe Karnesi açıklama notları kaybolmuş')
 
+# ---- İşlem geçmişi
+oh = (JAVA / 'OperationHistoryActivity.java').read_text(encoding='utf8')
+check(not EMOJI.search(oh) and '‹' not in oh and 'new Spinner(' not in oh and 'Spinner ' not in oh, 'İşlem geçmişi: emoji / eski geri / açılır liste kaldı')
+check('getOperationsFiltered(allGardens ? null : selectedGarden, null)' in oh and 'OperationHistoryModel.matches(selectedType' in oh,
+      'tür filtresi Java tarafında (büyük/küçük harf hatası) yapılmıyor')
+check('OperationHistoryModel.sortNewestFirst(rows)' in oh and 'monthLabel' in oh, 'ay gruplaması yok')
+check('getLongExtra("garden_id"' in oh and '"history_garden"' in oh and '"history_type"' in oh, 'bahçe ile açılış veya durum saklama yok')
+check('isSameOwner()' in oh, 'İşlem geçmişinde sahip kontrolü yok')
+check('Gravity.BOTTOM' in oh and '"Kapat"' in oh and '"Not"' in oh, 'alttan detay paneli yok')
+check('NewOperationActivity.class' in oh and 'setClassName' not in oh, 'yeni işlem açılışı')
+check(not (APP / 'GardenOperationHistoryActivity.java').exists() and 'GardenOperationHistoryActivity' not in MAN, 'eski bahçe işlem geçmişi ekranı duruyor')
+check('openForGarden(OperationHistoryActivity.class)' in gd, 'Bahçe detayındaki Tümü yeni ekranı açmıyor')
+dbh = (JAVA / 'DatabaseHelper.java').read_text(encoding='utf8')
+i = dbh.index('public Cursor getOperationsFiltered(')
+check("COALESCE(o.owner_uid,'') = ? OR COALESCE(o.owner_uid,'') = ''" in dbh[i:i + 2500], 'filtreli sorguda kayıt sahibi koruması yok')
+
 if failures:
     print('\n'.join('HATA: ' + f for f in failures))
     sys.exit(1)

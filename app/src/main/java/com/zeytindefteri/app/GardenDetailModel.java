@@ -43,18 +43,35 @@ public final class GardenDetailModel {
         return nf.format(value);
     }
 
-    /** "dd.MM.yyyy" tarihini gün sayısına çevirir (1970'ten itibaren); okunamazsa -1. */
+    /**
+     * Tarihi gün sayısına çevirir (1970'ten itibaren). Uygulamanın biçimi "dd.MM.yyyy"dir; eski kayıtlarda
+     * görülen "yyyy-MM-dd" de okunur (sezon sorgusu ikisini de kabul eder). Okunamazsa -1.
+     */
     public static long epochDay(String date) {
-        if (blank(date)) return -1;
-        String[] p = date.trim().split("\\.");
-        if (p.length != 3) return -1;
+        int[] ymd = parts(date);
+        return ymd == null ? -1 : civilToDays(ymd[0], ymd[1], ymd[2]);
+    }
+
+    /** {yıl, ay, gün}; okunamazsa null. Sonda saat varsa yok sayılır. */
+    public static int[] parts(String date) {
+        if (blank(date)) return null;
+        String v = date.trim();
+        int space = v.indexOf(' ');
+        if (space > 0) v = v.substring(0, space);
         try {
-            int d = Integer.parseInt(p[0]), m = Integer.parseInt(p[1]);
-            int y = Integer.parseInt(p[2].length() > 4 ? p[2].substring(0, 4) : p[2]);
-            if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900) return -1;
-            return civilToDays(y, m, d);
+            int y, m, d;
+            String[] p = v.split("\\.");
+            if (p.length == 3) {
+                d = Integer.parseInt(p[0]); m = Integer.parseInt(p[1]); y = Integer.parseInt(p[2]);
+            } else {
+                p = v.split("-");
+                if (p.length != 3 || p[0].length() != 4) return null;
+                y = Integer.parseInt(p[0]); m = Integer.parseInt(p[1]); d = Integer.parseInt(p[2]);
+            }
+            if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > 9999) return null;
+            return new int[]{y, m, d};
         } catch (NumberFormatException e) {
-            return -1;
+            return null;
         }
     }
 

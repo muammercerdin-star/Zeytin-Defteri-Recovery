@@ -103,7 +103,9 @@ public class Run {
    if(args[5].equals("edit"))System.out.println(new GardenRepository(h).updateGarden(id,args[7],Integer.parseInt(args[8]),15,"Gemlik",Double.parseDouble(args[9]),"Manisa","Alaşehir","Girelli","Damla sulama","Genel not","content://photo")==1);
    else if(args[5].equals("note"))System.out.println(h.addGardenNote(id,"09.09.2026 15:12",args[7],""));
    else {
-    Cursor c=args[5].equals("notes")?h.getGardenNotes(id):h.getGardenOperations(id,Integer.parseInt(args[7]));
+    Cursor c=args[5].equals("notes")?h.getGardenNotes(id)
+      :args[5].equals("filtered")?h.getOperationsFiltered(id<0?null:Integer.valueOf((int)id),null)
+      :h.getGardenOperations(id,Integer.parseInt(args[7]));
     try(Cursor rows=c){while(rows.moveToNext())System.out.println(rows.getLong(rows.getColumnIndexOrThrow("id")));}
    }
   }
@@ -116,6 +118,7 @@ with tempfile.TemporaryDirectory(prefix='zeytin-garden-sqlite-') as folder:
         'public boolean updateGarden(', 'public Cursor getGarden(\n',
         'public long addGardenNote(', 'public Cursor getGardenNotes(',
         'public Cursor getGardenOperations(long gardenId, int limit)',
+        'public Cursor getOperationsFiltered(',
         'private String activeOwnerCondition(', 'private String activeSeasonCondition(',
         'private String safe(\n'])
     helper = '''package com.zeytindefteri.app;
@@ -214,6 +217,14 @@ public class DatabaseHelper {
         actual=[int(v) for v in run('history',garden,owner,year).splitlines()]
         check(actual==expected,'history owner/season/garden '+str((owner,year,garden)))
     check(run('history',extra=['2']).splitlines()==['11','7'],'recent preview shares scope and stable ordering')
+    # İşlem geçmişi ekranı (getOperationsFiltered) bahçe geçmişiyle aynı sahip/sezon kuralını uygular.
+    for owner,year,garden in [('a',2026,7),('a',2025,7),('a',2026,8),('b',2026,7),('b',2026,9),('',2026,10),('a',2027,7)]:
+        filtered=sorted(int(v) for v in run('filtered',garden,owner,year).splitlines())
+        history=sorted(int(v) for v in run('history',garden,owner,year).splitlines())
+        check(filtered==history,'operation history screen matches garden history '+str((owner,year,garden)))
+    check(sorted(int(v) for v in run('filtered',-1,'a',2026).splitlines())==[1,2,6,7,11],
+          'all-gardens history: own gardens only, foreign-owner op 5 and op on guest garden excluded')
+    check(sorted(int(v) for v in run('filtered',-1,'',2026).splitlines())==[9],'guest all-gardens history')
     check(not db.execute('PRAGMA foreign_key_check').fetchall(),'all fixture foreign keys valid')
     db.close()
     print(f'PASS {checks} real SQLite checks using compiled production helper bodies; no Android/device claim')

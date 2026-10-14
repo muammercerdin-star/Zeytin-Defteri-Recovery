@@ -24,7 +24,8 @@ public final class GardenDetailModelTest {
         eq(GardenDetailModel.civilToDays(2026, 10, 14), d1, "tarih çözümleme");
         eq(0L, GardenDetailModel.civilToDays(1970, 1, 1), "epoch");
         eq(366L, GardenDetailModel.civilToDays(1971, 1, 2), "epoch+366");
-        eq(-1L, GardenDetailModel.epochDay("2026-10-14"), "yanlış biçim");
+        eq(d1, GardenDetailModel.epochDay("2026-10-14"), "eski ISO biçimi");
+        eq(-1L, GardenDetailModel.epochDay("14/10/2026"), "yanlış biçim");
         eq(-1L, GardenDetailModel.epochDay("32.01.2026"), "geçersiz gün");
         eq(-1L, GardenDetailModel.epochDay(null), "boş tarih");
         eq(d1, GardenDetailModel.epochDay("14.10.2026 09:30"), "saatli tarih");

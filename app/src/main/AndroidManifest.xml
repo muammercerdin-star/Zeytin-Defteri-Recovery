@@ -67,8 +67,7 @@
             android:screenOrientation="portrait" />
 
         
-        <activity android:name=".GardenOperationHistoryActivity" android:exported="false"
-            android:screenOrientation="portrait" />
+        
 
         <activity
             android:name=".WelcomeActivity"

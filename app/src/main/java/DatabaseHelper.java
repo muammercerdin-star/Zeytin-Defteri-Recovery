@@ -7934,8 +7934,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 new ArrayList<>();
 
         sql += " AND " + activeOwnerCondition("g.owner_uid");
-        sql += " AND " + activeSeasonCondition("o", "operation_date");
         if (!getActiveOwnerUid().isEmpty()) args.add(getActiveOwnerUid());
+        // Bahçe geçmişiyle (getGardenOperations) aynı kural: açıkça başka sahibe ait işlem kaydı gösterilmez;
+        // sahibi boş eski kayıtlar bahçenin sahibini izler.
+        sql += " AND (COALESCE(o.owner_uid,'') = ? OR COALESCE(o.owner_uid,'') = '')";
+        args.add(getActiveOwnerUid());
+        sql += " AND " + activeSeasonCondition("o", "operation_date");
 
 
         if (gardenId != null) {

@@ -8,4 +8,6 @@ java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" $J
 java -cp "$D" com.zeytindefteri.app.GardenFormModelTest
 java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" $J/GardenReportModel.java tests/stage3/GardenReportModelTest.java
 java -cp "$D" com.zeytindefteri.app.GardenReportModelTest
+java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" $J/GardenDetailModel.java $J/OperationKinds.java $J/OperationHistoryModel.java tests/stage3/OperationHistoryModelTest.java
+java -cp "$D" com.zeytindefteri.app.OperationHistoryModelTest
 python3 tests/stage3/check_wiring.py

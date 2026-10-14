@@ -115,7 +115,7 @@ public class GardenDetailActivity extends Activity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnEditGarden).setOnClickListener(v -> openForGarden(AddGardenActivity.class));
         findViewById(R.id.btnGardenAnalytics).setOnClickListener(v -> openForGarden(GardenAnalyticsActivity.class));
-        findViewById(R.id.btnAllGardenOperations).setOnClickListener(v -> openForGarden(GardenOperationHistoryActivity.class));
+        findViewById(R.id.btnAllGardenOperations).setOnClickListener(v -> openForGarden(OperationHistoryActivity.class));
         findViewById(R.id.btnAddNoteInline).setOnClickListener(v -> showAddNote(""));
 
         actionTile(R.id.btnAddOperation, "add", "İşlem", v -> openForGarden(NewOperationActivity.class));
