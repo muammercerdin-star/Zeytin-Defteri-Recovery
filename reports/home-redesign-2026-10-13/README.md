@@ -392,7 +392,11 @@ Video gelmedi; sebep koddan bulundu. Ana Sayfa'da içeriği sonradan aşağı it
    → Sayfa kaç kez yeniden kurulursa kurulsun tek bir istek yürüyor.
 3. **Kaydırma konumu bir kare kaçıyordu.** Ana Sayfa onResume'da, gönderi senkronundan sonra ve özel veri senkronundan sonra baştan kuruluyor. Kaydırma konumu `post()` ile geri yüklendiği için bir kare sayfanın en üstü görünüyordu.
    → Konum artık ilk çizimden **önce** geri yükleniyor (`OnPreDrawListener`).
-4. Bunların toplamı, uygulamaya dönüşte ve ilk açılışta görülen "zıplama" hissini veriyordu.
+4. **Davet et → paylaş penceresini kapatma (yayıncının en belirgin bulduğu an):** Pencere kapanınca `onResume` çalışıyor ve Ana Sayfa baştan kuruluyordu. Kaydırma konumu bir kare kaçıyor, lig kartı yeniden yükleniyordu.
+   → Davet penceresinden dönüşte Ana Sayfa artık yeniden kurulmuyor (`skipNextHomeRefresh`).
+   → Senkron geri çağrıları yine yenileyebilir; o durumda 2. ve 3. maddelerdeki düzeltmeler kaymayı önlüyor.
+
+Bunların toplamı, uygulamaya dönüşte ve ilk açılışta görülen "zıplama" hissini veriyordu.
 
 ### Doğrulama
 - `tests/home_league/run.sh`: 43 kontrol (kayıtlı durum kodlama, 24 saat kuralı, imza karşılaştırması eklendi).

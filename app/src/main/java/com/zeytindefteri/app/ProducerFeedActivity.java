@@ -295,7 +295,11 @@ public class ProducerFeedActivity extends Activity {
         if (cloudRepository != null) cloudRepository.retryPendingPosts();
         if (replyOutbox != null) replyOutbox.flushPending();
         syncPrivateCloudData();
-        refreshCurrentSection();
+        // Paylaş penceresinden dönüşte Ana Sayfa'yı baştan kurmaya gerek yok: veri değişmedi.
+        // (Senkron geri çağrıları gerekirse yine yeniler; kaydırma konumu korunur.)
+        boolean returningFromShare = skipNextHomeRefresh && "HOME".equals(currentSection);
+        skipNextHomeRefresh = false;
+        if (!returningFromShare) refreshCurrentSection();
     }
 
     private View buildAppShell() {
@@ -3179,6 +3183,8 @@ public class ProducerFeedActivity extends Activity {
     private FrameLayout homeLeagueHost;
     private String homeLeagueHostUid = "";
     private boolean homeLeagueLoading;
+    /** Davet paylaşım penceresi açıldı; dönüşteki onResume Ana Sayfa'yı yeniden kurmasın. */
+    private boolean skipNextHomeRefresh;
     private String homeLeagueLoadingKey = "";
     private String homeLeagueShownSignature = "";
 
@@ -3359,6 +3365,7 @@ public class ProducerFeedActivity extends Activity {
                 Intent share = new Intent(Intent.ACTION_SEND);
                 share.setType("text/plain");
                 share.putExtra(Intent.EXTRA_TEXT, HomeLeagueModel.inviteText(in.regionName));
+                skipNextHomeRefresh = true;
                 startActivity(Intent.createChooser(share, "Davet et"));
             });
             line.addView(invite, new LinearLayout.LayoutParams(-2, dp(40)));
