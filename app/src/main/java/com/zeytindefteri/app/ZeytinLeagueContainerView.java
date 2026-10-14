@@ -575,6 +575,11 @@ public final class ZeytinLeagueContainerView extends LinearLayout {
         applySelection(true);
     }
 
+    /** Dışarıdan (ör. Sohbet'teki bölge piyasası şeridi) Piyasa sekmesini açar. */
+    public void openMarketTab() {
+        showMarket();
+    }
+
     private void showMarket() {
         if (!leagueSelected) {
             return;

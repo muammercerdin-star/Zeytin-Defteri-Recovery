@@ -724,98 +724,14 @@ public class ReactionManager {
             String reaction,
             int totalCount
     ) {
-
-
-        String emoji =
-                getReactionEmoji(
-                        reaction
-                );
-
-
-        String label =
-                getReactionLabel(
-                        reaction
-                );
-
-
-        if (totalCount > 0) {
-
-
-            return emoji
-                    + " "
-                    + totalCount;
-        }
-
-
-        return emoji
-                + " "
-                + label;
+        // Tepkiler yalnızca bu telefonda tutulur (buluta yazılmaz); bu yüzden toplam sayı herkesin
+        // tepkisi gibi görünmesin diye gösterilmez. Simge, düğmenin çizgi ikonudur (styleReactionButton).
+        return getReactionLabel(
+                reaction
+        );
     }
 
 
-    // ============================================================
-    // REACTION EMOJI TEXT
-    // ============================================================
-
-    public String getReactionEmoji(
-            String reaction
-    ) {
-
-
-        reaction =
-                safe(
-                        reaction
-                )
-                        .toUpperCase();
-
-
-        switch (reaction) {
-
-
-            case "LOVE":
-
-                return "❤️";
-
-
-            case "CARE":
-
-                return "🥰";
-
-
-            case "HAHA":
-
-                return "😄";
-
-
-            case "WOW":
-
-                return "😮";
-
-
-            case "SAD":
-
-                return "😢";
-
-
-            case "ANGRY":
-
-                return "😡";
-
-
-            case "LIKE":
-
-            case "USEFUL":
-
-                return "👍";
-
-
-            case "NONE":
-
-            default:
-
-                return "👍";
-        }
-    }
 
 
     // ============================================================
@@ -900,7 +816,14 @@ public class ReactionManager {
         button.setPadding(dp(2), 0, dp(2), 0);
         button.setMinWidth(0);
         button.setMinimumWidth(0);
-        button.setTextColor(selected ? GreenTheme.color(R.color.zd_green) : COLOR_REACTION_INACTIVE);
+        int color = selected ? GreenTheme.color(R.color.zd_green) : COLOR_REACTION_INACTIVE;
+        button.setTextColor(color);
+        for (android.graphics.drawable.Drawable d : button.getCompoundDrawablesRelative()) {
+            if (d != null) d.mutate().setTint(color);
+        }
+        for (android.graphics.drawable.Drawable d : button.getCompoundDrawables()) {
+            if (d != null) d.mutate().setTint(color);
+        }
         button.setSelected(selected);
         button.setContentDescription(getReactionLabel(type) + ", " + button.getText());
         button.setScaleX(1f);

@@ -796,3 +796,33 @@ Onaylanan tasarım ("Zeytin Ligi · Bölge raporu (elek fiyatları)" panosu) uyg
 - `tests/league_region`: 35 + 13 kontrol.
 - `check_static`: moderasyon değişiklik kontrolü yalnız moderasyon dosyalarına daraltıldı.
 - Diğer test sonuçları değişmedi.
+
+## 26. Sohbet (Meydan) yeniden tasarımı (1 commit)
+
+Onaylanan "Sohbet (Meydan) · öneri" panosu uygulandı. Sohbet, Firebase üzerinde çalışmaya devam ediyor; Supabase yalnızca bölge piyasası şeridi ve moderasyon için kullanılıyor.
+
+**Ekran:**
+- **Başlık:** Büyük "Zeytin Defteri" başlığı ve sezon düğmesi Sohbet'te gizlendi. Yerine sade "Sohbet" başlığı ve profil düğmesi geldi.
+- **Kategoriler:** Emoji yerine çizgi ikonlu çipler.
+- **Yazma alanı:** ☰ düğmesi yerine seçili konuyu gösteren "#Genel ▾" düğmesi var; gönder düğmesi çizgi ikonlu.
+- **Mesaj kartı:** Yazar, "bölge · tarih saat", konu etiketi ve şikâyet menüsü. Metin çerçevesiz, en fazla 5 satır. Son yanıt önizlemesi kartın içinde. Altta "Faydalı" ve "Yanıtla · n". Saat artık bir kez yazılıyor; "YANITLA" ve "Tüm yanıtları gör" kalktı.
+
+**Bölge piyasası şeridi:**
+- Eski şerit ("Piyasa • Bölgem 1 No 81 TL/kg") yalnızca kullanıcının kendi elek ortalamasıydı; kaldırıldı.
+- Yeni şerit, kullanıcının bölgesini Zeytin Ligi ile aynı kuralla (kendi elek kayıtlarından) buluyor. Fiyatı Supabase'teki bölge istatistiğinden alıyor (`market_league_regions`, 1 No).
+- Bölgede 5 üretici yoksa fiyat yazılmıyor: "Fiyatlar 5 üreticiyle açılır · şu an n/5". Metin kuralı `MeydanMarketStrip` sınıfında.
+- Dokununca Zeytin Ligi → Piyasa açılıyor (`ZeytinLeagueContainerView.openMarketTab`).
+
+**"Faydalı" kararı:**
+- Tepkiler yalnızca telefonda tutulduğu (buluta yazılmadığı) için sayı artık hiçbir ekranda gösterilmiyor. `ReactionManager` yalnızca etiketi yazıyor; çizgi ikon seçilince yeşile dönüyor.
+- Ortak sayaç, ayrı bir sunucu özelliği olarak sonraya bırakıldı.
+
+**Kaldırılanlar:**
+- Hiç gösterilmeyen "Meydan nabzı" kodu (`buildMeydanPulse`, özet/bölge/bekleyen kartları, `calculateMeydanStats`, `MeydanStats`; yaklaşık 600 satır).
+- `MarketRepository.getMarketAveragePrice` ve `ReactionManager.getReactionEmoji`.
+- Sunucuda doğrulanmayan "gerçek satış ✓" yazar işareti.
+
+**Testler:**
+- `tests/meydan_redesign`: 27 mantık + 43 bağlantı kontrolü.
+- Diğer test sonuçları değişmedi.
+- Cihazda denenmedi.

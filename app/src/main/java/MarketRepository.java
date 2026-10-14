@@ -145,16 +145,6 @@ public class MarketRepository {
         }
     }
 
-    // ============================================================
-    // AVERAGE PRICE
-    // ============================================================
-
-    public double getMarketAveragePrice(String grade) {
-        return scalarDouble(
-                "COALESCE(AVG(eg.price_per_kg), 0)",
-                safe(grade)
-        );
-    }
 
     // ============================================================
     // WEIGHTED AVERAGE PRICE

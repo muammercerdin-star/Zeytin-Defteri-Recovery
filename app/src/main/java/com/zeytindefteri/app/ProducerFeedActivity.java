@@ -127,9 +127,12 @@ public class ProducerFeedActivity extends Activity {
 
     private LinearLayout feedContainer;
     private LinearLayout categoryContainer;
-    private LinearLayout meydanPulseHost;
 
-    private TextView marketStrip;
+    private LinearLayout marketStrip;
+    private TextView marketStripTitle;
+    private TextView marketStripSubtitle;
+    private int marketStripSerial;
+    private TextView composerTopic;
     private TextView seasonButton;
     private TextView chatSectionTitle;
     private EditText messageInput;
@@ -147,7 +150,7 @@ public class ProducerFeedActivity extends Activity {
     private String currentSection = "MEYDAN";
     private String activeType = "ALL";
 
-    private final List<TextView> categoryViews =
+    private final List<LinearLayout> categoryViews =
             new ArrayList<>();
 
     private ZeytinAssistantOrbView assistantOrb;
@@ -523,7 +526,6 @@ public class ProducerFeedActivity extends Activity {
 
         feedContainer = null;
         categoryContainer = null;
-        meydanPulseHost = null;
         marketStrip = null;
         messageInput = null;
         chatSectionTitle = null;
@@ -603,7 +605,8 @@ public class ProducerFeedActivity extends Activity {
         }
         if (persistentHeader != null) {
             persistentHeader.setVisibility(
-                    ("HOME".equals(currentSection) || "REPORTS".equals(currentSection) || "PROFILE".equals(currentSection))
+                    ("HOME".equals(currentSection) || "REPORTS".equals(currentSection) || "PROFILE".equals(currentSection)
+                            || "MEYDAN".equals(currentSection))
                             ? View.GONE
                             : View.VISIBLE
             );
@@ -628,7 +631,6 @@ public class ProducerFeedActivity extends Activity {
                 && feedContainer != null) {
 
             refreshMarketStrip();
-            refreshMeydanPulse();
             loadFeed();
 
         } else if (seasonReportOpen && "REPORTS".equals(currentSection)) {
@@ -685,64 +687,20 @@ public class ProducerFeedActivity extends Activity {
                 dp(10)
         );
 
-        meydanPulseHost = null;
+
+        body.addView(buildMeydanHeader());
 
         body.addView(
                 buildCategoryRow(),
                 new LinearLayout.LayoutParams(
                         -1,
-                        dp(58)
+                        dp(56)
                 )
         );
 
-        marketStrip =
-                text(
-                        "Piyasa • Veriler hazırlanıyor...",
-                        13,
-                        GREEN_DARK,
-                        true
-                );
-
-        marketStrip.setGravity(
-                Gravity.CENTER_VERTICAL
-        );
-
-        marketStrip.setPadding(
-                dp(18),
-                0,
-                dp(18),
-                0
-        );
-
-        marketStrip.setBackground(
-                round(
-                        GREEN_SOFT,
-                        20,
-                        GreenTheme.color(R.color.zd_border)
-                )
-        );
-
-        LinearLayout.LayoutParams mp =
-                new LinearLayout.LayoutParams(
-                        -1,
-                        dp(48)
-                );
-
-        mp.setMargins(
-                dp(16),
-                0,
-                dp(16),
-                dp(10)
-        );
-
-        body.addView(
-                marketStrip,
-                mp
-        );
-
-        marketStrip.setOnClickListener(
-                v -> showSection("MARKET")
-        );
+        LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(-1, -2);
+        mp.setMargins(dp(16), dp(2), dp(16), dp(12));
+        body.addView(buildMarketStrip(), mp);
 
         body.addView(
                 buildChatSectionHeader()
@@ -791,625 +749,80 @@ public class ProducerFeedActivity extends Activity {
 
 
 
-    private void refreshMeydanPulse() {
-        if (meydanPulseHost == null) {
-            return;
-        }
-
-        meydanPulseHost.removeAllViews();
-
-        meydanPulseHost.addView(
-                buildMeydanPulse(),
-                new LinearLayout.LayoutParams(
-                        -1,
-                        -2
-                )
-        );
-    }
-
-    private View buildMeydanPulse() {
-        HorizontalScrollView hsv =
-                new HorizontalScrollView(this);
-
-        hsv.setHorizontalScrollBarEnabled(false);
-
-        hsv.setOverScrollMode(
-                View.OVER_SCROLL_NEVER
-        );
-
-        LinearLayout cards =
-                new LinearLayout(this);
-
-        cards.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-        cards.setPadding(
-                dp(16),
-                dp(12),
-                dp(8),
-                dp(8)
-        );
-
-        MeydanStats stats =
-                calculateMeydanStats();
-
-        View summary =
-                buildMeydanSummaryCard(stats);
-
-        LinearLayout.LayoutParams sp =
-                new LinearLayout.LayoutParams(
-                        dp(250),
-                        dp(132)
-                );
-
-        sp.setMargins(
-                0,
-                0,
-                dp(10),
-                0
-        );
-
-        cards.addView(
-                summary,
-                sp
-        );
-
-        View region =
-                buildMeydanRegionCard(stats);
-
-        LinearLayout.LayoutParams rp =
-                new LinearLayout.LayoutParams(
-                        dp(230),
-                        dp(132)
-                );
-
-        rp.setMargins(
-                0,
-                0,
-                dp(10),
-                0
-        );
-
-        cards.addView(
-                region,
-                rp
-        );
-
-        View waiting =
-                buildMeydanWaitingCard(stats);
-
-        LinearLayout.LayoutParams wp =
-                new LinearLayout.LayoutParams(
-                        dp(250),
-                        dp(132)
-                );
-
-        wp.setMargins(
-                0,
-                0,
-                dp(8),
-                0
-        );
-
-        cards.addView(
-                waiting,
-                wp
-        );
-
-        hsv.addView(cards);
-
-        return hsv;
-    }
-
-    private View buildMeydanSummaryCard(
-            MeydanStats stats
-    ) {
-        LinearLayout card =
-                new LinearLayout(this);
-
-        card.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        card.setPadding(
-                dp(14),
-                dp(12),
-                dp(14),
-                dp(10)
-        );
-
-        card.setBackground(
-                round(
-                        GreenTheme.parse("#153C2D"),
-                        20,
-                        GreenTheme.parse("#397158")
-                )
-        );
-
-        LinearLayout titleLine = row();
-
-        TextView icon =
-                text(
-                        "▥",
-                        16,
-                        GREEN,
-                        true
-                );
-
-        titleLine.addView(icon);
-
-        TextView title =
-                text(
-                        "  Bugünün Özeti",
-                        15,
-                        TEXT,
-                        true
-                );
-
-        titleLine.addView(
-                title,
-                new LinearLayout.LayoutParams(
-                        0,
-                        -2,
-                        1
-                )
-        );
-
-        TextView arrow =
-                text(
-                        "›",
-                        22,
-                        GREEN,
-                        true
-                );
-
-        titleLine.addView(arrow);
-
-        card.addView(titleLine);
-
-        TextView main =
-                text(
-                        stats.topTopicCount > 0
-                                ? stats.topTopic
-                                + " bugün öne çıkıyor."
-                                : "Bugün henüz belirgin bir konu yok.",
-                        13,
-                        GreenTheme.color(R.color.zd_text_soft),
-                        true
-                );
-
-        main.setPadding(
-                0,
-                dp(7),
-                0,
-                0
-        );
-
-        main.setMaxLines(2);
-
-        card.addView(main);
-
-        TextView detail =
-                text(
-                        stats.todayCount
-                                + " yeni mesaj"
-                                + "  •  "
-                                + stats.todayReplies
-                                + " yanıt",
-                        11,
-                        MUTED,
-                        false
-                );
-
-        detail.setPadding(
-                0,
-                dp(7),
-                0,
-                0
-        );
-
-        card.addView(detail);
-
-        card.setOnClickListener(v -> {
-            activeType = "ALL";
-            styleCategories();
-            updateChatSectionTitle();
-            loadFeed();
-        });
-
-        return card;
-    }
-
-    private View buildMeydanRegionCard(
-            MeydanStats stats
-    ) {
-        LinearLayout card =
-                new LinearLayout(this);
-
-        card.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        card.setPadding(
-                dp(14),
-                dp(12),
-                dp(14),
-                dp(10)
-        );
-
-        card.setBackground(
-                round(
-                        CARD,
-                        20,
-                        BORDER
-                )
-        );
-
-        LinearLayout titleLine = row();
-
-        TextView title =
-                text(
-                        "📍  Bölgemde",
-                        15,
-                        TEXT,
-                        true
-                );
-
-        titleLine.addView(
-                title,
-                new LinearLayout.LayoutParams(
-                        0,
-                        -2,
-                        1
-                )
-        );
-
-        card.addView(titleLine);
-
-        String userDistrict =
-                safe(
-                        db.getSetting(
-                                "user_district",
-                                ""
-                        ),
-                        "Bölgem"
-                );
-
-        TextView region =
-                text(
-                        userDistrict,
-                        14,
-                        GREEN,
-                        true
-                );
-
-        region.setPadding(
-                0,
-                dp(8),
-                0,
-                0
-        );
-
-        card.addView(region);
-
-        TextView newMessages =
-                text(
-                        stats.localTodayCount > 0
-                                ? stats.localTodayCount
-                                + " yeni mesaj"
-                                : "Bugün yeni mesaj yok",
-                        12,
-                        GreenTheme.color(R.color.zd_text_soft),
-                        false
-                );
-
-        newMessages.setPadding(
-                0,
-                dp(4),
-                0,
-                0
-        );
-
-        card.addView(newMessages);
-
-        if (!TextUtils.isEmpty(
-                stats.secondaryRegion
-        )) {
-            TextView second =
-                    text(
-                            stats.secondaryRegion
-                                    + "  •  "
-                                    + stats.secondaryRegionCount
-                                    + " mesaj",
-                            11,
-                            MUTED,
-                            false
-                    );
-
-            second.setPadding(
-                    0,
-                    dp(6),
-                    0,
-                    0
-            );
-
-            card.addView(second);
-        }
-
-        return card;
-    }
-
-    private View buildMeydanWaitingCard(
-            MeydanStats stats
-    ) {
-        LinearLayout card =
-                new LinearLayout(this);
-
-        card.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        card.setPadding(
-                dp(14),
-                dp(12),
-                dp(14),
-                dp(10)
-        );
-
-        card.setBackground(
-                round(
-                        GreenTheme.color(R.color.zd_surface),
-                        20,
-                        BORDER
-                )
-        );
-
-        LinearLayout titleLine = row();
-
-        TextView title =
-                text(
-                        "❓  Cevap Bekleyenler",
-                        15,
-                        TEXT,
-                        true
-                );
-
-        titleLine.addView(
-                title,
-                new LinearLayout.LayoutParams(
-                        0,
-                        -2,
-                        1
-                )
-        );
-
-        card.addView(titleLine);
-
-        if (stats.waitingQuestion == null) {
-
-            TextView empty =
-                    text(
-                            "Şimdilik cevapsız soru görünmüyor.",
-                            12,
-                            MUTED,
-                            false
-                    );
-
-            empty.setPadding(
-                    0,
-                    dp(12),
-                    0,
-                    0
-            );
-
-            card.addView(empty);
-
-        } else {
-
-            TextView question =
-                    text(
-                            safe(
-                                    stats.waitingQuestion.content,
-                                    "Soru"
-                            ),
-                            12,
-                            GreenTheme.color(R.color.zd_text_soft),
-                            true
-                    );
-
-            question.setMaxLines(2);
-
-            question.setEllipsize(
-                    TextUtils.TruncateAt.END
-            );
-
-            question.setPadding(
-                    0,
-                    dp(9),
-                    0,
-                    0
-            );
-
-            card.addView(question);
-
-            TextView time =
-                    text(
-                            relativeTime(
-                                    stats.waitingQuestion.createdAt
-                            )
-                                    + "  •  cevap bekliyor",
-                            11,
-                            MUTED,
-                            false
-                    );
-
-            time.setPadding(
-                    0,
-                    dp(5),
-                    0,
-                    0
-            );
-
-            card.addView(time);
-
-            card.setOnClickListener(v -> {
-                if (commentManager != null) {
-                    commentManager.showComments(
-                            stats.waitingQuestion.id
-                    );
-                }
-            });
-        }
-
-        return card;
+    /** Sohbet başlığı: büyük uygulama başlığı ve sezon düğmesi yerine sade başlık + profil. */
+    private View buildMeydanHeader() {
+        LinearLayout header = row();
+        header.setPadding(dp(20), dp(16), dp(16), dp(6));
+        LinearLayout titles = new LinearLayout(this);
+        titles.setOrientation(LinearLayout.VERTICAL);
+        titles.addView(text("Sohbet", 24, TEXT, true));
+        titles.addView(text("Bölgendeki üreticilerle konuş", 12, MUTED, false));
+        header.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
+        FirebaseUser user = firebaseAuth == null ? null : firebaseAuth.getCurrentUser();
+        String uid = user == null ? "" : user.getUid();
+        String name = user == null ? "Üretici" : safe(user.getDisplayName(), "Üretici");
+        View avatar = feedThreadAvatar(uid, name);
+        avatar.setContentDescription("Profil ve ayarlar");
+        avatar.setOnClickListener(v -> showSection("PROFILE"));
+        header.addView(avatar, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        return header;
     }
 
     private View buildCategoryRow() {
         HorizontalScrollView hsv =
                 new HorizontalScrollView(this);
-
         hsv.setHorizontalScrollBarEnabled(false);
-
         hsv.setOverScrollMode(
                 View.OVER_SCROLL_NEVER
         );
-
         categoryContainer = row();
-
-        categoryContainer.setPadding(
-                dp(16),
-                dp(6),
-                dp(8),
-                dp(6)
-        );
-
-        addCategory(
-                "👥  #Genel",
-                "ALL"
-        );
-
-        addCategory(
-                "▥  #Piyasa",
-                "MARKET"
-        );
-
-        addCategory(
-                "🧺  #Hasat",
-                "HARVEST"
-        );
-
-        addCategory(
-                "🌿  #Hastalık",
-                "PEST"
-        );
-
-        addCategory(
-                "💧  #Sulama",
-                "IRRIGATION"
-        );
-
-        addCategory(
-                "🤝  #Alım-Satım",
-                "SALE"
-        );
-
+        categoryContainer.setPadding(dp(16), dp(6), dp(8), dp(6));
+        categoryViews.clear();
+        addCategory("Genel", R.drawable.ic_op_chat, "ALL");
+        addCategory("Piyasa", R.drawable.ic_op_tag, "MARKET");
+        addCategory("Hasat", R.drawable.ic_op_basket, "HARVEST");
+        addCategory("Hastalık", R.drawable.ic_op_trap, "PEST");
+        addCategory("Sulama", R.drawable.ic_op_water, "IRRIGATION");
+        addCategory("Alım-satım", R.drawable.ic_op_truck, "SALE");
         hsv.addView(categoryContainer);
-
         return hsv;
     }
 
-    private void addCategory(
-            String label,
-            String type
-    ) {
-        TextView chip =
-                text(
-                        label,
-                        12,
-                        GREEN_DARK,
-                        true
-                );
-
-        chip.setGravity(
-                Gravity.CENTER
-        );
-
+    private void addCategory(String label, int icon, String type) {
+        LinearLayout chip = row();
+        chip.setGravity(Gravity.CENTER);
+        chip.setPadding(dp(14), 0, dp(14), 0);
         chip.setTag(type);
-
-        chip.setPadding(
-                dp(14),
-                0,
-                dp(14),
-                0
-        );
-
-        LinearLayout.LayoutParams p =
-                new LinearLayout.LayoutParams(
-                        -2,
-                        dp(42)
-                );
-
-        p.setMargins(
-                0,
-                0,
-                dp(8),
-                0
-        );
-
-        categoryContainer.addView(
-                chip,
-                p
-        );
-
+        ImageView glyph = new ImageView(this);
+        glyph.setImageResource(icon);
+        chip.addView(glyph, new LinearLayout.LayoutParams(dp(16), dp(16)));
+        TextView name = text(label, 13, TEXT, true);
+        name.setPadding(dp(6), 0, 0, 0);
+        chip.addView(name);
+        chip.setContentDescription(label + " sohbeti");
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-2, dp(40));
+        p.setMargins(0, 0, dp(8), 0);
+        categoryContainer.addView(chip, p);
         chip.setOnClickListener(v -> {
-            activeType =
-                    String.valueOf(
-                            v.getTag()
-                    );
-
+            activeType = String.valueOf(v.getTag());
             styleCategories();
             updateChatSectionTitle();
             loadFeed();
         });
-
         categoryViews.add(chip);
-
         styleCategories();
     }
 
     private void styleCategories() {
-        for (TextView v : categoryViews) {
-
-            boolean active =
-                    activeType.equals(
-                            String.valueOf(
-                                    v.getTag()
-                            )
-                    );
-
-            v.setTextColor(
-                    active
-                            ? Color.WHITE
-                            : GreenTheme.parse(
-                            "#D9E3E0"
-                    )
-            );
-
-            v.setBackground(
-                    round(
-                            active
-                                    ? GreenTheme.parse(
-                                    "#28583D"
-                            )
-                                    : GreenTheme.color(R.color.zd_surface),
-                            22,
-                            active
-                                    ? GREEN
-                                    : BORDER
-                    )
-            );
+        int soft = GreenTheme.color(R.color.zd_text_soft);
+        for (LinearLayout chip : categoryViews) {
+            boolean active = activeType.equals(String.valueOf(chip.getTag()));
+            chip.setBackground(round(active ? GREEN_SOFT : GreenTheme.color(R.color.zd_surface), 20, active ? GREEN : BORDER));
+            chip.setSelected(active);
+            ((ImageView) chip.getChildAt(0)).setColorFilter(active ? GREEN : soft);
+            ((TextView) chip.getChildAt(1)).setTextColor(active ? GREEN : soft);
         }
+        if (composerTopic != null) composerTopic.setText(chatTitleForActiveType());
     }
 
     private View buildChatSectionHeader() {
@@ -1463,166 +876,91 @@ public class ProducerFeedActivity extends Activity {
                     chatTitleForActiveType()
             );
         }
+        if (composerTopic != null) composerTopic.setText(chatTitleForActiveType());
     }
 
     private String chatTitleForActiveType() {
         switch (activeType) {
             case "MARKET":
-                return "#Piyasa Sohbeti";
+                return "#Piyasa";
 
             case "PEST":
-                return "#Hastalık Sohbeti";
+                return "#Hastalık";
 
             case "HARVEST":
-                return "#Hasat Sohbeti";
+                return "#Hasat";
 
             case "IRRIGATION":
-                return "#Sulama Sohbeti";
+                return "#Sulama";
 
             case "SALE":
-                return "#Alım-Satım Sohbeti";
+                return "#Alım-satım";
 
             default:
-                return "#Genel Sohbet";
+                return "#Genel";
         }
     }
 
     private View buildComposer() {
         LinearLayout holder = row();
+        holder.setPadding(dp(12), dp(8), dp(12), dp(8));
+        holder.setBackgroundColor(GreenTheme.color(R.color.zd_surface));
 
-        holder.setPadding(
-                dp(14),
-                dp(7),
-                dp(14),
-                dp(7)
-        );
+        // Seçili konu görünür: mesaj bu konuya gider. Dokununca konu seçici açılır.
+        composerTopic = text(chatTitleForActiveType(), 13, GreenTheme.color(R.color.zd_text_soft), true);
+        composerTopic.setGravity(Gravity.CENTER_VERTICAL);
+        composerTopic.setPadding(dp(12), 0, dp(8), 0);
+        composerTopic.setSingleLine(true);
+        android.graphics.drawable.Drawable caret = getDrawable(R.drawable.ic_op_down);
+        if (caret != null) {
+            caret = caret.mutate();
+            caret.setTint(MUTED);
+            caret.setBounds(0, 0, dp(14), dp(14));
+            composerTopic.setCompoundDrawablesRelative(null, null, caret, null);
+            composerTopic.setCompoundDrawablePadding(dp(4));
+        }
+        composerTopic.setBackground(round(CARD, 23, BORDER));
+        composerTopic.setContentDescription("Mesaj konusunu seç");
+        composerTopic.setOnClickListener(v -> showMeydanTopicPicker());
+        holder.addView(composerTopic, new LinearLayout.LayoutParams(-2, dp(46)));
 
-        holder.setBackgroundColor(
-                GreenTheme.color(R.color.zd_surface)
-        );
-
-        TextView topic =
-                circle(
-                        "☰",
-                        17,
-                        GreenTheme.color(R.color.zd_input),
-                        GreenTheme.color(R.color.zd_text_soft)
-                );
-
-        topic.setContentDescription(
-                "Mesaj konusunu seç"
-        );
-
-        holder.addView(
-                topic,
-                new LinearLayout.LayoutParams(
-                        dp(48),
-                        dp(48)
-                )
-        );
-
-        topic.setOnClickListener(
-                v -> showMeydanTopicPicker()
-        );
-
-        messageInput =
-                new EditText(this);
+        messageInput = new EditText(this);
         messageInput.setBackgroundTintList(null);
-
         messageInput.setSingleLine(false);
         messageInput.setMaxLines(3);
-
-        messageInput.setHint(
-                "Meydan’a bir mesaj yaz..."
-        );
-
+        messageInput.setHint("Mesaj yaz…");
         messageInput.setTextSize(14);
         messageInput.setTextColor(TEXT);
+        messageInput.setHintTextColor(MUTED);
+        messageInput.setPadding(dp(16), dp(4), dp(12), dp(4));
+        messageInput.setBackground(round(BG, 23, BORDER));
+        LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(0, dp(46), 1);
+        ip.setMargins(dp(8), 0, dp(8), 0);
+        holder.addView(messageInput, ip);
 
-        messageInput.setHintTextColor(
-                GreenTheme.color(R.color.zd_muted)
-        );
-
-        messageInput.setPadding(
-                dp(16),
-                dp(4),
-                dp(12),
-                dp(4)
-        );
-
-        messageInput.setBackground(
-                round(
-                        GreenTheme.color(R.color.zd_input),
-                        24,
-                        GreenTheme.color(R.color.zd_border)
-                )
-        );
-
-        LinearLayout.LayoutParams ip =
-                new LinearLayout.LayoutParams(
-                        0,
-                        dp(48),
-                        1
-                );
-
-        ip.setMargins(
-                dp(8),
-                0,
-                dp(8),
-                0
-        );
-
-        holder.addView(
-                messageInput,
-                ip
-        );
-
-        TextView send =
-                circle(
-                        "➤",
-                        20,
-                        GREEN,
-                        BG
-                );
-
-        send.setContentDescription(
-                "Mesajı gönder"
-        );
-
-        holder.addView(
-                send,
-                new LinearLayout.LayoutParams(
-                        dp(48),
-                        dp(48)
-                )
-        );
-
+        FrameLayout send = new FrameLayout(this);
+        GradientDrawable sendBg = new GradientDrawable();
+        sendBg.setShape(GradientDrawable.OVAL);
+        sendBg.setColor(GREEN);
+        send.setBackground(sendBg);
+        ImageView sendIcon = new ImageView(this);
+        sendIcon.setImageResource(R.drawable.ic_op_send);
+        sendIcon.setColorFilter(BG);
+        send.addView(sendIcon, new FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER));
+        send.setContentDescription("Mesajı gönder");
+        holder.addView(send, new LinearLayout.LayoutParams(dp(46), dp(46)));
         send.setOnClickListener(v -> {
-            String draft =
-                    messageInput == null
-                            ? ""
-                            : messageInput
-                            .getText()
-                            .toString()
-                            .trim();
-
+            String draft = messageInput == null ? "" : messageInput.getText().toString().trim();
             if (draft.isEmpty()) {
-                Toast.makeText(
-                        this,
-                        "Önce bir mesaj yaz.",
-                        Toast.LENGTH_SHORT
-                ).show();
-
+                Toast.makeText(this, "Önce bir mesaj yaz.", Toast.LENGTH_SHORT).show();
                 return;
             }
-
             sendMeydanText(send);
         });
-
         return holder;
     }
 
-    private void sendMeydanText(TextView send) {
+    private void sendMeydanText(View send) {
         if (publishingText || messageInput == null) return;
         String text = messageInput.getText().toString().trim();
         if (text.length() < 3 || text.length() > 2000) {
@@ -1705,56 +1043,93 @@ public class ProducerFeedActivity extends Activity {
         showDarkDialog(dialog);
     }
 
+    /** Sohbet'in üstündeki bölge piyasası şeridi; dokununca Zeytin Ligi → Piyasa açılır. */
+    private View buildMarketStrip() {
+        marketStrip = row();
+        marketStrip.setPadding(dp(14), dp(12), dp(10), dp(12));
+        marketStrip.setBackground(round(GreenTheme.color(R.color.zd_surface), 16, BORDER));
+        ImageView chart = new ImageView(this);
+        chart.setImageResource(R.drawable.ic_op_chart);
+        chart.setColorFilter(GREEN);
+        marketStrip.addView(chart, new LinearLayout.LayoutParams(dp(20), dp(20)));
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        texts.setPadding(dp(12), 0, dp(8), 0);
+        marketStripTitle = text("", 13, TEXT, true);
+        marketStripTitle.setSingleLine(true);
+        marketStripTitle.setEllipsize(TextUtils.TruncateAt.END);
+        marketStripSubtitle = text("", 12, MUTED, false);
+        marketStripSubtitle.setMaxLines(2);
+        texts.addView(marketStripTitle);
+        texts.addView(marketStripSubtitle);
+        marketStrip.addView(texts, new LinearLayout.LayoutParams(0, -2, 1));
+        ImageView chevron = new ImageView(this);
+        chevron.setImageResource(R.drawable.ic_op_chevron);
+        chevron.setColorFilter(GREEN);
+        marketStrip.addView(chevron, new LinearLayout.LayoutParams(dp(18), dp(18)));
+        marketStrip.setOnClickListener(v -> openMarketFromChat());
+        applyMarketStrip(MeydanMarketStrip.loading(""));
+        return marketStrip;
+    }
+
+    private void applyMarketStrip(MeydanMarketStrip state) {
+        if (marketStrip == null) return;
+        marketStripTitle.setText(state.title);
+        marketStripSubtitle.setText(state.subtitle);
+        marketStrip.setBackground(round(GreenTheme.color(R.color.zd_surface), 16,
+                state.showsPrice ? GreenTheme.color(R.color.zd_green_mid_dim) : BORDER));
+        marketStrip.setContentDescription(state.title + ". " + state.subtitle + ". Piyasayı aç");
+    }
+
+    private void openMarketFromChat() {
+        showSection("REPORTS");
+        if (reportsSectionCache != null) reportsSectionCache.openMarketTab();
+    }
+
+    /**
+     * Kullanıcının bölgesi kendi elek kayıtlarından (Zeytin Ligi ile aynı kural) bulunur; fiyat ise
+     * Supabase'teki bölge istatistiğinden gelir. Bölgede 5 üretici yoksa fiyat yazılmaz.
+     */
     private void refreshMarketStrip() {
-        if (marketStrip == null
-                || marketRepository == null) {
-            return;
-        }
-
-        String district =
-                db.getSetting(
-                        "user_district",
-                        "Bölgem"
-                );
-
-        double price =
-                marketRepository
-                        .getMarketAveragePrice("1");
-
-        NumberFormat nf =
-                NumberFormat.getNumberInstance(
-                        new Locale(
-                                "tr",
-                                "TR"
-                        )
-                );
-
-        nf.setMaximumFractionDigits(0);
-
-        if (price > 0) {
-
-            marketStrip.setText(
-                    "▥  Piyasa  •  "
-                            + safe(
-                            district,
-                            "Bölgem"
-                    )
-                            + "     1 No   "
-                            + nf.format(price)
-                            + " TL/kg     ›"
-            );
-
-        } else {
-
-            marketStrip.setText(
-                    "▥  Piyasa  •  "
-                            + safe(
-                            district,
-                            "Bölgem"
-                    )
-                            + "     Bölgesel fiyatları gör  ›"
-            );
-        }
+        if (marketStrip == null) return;
+        final int serial = ++marketStripSerial;
+        FirebaseUser user = firebaseAuth == null ? null : firebaseAuth.getCurrentUser();
+        final String uid = user == null ? "" : user.getUid();
+        final int year = db.getActiveSeasonYear();
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            String regionId = "", regionLabel = "";
+            DatabaseHelper helper = new DatabaseHelper(app);
+            try {
+                ZeytinLeagueRepository.Result local = new ZeytinLeagueRepository().local(helper, year, uid);
+                if (local.local != null) regionId = safe(local.local.region, "");
+                for (ZeytinLeagueRepository.Region r : local.regions) {
+                    if (r != null && regionId.equals(r.id) && r.name != null) regionLabel = r.name;
+                }
+            } catch (RuntimeException ignored) {
+                // Yerel kayıt okunamazsa bölge bilinmiyor sayılır.
+            } finally {
+                helper.close();
+            }
+            final String ownRegion = regionId;
+            final String label = "Bölge belirtilmemiş".equals(regionLabel) ? "" : regionLabel;
+            runOnUiThread(() -> {
+                if (serial != marketStripSerial || isFinishing() || marketStrip == null) return;
+                if (label.isEmpty() || uid.isEmpty()) { applyMarketStrip(MeydanMarketStrip.of(label, true, 0, false, 0)); return; }
+                applyMarketStrip(MeydanMarketStrip.loading(label));
+                MarketCloudRepository cloud = new MarketCloudRepository(db, uid);
+                if (!cloud.canUseCloud()) { applyMarketStrip(MeydanMarketStrip.of(label, false, 0, false, 0)); return; }
+                cloud.loadLeagueRegions(year, "1 No", (regions, error) -> {
+                    if (serial != marketStripSerial || isFinishing() || marketStrip == null) return;
+                    if (error != null || regions == null) { applyMarketStrip(MeydanMarketStrip.of(label, false, 0, false, 0)); return; }
+                    MarketCloudRepository.LeagueRegionStat own = null;
+                    for (MarketCloudRepository.LeagueRegionStat r : regions) if (r != null && r.id.equals(ownRegion)) own = r;
+                    applyMarketStrip(own == null
+                            ? MeydanMarketStrip.of(label, true, 0, false, 0)
+                            : MeydanMarketStrip.of(label, true, own.producerCount, own.published, own.averagePrice));
+                });
+            });
+        }, "meydan-market").start();
     }
 
     private void loadFeed() {
@@ -1961,79 +1336,133 @@ public class ProducerFeedActivity extends Activity {
     }
 
 
+    /** Sohbet mesaj kartı: yazar, metin, son yanıt önizlemesi, Faydalı ve Yanıtla. */
     private View buildPostCard(final FeedManager.PostItem p) {
-        LinearLayout group=new LinearLayout(this);group.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(-1,-2);gp.bottomMargin=dp(20);group.setLayoutParams(gp);
-        FeedReplyPreview preview=feedReplyPreviews.get(p.id);
-        int count=socialBlocks.hasBlocks()?(preview==null?0:preview.cachedCount):Math.max(Math.max(0,p.commentCount),preview==null?0:preview.cachedCount);
-        group.addView(buildFeedThreadRow(p,null,count));
-        if(preview!=null) {
-            LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-1,-2);pp.leftMargin=dp(24);pp.topMargin=dp(8);
-            group.addView(buildFeedThreadRow(p,preview,count),pp);
-            TextView all=text("Tüm yanıtları gör ("+count+")",12,GREEN,true);
-            all.setPadding(dp(48),dp(6),0,dp(6));all.setMinHeight(dp(40));
-            all.setOnClickListener(v -> openFeedThread(p.id,"",false));group.addView(all);
-        }
-        return group;
-    }
+        FeedReplyPreview preview = feedReplyPreviews.get(p.id);
+        int count = socialBlocks.hasBlocks() ? (preview == null ? 0 : preview.cachedCount)
+                : Math.max(Math.max(0, p.commentCount), preview == null ? 0 : preview.cachedCount);
+        final String uid = safe(p.userId, "");
+        final String name = safe(p.userName, "Üretici");
+        int soft = GreenTheme.color(R.color.zd_text_soft);
+        int surface = GreenTheme.color(R.color.zd_surface);
 
-    private View buildFeedThreadRow(FeedManager.PostItem p,FeedReplyPreview preview,int count) {
-        boolean post=preview==null;
-        String uid=post?safe(p.userId,""):preview.uid;
-        String name=post?safe(p.userName,"Üretici"):safe(preview.name,"Üretici");
-        String message=post?safe(p.content,""):preview.content;
-        String target=post?"":preview.cloudId;
-        long at=post?p.createdAt:preview.createdAt;
-        LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.TOP);
-        LinearLayout rail=new LinearLayout(this);rail.setOrientation(LinearLayout.VERTICAL);rail.setGravity(Gravity.CENTER_HORIZONTAL);
-        rail.addView(feedThreadAvatar(uid,name),new LinearLayout.LayoutParams(dp(36),dp(36)));
-        View line=new View(this);line.setBackgroundColor(GreenTheme.color(R.color.reply_border));
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(1),dp(24));lp.topMargin=dp(8);rail.addView(line,lp);
-        row.addView(rail,new LinearLayout.LayoutParams(dp(42),-2));
-        LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(6),0,0,0);
-        row.addView(content,new LinearLayout.LayoutParams(0,-2,1));
-        LinearLayout header=row();LinearLayout identity=new LinearLayout(this);identity.setOrientation(LinearLayout.VERTICAL);
-        TextView author=text(name+(post&&p.realSale?" ✓":""),14,TEXT,true);
-        author.setSingleLine(true);author.setEllipsize(TextUtils.TruncateAt.END);identity.addView(author);
-        String meta=(at>0?feedThreadDate.format(new Date(at))+" • ":"")+feedThreadCategory(p.postType);
-        if(post&&!place(p).isEmpty())meta+=" • "+place(p);
-        TextView metadata=text(meta,10,MUTED,false);metadata.setMaxLines(2);identity.addView(metadata);
-        header.addView(identity,new LinearLayout.LayoutParams(0,-2,1));
-        // Existing feed dots did not expose a post edit/delete handler. Keep that behavior.
-        TextView menu=text("•••",14,MUTED,true);menu.setGravity(Gravity.CENTER);
-        menu.setContentDescription("Mesaj");header.addView(menu,new LinearLayout.LayoutParams(dp(40),dp(40)));
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(14), dp(12), dp(4));
+        card.setBackground(round(CARD, 20, BORDER));
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
+        cp.bottomMargin = dp(12);
+        card.setLayoutParams(cp);
+
+        LinearLayout header = row();
+        header.addView(feedThreadAvatar(uid, name), new LinearLayout.LayoutParams(dp(40), dp(40)));
+        LinearLayout identity = new LinearLayout(this);
+        identity.setOrientation(LinearLayout.VERTICAL);
+        identity.setPadding(dp(10), 0, dp(6), 0);
+        // Eski "gerçek satış" onay işareti sunucuda doğrulanmadığı için gösterilmez.
+        TextView author = text(name, 14, TEXT, true);
+        author.setSingleLine(true);
+        author.setEllipsize(TextUtils.TruncateAt.END);
+        identity.addView(author);
+        String when = p.createdAt > 0 ? feedThreadDate.format(new Date(p.createdAt)) : "";
+        String meta = place(p).isEmpty() ? when : (when.isEmpty() ? place(p) : place(p) + " · " + when);
+        TextView metadata = text(meta, 12, MUTED, false);
+        metadata.setSingleLine(true);
+        metadata.setEllipsize(TextUtils.TruncateAt.END);
+        identity.addView(metadata);
+        header.addView(identity, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView tag = text(feedThreadCategory(p.postType), 11, soft, true);
+        tag.setPadding(dp(9), dp(3), dp(9), dp(3));
+        tag.setBackground(round(surface, 10, BORDER));
+        header.addView(tag);
         if (SocialReportManager.canReport(uid)) {
+            ImageView menu = new ImageView(this);
+            menu.setImageResource(R.drawable.ic_op_more);
+            menu.setColorFilter(MUTED);
+            menu.setPadding(dp(10), dp(10), dp(10), dp(10));
             menu.setContentDescription("Şikâyet seçenekleri");
             menu.setOnClickListener(v -> {
                 String postCloudId = db.getPostCloudId(p.id);
-                String type = post ? "POST" : (preview.parentId.isEmpty() ? "COMMENT" : "REPLY");
                 new android.app.AlertDialog.Builder(this).setItems(new String[]{"Şikâyet Et","Kullanıcıyı Şikâyet Et","Kullanıcıyı Engelle"},(dialog,index) -> {
-                    if(index==2)SocialBlockUi.confirm(this,socialBlocks,uid,name,post?place(p):"",false);
-                    else SocialReportManager.showReasons(this,type,post?postCloudId:preview.cloudId,postCloudId,uid,index==1);
+                    if(index==2)SocialBlockUi.confirm(this,socialBlocks,uid,name,place(p),false);
+                    else SocialReportManager.showReasons(this,"POST",postCloudId,postCloudId,uid,index==1);
                 }).setNegativeButton("Vazgeç",null).show();
             });
+            header.addView(menu, new LinearLayout.LayoutParams(dp(40), dp(40)));
         }
-        content.addView(header);
-        if(!post&&!preview.parentId.isEmpty()) {
-            TextView context=text("↪ "+safe(preview.replyToName,"Önceki mesaj")+" adlı kullanıcıya yanıt",10,MUTED,false);
-            context.setMaxLines(1);context.setEllipsize(TextUtils.TruncateAt.END);content.addView(context);
+        card.addView(header);
+
+        TextView body = text(safe(p.content, ""), 15, TEXT, false);
+        body.setLineSpacing(dp(2), 1f);
+        body.setMaxLines(5);
+        body.setEllipsize(TextUtils.TruncateAt.END);
+        body.setPadding(0, dp(10), dp(4), 0);
+        body.setOnClickListener(v -> openFeedThread(p.id, "", false));
+        card.addView(body);
+
+        if (preview != null) {
+            LinearLayout reply = row();
+            reply.setGravity(Gravity.TOP);
+            reply.setPadding(dp(10), dp(8), dp(10), dp(8));
+            reply.setBackground(round(surface, 12, surface));
+            ImageView arrow = new ImageView(this);
+            arrow.setImageResource(R.drawable.ic_op_reply);
+            arrow.setColorFilter(MUTED);
+            reply.addView(arrow, new LinearLayout.LayoutParams(dp(14), dp(14)));
+            android.text.SpannableStringBuilder line = new android.text.SpannableStringBuilder();
+            String who = safe(preview.name, "Üretici");
+            line.append(who);
+            line.setSpan(new android.text.style.StyleSpan(Typeface.BOLD), 0, who.length(), 0);
+            line.append(" ").append(safe(preview.content, ""));
+            if (preview.createdAt > 0) line.append(" · ").append(feedThreadClock.format(new Date(preview.createdAt)));
+            TextView replyText = text("", 12, soft, false);
+            replyText.setText(line);
+            replyText.setMaxLines(2);
+            replyText.setEllipsize(TextUtils.TruncateAt.END);
+            replyText.setPadding(dp(8), 0, 0, 0);
+            reply.addView(replyText, new LinearLayout.LayoutParams(0, -2, 1));
+            reply.setOnClickListener(v -> openFeedThread(p.id, "", false));
+            LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
+            rp.topMargin = dp(10);
+            rp.rightMargin = dp(4);
+            card.addView(reply, rp);
         }
-        TextView bubble=text(message,15,TEXT,false);bubble.setLineSpacing(dp(2),1f);
-        bubble.setPadding(dp(12),dp(10),dp(12),dp(10));bubble.setMaxLines(post?5:3);bubble.setEllipsize(TextUtils.TruncateAt.END);
-        bubble.setBackground(round(GreenTheme.color(R.color.reply_surface),16,GreenTheme.color(R.color.reply_border)));
-        bubble.setOnClickListener(v -> openFeedThread(p.id,"",false));content.addView(bubble,new LinearLayout.LayoutParams(-1,-2));
-        LinearLayout actions=row();
-        if(post) {
-            TextView reaction=text("",12,GreenTheme.color(R.color.zd_text_soft),false);
-            if(reactionManager!=null)reactionManager.setupReactionButton(reaction,p.id,currentUserKey());
-            actions.addView(reaction,new LinearLayout.LayoutParams(-2,dp(40)));
+
+        View divider = new View(this);
+        divider.setBackgroundColor(BORDER);
+        LinearLayout.LayoutParams dp1 = new LinearLayout.LayoutParams(-1, dp(1));
+        dp1.topMargin = dp(12);
+        dp1.rightMargin = dp(4);
+        card.addView(divider, dp1);
+
+        LinearLayout actions = row();
+        TextView useful = meydanAction("Faydalı", R.drawable.ic_op_heart);
+        if (reactionManager != null) reactionManager.setupReactionButton(useful, p.id, currentUserKey());
+        actions.addView(useful, new LinearLayout.LayoutParams(-2, dp(44)));
+        TextView replyAction = meydanAction(count > 0 ? "Yanıtla · " + count : "Yanıtla", R.drawable.ic_op_reply);
+        replyAction.setContentDescription(count > 0 ? "Yanıtla, " + count + " yanıt" : "Yanıtla");
+        replyAction.setOnClickListener(v -> openFeedThread(p.id, "", true));
+        LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(-2, dp(44));
+        ap.leftMargin = dp(18);
+        actions.addView(replyAction, ap);
+        card.addView(actions);
+        card.setOnClickListener(v -> openFeedThread(p.id, "", false));
+        return card;
+    }
+
+    private TextView meydanAction(String label, int icon) {
+        int soft = GreenTheme.color(R.color.zd_text_soft);
+        TextView t = text(label, 13, soft, false);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        android.graphics.drawable.Drawable d = getDrawable(icon);
+        if (d != null) {
+            d = d.mutate();
+            d.setTint(soft);
+            d.setBounds(0, 0, dp(16), dp(16));
+            t.setCompoundDrawablesRelative(d, null, null, null);
+            t.setCompoundDrawablePadding(dp(6));
         }
-        TextView reply=text(post&&count>0?"YANITLA ("+count+")":"YANITLA",11,GreenTheme.color(R.color.zd_text_soft),true);
-        reply.setPadding(post?dp(8):0,0,dp(4),0);reply.setGravity(Gravity.CENTER_VERTICAL);reply.setMaxLines(2);
-        reply.setOnClickListener(v -> openFeedThread(p.id,target,true));
-        actions.addView(reply,new LinearLayout.LayoutParams(0,dp(40),1));
-        TextView clock=text(at>0?feedThreadClock.format(new Date(at)):"",10,MUTED,false);actions.addView(clock);
-        content.addView(actions);row.setOnClickListener(v -> openFeedThread(p.id,"",false));return row;
+        return t;
     }
 
     private View feedThreadAvatar(String uid,String name) {
@@ -2072,221 +1501,6 @@ public class ProducerFeedActivity extends Activity {
             .putExtra("focus_composer",focus);
         if(!TextUtils.isEmpty(parentId))intent.putExtra("reply_parent_cloud_id",parentId);
         startActivity(intent);
-    }
-
-    private MeydanStats calculateMeydanStats() {
-        MeydanStats stats =
-                new MeydanStats();
-
-        if (feedManager == null) {
-            return stats;
-        }
-
-        List<FeedManager.PostItem> source =
-                feedManager.getLatestVisiblePosts(100, socialBlocks.blockedIds());
-
-        if (source == null) {
-            return stats;
-        }
-
-        long cutoff =
-                System.currentTimeMillis()
-                        - (
-                        24L
-                                * 60L
-                                * 60L
-                                * 1000L
-                );
-
-        String userDistrict =
-                safe(
-                        db.getSetting(
-                                "user_district",
-                                ""
-                        ),
-                        ""
-                );
-
-        int market = 0;
-        int harvest = 0;
-        int pest = 0;
-        int irrigation = 0;
-        int sale = 0;
-        int general = 0;
-
-        String secondaryRegion = "";
-        int secondaryRegionCount = 0;
-
-        for (FeedManager.PostItem p : source) {
-
-            if (p == null) {
-                continue;
-            }
-
-            boolean today =
-                    p.createdAt >= cutoff;
-
-            if (today) {
-                stats.todayCount++;
-
-                stats.todayReplies +=
-                        Math.max(
-                                0,
-                                p.commentCount
-                        );
-
-                String pt =
-                        p.postType == null
-                                ? "GENERAL"
-                                : p.postType
-                                .toUpperCase(
-                                        Locale.ROOT
-                                );
-
-                if ("MARKET".equals(pt)
-                        || p.realSale) {
-
-                    market++;
-
-                } else if ("HARVEST".equals(pt)) {
-
-                    harvest++;
-
-                } else if (
-                        "PEST".equals(pt)
-                                || "SPRAY".equals(pt)
-                ) {
-
-                    pest++;
-
-                } else if (
-                        "IRRIGATION".equals(pt)
-                ) {
-
-                    irrigation++;
-
-                } else if (
-                        "SALE".equals(pt)
-                ) {
-
-                    sale++;
-
-                } else {
-
-                    general++;
-                }
-
-                String pDistrict =
-                        safe(
-                                p.district,
-                                ""
-                        );
-
-                if (
-                        !userDistrict.isEmpty()
-                                && userDistrict
-                                .equalsIgnoreCase(
-                                        pDistrict
-                                )
-                ) {
-                    stats.localTodayCount++;
-                }
-
-                if (
-                        !pDistrict.isEmpty()
-                                && !pDistrict
-                                .equalsIgnoreCase(
-                                        userDistrict
-                                )
-                ) {
-                    int count =
-                            countRegionToday(
-                                    source,
-                                    pDistrict,
-                                    cutoff
-                            );
-
-                    if (count
-                            > secondaryRegionCount) {
-
-                        secondaryRegion =
-                                pDistrict;
-
-                        secondaryRegionCount =
-                                count;
-                    }
-                }
-            }
-
-            if (
-                    stats.waitingQuestion == null
-                            && p.commentCount <= 0
-                            && isQuestionLike(p)
-            ) {
-                stats.waitingQuestion = p;
-            }
-        }
-
-        stats.secondaryRegion =
-                secondaryRegion;
-
-        stats.secondaryRegionCount =
-                secondaryRegionCount;
-
-        stats.topTopic = "#Genel";
-        stats.topTopicCount = general;
-
-        if (market
-                > stats.topTopicCount) {
-
-            stats.topTopic =
-                    "#Piyasa";
-
-            stats.topTopicCount =
-                    market;
-        }
-
-        if (harvest
-                > stats.topTopicCount) {
-
-            stats.topTopic =
-                    "#Hasat";
-
-            stats.topTopicCount =
-                    harvest;
-        }
-
-        if (pest
-                > stats.topTopicCount) {
-
-            stats.topTopic =
-                    "#Hastalık";
-
-            stats.topTopicCount =
-                    pest;
-        }
-
-        if (irrigation
-                > stats.topTopicCount) {
-
-            stats.topTopic =
-                    "#Sulama";
-
-            stats.topTopicCount =
-                    irrigation;
-        }
-
-        if (sale
-                > stats.topTopicCount) {
-
-            stats.topTopic =
-                    "#Alım-Satım";
-
-            stats.topTopicCount =
-                    sale;
-        }
-
-        return stats;
     }
 
     private int countRegionToday(
@@ -2369,19 +1583,6 @@ public class ProducerFeedActivity extends Activity {
                 || content.contains("gören var");
     }
 
-    private static final class MeydanStats {
-        int todayCount;
-        int todayReplies;
-        int localTodayCount;
-
-        String topTopic = "#Genel";
-        int topTopicCount;
-
-        String secondaryRegion = "";
-        int secondaryRegionCount;
-
-        FeedManager.PostItem waitingQuestion;
-    }
 
     // =========================================================
     // ANA SAYFA
