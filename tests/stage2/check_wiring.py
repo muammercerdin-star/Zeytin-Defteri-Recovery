@@ -11,6 +11,7 @@ APP = JAVA / 'com/zeytindefteri/app'
 
 SCREENS = {
     'GardenDetailActivity': (APP / 'GardenDetailActivity.java', ['activity_garden_detail', 'item_action_tile']),
+    'NewOperationActivity': (APP / 'NewOperationActivity.java', ['activity_new_operation']),
 }
 EMOJI = re.compile('[\U0001F300-\U0001FAFF☀-➿⭐✅✎]')
 failures = []
@@ -56,6 +57,20 @@ for target in ['NewOperationActivity', 'HarvestActivity', 'ElekActivity', 'SaleA
     check(f'openForGarden({target}.class)' in gd, f'{target} bahçe kimliğiyle açılmıyor')
 layout = (RES / 'layout/activity_garden_detail.xml').read_text(encoding='utf8')
 check('tvVariety' not in layout and 'tvLocation' not in layout, 'eski çeşit/konum satırları kaldı')
+
+# İşlem ekle: tür kutuları tek kaynaktan, kayıt yolu korunmuş, eski açılır tür listesi gitmiş
+no = (APP / 'NewOperationActivity.java').read_text(encoding='utf8')
+nol = (RES / 'layout/activity_new_operation.xml').read_text(encoding='utf8')
+check('spinnerType' not in no and 'spinnerType' not in nol, 'eski spinnerType kaldı')
+check('OperationKinds.TYPES' in no and 'OperationKinds.form(' in no, 'tür/form tek kaynaktan gelmiyor')
+check('databaseHelper.addOperation(gardenId, type, date, quantity, unit, cost, note)' in no, 'kayıt çağrısı değişmiş')
+check('syncOperationByLocalId' in no, 'bulut eşitleme kaldırılmış')
+check('operation_type_index' in no and 'operation_date' in no, 'döndürmede tür/tarih saklanmıyor')
+check('getStringExtra("operation_type")' in no and 'getLongExtra("garden_id"' in no, 'gelen seçim okunmuyor')
+check('if (type.equals(' not in no, 'eski if-zinciri form kuralları kaldı')
+man = (ROOT / 'app/src/main/AndroidManifest.xml').read_text(encoding='utf8')
+for act in ['NewOperationActivity', 'HarvestActivity', 'SaleActivity']:
+    check(re.search(r'android:name="\.' + act + r'"[^>]*adjustResize', man) is not None, f'{act} klavyede yeniden boyutlanmıyor')
 
 if failures:
     print('\n'.join('HATA: ' + f for f in failures))

@@ -48,6 +48,50 @@ public final class OperationKinds {
         }
     }
 
+    /** Türe göre form: miktar etiketi, örnek, birimler (ilki varsayılan) ve ipucu. */
+    public static final class Form {
+        public final String quantityLabel, quantityHint, tip;
+        public final String[] units;
+        Form(String quantityLabel, String quantityHint, String[] units, String tip) {
+            this.quantityLabel = quantityLabel; this.quantityHint = quantityHint; this.units = units; this.tip = tip;
+        }
+    }
+
+    public static Form form(String type) {
+        switch (type == null ? "" : type) {
+            case "Sulama": return new Form("Su / süre", "Örn. 4", new String[]{"saat", "m³", "L"},
+                    "Sulamada çalışma süresini veya verilen su miktarını kaydedebilirsin.");
+            case "Gübre": return new Form("Gübre miktarı", "Örn. 18", new String[]{"kg", "g", "L", "ml"},
+                    "Gübre adını nota yazabilirsin. Örn. MKP 0-52-34, 18 kg.");
+            case "İlaçlama": return new Form("Ürün miktarı", "Örn. 500", new String[]{"ml", "L", "g", "kg"},
+                    "Kullanılan ilacın veya yaprak ürününün adını nota kaydet.");
+            case "Budama": return new Form("Budanan miktar", "Örn. 120", new String[]{"ağaç", "saat", "gün"},
+                    "Budanan ağaç sayısını veya harcanan çalışma süresini kaydedebilirsin.");
+            case "Sinek tuzağı": return new Form("Tuzak sayısı", "Örn. 20", new String[]{"adet"},
+                    "Asılan veya yenilenen zeytin sineği tuzağı sayısını kaydet.");
+            case "Toprak İşleme": return new Form("İşlenen alan / süre", "Örn. 8", new String[]{"dekar", "saat", "gün"},
+                    "Sürüm, çapalama veya diğer toprak işlemlerini kaydedebilirsin.");
+            case "İşçilik": return new Form("İşçilik", "Örn. 3", new String[]{"gün", "kişi", "saat"},
+                    "İşçilik süresini veya çalışan kişi sayısını kaydet.");
+            case "Mazot": return new Form("Mazot miktarı", "Örn. 25", new String[]{"L"},
+                    "Bahçede kullanılan mazot miktarını ve masrafını kaydet.");
+            case "Nakliye": return new Form("Nakliye", "Örn. 1", new String[]{"sefer", "km", "ton"},
+                    "Nakliye seferini, mesafesini veya taşınan miktarı kaydedebilirsin.");
+            default: return new Form("Miktar", "Örn. 1", new String[]{"adet", "kg", "L", "saat", "gün"},
+                    "Diğer bahçe işlemlerini açıklamasıyla birlikte kaydedebilirsin.");
+        }
+    }
+
+    /** Gelen tür adını (ör. ana sayfadan) formdaki adla eşleştirir; bulunamazsa ilk tür. */
+    public static int indexOf(String type) {
+        if (type != null) {
+            String t = type.trim();
+            if ("Gübreleme".equalsIgnoreCase(t)) t = "Gübre";
+            for (int i = 0; i < TYPES.length; i++) if (TYPES[i].equalsIgnoreCase(t)) return i;
+        }
+        return 0;
+    }
+
     /** Listede gösterilecek ad; boşsa "İşlem". */
     public static String label(String type) {
         return type == null || type.trim().isEmpty() ? "İşlem" : type.trim();

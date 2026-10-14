@@ -3,1066 +3,310 @@ package com.zeytindefteri.app;
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.database.Cursor;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * İşlem ekle. Tür, ikonlu kutulardan seçilir (OperationKinds.TYPES); miktar etiketi, birimler ve ipucu
+ * OperationKinds.form() kuralından gelir. Kayıt: DatabaseHelper.addOperation + bulut eşitleme.
+ */
 public class NewOperationActivity extends Activity {
 
-    // ============================================================
-    // DATABASE
-    // ============================================================
+    private static final int COLUMNS = 4;
 
     private DatabaseHelper databaseHelper;
     private OperationCloudRepository operationCloudRepository;
 
+    private Spinner spinnerGarden, spinnerUnit;
+    private EditText etDate, etQuantity, etCost, etNote;
+    private TextView tvQuantityLabel, tvOperationHint, tvDetailTitle, tvSaveSummary, btnSaveOperation;
+    private View viewHintDot;
+    private LinearLayout gridOperationTypes;
+    private final List<View> typeTiles = new ArrayList<>();
 
-    // ============================================================
-    // VIEW'LAR
-    // ============================================================
+    private final ArrayList<Integer> gardenIds = new ArrayList<>();
+    private final ArrayList<String> gardenNames = new ArrayList<>();
 
-    private Spinner spinnerGarden;
-    private Spinner spinnerType;
-    private Spinner spinnerUnit;
-
-    private EditText etDate;
-    private EditText etQuantity;
-    private EditText etCost;
-    private EditText etNote;
-
-    private TextView tvQuantityLabel;
-    private TextView tvOperationHint;
-
-    private TextView btnSaveOperation;
-    private TextView btnBack;
-
-
-    // ============================================================
-    // BAHÇELER
-    // ============================================================
-
-    private final ArrayList<Integer> gardenIds =
-            new ArrayList<>();
-
-    private final ArrayList<String> gardenNames =
-            new ArrayList<>();
-
-
-    // ============================================================
-    // İŞLEM TÜRLERİ
-    // ============================================================
-
-    private final List<String> operationTypes =
-            Arrays.asList(
-                    "Sulama",
-                    "Gübre",
-                    "İlaçlama",
-                    "Budama",
-                    "Sinek tuzağı",
-                    "Toprak İşleme",
-                    "İşçilik",
-                    "Mazot",
-                    "Nakliye",
-                    "Diğer"
-            );
-
-
-    // ============================================================
-    // TARİH
-    // ============================================================
-
-    private final Calendar selectedDate =
-            Calendar.getInstance();
-
-    private final Locale TR =
-            new Locale("tr", "TR");
-
-
-    // ============================================================
-    // GELEN VERİ
-    // ============================================================
-
-    private long requestedGardenId = -1;
-
-    private String requestedOperationType = null;
-
-
-    // ============================================================
-    // ON CREATE
-    // ============================================================
+    private final Calendar selectedDate = Calendar.getInstance();
+    private final Locale TR = new Locale("tr", "TR");
+    private int selectedType = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
+        if (getActionBar() != null) getActionBar().hide();
+        getWindow().setStatusBarColor(GreenTheme.color(R.color.zd_bg));
+        getWindow().setNavigationBarColor(GreenTheme.color(R.color.zd_bg));
+        setContentView(R.layout.activity_new_operation);
 
-        if (getActionBar() != null) {
-            getActionBar().hide();
-        }
-
-        setContentView(
-                R.layout.activity_new_operation
-        );
-
-
-        databaseHelper =
-                new DatabaseHelper(this);
-
-        operationCloudRepository =
-                new OperationCloudRepository(
-                        databaseHelper
-                );
-
-
-        requestedGardenId =
-                getIntent()
-                        .getLongExtra(
-                                "garden_id",
-                                -1
-                        );
-
-
-        requestedOperationType =
-                getIntent()
-                        .getStringExtra(
-                                "operation_type"
-                        );
-
+        databaseHelper = new DatabaseHelper(this);
+        operationCloudRepository = new OperationCloudRepository(databaseHelper);
 
         findViews();
-
         loadGardens();
-
-        loadOperationTypes();
-
-        setupDate();
-
+        buildTypeGrid();
         setupListeners();
 
-        applyIncomingSelection();
-
-        updateOperationForm();
+        if (savedInstanceState != null) {
+            selectedType = savedInstanceState.getInt("operation_type_index", 0);
+            selectedDate.setTimeInMillis(savedInstanceState.getLong("operation_date", selectedDate.getTimeInMillis()));
+        } else {
+            applyIncomingSelection();
+        }
+        updateDateText();
+        selectType(selectedType, savedInstanceState != null ? savedInstanceState.getInt("operation_unit_index", 0) : 0);
     }
 
-
-    // ============================================================
-    // VIEW'LARI BUL
-    // ============================================================
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putInt("operation_type_index", selectedType);
+        state.putLong("operation_date", selectedDate.getTimeInMillis());
+        state.putInt("operation_unit_index", Math.max(0, spinnerUnit.getSelectedItemPosition()));
+    }
 
     private void findViews() {
-
-        spinnerGarden =
-                findViewById(
-                        R.id.spinnerGarden
-                );
-
-        spinnerType =
-                findViewById(
-                        R.id.spinnerType
-                );
-
-        spinnerUnit =
-                findViewById(
-                        R.id.spinnerUnit
-                );
-
-
-        etDate =
-                findViewById(
-                        R.id.etDate
-                );
-
-        etQuantity =
-                findViewById(
-                        R.id.etQuantity
-                );
-
-        etCost =
-                findViewById(
-                        R.id.etCost
-                );
-
-        etNote =
-                findViewById(
-                        R.id.etNote
-                );
-
-
-        tvQuantityLabel =
-                findViewById(
-                        R.id.tvQuantityLabel
-                );
-
-        tvOperationHint =
-                findViewById(
-                        R.id.tvOperationHint
-                );
-
-
-        btnSaveOperation =
-                findViewById(
-                        R.id.btnSaveOperation
-                );
-
-        btnBack =
-                findViewById(
-                        R.id.btnBack
-                );
+        spinnerGarden = findViewById(R.id.spinnerGarden);
+        spinnerUnit = findViewById(R.id.spinnerUnit);
+        etDate = findViewById(R.id.etDate);
+        etQuantity = findViewById(R.id.etQuantity);
+        etCost = findViewById(R.id.etCost);
+        etNote = findViewById(R.id.etNote);
+        tvQuantityLabel = findViewById(R.id.tvQuantityLabel);
+        tvOperationHint = findViewById(R.id.tvOperationHint);
+        tvDetailTitle = findViewById(R.id.tvDetailTitle);
+        tvSaveSummary = findViewById(R.id.tvSaveSummary);
+        viewHintDot = findViewById(R.id.viewHintDot);
+        gridOperationTypes = findViewById(R.id.gridOperationTypes);
+        btnSaveOperation = findViewById(R.id.btnSaveOperation);
     }
-
-
-    // ============================================================
-    // BAHÇELERİ YÜKLE
-    // ============================================================
 
     private void loadGardens() {
-
         gardenIds.clear();
-
         gardenNames.clear();
-
-
-        Cursor cursor =
-                databaseHelper.getGardens();
-
-
-        while (cursor.moveToNext()) {
-
-            gardenIds.add(
-                    cursor.getInt(
-                            cursor
-                                    .getColumnIndexOrThrow(
-                                            "id"
-                                    )
-                    )
-            );
-
-
-            gardenNames.add(
-                    cursor.getString(
-                            cursor
-                                    .getColumnIndexOrThrow(
-                                            "name"
-                                    )
-                    )
-            );
+        Cursor cursor = databaseHelper.getGardens();
+        try {
+            while (cursor.moveToNext()) {
+                gardenIds.add(cursor.getInt(cursor.getColumnIndexOrThrow("id")));
+                gardenNames.add(cursor.getString(cursor.getColumnIndexOrThrow("name")));
+            }
+        } finally {
+            cursor.close();
         }
-
-
-        cursor.close();
-
-
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(
-                        this,
-                        android.R.layout.simple_spinner_item,
-                        gardenNames
-                );
-
-
-        adapter.setDropDownViewResource(
-                android.R.layout
-                        .simple_spinner_dropdown_item
-        );
-
-
-        spinnerGarden.setAdapter(
-                adapter
-        );
-
-
+        spinnerGarden.setAdapter(adapter(gardenNames));
         if (gardenIds.isEmpty()) {
-
-            btnSaveOperation.setEnabled(
-                    false
-            );
-
-            btnSaveOperation.setAlpha(
-                    0.45f
-            );
-
-            Toast.makeText(
-                    this,
-                    "Önce bir bahçe eklemelisin",
-                    Toast.LENGTH_LONG
-            ).show();
+            btnSaveOperation.setEnabled(false);
+            btnSaveOperation.setAlpha(0.45f);
+            Toast.makeText(this, "Önce bir bahçe eklemelisin", Toast.LENGTH_LONG).show();
         }
     }
 
-
-    // ============================================================
-    // İŞLEM TÜRLERİNİ YÜKLE
-    // ============================================================
-
-    private void loadOperationTypes() {
-
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(
-                        this,
-                        android.R.layout.simple_spinner_item,
-                        operationTypes
-                );
-
-
-        adapter.setDropDownViewResource(
-                android.R.layout
-                        .simple_spinner_dropdown_item
-        );
-
-
-        spinnerType.setAdapter(
-                adapter
-        );
-    }
-
-
-    // ============================================================
-    // GELEN BAHÇE / İŞLEM SEÇİMİNİ UYGULA
-    // ============================================================
-
+    /** Bahçe detayından (garden_id) veya ana sayfa hızlı işleminden (operation_type) gelen seçim. */
     private void applyIncomingSelection() {
-
-        // --------------------------------------------------------
-        // Bahçe detay ekranından gelmiş olabilir
-        // --------------------------------------------------------
-
+        long requestedGardenId = getIntent().getLongExtra("garden_id", -1);
         if (requestedGardenId != -1) {
-
-            for (
-                    int i = 0;
-                    i < gardenIds.size();
-                    i++
-            ) {
-
-                if (
-                        gardenIds.get(i)
-                                == requestedGardenId
-                ) {
-
-                    spinnerGarden.setSelection(
-                            i
-                    );
-
-                    break;
-                }
+            for (int i = 0; i < gardenIds.size(); i++) {
+                if (gardenIds.get(i) == requestedGardenId) { spinnerGarden.setSelection(i); break; }
             }
         }
+        String requestedType = getIntent().getStringExtra("operation_type");
+        if (requestedType != null && !requestedType.trim().isEmpty()) selectedType = OperationKinds.indexOf(requestedType);
+    }
 
+    // ------------------------------------------------------------ tür kutuları
 
-        // --------------------------------------------------------
-        // Ana ekrandaki hızlı işlemden gelmiş olabilir
-        // --------------------------------------------------------
-
-        if (
-                requestedOperationType != null
-                        && !requestedOperationType
-                        .trim()
-                        .isEmpty()
-        ) {
-
-            for (
-                    int i = 0;
-                    i < operationTypes.size();
-                    i++
-            ) {
-
-                if (
-                        operationTypes
-                                .get(i)
-                                .equalsIgnoreCase(
-                                        requestedOperationType
-                                )
-                ) {
-
-                    spinnerType.setSelection(
-                            i
-                    );
-
-                    break;
-                }
+    private void buildTypeGrid() {
+        gridOperationTypes.removeAllViews();
+        typeTiles.clear();
+        LinearLayout row = null;
+        for (int i = 0; i < OperationKinds.TYPES.length; i++) {
+            if (i % COLUMNS == 0) {
+                row = new LinearLayout(this);
+                row.setBaselineAligned(false);
+                LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
+                if (i > 0) rp.topMargin = dp(8);
+                gridOperationTypes.addView(row, rp);
             }
+            View tile = typeTile(i);
+            typeTiles.add(tile);
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -2, 1);
+            if (i % COLUMNS != 0) p.leftMargin = dp(8);
+            row.addView(tile, p);
+        }
+        // Son satırı boş hücrelerle doldur; kutular aynı genişlikte kalsın.
+        for (int i = OperationKinds.TYPES.length; i % COLUMNS != 0; i++) {
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, 1, 1);
+            p.leftMargin = dp(8);
+            row.addView(new View(this), p);
         }
     }
 
-
-    // ============================================================
-    // TARİH
-    // ============================================================
-
-    private void setupDate() {
-
-        updateDateText();
-
-
-        etDate.setOnClickListener(
-                new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View view) {
-
-                        showDatePicker();
-                    }
-                }
-        );
+    private View typeTile(final int index) {
+        String type = OperationKinds.TYPES[index];
+        LinearLayout tile = new LinearLayout(this);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setGravity(Gravity.CENTER);
+        tile.setMinimumHeight(dp(74));
+        tile.setPadding(dp(2), dp(10), dp(2), dp(10));
+        tile.setBackgroundResource(R.drawable.bg_choice_tile);
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(LineIcons.forType(type));
+        icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        tile.addView(icon, new LinearLayout.LayoutParams(dp(20), dp(20)));
+        TextView name = new TextView(this);
+        name.setText(type);
+        name.setTextSize(12);
+        name.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        name.setTextColor(GreenTheme.color(R.color.zd_text));
+        name.setGravity(Gravity.CENTER);
+        name.setMaxLines(2);
+        name.setPadding(0, dp(6), 0, 0);
+        tile.addView(name);
+        tile.setContentDescription(type);
+        tile.setOnClickListener(v -> selectType(index, 0));
+        return tile;
     }
 
+    private void selectType(int index, int unitIndex) {
+        selectedType = Math.max(0, Math.min(OperationKinds.TYPES.length - 1, index));
+        String type = OperationKinds.TYPES[selectedType];
+        int green = GreenTheme.color(R.color.zd_green);
+        for (int i = 0; i < typeTiles.size(); i++) {
+            View tile = typeTiles.get(i);
+            boolean on = i == selectedType;
+            tile.setSelected(on);
+            String t = OperationKinds.TYPES[i];
+            ((ImageView) ((LinearLayout) tile).getChildAt(0)).setColorFilter(on ? green : LineIcons.toneColor(t));
+            tile.setContentDescription(t + (on ? ", seçili" : ""));
+        }
+        OperationKinds.Form form = OperationKinds.form(type);
+        tvDetailTitle.setText("AYRINTI · " + type.toUpperCase(TR));
+        tvQuantityLabel.setText(form.quantityLabel);
+        etQuantity.setHint(form.quantityHint);
+        List<String> units = new ArrayList<>();
+        for (String u : form.units) units.add(u);
+        spinnerUnit.setAdapter(adapter(units));
+        if (unitIndex > 0 && unitIndex < units.size()) spinnerUnit.setSelection(unitIndex);
+        tvOperationHint.setText(form.tip);
+        GradientDrawable dot = new GradientDrawable();
+        dot.setShape(GradientDrawable.OVAL);
+        dot.setColor(LineIcons.toneColor(type));
+        viewHintDot.setBackground(dot);
+        updateSaveSummary();
+    }
+
+    // ------------------------------------------------------------ tarih / dinleyiciler
 
     private void showDatePicker() {
-
-        DatePickerDialog dialog =
-                new DatePickerDialog(
-                        this,
-
-                        new DatePickerDialog
-                                .OnDateSetListener() {
-
-                            @Override
-                            public void onDateSet(
-                                    android.widget.DatePicker view,
-                                    int year,
-                                    int month,
-                                    int dayOfMonth
-                            ) {
-
-                                selectedDate.set(
-                                        Calendar.YEAR,
-                                        year
-                                );
-
-                                selectedDate.set(
-                                        Calendar.MONTH,
-                                        month
-                                );
-
-                                selectedDate.set(
-                                        Calendar.DAY_OF_MONTH,
-                                        dayOfMonth
-                                );
-
-
-                                updateDateText();
-                            }
-                        },
-
-                        selectedDate.get(
-                                Calendar.YEAR
-                        ),
-
-                        selectedDate.get(
-                                Calendar.MONTH
-                        ),
-
-                        selectedDate.get(
-                                Calendar.DAY_OF_MONTH
-                        )
-                );
-
-
-        dialog.show();
+        new DatePickerDialog(this, (view, year, month, day) -> {
+            selectedDate.set(Calendar.YEAR, year);
+            selectedDate.set(Calendar.MONTH, month);
+            selectedDate.set(Calendar.DAY_OF_MONTH, day);
+            updateDateText();
+        }, selectedDate.get(Calendar.YEAR), selectedDate.get(Calendar.MONTH), selectedDate.get(Calendar.DAY_OF_MONTH)).show();
     }
-
 
     private void updateDateText() {
-
-        SimpleDateFormat format =
-                new SimpleDateFormat(
-                        "dd.MM.yyyy",
-                        TR
-                );
-
-
-        etDate.setText(
-                format.format(
-                        selectedDate.getTime()
-                )
-        );
+        etDate.setText(new SimpleDateFormat("dd.MM.yyyy", TR).format(selectedDate.getTime()));
+        updateSaveSummary();
     }
-
-
-    // ============================================================
-    // LISTENER'LAR
-    // ============================================================
 
     private void setupListeners() {
-
-        btnBack.setOnClickListener(
-                new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View view) {
-
-                        finish();
-                    }
-                }
-        );
-
-
-        btnSaveOperation.setOnClickListener(
-                new View.OnClickListener() {
-
-                    @Override
-                    public void onClick(View view) {
-
-                        saveOperation();
-                    }
-                }
-        );
-
-
-        spinnerType.setOnItemSelectedListener(
-                new AdapterView
-                        .OnItemSelectedListener() {
-
-                    @Override
-                    public void onItemSelected(
-                            AdapterView<?> parent,
-                            View view,
-                            int position,
-                            long id
-                    ) {
-
-                        updateOperationForm();
-                    }
-
-
-                    @Override
-                    public void onNothingSelected(
-                            AdapterView<?> parent
-                    ) {
-                    }
-                }
-        );
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        btnSaveOperation.setOnClickListener(v -> saveOperation());
+        etDate.setOnClickListener(v -> showDatePicker());
+        spinnerGarden.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) { updateSaveSummary(); }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
     }
 
-
-    // ============================================================
-    // İŞLEM TÜRÜNE GÖRE FORMU DEĞİŞTİR
-    // ============================================================
-
-    private void updateOperationForm() {
-
-        if (
-                spinnerType.getSelectedItem()
-                        == null
-        ) {
-
-            return;
-        }
-
-
-        String type =
-                spinnerType
-                        .getSelectedItem()
-                        .toString();
-
-
-        if (type.equals("Sulama")) {
-
-            tvQuantityLabel.setText(
-                    "Su / Süre"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 4"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "saat",
-                            "m³",
-                            "L"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "Sulamada çalışma süresi veya verilen su miktarını kaydedebilirsin."
-            );
-
-        } else if (type.equals("Gübre")) {
-
-            tvQuantityLabel.setText(
-                    "Gübre Miktarı"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 18"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "kg",
-                            "g",
-                            "L",
-                            "ml"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "Gübre adını açıklamaya yazabilirsin. Örn. MKP 0-52-34, 18 kg."
-            );
-
-        } else if (type.equals("İlaçlama")) {
-
-            tvQuantityLabel.setText(
-                    "Ürün Miktarı"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 500"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "ml",
-                            "L",
-                            "g",
-                            "kg"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "Kullanılan ilacın veya yaprak ürününün adını açıklamaya kaydet."
-            );
-
-        } else if (type.equals("Budama")) {
-
-            tvQuantityLabel.setText(
-                    "Budanan Miktar"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 120"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "ağaç",
-                            "saat",
-                            "gün"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "Budanan ağaç sayısını veya harcanan çalışma süresini kaydedebilirsin."
-            );
-
-        } else if (
-                type.equals(
-                        "Sinek tuzağı"
-                )
-        ) {
-
-            tvQuantityLabel.setText(
-                    "Tuzak Sayısı"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 20"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "adet"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "Asılan veya yenilenen zeytin sineği tuzağı sayısını kaydet."
-            );
-
-        } else if (
-                type.equals(
-                        "Toprak İşleme"
-                )
-        ) {
-
-            tvQuantityLabel.setText(
-                    "İşlenen Alan / Süre"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 8"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "dekar",
-                            "saat",
-                            "gün"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "Sürüm, çapalama veya diğer toprak işlemlerini kaydedebilirsin."
-            );
-
-        } else if (
-                type.equals(
-                        "İşçilik"
-                )
-        ) {
-
-            tvQuantityLabel.setText(
-                    "İşçilik"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 3"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "gün",
-                            "kişi",
-                            "saat"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "İşçilik süresini veya çalışan kişi sayısını kaydet."
-            );
-
-        } else if (
-                type.equals(
-                        "Mazot"
-                )
-        ) {
-
-            tvQuantityLabel.setText(
-                    "Mazot Miktarı"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 25"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "L"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "Bahçede kullanılan mazot miktarı ve masrafını kaydet."
-            );
-
-        } else if (
-                type.equals(
-                        "Nakliye"
-                )
-        ) {
-
-            tvQuantityLabel.setText(
-                    "Nakliye"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 1"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "sefer",
-                            "km",
-                            "ton"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "Nakliye seferini, mesafesini veya taşınan miktarı kaydedebilirsin."
-            );
-
-        } else {
-
-            tvQuantityLabel.setText(
-                    "Miktar"
-            );
-
-            etQuantity.setHint(
-                    "Örn. 1"
-            );
-
-            setUnits(
-                    Arrays.asList(
-                            "adet",
-                            "kg",
-                            "L",
-                            "saat",
-                            "gün"
-                    )
-            );
-
-            tvOperationHint.setText(
-                    "Diğer bahçe işlemlerini açıklamasıyla birlikte kaydedebilirsin."
-            );
-        }
+    /** Kaydet düğmesinin üstündeki tek satır: "Bahçe · Tür · Tarih". */
+    private void updateSaveSummary() {
+        if (tvSaveSummary == null || etDate == null) return;
+        Object garden = spinnerGarden.getSelectedItem();
+        StringBuilder b = new StringBuilder();
+        if (garden != null) b.append(garden).append(" · ");
+        b.append(OperationKinds.TYPES[selectedType]).append(" · ").append(etDate.getText());
+        tvSaveSummary.setText(b);
     }
 
-
-    // ============================================================
-    // BİRİM SPINNER
-    // ============================================================
-
-    private void setUnits(
-            List<String> units
-    ) {
-
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(
-                        this,
-                        android.R.layout.simple_spinner_item,
-                        units
-                );
-
-
-        adapter.setDropDownViewResource(
-                android.R.layout
-                        .simple_spinner_dropdown_item
-        );
-
-
-        spinnerUnit.setAdapter(
-                adapter
-        );
-    }
-
-
-    // ============================================================
-    // KAYDET
-    // ============================================================
+    // ------------------------------------------------------------ kaydet
 
     private void saveOperation() {
-
         if (gardenIds.isEmpty()) {
-
-            Toast.makeText(
-                    this,
-                    "Önce bir bahçe eklemelisin",
-                    Toast.LENGTH_SHORT
-            ).show();
-
+            Toast.makeText(this, "Önce bir bahçe eklemelisin", Toast.LENGTH_SHORT).show();
             return;
         }
-
-
-        int gardenPosition =
-                spinnerGarden
-                        .getSelectedItemPosition();
-
-
-        if (
-                gardenPosition < 0
-                        || gardenPosition
-                        >= gardenIds.size()
-        ) {
-
-            Toast.makeText(
-                    this,
-                    "Bahçe seçilemedi",
-                    Toast.LENGTH_SHORT
-            ).show();
-
+        int gardenPosition = spinnerGarden.getSelectedItemPosition();
+        if (gardenPosition < 0 || gardenPosition >= gardenIds.size()) {
+            Toast.makeText(this, "Bahçe seçilemedi", Toast.LENGTH_SHORT).show();
             return;
         }
+        int gardenId = gardenIds.get(gardenPosition);
+        String type = OperationKinds.TYPES[selectedType];
+        String date = etDate.getText().toString().trim();
+        double quantity = readDouble(etQuantity);
+        String unit = spinnerUnit.getSelectedItem() == null ? "" : spinnerUnit.getSelectedItem().toString();
+        double cost = readDouble(etCost);
+        String note = etNote.getText().toString().trim();
 
-
-        int gardenId =
-                gardenIds.get(
-                        gardenPosition
-                );
-
-
-        String type =
-                spinnerType
-                        .getSelectedItem()
-                        .toString();
-
-
-        String date =
-                etDate
-                        .getText()
-                        .toString()
-                        .trim();
-
-
-        double quantity =
-                readDouble(
-                        etQuantity
-                );
-
-
-        String unit = "";
-
-        if (
-                spinnerUnit.getSelectedItem()
-                        != null
-        ) {
-
-            unit =
-                    spinnerUnit
-                            .getSelectedItem()
-                            .toString();
-        }
-
-
-        double cost =
-                readDouble(
-                        etCost
-                );
-
-
-        String note =
-                etNote
-                        .getText()
-                        .toString()
-                        .trim();
-
-
-        long result =
-                databaseHelper.addOperation(
-                        gardenId,
-                        type,
-                        date,
-                        quantity,
-                        unit,
-                        cost,
-                        note
-                );
-
-
+        long result = databaseHelper.addOperation(gardenId, type, date, quantity, unit, cost, note);
         if (result != -1) {
-
-            syncSavedOperationToCloud(
-                    result
-            );
-
-            Toast.makeText(
-                    this,
-                    "İşlem kaydedildi ✓",
-                    Toast.LENGTH_SHORT
-            ).show();
-
-
-            setResult(
-                    RESULT_OK
-            );
-
-
+            syncSavedOperationToCloud(result);
+            Toast.makeText(this, "İşlem kaydedildi", Toast.LENGTH_SHORT).show();
+            setResult(RESULT_OK);
             finish();
-
         } else {
-
-            Toast.makeText(
-                    this,
-                    "İşlem kaydedilemedi",
-                    Toast.LENGTH_SHORT
-            ).show();
+            Toast.makeText(this, "İşlem kaydedilemedi", Toast.LENGTH_SHORT).show();
         }
     }
 
-
-    // ============================================================
-    // BULUT SENKRONU
-    // ============================================================
-
-    private void syncSavedOperationToCloud(
-            long operationId
-    ) {
-
-        if (operationCloudRepository == null
-                || operationId <= 0) {
-            return;
-        }
-
-        FirebaseUser user =
-                FirebaseAuth
-                        .getInstance()
-                        .getCurrentUser();
-
-        if (user == null) {
-            return;
-        }
-
-        String uid =
-                user.getUid();
-
-        if (uid == null
-                || uid.trim().isEmpty()) {
-            return;
-        }
-
-        operationCloudRepository
-                .syncOperationByLocalId(
-                        uid,
-                        operationId
-                );
+    private void syncSavedOperationToCloud(long operationId) {
+        if (operationCloudRepository == null || operationId <= 0) return;
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+        String uid = user.getUid();
+        if (uid == null || uid.trim().isEmpty()) return;
+        operationCloudRepository.syncOperationByLocalId(uid, operationId);
     }
 
-
-    // ============================================================
-    // SAYI OKU
-    // ============================================================
-
-    private double readDouble(
-            EditText editText
-    ) {
-
-        String value =
-                editText
-                        .getText()
-                        .toString()
-                        .trim();
-
-
-        if (value.isEmpty()) {
-
-            return 0;
-        }
-
-
-        // Türkçe virgül desteği
-        value =
-                value.replace(
-                        ",",
-                        "."
-                );
-
-
-        /*
-         * Kullanıcı 2.400 yazarsa bunu
-         * iki bin dört yüz olarak düşünme ihtimali yüksek.
-         *
-         * Ama Android numberDecimal klavyesi genelde
-         * decimal ayırıcı kullanır.
-         *
-         * Şimdilik sadece virgülü noktaya çeviriyoruz.
-         */
-
-
+    /** Türkçe virgül desteği: "2,5" → 2.5. Boş veya okunamayan değer 0 sayılır. */
+    private double readDouble(EditText editText) {
+        String value = editText.getText().toString().trim();
+        if (value.isEmpty()) return 0;
         try {
-
-            return Double.parseDouble(
-                    value
-            );
-
+            return Double.parseDouble(value.replace(",", "."));
         } catch (Exception e) {
-
             return 0;
         }
+    }
+
+    private ArrayAdapter<String> adapter(List<String> items) {
+        ArrayAdapter<String> a = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, items);
+        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        return a;
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }

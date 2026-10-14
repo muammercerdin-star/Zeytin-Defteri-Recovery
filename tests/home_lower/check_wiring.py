@@ -7,11 +7,9 @@ a = open(os.path.join(J, "ProducerFeedActivity.java"), encoding="utf-8").read()
 v = open(os.path.join(J, "HomeLowerSections.java"), encoding="utf-8").read()
 op = open(os.path.join(J, "NewOperationActivity.java"), encoding="utf-8").read()
 m = open(os.path.join(J, "HomeSummaryModel.java"), encoding="utf-8").read()
-types = re.search(r'OPERATION_TYPES = \{([^}]*)\}', m).group(1)
-op_list = re.search(r'operationTypes =\s*Arrays\.asList\(([^)]*)\)', op).group(1)
-norm = lambda s: [x.strip().strip('"') for x in s.split(',') if x.strip()]
+k = open(os.path.join(J, "OperationKinds.java"), encoding="utf-8").read()
 checks = {
-    "operation picker uses NewOperationActivity's exact type names": norm(types) == norm(op_list),
+    "operation picker uses NewOperationActivity's exact type names (single source)": "OPERATION_TYPES = OperationKinds.TYPES" in m and "OperationKinds.TYPES[selectedType]" in op and "public static final String[] TYPES" in k,
     "old 'Piyasa Özeti' title gone": "Piyasa Özeti" not in a,
     "old emoji quick buttons and helpers removed": all(x not in a for x in ("quickButton(", "homeMiniMetric(", "loadHomeMarketSnapshots", "HomeMarketSnapshot", "\"🧺\"")),
     "own prices labelled as own, not market": "SENİN ELEK FİYATLARIN" in v and "bölge piyasası değildir" in v,

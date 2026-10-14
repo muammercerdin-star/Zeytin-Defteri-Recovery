@@ -51,6 +51,25 @@ public final class GardenDetailModelTest {
         eq(OperationKinds.Tone.WATER, OperationKinds.tone("Sulama"), "ton sulama");
         eq(OperationKinds.Tone.AMBER, OperationKinds.tone("İlaçlama"), "ton ilaç");
         eq("İşlem", OperationKinds.label("  "), "boş ad");
+        // Form kuralları: eski NewOperationActivity ile aynı birimler, ilk birim varsayılan
+        eq("saat", OperationKinds.form("Sulama").units[0], "sulama varsayılan birim");
+        eq(3, OperationKinds.form("Sulama").units.length, "sulama birim sayısı");
+        eq("kg", OperationKinds.form("Gübre").units[0], "gübre birimi");
+        eq("ml", OperationKinds.form("İlaçlama").units[0], "ilaç birimi");
+        eq("adet", OperationKinds.form("Sinek tuzağı").units[0], "tuzak birimi");
+        eq("L", OperationKinds.form("Mazot").units[0], "mazot birimi");
+        eq("sefer", OperationKinds.form("Nakliye").units[0], "nakliye birimi");
+        eq("Miktar", OperationKinds.form("Diğer").quantityLabel, "diğer etiket");
+        eq("Miktar", OperationKinds.form(null).quantityLabel, "null tür");
+        for (String t : OperationKinds.TYPES) {
+            OperationKinds.Form f = OperationKinds.form(t);
+            if (f.units.length == 0 || f.tip.isEmpty()) throw new AssertionError("eksik form: " + t);
+            checks++;
+        }
+        eq(1, OperationKinds.indexOf("Gübreleme"), "Gübreleme → Gübre");
+        eq(2, OperationKinds.indexOf("ilaçlama"), "büyük/küçük harf");
+        eq(0, OperationKinds.indexOf("Hasat"), "formda olmayan tür ilk türe düşer");
+        eq(0, OperationKinds.indexOf(null), "null tür");
         System.out.println("GardenDetailModelTest: " + checks + " kontrol geçti");
     }
 }

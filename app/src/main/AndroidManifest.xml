@@ -152,7 +152,8 @@
         <activity
             android:name=".NewOperationActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
 
 
         <!-- ===================================================== -->
@@ -192,7 +193,8 @@
         <activity
             android:name=".HarvestActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
 
 
         <!-- ===================================================== -->
@@ -202,7 +204,8 @@
         <activity
             android:name=".SaleActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
 
 
         <!-- ===================================================== -->

@@ -14,8 +14,8 @@ public final class HomeSummaryModel {
     private HomeSummaryModel() {}
 
     /** NewOperationActivity'nin tür listesiyle birebir aynı (eşleşme equalsIgnoreCase ile yapılır). */
-    public static final String[] OPERATION_TYPES = {"Sulama", "Gübre", "İlaçlama", "Budama", "Sinek tuzağı",
-            "Toprak İşleme", "İşçilik", "Mazot", "Nakliye", "Diğer"};
+    /** İşlem ekle ekranıyla aynı liste (tek kaynak: OperationKinds). */
+    public static final String[] OPERATION_TYPES = OperationKinds.TYPES;
     public static final String[] GRADE_CODES = {"DOUBLE", "1", "2", "3", "4", "YAGLIK"};
     public static final String[] GRADE_LABELS = {"Double", "1 No", "2 No", "3 No", "4 No", "Yağlık"};
     private static final Locale TR = new Locale("tr", "TR");
