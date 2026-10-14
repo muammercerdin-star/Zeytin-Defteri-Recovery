@@ -606,3 +606,69 @@ Tuvaldeki onaylanan tasarımlar ("Aşama 2 · …" panoları) uygulandı. Her ek
 - Hasat: boy satırları dar ekranda sığıyor mu? Masraf kartı katlanıyor mu? Kayıttan sonra hasat, boylar ve işlem hareketi oluşuyor mu?
 - Satış: "2.400" fiyatı 2400 olarak hesaplanıyor mu? Ödeme seçenekleri kalan alacağı doğru gösteriyor mu? Fiyat teklifinde alıcı, ödeme ve izin kartları gizleniyor mu?
 - Profil: misafir oturumunda avatar yerinde zeytin ikonu, kamera rozeti ve "Hakkında" ikonları görünüyor mu?
+
+## 21. Aşama 3 — eski ekran kalıntıları ve dört ekran daha (6 commit)
+
+### 1. adım: yeni ekranlardaki kalıntılar
+- Elek formu, Elek geçmişi, Elek makbuzu ve Sezon Raporum'daki metinle çizilmiş "‹" geri düğmesi çizgi ok ikonuyla değiştirildi. Makbuz bildirimindeki "✓" kaldırıldı.
+- Makbuzun krem kâğıt renkleri ve içindeki "✓" onaylı ElekMakbuz tasarımının parçası; kalıntı değil, değiştirilmedi.
+
+### Bahçe ekle / düzenle (tek form)
+- Ad, tek satır konum (seçici), çeşit / ağaç / yaş / alan, 2 sütunlu sulama kutuları, küçük resimli fotoğraf satırı ve not alanı var. Kaydet altta sabit.
+- `AddGardenActivity` 2.840 satırdan 625 satıra indi. Üç modu var: ilk bahçe, yeni bahçe, düzenleme. Kurallar saf `GardenFormModel` sınıfında.
+- `GardenEditActivity` silindi; Bahçe detayındaki "Düzenle" bu formu açıyor.
+  - Eski kayıtlardaki serbest metin konum, değiştirilmediği sürece kabul ediliyor.
+  - Listede olmayan eski sulama değeri ek seçenek olarak korunuyor.
+- Geçersiz sayı artık her modda hata gösteriyor. Eskiden ekleme ekranı sessizce 0 kaydediyordu.
+- Konum seçicideki eski "sokak" uyumluluk kodu silindi.
+
+### Bahçe Karnesi
+- `GardenAnalyticsActivity` 2.064 satırdan 547 satıra indi. Ekranda şunlar var:
+  - Bahçe seçim düğmeleri.
+  - "Kayıtlı net sonuç" kartı.
+  - Verim / maliyet ve satış ızgaraları; tahsilat çubuğu.
+  - Boy dağılımı çubukları.
+  - Hasat–elek uyum kartı.
+  - Renkli ↑/↓ karşılaştırma rozetleri; masraf ve maliyet artışı kırmızı.
+- Veri yolu, korumalar, bütün ölçüler, 7 karşılaştırma satırı, boy karşılaştırmaları ve açıklama notları korundu.
+- Sezon etiketi tıklanmıyor: ekran her zaman aktif sezonu gösteriyor.
+
+### İşlem geçmişi
+- `OperationHistoryActivity` 1.958 satırdan 484 satıra indi. Ekranda şunlar var:
+  - Sayı ve masraf kutuları.
+  - Bahçe seçici ve ikonlu tür düğmeleri.
+  - Aylara göre gruplanmış liste; detay alttan açılan panelde.
+  - Altta sabit "+ İşlem ekle".
+- `GardenOperationHistoryActivity` silindi; Bahçe detayındaki "Tümü ›" bu ekranı o bahçe seçili açıyor.
+- **Hata düzeltmesi:** "Sinek Tuzağı" filtresi kayıtlardaki "Sinek tuzağı" ile hiç eşleşmiyordu; eski "Gübreleme" kayıtları da "Gübre" filtresine düşmüyordu. Filtre artık Türkçe büyük/küçük harfe duyarlı karşılaştırıyor.
+- Liste artık işlem tarihine göre sıralanıyor. Eski "yyyy-MM-dd" tarihler de okunuyor; bu düzeltme Bahçe detayındaki "son işlem" uyarısına da yansıdı.
+- `getOperationsFiltered` sorgusuna, bahçe geçmişindeki kayıt sahibi kuralı eklendi: başka hesaba ait işlem gösterilmiyor. SQLite testi 61 kontrolle bunu ve "iki ekran aynı kayıtları gösterir" şartını doğruluyor.
+
+### Profil
+- Görünüm kodu yenilendi; dosya 4.985 satırdan 3.247 satıra indi. Ekranda şunlar var:
+  - Tek bilgi kartı: fotoğraf, ad, konum, "Profili düzenle" (misafirde "Giriş yap"), "+ Gönderi" ve üç sayı.
+  - Bölmeli sekmeler.
+  - Çizgi ikonlu gönderi kartları.
+- Dekoratif kapak ve tekrar eden "Üretici bilgileri" kartı kalktı.
+- Fotoğraf, düzenleme, çıkış, gönderi silme ve paylaşma mantığı aynen korundu.
+- "Faydalı" tepki seçicisi Meydan ile ortak `ReactionManager` sınıfından geliyor; içindeki emojiler Meydan aşamasına bırakıldı.
+
+### Doğrulama
+- `tests/stage3/run.sh`: GardenFormModelTest (40), GardenReportModelTest (28), OperationHistoryModelTest (20), check_wiring (94).
+- Mevcut 21 test takımının hepsi geçiyor; aralarında bahçe detayı SQLite (61), bahçe analitiği, konum ve hatırlatıcı var.
+- `android.jar` tip denetiminde yeni hata yok; 463 hatanın tamamı Firebase, Glide ve androidx kaynaklı.
+- Java toplamı **90247 satır**.
+- **APK derlenmedi ve telefonda denenmedi.**
+
+### Kalan eski ekranlar
+- Salamura, Detaylı rapor, eski Piyasa ekranı, Gönderi oluştur, Yorumlar, Konum seçici, Hatırlatıcılar ve Ayarlar.
+- Meydan ve Piyasa sekmeleri.
+- Giriş, tanıtım ve yasal metin ekranları.
+
+### Cihazda kontrol
+- Bahçe ekle: konum seçimi satırı güncelliyor mu? Sulama kutuları ve fotoğraf küçük resmi doğru mu?
+- İlk bahçe: kurulumdan sonra "Bahçen hazır" ekranı çıkıyor mu?
+- Bahçe düzenle: eski bir bahçe konumu değiştirmeden kaydediliyor mu?
+- Bahçe Karnesi: bahçe düğmeleri arasında geçiş anında mı? Çubuklar ve rozet renkleri doğru mu?
+- İşlem geçmişi: "Sinek tuzağı" filtresi kayıt gösteriyor mu? Ay grupları doğru mu? Alttan açılan panel düzgün mü? Bahçe detayından "Tümü ›" o bahçeyle açılıyor mu?
+- Profil: misafirde zeytin ikonu ve "Giriş yap" görünüyor mu? Sekmeler çalışıyor mu? Gönderi menüsü, silme ve paylaşma çalışıyor mu?
