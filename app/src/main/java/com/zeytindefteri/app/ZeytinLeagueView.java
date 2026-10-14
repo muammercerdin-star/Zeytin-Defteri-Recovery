@@ -441,7 +441,8 @@ public final class ZeytinLeagueView extends ScrollView {
         TextView district = label(parts[0], 15, text, true); district.setMaxLines(1);
         district.setEllipsize(android.text.TextUtils.TruncateAt.END); details.addView(district);
         if (!parts[1].isEmpty()) details.addView(label(parts[1], 12, muted, false));
-        TextView count = label(r.shared || cloud != null ? LeagueBoardModel.countText(producers, open) : "Yerel önizleme",
+        TextView count = label(hasTop && !open ? producers + " üretici"
+                : r.shared || cloud != null ? LeagueBoardModel.countText(producers, open) : "Yerel önizleme",
                 13, text, true);
         count.setPadding(0, dp(6), 0, dp(6)); details.addView(count);
         String spoken;
@@ -453,6 +454,12 @@ public final class ZeytinLeagueView extends ScrollView {
             details.addView(label(isGradeSpecific() ? "Seçili: " + selectedLeagueGrade
                     : "Baskın: " + (dominant.isEmpty() ? "—" : dominant), 12, muted, false));
             spoken = (price > 0d ? ", ortalama " + n(price) + " TL/kg" : "") + (kg > 0d ? ", " + n(kg) + " kg" : "");
+        } else if (hasTop) {
+            // Firestore Top 20 yayında ama Supabase özeti yok/eşik altı: eşik çubuğu
+            // göstermek "3 üretici daha" gibi çelişkili bir mesaj verirdi.
+            details.addView(label("Top 20 yayında", 13, gold, true));
+            details.addView(label("Bölge rakamları gizli", 12, muted, false));
+            spoken = ", Top 20 yayında, bölge rakamları gizli";
         } else if (r.shared || cloud != null) {
             FrameLayout track = new FrameLayout(getContext());
             track.setBackground(round(bg, bg));
@@ -725,8 +732,9 @@ public final class ZeytinLeagueView extends ScrollView {
         table.addView(stage);
     }
     private boolean isMine(ZeytinLeagueScore.Producer p) {
+        // page() zaten Top 20 satırının id/puan/kg değerini kişisel belgeyle doğruluyor.
         return p != null && data != null && data.published && data.mine != null
-                && p.rank == data.mine.rank && p.region != null && p.region.equals(data.mine.region);
+                && p.id != null && !p.id.isEmpty() && p.id.equals(data.mine.id);
     }
     private void producerRow(LinearLayout table, ZeytinLeagueScore.Producer p) {
         int medal = p.rank == 1 ? gold : p.rank == 2 ? 0xffc4d0d8 : p.rank == 3 ? 0xffc89470 : muted;

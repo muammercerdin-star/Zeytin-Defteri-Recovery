@@ -18,6 +18,8 @@ checks = {
     "season picker kept": "seasonPicker.run()" in v,
     "grade filters kept": all(g in v for g in ('"Double", "1 No", "2 No", "3 No", "4 No", "Yağlık"',)),
     "personal reports link kept": "personalReports.run()" in v,
+    "top-20 region without directory data shows no threshold bar": re.search(r"\} else if \(hasTop\) \{\s*//[^\n]*\n[^\n]*\n\s*details\.addView\(label\(\"Top 20 yayında\"", v) is not None,
+    "own row matched by producer id": "p.id.equals(data.mine.id)" in v,
 }
 bad = [k for k, ok in checks.items() if not ok]
 for k, ok in checks.items(): print(("PASS " if ok else "FAIL ") + k)
