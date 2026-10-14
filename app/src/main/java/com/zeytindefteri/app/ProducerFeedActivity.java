@@ -582,7 +582,19 @@ public class ProducerFeedActivity extends Activity {
                 && contentHost.getChildCount()>0 && contentHost.getChildAt(0) instanceof ScrollView) {
             final ScrollView home=(ScrollView)contentHost.getChildAt(0);
             final int scrollY=previousHomeY;
-            home.post(() -> { if(home.getParent()==contentHost)home.scrollTo(0,scrollY); });
+            // post() bir kare en üstte çizip sonra geri kaydırıyordu ("atlama"). Konumu ilk
+            // çizimden ÖNCE geri yükle; içerik kısa kaldıysa en alta sınırla.
+            final android.view.ViewTreeObserver observer=home.getViewTreeObserver();
+            if(observer.isAlive()) observer.addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener() {
+                @Override public boolean onPreDraw() {
+                    android.view.ViewTreeObserver current=home.getViewTreeObserver();
+                    if(current.isAlive())current.removeOnPreDrawListener(this);
+                    if(home.getParent()!=contentHost)return true;
+                    int content=home.getChildCount()>0?home.getChildAt(0).getHeight():0;
+                    home.scrollTo(0,Math.min(scrollY,Math.max(0,content-home.getHeight())));
+                    return true;
+                }
+            });
         }
         if (persistentHeader != null) {
             persistentHeader.setVisibility(
@@ -3036,20 +3048,23 @@ public class ProducerFeedActivity extends Activity {
 
         final LinearLayout conditions=new LinearLayout(this);
         conditions.setOrientation(LinearLayout.VERTICAL);
-        TextView loading=text(
-                garden.id>0 && weatherRepository!=null
-                        ? "Bahçenin hava tahmini hazırlanıyor…"
-                        : "Hava tahmini için önce bir bahçe seç",
-                13,MUTED,false);
-        loading.setPadding(0,dp(6),0,dp(4));
-        conditions.addView(loading);
+        final boolean weatherLoading=garden.id>0 && weatherRepository!=null;
+        if(weatherLoading){
+            // Yer tutucu satırlar gerçek satırlarla aynı yükseklikte: tahmin gelince kart
+            // büyümez, altındaki içerik aşağı kaymaz ("atlama" olmaz).
+            renderHomeConditionPlaceholders(conditions);
+        } else {
+            TextView loading=text("Hava tahmini için önce bir bahçe seç",13,MUTED,false);
+            loading.setPadding(0,dp(6),0,dp(4));
+            conditions.addView(loading);
+        }
         LinearLayout.LayoutParams conditionParams=new LinearLayout.LayoutParams(-1,-2);
         conditionParams.setMargins(0,dp(12),0,0);
         weatherCard.addView(conditions,conditionParams);
 
         final LinearLayout rainBars=row();
         rainBars.setGravity(Gravity.BOTTOM);
-        rainBars.setVisibility(View.GONE);
+        if(weatherLoading) renderHomeRainBars(rainBars,null,true); else rainBars.setVisibility(View.GONE);
         LinearLayout.LayoutParams rainParams=new LinearLayout.LayoutParams(-1,-2);
         rainParams.setMargins(0,dp(14),0,0);
         weatherCard.addView(rainBars,rainParams);
@@ -3107,6 +3122,7 @@ public class ProducerFeedActivity extends Activity {
                                     state.forecastPending=false;
                                     if(!weatherStateCurrent(state) || state.forecast!=null)return;
                                     conditions.removeAllViews();
+                                    rainBars.removeAllViews();rainBars.setVisibility(View.GONE);
                                     TextView error=text("☁ "+message,13,MUTED,false);
                                     error.setPadding(0,dp(6),0,dp(4));
                                     conditions.addView(error);
@@ -3160,29 +3176,68 @@ public class ProducerFeedActivity extends Activity {
     private String homeLeagueHiddenKey(String uid) { return "home_league_card_hidden_" + uid; }
 
     /** Kart yüklenene kadar görünmez; bölge bilinmiyorsa ya da gizlendiyse hiç görünmez. */
+    private FrameLayout homeLeagueHost;
+    private String homeLeagueHostUid = "";
+    private boolean homeLeagueLoading;
+    private String homeLeagueLoadingKey = "";
+    private String homeLeagueShownSignature = "";
+
+    private String homeLeagueLastKey(String key) { return "home_league_last_" + key; }
+
+    /**
+     * Atlamasız kart: yükseklik, sayfa çizilmeden ÖNCE belli olur. Önce bellekteki/kayıtlı son
+     * durum, o da yoksa yerel arşiv (eşzamanlı, küçük bir SQLite okuması) gösterilir. Ağ sonucu
+     * gelince kart yalnızca içeriği gerçekten değiştiyse yerinde güncellenir. Ana Sayfa birkaç kez
+     * yeniden kurulsa da (onResume, gönderi/özel veri senkronu) tek bir ağ isteği yürür.
+     */
     private View buildHomeLeagueCard() {
         final FrameLayout host = new FrameLayout(this);
         host.setVisibility(View.GONE);
+        homeLeagueHost = null;
         final int year = db.getActiveSeasonYear();
         final String uid = db.getActiveOwnerUid() == null ? "" : db.getActiveOwnerUid();
         if (uid.isEmpty() || "1".equals(db.getSetting(homeLeagueHiddenKey(uid), "0"))) return host;
         final String key = uid + "_" + year;
-        if (homeLeagueCache != null && key.equals(homeLeagueCacheKey)
-                && System.currentTimeMillis() - homeLeagueCacheAt < HOME_LEAGUE_CACHE_MS) {
-            renderHomeLeagueCard(host, homeLeagueCache, uid);
-            return host;
+        homeLeagueHost = host; homeLeagueHostUid = uid;
+
+        HomeLeagueModel.Input initial = null;
+        if (homeLeagueCache != null && key.equals(homeLeagueCacheKey)) initial = homeLeagueCache;
+        if (initial == null) initial = HomeLeagueModel.decode(db.getSetting(homeLeagueLastKey(key), ""));
+        ZeytinLeagueRepository.Result local = null;
+        if (initial == null) {
+            try {
+                local = new ZeytinLeagueRepository().local(db, year, uid);
+                initial = homeLeagueInput(null, local);
+            } catch (RuntimeException e) {
+                return host; // Yerel arşiv okunamadı: kart gösterilmez.
+            }
         }
+        homeLeagueShownSignature = "";
+        renderHomeLeagueCard(host, initial, uid);
+
+        boolean fresh = homeLeagueCache != null && key.equals(homeLeagueCacheKey)
+                && System.currentTimeMillis() - homeLeagueCacheAt < HOME_LEAGUE_CACHE_MS;
+        if (fresh || (homeLeagueLoading && key.equals(homeLeagueLoadingKey))) return host;
+        startHomeLeagueLoad(year, uid, key, local);
+        return host;
+    }
+
+    private void startHomeLeagueLoad(int year, String uid, String key, ZeytinLeagueRepository.Result knownLocal) {
         final int serial = ++homeLeagueSerial;
+        homeLeagueLoading = true; homeLeagueLoadingKey = key;
         final android.content.Context app = getApplicationContext();
         new Thread(() -> {
-            ZeytinLeagueRepository.Result local;
-            DatabaseHelper helper = new DatabaseHelper(app);
-            try {
-                local = new ZeytinLeagueRepository().local(helper, year, uid);
-            } catch (RuntimeException e) {
-                return; // Yerel arşiv okunamadı: kart gösterilmez.
-            } finally {
-                helper.close();
+            ZeytinLeagueRepository.Result local = knownLocal;
+            if (local == null) {
+                DatabaseHelper helper = new DatabaseHelper(app);
+                try {
+                    local = new ZeytinLeagueRepository().local(helper, year, uid);
+                } catch (RuntimeException e) {
+                    runOnUiThread(() -> { if (serial == homeLeagueSerial) homeLeagueLoading = false; });
+                    return;
+                } finally {
+                    helper.close();
+                }
             }
             final ZeytinLeagueRepository.Result finalLocal = local;
             runOnUiThread(() -> {
@@ -3190,12 +3245,9 @@ public class ProducerFeedActivity extends Activity {
                 new ZeytinLeagueRepository().published(year, uid, finalLocal, result -> {
                     if (serial != homeLeagueSerial || isFinishing()) return;
                     final HomeLeagueModel.Input in = homeLeagueInput(result, finalLocal);
-                    if (in.published && in.myRank > 0 || in.raceStarted) {
-                        finishHomeLeague(host, in, key, uid, serial);
-                        return;
-                    }
+                    if (in.published && in.myRank > 0 || in.raceStarted) { finishHomeLeague(in, key, uid, serial); return; }
                     MarketCloudRepository cloud = new MarketCloudRepository(db, uid);
-                    if (!cloud.canUseCloud()) { finishHomeLeague(host, in, key, uid, serial); return; }
+                    if (!cloud.canUseCloud()) { finishHomeLeague(in, key, uid, serial); return; }
                     final String ownRegion = finalLocal.local == null ? "" : finalLocal.local.region;
                     cloud.loadLeagueRegions(year, (regions, error) -> {
                         if (error == null && regions != null) {
@@ -3203,18 +3255,21 @@ public class ProducerFeedActivity extends Activity {
                                 if (r != null && r.id.equals(ownRegion)) in.regionProducers = r.producerCount;
                             }
                         }
-                        finishHomeLeague(host, in, key, uid, serial);
+                        finishHomeLeague(in, key, uid, serial);
                     });
                 });
             });
         }, "home-league").start();
-        return host;
     }
 
-    private void finishHomeLeague(FrameLayout host, HomeLeagueModel.Input in, String key, String uid, int serial) {
+    private void finishHomeLeague(HomeLeagueModel.Input in, String key, String uid, int serial) {
         if (serial != homeLeagueSerial || isFinishing()) return;
+        homeLeagueLoading = false;
         homeLeagueCache = in; homeLeagueCacheKey = key; homeLeagueCacheAt = System.currentTimeMillis();
-        if (host.isAttachedToWindow() || host.getParent() != null) renderHomeLeagueCard(host, in, uid);
+        db.setSetting(homeLeagueLastKey(key), HomeLeagueModel.encode(in));
+        // Ana Sayfa bu sırada yeniden kurulduysa en güncel karta yaz; içerik aynıysa dokunma.
+        FrameLayout host = homeLeagueHost;
+        if (host != null && uid.equals(homeLeagueHostUid)) renderHomeLeagueCard(host, in, uid);
     }
 
     /** Yayın sonucu + yerel önizlemeden yalnızca kullanıcının kendi durumunu çıkarır. */
@@ -3244,8 +3299,11 @@ public class ProducerFeedActivity extends Activity {
     }
 
     private void renderHomeLeagueCard(FrameLayout host, HomeLeagueModel.Input in, String uid) {
-        host.removeAllViews();
         final HomeLeagueModel.Card c = HomeLeagueModel.build(in);
+        String signature = HomeLeagueModel.signature(c);
+        if (host.getChildCount() > 0 && signature.equals(homeLeagueShownSignature)) return; // değişiklik yok
+        homeLeagueShownSignature = signature;
+        host.removeAllViews();
         if (c == null) { host.setVisibility(View.GONE); return; }
         int gold = GreenTheme.color(R.color.zd_warning);
         int bronze = 0xffc89470;
@@ -3466,12 +3524,28 @@ public class ProducerFeedActivity extends Activity {
         List<HomeDashboardModel.Condition> items=HomeDashboardModel.conditions(wind,hours,days,now);
         container.removeAllViews();
         int gold=GreenTheme.color(R.color.zd_warning);
-        int inner=GreenTheme.color(R.color.zd_surface);
         for(int i=0;i<items.size();i++){
             HomeDashboardModel.Condition c=items.get(i);
             int tone=c.tone==HomeDashboardModel.Tone.CRITICAL ? RED
                     : c.tone==HomeDashboardModel.Tone.ATTENTION ? gold
                     : c.tone==HomeDashboardModel.Tone.INFO ? GreenTheme.parse("#8FC0E0") : GREEN;
+            addHomeConditionRow(container,c,tone,i);
+        }
+    }
+
+    /** Tahmin gelene kadar üç yer tutucu satır (Yağış · Rüzgâr · üçüncü satır). */
+    private void renderHomeConditionPlaceholders(LinearLayout container) {
+        container.removeAllViews();
+        String[] titles={"Yağış","Rüzgâr","En kuru gün"};
+        for(int i=0;i<titles.length;i++){
+            HomeDashboardModel.Condition c=new HomeDashboardModel.Condition(titles[i],"…",
+                    "Bahçenin hava tahmini hazırlanıyor",HomeDashboardModel.Tone.NORMAL);
+            addHomeConditionRow(container,c,BORDER,i);
+        }
+    }
+
+    private void addHomeConditionRow(LinearLayout container,HomeDashboardModel.Condition c,int tone,int i) {
+            int inner=GreenTheme.color(R.color.zd_surface);
             LinearLayout item=row();
             item.setPadding(dp(12),dp(10),dp(12),dp(10));
             item.setBackground(round(inner,14,Color.TRANSPARENT));
@@ -3501,7 +3575,6 @@ public class ProducerFeedActivity extends Activity {
             LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(-1,-2);
             if(i>0)ip.setMargins(0,dp(8),0,0);
             container.addView(item,ip);
-        }
     }
 
     private String homeTemp(double value) {
@@ -3509,7 +3582,34 @@ public class ProducerFeedActivity extends Activity {
     }
 
     private void renderHomeRainBars(LinearLayout container,WeatherRepository.WeatherForecast forecast) {
+        renderHomeRainBars(container,forecast,false);
+    }
+
+    /** placeholder=true: aynı yükseklikte boş 5 sütun (tahmin gelince kart büyümez). */
+    private void renderHomeRainBars(LinearLayout container,WeatherRepository.WeatherForecast forecast,boolean placeholder) {
         container.removeAllViews();
+        if(placeholder){
+            container.setVisibility(View.VISIBLE);
+            int inner=GreenTheme.color(R.color.zd_surface);
+            for(int i=0;i<5;i++){
+                LinearLayout column=new LinearLayout(this);
+                column.setOrientation(LinearLayout.VERTICAL);
+                column.setGravity(Gravity.CENTER_HORIZONTAL);
+                column.addView(text("—",10,MUTED,true));
+                FrameLayout well=new FrameLayout(this);
+                well.setBackground(round(inner,8,Color.TRANSPARENT));
+                LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(-1,dp(40));
+                wp.setMargins(0,dp(4),0,dp(4));
+                column.addView(well,wp);
+                column.addView(text("—",11,MUTED,true));
+                column.addView(text("—/—",10,MUTED,false));
+                LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);
+                if(i>0)cp.setMargins(dp(6),0,0,0);
+                container.addView(column,cp);
+            }
+            container.setContentDescription("Günlük yağış ihtimali yükleniyor");
+            return;
+        }
         if(forecast==null || forecast.daily.isEmpty()){container.setVisibility(View.GONE);return;}
         container.setVisibility(View.VISIBLE);
         Calendar now=Calendar.getInstance();

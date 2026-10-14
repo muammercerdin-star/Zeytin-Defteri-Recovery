@@ -66,6 +66,21 @@ public final class HomeLeagueModelTest {
         String invite = HomeLeagueModel.inviteText("Alaşehir / Manisa");
         eq(invite.contains("Alaşehir kupası henüz sahipsiz"), true, "invite names cup");
         eq(invite.contains("http"), false, "no fabricated link");
+        // Kalıcı son durum: anında çizim için; 24 saatten eskiyse sıra atılır.
+        long now = 1_800_000_000_000L;
+        String enc = HomeLeagueModel.encode(fifth, now - 3600_000L);
+        HomeLeagueModel.Input dec = HomeLeagueModel.decode(enc, now);
+        eq(HomeLeagueModel.signature(HomeLeagueModel.build(dec)), HomeLeagueModel.signature(HomeLeagueModel.build(fifth)), "round trip keeps the same card");
+        HomeLeagueModel.Input old = HomeLeagueModel.decode(HomeLeagueModel.encode(fifth, now - 2 * 86400000L), now);
+        eq(old.myRank, 0, "stale saved rank dropped");
+        eq(HomeLeagueModel.build(old).state, HomeLeagueModel.State.WAITING, "stale state falls back to waiting");
+        eq(HomeLeagueModel.decode("", now), null, "empty");
+        eq(HomeLeagueModel.decode("v1\tbroken", now), null, "broken");
+        eq(HomeLeagueModel.decode("v1\tA / B\tx\t0\t0\t0\t0\t-1\t\t1", now), null, "bad number");
+        HomeLeagueModel.Input tab = in("Ala\tşehir / Manisa");
+        eq(HomeLeagueModel.decode(HomeLeagueModel.encode(tab, now), now).regionName, "Ala şehir / Manisa", "tab sanitised");
+        eq(HomeLeagueModel.signature(null), "none", "no card signature");
+        eq(HomeLeagueModel.signature(HomeLeagueModel.build(w)).equals(HomeLeagueModel.signature(HomeLeagueModel.build(lead))), false, "different states differ");
         System.out.println("PASS: " + checks + " home league card checks (host only).");
     }
 }

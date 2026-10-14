@@ -379,3 +379,28 @@ Sabit 150dp yükseklik kaldırıldı. Kartlar satırdaki en uzun karta eşitleni
 - Davet paylaşım penceresi.
 - Basılı tutup gizleme ve Lig ekranından geri açma.
 - Bölge kartlarının eşit yükseklikte olması.
+
+## 15. Ana Sayfa "atlama" düzeltmesi
+
+Video gelmedi; sebep koddan bulundu. Ana Sayfa'da içeriği sonradan aşağı iten veya kaydırma konumunu bozan dört kaynak vardı:
+
+1. **Hava kartı büyüyordu.** Kart tek satırlık "hava tahmini hazırlanıyor…" yazısıyla açılıyor, tahmin gelince 3 satır ve yağış çubuklarıyla yaklaşık 200dp büyüyordu. Altındaki her şey aşağı kayıyordu.
+   → Artık yükleme sırasında gerçek satırlarla **aynı yükseklikte** yer tutucular gösteriliyor: 3 satır ve 5 boş yağış sütunu. Hata durumunda yağış sütunları gizleniyor.
+2. **Zeytin Ligi kartı sonradan beliriyordu (bu turdaki yeni kart).** Kart, ağ cevabı gelince görünür olup içeriği aşağı itiyordu. Ayrıca Ana Sayfa her yeniden kurulduğunda yeni bir istek başlatıyor, öncekini iptal ediyordu.
+   → Kart artık sayfa çizilmeden **önce** çiziliyor. Sırasıyla bellekteki sonuç, kayıtlı son durum (24 saatten eskiyse sıra bilgisi atılıyor) ya da yerel arşiv kullanılıyor.
+   → Ağ sonucu yalnızca içerik değiştiyse kartı yerinde güncelliyor.
+   → Sayfa kaç kez yeniden kurulursa kurulsun tek bir istek yürüyor.
+3. **Kaydırma konumu bir kare kaçıyordu.** Ana Sayfa onResume'da, gönderi senkronundan sonra ve özel veri senkronundan sonra baştan kuruluyor. Kaydırma konumu `post()` ile geri yüklendiği için bir kare sayfanın en üstü görünüyordu.
+   → Konum artık ilk çizimden **önce** geri yükleniyor (`OnPreDrawListener`).
+4. Bunların toplamı, uygulamaya dönüşte ve ilk açılışta görülen "zıplama" hissini veriyordu.
+
+### Doğrulama
+- `tests/home_league/run.sh`: 43 kontrol (kayıtlı durum kodlama, 24 saat kuralı, imza karşılaştırması eklendi).
+- `check_wiring.py`: 16 kontrol.
+- `tests/home`: 65 kontrol.
+- `ProducerFeedActivity` tip denetiminden geçti (Firebase ve Glide hariç).
+
+### Cihazda kontrol
+- Uygulamayı açınca ve başka ekrandan Ana Sayfa'ya dönünce sayfanın kaymaması.
+- Hava kartının yer tutucudan gerçek veriye geçerken boyunun değişmemesi.
+- Lig kartının sayfa açılırken hazır görünmesi.

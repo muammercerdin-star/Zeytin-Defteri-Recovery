@@ -125,6 +125,60 @@ public final class HomeLeagueModel {
         return nf.format(Math.max(0, value));
     }
 
+    /** Kartın görünen içeriğinin özeti; aynıysa kart yeniden çizilmez (atlama olmaz). */
+    public static String signature(Card c) {
+        if (c == null) return "none";
+        return c.state + "|" + c.overline + "|" + c.title + "|" + c.sub + "|" + c.progressPercent + "|"
+                + c.progressText + "|" + c.kgOk;
+    }
+
+    /** Son durumu ayarlarda saklamak için kısa metin (uygulama yeniden açılınca anında çizilir). */
+    public static String encode(Input in) { return encode(in, System.currentTimeMillis()); }
+
+    static String encode(Input in, long savedAtMs) {
+        if (in == null) return "";
+        StringBuilder top = new StringBuilder();
+        double[] t = in.topScores == null ? new double[0] : in.topScores;
+        for (int i = 0; i < Math.min(3, t.length); i++) { if (i > 0) top.append(';'); top.append(t[i]); }
+        return "v1\t" + clean(in.regionName) + "\t" + in.localKg + "\t" + (in.published ? 1 : 0) + "\t"
+                + (in.raceStarted ? 1 : 0) + "\t" + in.myRank + "\t" + in.myScore + "\t" + in.regionProducers + "\t" + top + "\t" + savedAtMs;
+    }
+
+    /** Bozuk/eski kayıtta null döner; çağıran yerel arşive düşer. */
+    public static Input decode(String value) { return decode(value, System.currentTimeMillis()); }
+
+    /** Kayıt 24 saatten eskiyse sıra bilgisi atılır (sıra yalnızca güncel yayından gösterilir). */
+    static Input decode(String value, long nowMs) {
+        if (value == null || !value.startsWith("v1\t")) return null;
+        String[] p = value.split("\t", -1);
+        if (p.length != 10) return null;
+        try {
+            Input in = new Input();
+            in.regionName = p[1];
+            in.localKg = Double.parseDouble(p[2]);
+            in.published = "1".equals(p[3]);
+            in.raceStarted = "1".equals(p[4]);
+            in.myRank = Integer.parseInt(p[5]);
+            in.myScore = Double.parseDouble(p[6]);
+            in.regionProducers = Integer.parseInt(p[7]);
+            if (p[8].isEmpty()) in.topScores = new double[0];
+            else {
+                String[] t = p[8].split(";");
+                in.topScores = new double[t.length];
+                for (int i = 0; i < t.length; i++) in.topScores[i] = Double.parseDouble(t[i]);
+            }
+            long savedAt = Long.parseLong(p[9]);
+            if (savedAt <= 0 || Math.abs(nowMs - savedAt) > 86400000L) {
+                in.published = false; in.raceStarted = false; in.myRank = 0; in.myScore = 0; in.topScores = new double[0];
+            }
+            return in;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static String clean(String v) { return v == null ? "" : v.replace('\t', ' ').replace('\n', ' ').trim(); }
+
     /** "Davet et" paylaşım metni; uydurma bağlantı eklenmez. */
     public static String inviteText(String regionName) {
         String district = LeagueBoardModel.splitRegion(regionName)[0];

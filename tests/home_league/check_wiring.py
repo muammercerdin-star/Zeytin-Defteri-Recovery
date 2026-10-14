@@ -15,6 +15,11 @@ checks = {
     "published result must be fresh": "ZeytinLeagueRepository.fresh(result.publishedAtMs" in inp,
     "network result cached (10 min) to avoid Firestore reads on every Home open": "HOME_LEAGUE_CACHE_MS" in a,
     "stale async results ignored": "serial != homeLeagueSerial" in a,
+    "card height known before first draw (saved/local state rendered synchronously)": re.search(r"HomeLeagueModel\.decode\(db\.getSetting\(homeLeagueLastKey\(key\)", a) is not None and "renderHomeLeagueCard(host, initial, uid);" in a,
+    "no re-render when card content unchanged": "signature.equals(homeLeagueShownSignature)" in a,
+    "one network load across Home rebuilds": "homeLeagueLoading && key.equals(homeLeagueLoadingKey)" in a,
+    "weather card keeps its height while loading (placeholders)": "renderHomeConditionPlaceholders(conditions);" in a and "renderHomeRainBars(rainBars,null,true)" in a,
+    "home scroll restored before first draw (no post())": "home.post(() -> { if(home.getParent()==contentHost)home.scrollTo(0,scrollY); });" not in a and "addOnPreDrawListener" in a,
     "invite shares plain text without fabricated link": "HomeLeagueModel.inviteText(in.regionName)" in a,
     "region tiles equalised (no fixed 150dp min height)": "details.setMinimumHeight(dp(150))" not in v and "new LinearLayout.LayoutParams(tileWidth, -1)" in v,
 }
