@@ -1216,91 +1216,25 @@ public final class MarketView extends ScrollView {
 
 
         // ========================================================
-        // FOTOĞRAF
-        //
-        // Parent artık initLayout içinde TAM 190dp.
-        // Bu MATCH_PARENT artık ekranı büyütemez.
+        // ZEMİN (fotoğrafsız; Zeytin Ligi başlığıyla aynı yeşil geçiş)
         // ========================================================
-
-        ImageView photo =
-                new ImageView(
-                        getContext()
-                );
-
-
-        photo.setImageResource(
-                R.drawable.home_hero_olive
-        );
-
-
-        photo.setScaleType(
-                ImageView.ScaleType.CENTER_CROP
-        );
-
-
-        photo.setAlpha(
-                0.40f
-        );
-
-
-        photo.setImportantForAccessibility(
-                View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        );
-
-
-        hero.addView(
-                photo,
-                new FrameLayout.LayoutParams(
-                        LayoutParams.MATCH_PARENT,
-                        LayoutParams.MATCH_PARENT
-                )
-        );
-
-
-        // ========================================================
-        // KOYU GRADIENT
-        // ========================================================
-
-        View shade =
-                new View(
-                        getContext()
-                );
-
-
-        GradientDrawable shadeDrawable =
+        GradientDrawable heroFill =
                 new GradientDrawable(
-                        GradientDrawable.Orientation.LEFT_RIGHT,
+                        GradientDrawable.Orientation.TR_BL,
                         new int[]{
-                                GreenTheme.parse(
-                                        "#FC0B1D28"
-                                ),
-                                GreenTheme.parse(
-                                        "#E80B1D28"
-                                ),
-                                GreenTheme.parse(
-                                        "#A20D2631"
-                                ),
-                                GreenTheme.parse(
-                                        "#55132A38"
-                                )
+                                0xff24503a,
+                                0xff163428,
+                                GreenTheme.color(R.color.zd_surface)
                         }
                 );
-
-
-        shade.setBackground(
-                shadeDrawable
-        );
-
-
-        hero.addView(
-                shade,
-                new FrameLayout.LayoutParams(
-                        LayoutParams.MATCH_PARENT,
-                        LayoutParams.MATCH_PARENT
-                )
-        );
-
-
+        heroFill.setCornerRadius(dp(15));
+        heroFill.setStroke(dp(1), border);
+        hero.setBackground(heroFill);
+        View heroLine = new View(getContext());
+        heroLine.setBackground(new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{GreenTheme.color(R.color.zd_green), GreenTheme.color(R.color.zd_warning)}));
+        hero.addView(heroLine, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, dp(3), android.view.Gravity.BOTTOM));
         // ========================================================
         // İÇERİK
         // ========================================================

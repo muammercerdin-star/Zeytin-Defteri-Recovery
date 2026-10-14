@@ -256,7 +256,7 @@ public class LocationPickerActivity extends Activity {
 
 
         getWindow().setStatusBarColor(
-                GreenTheme.parse("#0E5A3A")
+                GreenTheme.color(R.color.zd_bg)
         );
 
 
@@ -2210,7 +2210,7 @@ public class LocationPickerActivity extends Activity {
 
 
         row.setBackgroundColor(
-                Color.WHITE
+                GreenTheme.color(R.color.zd_card) // eski beyaz satır → koyu kart
         );
 
 
@@ -2253,9 +2253,7 @@ public class LocationPickerActivity extends Activity {
 
 
         tvName.setTextColor(
-                GreenTheme.parse(
-                        "#173C29"
-                )
+                GreenTheme.color(R.color.zd_text)
         );
 
 
@@ -2345,9 +2343,7 @@ public class LocationPickerActivity extends Activity {
 
 
         tvArrow.setTextColor(
-                GreenTheme.parse(
-                        "#167044"
-                )
+                GreenTheme.color(R.color.zd_muted)
         );
 
 

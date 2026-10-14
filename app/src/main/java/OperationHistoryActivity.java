@@ -98,15 +98,14 @@ public class OperationHistoryActivity extends Activity {
             GreenTheme.color(R.color.zd_text);
 
     private final int COLOR_GREEN =
-            GreenTheme.parse(
-                    "#2F6B3F"
-            );
+            GreenTheme.color(R.color.zd_green);
 
     private final int COLOR_LIGHT_GREEN =
             GreenTheme.color(R.color.zd_green_soft);
 
+    // Yalnızca yeşil düğme yazıları için: koyu yazı (yeni düğme dili)
     private final int COLOR_WHITE =
-            Color.WHITE;
+            GreenTheme.color(R.color.zd_bg);
 
     private final int COLOR_TEXT =
             GreenTheme.color(R.color.zd_text);
@@ -151,7 +150,7 @@ public class OperationHistoryActivity extends Activity {
                 createScreen()
         );
 
-        ZdNav.attach(this, "İşlemler");
+        // Eski 5 öğeli alt menü (ZdNav) kaldırıldı; geri tuşu bir önceki ekrana döner.
 
 
         loadGardenFilter();
@@ -342,9 +341,7 @@ public class OperationHistoryActivity extends Activity {
                 createText(
                         "Bahçede yaptığın tüm işleri tek yerde gör",
                         14,
-                        GreenTheme.parse(
-                                "#4A7441"
-                        ),
+                        GreenTheme.color(R.color.zd_muted),
                         false
                 );
 

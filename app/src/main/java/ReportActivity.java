@@ -63,7 +63,7 @@ public class ReportActivity extends Activity {
             GreenTheme.color(R.color.zd_text);
 
     private final int COLOR_GREEN =
-            GreenTheme.parse("#416A25");
+            GreenTheme.color(R.color.zd_green); // eski koyu zeytin yeşili koyu zeminde okunmuyordu
 
     private final int COLOR_LIGHT_GREEN =
             GreenTheme.color(R.color.zd_green_soft);
@@ -81,7 +81,7 @@ public class ReportActivity extends Activity {
             GreenTheme.color(R.color.zd_border);
 
     private final int COLOR_RED =
-            GreenTheme.parse("#A13B30");
+            GreenTheme.color(R.color.zd_danger);
 
 
     // ============================================================
@@ -260,7 +260,7 @@ public class ReportActivity extends Activity {
                 createText(
                         "Bahçenin rakamlarını tek bakışta gör",
                         14,
-                        GreenTheme.parse("#52713B"),
+                        GreenTheme.color(R.color.zd_muted),
                         false
                 );
 

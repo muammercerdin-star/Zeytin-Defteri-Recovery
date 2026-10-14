@@ -62,9 +62,7 @@ public class ReactionManager {
     // ============================================================
 
     private final int COLOR_REACTION_ACTIVE =
-            GreenTheme.parse(
-                    "#16824F"
-            );
+            GreenTheme.color(R.color.zd_green);
 
 
     private final int COLOR_REACTION_INACTIVE =

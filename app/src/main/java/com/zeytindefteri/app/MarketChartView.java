@@ -138,9 +138,7 @@ public class MarketChartView extends View {
         // =========================================================
 
         linePaint.setColor(
-                GreenTheme.parse(
-                        "#6F8536"
-                )
+                GreenTheme.color(R.color.zd_green)
         );
 
         linePaint.setStyle(
@@ -165,9 +163,7 @@ public class MarketChartView extends View {
         // =========================================================
 
         fillPaint.setColor(
-                GreenTheme.parse(
-                        "#1A8AA84A"
-                )
+                ((GreenTheme.color(R.color.zd_green) & 0x00FFFFFF) | 0x1A000000)
         );
 
         fillPaint.setStyle(
@@ -197,9 +193,7 @@ public class MarketChartView extends View {
         // =========================================================
 
         pointPaint.setColor(
-                GreenTheme.parse(
-                        "#6F8536"
-                )
+                GreenTheme.color(R.color.zd_green)
         );
 
         pointPaint.setStyle(

@@ -456,7 +456,7 @@
                 android:focusable="true"
                 android:gravity="center"
                 android:text="+ İşlem Ekle"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/zd_bg"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 

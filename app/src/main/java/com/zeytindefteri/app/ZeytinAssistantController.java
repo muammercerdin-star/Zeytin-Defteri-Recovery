@@ -70,7 +70,7 @@ public final class ZeytinAssistantController {
         progress=new ProgressBar(activity);progress.setIndeterminate(true);
         LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(dp(22),dp(22));pp.gravity=Gravity.CENTER;
         root.addView(progress,pp);
-        hint=label("",12);hint.setTextColor(GreenTheme.parse("#B4C5BD"));root.addView(hint);
+        hint=label("",12);hint.setTextColor(GreenTheme.color(R.color.zd_text_soft));root.addView(hint);
         heard=label("",13);heard.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_NONE);root.addView(heard);
         answer=label("",16);answer.setTextIsSelectable(true);root.addView(answer);
         typed=new LinearLayout(activity);
@@ -141,7 +141,7 @@ public final class ZeytinAssistantController {
     private int getPanelWidth(){return Math.min(activity.getResources().getDisplayMetrics().widthPixels-dp(24),dp(380));}
     private Button panelButton(String text){
         Button button=new Button(activity);button.setText(text);button.setTextSize(13);button.setAllCaps(false);
-        button.setTextColor(GreenTheme.parse("#DDF0E0"));button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GreenTheme.color(R.color.zd_green_soft)));
+        button.setTextColor(GreenTheme.color(R.color.zd_text));button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GreenTheme.color(R.color.zd_green_soft)));
         button.setMinWidth(0);button.setMinimumWidth(0);return button;
     }
     /** The sole owner of the panel state, status, progress, waveform and microphone semantics. */

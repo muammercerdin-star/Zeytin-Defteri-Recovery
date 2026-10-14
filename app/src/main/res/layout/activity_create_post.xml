@@ -362,7 +362,7 @@
             android:focusable="true"
             android:gravity="center"
             android:text="Paylaş   →"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/zd_bg"
             android:textSize="15sp"
             android:textStyle="bold" />
 

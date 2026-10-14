@@ -72,13 +72,14 @@ public class BrineActivity extends Activity {
             GreenTheme.color(R.color.zd_text);
 
     private final int COLOR_GREEN =
-            GreenTheme.parse("#416A25");
+            GreenTheme.color(R.color.zd_green);
 
     private final int COLOR_LIGHT_GREEN =
             GreenTheme.color(R.color.zd_green_soft);
 
+    // Yalnızca renkli düğme/rozet üstündeki yazı için: açık zeminde koyu yazı (yeni düğme dili)
     private final int COLOR_WHITE =
-            Color.WHITE;
+            GreenTheme.color(R.color.zd_bg);
 
     private final int COLOR_TEXT =
             GreenTheme.color(R.color.zd_text);
@@ -90,7 +91,7 @@ public class BrineActivity extends Activity {
             GreenTheme.color(R.color.zd_border);
 
     private final int COLOR_WARNING =
-            GreenTheme.parse("#8A651C");
+            GreenTheme.color(R.color.zd_warning);
 
 
     // ============================================================
@@ -343,7 +344,7 @@ public class BrineActivity extends Activity {
                 createText(
                         "Bidonlarını, maliyetini ve olgunlaşmayı takip et",
                         14,
-                        GreenTheme.parse("#52713B"),
+                        GreenTheme.color(R.color.zd_muted),
                         false
                 );
 

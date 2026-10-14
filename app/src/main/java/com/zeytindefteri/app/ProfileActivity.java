@@ -149,10 +149,10 @@ public class ProfileActivity extends Activity {
             GreenTheme.color(R.color.zd_text);
 
     private static final int COLOR_GREEN =
-            GreenTheme.parse("#2F6B3F");
+            GreenTheme.color(R.color.zd_green);
 
     private static final int COLOR_GREEN_2 =
-            GreenTheme.parse("#3C7A4B");
+            GreenTheme.color(R.color.zd_green);
 
     private static final int COLOR_SOFT_GREEN =
             GreenTheme.color(R.color.zd_green_soft);
@@ -170,7 +170,7 @@ public class ProfileActivity extends Activity {
             GreenTheme.color(R.color.zd_border);
 
     private static final int COLOR_DANGER =
-            GreenTheme.parse("#A3423A");
+            GreenTheme.color(R.color.zd_danger);
 
     private static final int COLOR_TAB_BG =
             GreenTheme.color(R.color.zd_green_soft);
@@ -1145,7 +1145,7 @@ public class ProfileActivity extends Activity {
                 createPillButton(
                         "✏️  Profili Düzenle",
                         COLOR_GREEN,
-                        COLOR_WHITE
+                        COLOR_BG
                 );
 
 
@@ -1863,7 +1863,7 @@ public class ProfileActivity extends Activity {
                 createPillButton(
                         "＋ İlk gönderini paylaş",
                         COLOR_GREEN,
-                        COLOR_WHITE
+                        COLOR_BG
                 );
 
 
@@ -2690,7 +2690,7 @@ public class ProfileActivity extends Activity {
                 createPillButton(
                         "Bahçelerimi görüntüle",
                         COLOR_GREEN,
-                        COLOR_WHITE
+                        COLOR_BG
                 );
 
 

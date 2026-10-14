@@ -18,14 +18,15 @@ import android.widget.TextView;
 
 /** Presentation only: all actions use the existing screens and season/assistant callbacks. */
 final class SettingsView extends ScrollView {
-    private static final int BG = 0xFF0A202B;
-    private static final int CARD = 0xFF102B38;
-    private static final int BORDER = 0xFF203D48;
+    // Uygulama paleti (önceden ekranın kendi tonları vardı: 0A202B / 102B38 / 203D48 / nane yeşili)
+    private static final int BG = GreenTheme.color(R.color.zd_bg);
+    private static final int CARD = GreenTheme.color(R.color.zd_card);
+    private static final int BORDER = GreenTheme.color(R.color.zd_border);
     private static final int TEXT = GreenTheme.color(R.color.zd_text);
     private static final int MUTED = GreenTheme.color(R.color.zd_muted);
-    private static final int ACCENT = 0xFF7ACCB3;
-    private static final int OLIVE = 0xFF8BCB70;
-    private static final int DANGER = 0xFFC17C70;
+    private static final int ACCENT = GreenTheme.color(R.color.zd_green);
+    private static final int OLIVE = GreenTheme.color(R.color.zd_green);
+    private static final int DANGER = GreenTheme.color(R.color.zd_danger);
 
     SettingsView(Activity activity, View avatar, String name, String phone, String email,
                  String region, int season, Runnable seasonPicker, Runnable assistant, ModerationAccess.Access access) {
@@ -49,7 +50,7 @@ final class SettingsView extends ScrollView {
         Glide.with(activity).load(R.drawable.home_hero_olive).centerCrop().into(olive);
         View fade = new View(activity);
         fade.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{BG, 0x990A202B, 0x000A202B}));
+                new int[]{BG, (BG & 0x00FFFFFF) | 0x99000000, BG & 0x00FFFFFF}));
         masthead.addView(fade, new FrameLayout.LayoutParams(dp(activity, 156), dp(activity, 112), Gravity.RIGHT | Gravity.TOP));
         LinearLayout heading = column(activity);
         masthead.addView(heading, new FrameLayout.LayoutParams(-1, -2));
@@ -156,9 +157,9 @@ final class SettingsView extends ScrollView {
         edit.setPadding(dp(activity, 13), dp(activity, 13), dp(activity, 13), dp(activity, 13));
         GradientDrawable editDisc = new GradientDrawable();
         editDisc.setShape(GradientDrawable.OVAL);
-        editDisc.setColor(0xFF1B3B47);
+        editDisc.setColor(GreenTheme.color(R.color.zd_green_soft));
         android.graphics.drawable.InsetDrawable inset = new android.graphics.drawable.InsetDrawable(editDisc, dp(activity, 7));
-        edit.setBackground(new RippleDrawable(ColorStateList.valueOf(0x337ACCB3), inset, inset));
+        edit.setBackground(new RippleDrawable(ColorStateList.valueOf((ACCENT & 0x00FFFFFF) | 0x33000000), inset, inset));
         edit.setContentDescription("Profili düzenle");
         edit.setOnClickListener(v -> open(activity, ProfileActivity.class));
         edit.setFocusable(true);
@@ -178,7 +179,7 @@ final class SettingsView extends ScrollView {
         LinearLayout.LayoutParams glyphParams = new LinearLayout.LayoutParams(dp(a, 13), dp(a, 13));
         glyphParams.topMargin = dp(a, 2);
         line.addView(glyph, glyphParams);
-        TextView text = label(a, value.trim(), 12, 0xFFB9CCD1, false);
+        TextView text = label(a, value.trim(), 12, GreenTheme.color(R.color.zd_text_soft), false);
         text.setPadding(dp(a, 5), 0, 0, 0);
         text.setMaxLines(3);
         text.setEllipsize(TextUtils.TruncateAt.END);
@@ -279,7 +280,7 @@ final class SettingsView extends ScrollView {
         return shape;
     }
     private static RippleDrawable ripple(Activity a) {
-        return new RippleDrawable(ColorStateList.valueOf(0x2298D3B9), null, background(a, 0xFFFFFFFF));
+        return new RippleDrawable(ColorStateList.valueOf((ACCENT & 0x00FFFFFF) | 0x22000000), null, background(a, 0xFFFFFFFF));
     }
     private static int dp(Activity a, int value) {
         return Math.round(value * a.getResources().getDisplayMetrics().density);

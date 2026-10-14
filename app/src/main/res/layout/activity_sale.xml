@@ -895,7 +895,7 @@
             android:focusable="true"
             android:gravity="center"
             android:text="Satışı Kaydet"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/zd_bg"
             android:textSize="17sp"
             android:textStyle="bold" />
 

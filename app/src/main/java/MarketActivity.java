@@ -110,7 +110,7 @@ public class MarketActivity extends Activity {
             GreenTheme.color(R.color.zd_text);
 
     private final int COLOR_GREEN =
-            GreenTheme.parse("#2F6B3F");
+            GreenTheme.color(R.color.zd_green);
 
     private final int COLOR_LIGHT_GREEN =
             GreenTheme.color(R.color.zd_green_soft);
@@ -124,8 +124,9 @@ public class MarketActivity extends Activity {
     private final int COLOR_GRAY =
             GreenTheme.color(R.color.zd_muted);
 
+    // Yalnızca yeşil düğme üstündeki yazı (btnAddSale): koyu yazı
     private final int COLOR_WHITE =
-            Color.WHITE;
+            GreenTheme.color(R.color.zd_bg);
 
 
     // ============================================================
@@ -151,7 +152,7 @@ public class MarketActivity extends Activity {
                 createScreen()
         );
 
-        ZdNav.attach(this, "Piyasa");
+        // Eski 5 öğeli alt menü (ZdNav) kaldırıldı; geri tuşu bir önceki ekrana döner.
 
         setupSpinners();
 
@@ -299,7 +300,7 @@ public class MarketActivity extends Activity {
                 createText(
                         "Gerçek satışlardan oluşan bölgesel piyasa",
                         14,
-                        GreenTheme.parse("#4A7441"),
+                        GreenTheme.color(R.color.zd_muted),
                         false
                 );
 
@@ -516,7 +517,7 @@ public class MarketActivity extends Activity {
                 createText(
                         "—",
                         27,
-                        GreenTheme.parse("#214E31"),
+                        GreenTheme.color(R.color.zd_green),
                         true
                 );
 
@@ -651,7 +652,7 @@ public class MarketActivity extends Activity {
                 createText(
                         "Veri bekleniyor",
                         14,
-                        GreenTheme.parse("#4A7441"),
+                        GreenTheme.color(R.color.zd_text_soft),
                         true
                 );
 

@@ -34,7 +34,7 @@ public final class RemindersActivity extends Activity {
     private final ArrayList<Integer> gardenIds=new ArrayList<>();
     private final ArrayList<String> gardenNames=new ArrayList<>();
     private boolean loaded;
-    private static final int GREEN=0xFF90B96D,MUTED=0xFFBAC6BB;
+    private static final int GREEN=GreenTheme.color(R.color.zd_green),MUTED=GreenTheme.color(R.color.zd_muted);
     private static final String[] RULES={"NONE","DAILY","WEEKLY","MONTHLY"};
     static final class Row {
         long id,due;Integer garden;boolean done;String title,note,type,repeat,gardenName;
@@ -46,8 +46,8 @@ public final class RemindersActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);owner=new SessionManager(this).getUserUid();
         if(!new SessionManager(this).hasSession()){finish();return;}
-        getWindow().setStatusBarColor(0xFF101C16);getWindow().setNavigationBarColor(0xFF101C16);
-        LinearLayout root=column();root.setBackgroundColor(0xFF101C16);root.setPadding(dp(18),dp(16),dp(18),0);setContentView(root);
+        getWindow().setStatusBarColor(GreenTheme.color(R.color.zd_bg));getWindow().setNavigationBarColor(GreenTheme.color(R.color.zd_bg));
+        LinearLayout root=column();root.setBackgroundColor(GreenTheme.color(R.color.zd_bg));root.setPadding(dp(18),dp(16),dp(18),0);setContentView(root);
         TextView back=label("‹  Hatırlatmalar",24,true);root.addView(back);back.setOnClickListener(v->finish());
         TextView hint=label("İnternet gerekmez. Android güç tasarrufu bildirimi geciktirebilir. Hatırlatmalar seçili rapor sezonundan bağımsızdır.",13,false);root.addView(hint);
         root.addView(button("+ Yeni hatırlatma",()->{if(loaded)edit(null);}));
@@ -83,7 +83,7 @@ public final class RemindersActivity extends Activity {
     }
     private int group(Row r){if(r.done)return 3;Calendar start=Calendar.getInstance();start.set(Calendar.HOUR_OF_DAY,0);start.set(Calendar.MINUTE,0);start.set(Calendar.SECOND,0);start.set(Calendar.MILLISECOND,0);
         long today=start.getTimeInMillis();start.add(Calendar.DATE,1);return r.due<today?0:r.due<start.getTimeInMillis()?1:2;}
-    private View card(Row r){LinearLayout box=column();box.setPadding(dp(14),dp(12),dp(14),dp(12));GradientDrawable bg=new GradientDrawable();bg.setColor(0xFF1C3024);bg.setCornerRadius(dp(14));box.setBackground(bg);
+    private View card(Row r){LinearLayout box=column();box.setPadding(dp(14),dp(12),dp(14),dp(12));GradientDrawable bg=new GradientDrawable();bg.setColor(GreenTheme.color(R.color.zd_card));bg.setCornerRadius(dp(14));box.setBackground(bg);
         LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(8),0,dp(8));box.setLayoutParams(p);
         box.addView(label(r.title,18,true));box.addView(label((r.gardenName.isEmpty()?"Genel":r.gardenName)+" · "+date(r.due),14,false));
         box.addView(label(r.done?"Tamamlandı":"Ayrıntı ve işlemler →",13,false));box.setOnClickListener(v->detail(r));return box;}
@@ -96,7 +96,7 @@ public final class RemindersActivity extends Activity {
                 .setNegativeButton("Vazgeç",null).setPositiveButton("Onayla",(x,y)->change(true,repo->a.equals("Sil")?(repo.deleteReminder(r.id)?r.id:-1):(repo.markReminderDone(r.id)>0?r.id:-1))).show();
         }).setCustomTitle(label(r.title+"\n"+(r.note.isEmpty()?date(r.due):r.note+"\n"+date(r.due)),17,true)).setNegativeButton("Kapat",null).show();}
     private void edit(Row r){if(!current())return;
-        LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(12));form.setBackgroundColor(0xFF1C3024);
+        LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(12));form.setBackgroundColor(GreenTheme.color(R.color.zd_card));
         EditText title=input("Başlık",r==null?"":r.title);form.addView(title);
         Spinner garden=new Spinner(this);garden.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,gardenNames));
         if(r!=null)garden.setSelection(Math.max(0,gardenIds.indexOf(r.garden)));form.addView(label("Bahçe",14,false));form.addView(garden);
