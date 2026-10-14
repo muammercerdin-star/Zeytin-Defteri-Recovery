@@ -826,3 +826,35 @@ Onaylanan "Sohbet (Meydan) · öneri" panosu uygulandı. Sohbet, Firebase üzeri
 - `tests/meydan_redesign`: 27 mantık + 43 bağlantı kontrolü.
 - Diğer test sonuçları değişmedi.
 - Cihazda denenmedi.
+
+## 27. Sohbet mesaj bağlantıları (1 commit)
+
+Sohbet mesaj denetiminde bulunan dört sorun düzeltildi. Firebase'e deploy yapılmadı, kurallar değişmedi; yeni yazma işlemi mevcut `firestore.rules` güncelleme kuralına (sahip, `is_active` ve `updated_at` izinli alanlar) uyuyor.
+
+**1. Silme buluta yazılıyor:**
+- Önceden silme yalnızca telefondaydı; bir sonraki senkron (`upsertPostFromCloud` her zaman `is_active=1` yazdığı için) gönderiyi geri getiriyordu. Diğer üreticiler de görmeye devam ediyordu.
+- `DatabaseHelper.deletePost` artık bulut kimliği olan gönderiyi "silme bekliyor" (`sync_state=1`) olarak işaretliyor.
+- `SocialCloudRepository.publishPostDeletion` bulut belgesini `is_active=0` yapıyor. Belge kalıcı silinmiyor; yorumlar ve bildirim fonksiyonu zaten kapalı gönderiyi atlıyor. Yalnızca sahip deneyebilir. Ağ yoksa bekliyor ve `retryPendingPosts` sonraki açılışta yeniden deniyor. Belge bulutta hiç yoksa iş bitmiş sayılıyor.
+- İçe almada (`importCloudPost`): bulutta kapalı gönderi telefonda da kapanıyor; telefonda silinip buluta henüz yazılmamış gönderi geri getirilmiyor. Kural `MeydanPostSync.importAction` sınıfında.
+- Profil ekranındaki silme bu yolu kullanıyor.
+
+**2. Buluttan silinen gönderiler temizleniyor:**
+- Sorgu en yeni 250 gönderiyi getiriyor. Telefonda olup bu pencerede bulunmayan gönderi yalnızca şu durumda aday sayılıyor: görüntü sunucudan gelmiş (önbellekten değil), telefondaki kayıt senkron, ve ya bulutun tamamı gelmiş ya da gönderi pencerenin en eskisinden yeni. Kural `MeydanPostSync.missingFromCloud` sınıfında.
+- Aday gönderi kapatılmadan önce sunucudan tek tek doğrulanıyor (en fazla 25). Belge yoksa ya da kapalıysa telefonda kapanıyor, hâlâ etkinse içeri alınıyor. Böylece `created_at` alanı olmayan eski bir belge yanlışlıkla gizlenmiyor.
+
+**3. Canlı akış:**
+- Ekran açıkken Firestore dinleyicisi çalışıyor (`startLiveSync`); yeni mesajlar, silinen ve düzenlenen gönderiler yenileme beklemeden görünüyor. `onPause`'da kapanıyor, `onResume`'da yeniden başlıyor.
+- Okuma maliyeti: açılışta eski tek seferlik senkronla aynı (en fazla 250 belge), sonra yalnızca değişen belgeler.
+- Bilinen sınır: yeni mesaj gelince akış baştan çiziliyor; aşağı kaydırılmışken liste kayabilir.
+
+**4. Gönderim durumu:**
+- Kendi mesajı buluta henüz ulaşmadıysa kartta "bölge · tarih · Gönderiliyor…" yazıyor. Gönderim bitince etiket kalkıyor; başarısızsa "Mesaj henüz gönderilemedi. Bağlantı gelince yeniden denenecek." uyarısı çıkıyor.
+- Eski "Mesaj kaydedildi. Buluta gönderim bekleniyor." uyarısı kaldırıldı.
+
+**Bilinen eski sürüm etkisi:** Eski APK'lar içe almada `is_active` alanına bakmıyor; o telefonlarda silinen gönderi görünmeye devam eder. Yeni sürüme geçen telefonlarda düzelir.
+
+**Testler:**
+- `tests/meydan_sync`: 18 mantık kontrolü (`MeydanPostSync`), 16 SQL kontrolü (kaynak koddaki SQL metinleri masaüstü SQLite'ta çalıştırıldı), 28 bağlantı kontrolü.
+- Diğer test sonuçları değişmedi (önceden başarısız olan 3 test aynı nedenle başarısız). `functions` testleri: 84 geçti, 0 başarısız, 12 atlandı (emülatör yok).
+- Firebase kütüphaneleri bu ortamda olmadığı için Firestore çağrıları derleyiciyle doğrulanamadı; API kullanımı elle kontrol edildi.
+- Cihazda ve emülatörde denenmedi.

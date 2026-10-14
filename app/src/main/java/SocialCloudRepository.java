@@ -87,6 +87,10 @@ public class SocialCloudRepository {
     private int nextCallback;
     private final java.util.Map<Integer, Callback> callbacks = new java.util.HashMap<>();
     private final java.util.Set<Long> pendingWrites = new java.util.HashSet<>();
+    private final java.util.Set<Long> pendingDeletes = new java.util.HashSet<>();
+    private final java.util.Set<String> verifying = new java.util.HashSet<>();
+    private com.google.firebase.firestore.ListenerRegistration liveRegistration;
+    private boolean liveSawServer;
     private final DatabaseHelper databaseHelper;
 
 
@@ -113,6 +117,10 @@ public class SocialCloudRepository {
 
     private static final int SYNC_LIMIT =
             250;
+
+    /** Bir eşleştirmede sunucudan doğrulanacak en fazla eksik gönderi. */
+    private static final int RECONCILE_BATCH =
+            25;
 
 
     // ============================================================
@@ -573,6 +581,8 @@ public class SocialCloudRepository {
                                                 document
                                         );
                                     }
+                                    reconcileWindow(snapshot.getDocuments(),
+                                            snapshot.getMetadata().isFromCache(), null);
 
 
                                     finishStored(callbackKey,
@@ -640,6 +650,19 @@ public class SocialCloudRepository {
 
         if (safe(cloudId).isEmpty()) {
 
+            return;
+        }
+
+        // Bulutta silinmiş gönderi telefonda da kapanır; telefonda silinip buluta henüz yazılmamış
+        // gönderi ise geri getirilmez (eskiden upsert is_active=1 yazıp silinen gönderiyi diriltiyordu).
+        MeydanPostSync.Action action = MeydanPostSync.importAction(
+                MeydanPostSync.cloudActive(document.get("is_active")),
+                databaseHelper.isPostDeletionPending(cloudId));
+        if (action == MeydanPostSync.Action.DEACTIVATE) {
+            databaseHelper.deactivatePostsFromCloud(java.util.Collections.singletonList(cloudId));
+            return;
+        }
+        if (action == MeydanPostSync.Action.SKIP) {
             return;
         }
 
@@ -1250,6 +1273,11 @@ public class SocialCloudRepository {
     }
 
     public long createTextPost(String content, String category) {
+        return createTextPost(content, category, null);
+    }
+
+    /** onSent: buluta yazma bitti (başarılı ya da değil); arayüz "Gönderiliyor…" etiketini yeniler. */
+    public long createTextPost(String content, String category, Callback onSent) {
         FirebaseUser user = getCurrentUser();
         String text = safe(content);
         if (closed || user == null || text.length() < 3 || text.length() > 2000) return -1;
@@ -1259,7 +1287,7 @@ public class SocialCloudRepository {
         long id = databaseHelper.addPost(user.getUid(), getFirebaseDisplayName(user),
                 location[0], location[1], location[2],
                 null, "", "", type, text, "");
-        if (id > 0) publishLocalPost(id, null);
+        if (id > 0) publishLocalPost(id, onSent);
         return id;
     }
     /** Snapshot the selected garden's location only for a newly created quick post. */
@@ -1297,12 +1325,190 @@ public class SocialCloudRepository {
                 });
             }
         }
+        for (Long id : databaseHelper.getPendingPostDeletionIds(user.getUid())) {
+            if (id != null) publishPostDeletion(id, null);
+        }
+    }
+
+    // ============================================================
+    // DELETE -> FIRESTORE
+    // ============================================================
+
+    /**
+     * Telefonda silinen kendi gönderisini bulutta is_active=0 yapar (belge silinmez; yorumlar ve
+     * bildirim fonksiyonu kapalı gönderiyi zaten atlar). Başarısızsa sync_state=1 kalır ve
+     * retryPendingPosts sonraki açılışta yeniden dener.
+     */
+    public void publishPostDeletion(long postId, Callback callback) {
+        FirebaseUser user = getCurrentUser();
+        if (closed || user == null || postId <= 0 || !pendingDeletes.add(postId)) {
+            complete(callback, false);
+            return;
+        }
+        String cloudId = "";
+        String owner = "";
+        try (Cursor c = databaseHelper.getReadableDatabase().rawQuery(
+                "SELECT cloud_id, user_id FROM posts WHERE id = ? AND is_active = 0 AND sync_state = 1 LIMIT 1",
+                new String[]{String.valueOf(postId)})) {
+            if (c.moveToFirst()) {
+                cloudId = safe(c.getString(0));
+                owner = safe(c.getString(1));
+            }
+        }
+        if (cloudId.isEmpty() || !owner.equals(user.getUid())) {
+            // Bulutta karşılığı yok ya da başkasının gönderisi (yalnızca bu telefonda gizlenir).
+            if (cloudId.isEmpty()) markPostSynced(postId);
+            pendingDeletes.remove(postId);
+            complete(callback, cloudId.isEmpty());
+            return;
+        }
+        final int key = ++nextCallback;
+        if (callback != null) callbacks.put(key, callback);
+        Map<String, Object> change = new HashMap<>();
+        change.put("is_active", 0);
+        change.put("updated_at", System.currentTimeMillis());
+        try {
+            firestore.collection(COLLECTION_POSTS).document(cloudId).update(change)
+                    .addOnSuccessListener(ignored -> {
+                        pendingDeletes.remove(postId);
+                        markPostSynced(postId);
+                        finishStored(key, true);
+                    })
+                    .addOnFailureListener(error -> {
+                        pendingDeletes.remove(postId);
+                        boolean gone = error instanceof com.google.firebase.firestore.FirebaseFirestoreException
+                                && ((com.google.firebase.firestore.FirebaseFirestoreException) error).getCode()
+                                == com.google.firebase.firestore.FirebaseFirestoreException.Code.NOT_FOUND;
+                        // Belge bulutta hiç yoksa silinecek bir şey kalmamıştır.
+                        if (gone) markPostSynced(postId);
+                        finishStored(key, gone);
+                    });
+        } catch (RuntimeException error) {
+            pendingDeletes.remove(postId);
+            finishStored(key, false);
+        }
+    }
+
+    private void markPostSynced(long postId) {
+        android.content.ContentValues values = new android.content.ContentValues();
+        values.put("sync_state", 2);
+        databaseHelper.getWritableDatabase().update("posts", values, "id = ?",
+                new String[]{String.valueOf(postId)});
+    }
+
+    // ============================================================
+    // LIVE FEED
+    // ============================================================
+
+    /**
+     * Sohbet ekranı açıkken en yeni gönderileri canlı dinler. Her değişiklikte yalnızca eklenen /
+     * değişen belgeler yazılır; sunucudan gelen tam görüntüde pencereden düşen silinmiş gönderiler
+     * telefonda kapatılır. onChange ana iş parçacığında çağrılır.
+     */
+    public void startLiveSync(Callback onChange) {
+        stopLiveSync();
+        liveSawServer = false;
+        if (closed || getCurrentUser() == null) {
+            complete(onChange, false);
+            return;
+        }
+        try {
+            liveRegistration = firestore.collection(COLLECTION_POSTS)
+                    .orderBy("created_at", Query.Direction.DESCENDING)
+                    .limit(SYNC_LIMIT)
+                    // Metadata değişiklikleri de gelsin: önbellekten ilk görüntü ile sunucu görüntüsü
+                    // aynı olsa bile "sunucudan geldi" anı bildirilir ve eşleştirme çalışır.
+                    .addSnapshotListener(com.google.firebase.firestore.MetadataChanges.INCLUDE, (snapshot, error) -> {
+                        if (closed || liveRegistration == null) return;
+                        if (error != null || snapshot == null) {
+                            complete(onChange, false);
+                            return;
+                        }
+                        try {
+                            List<com.google.firebase.firestore.DocumentChange> changes =
+                                    snapshot.getDocumentChanges(com.google.firebase.firestore.MetadataChanges.EXCLUDE);
+                            boolean fromServer = !snapshot.getMetadata().isFromCache();
+                            boolean firstServer = fromServer && !liveSawServer;
+                            if (fromServer) liveSawServer = true;
+                            // Yalnızca yazma onayı gibi metadata olayları: veri aynı, ekranı yenilemeye gerek yok.
+                            if (changes.isEmpty() && !firstServer) return;
+                            for (com.google.firebase.firestore.DocumentChange change : changes) {
+                                if (change.getType() != com.google.firebase.firestore.DocumentChange.Type.REMOVED) {
+                                    importCloudPost(change.getDocument());
+                                }
+                            }
+                            if (fromServer) reconcileWindow(snapshot.getDocuments(), false, onChange);
+                            complete(onChange, true);
+                        } catch (RuntimeException failure) {
+                            complete(onChange, false);
+                        }
+                    });
+        } catch (RuntimeException error) {
+            liveRegistration = null;
+            complete(onChange, false);
+        }
+    }
+
+    public void stopLiveSync() {
+        com.google.firebase.firestore.ListenerRegistration registration = liveRegistration;
+        liveRegistration = null;
+        if (registration != null) registration.remove();
+    }
+
+    /**
+     * Sorgu penceresinde artık bulunmayan gönderileri tek tek sunucudan doğrular: belge yoksa ya da
+     * is_active=0 ise telefonda kapatır, hâlâ etkinse (ör. created_at alanı olmayan eski belge
+     * sorguya hiç girmez) olduğu gibi içeri alır. Böylece pencere hesabındaki bir boşluk etkin bir
+     * gönderiyi yanlışlıkla gizleyemez.
+     */
+    private void reconcileWindow(List<DocumentSnapshot> documents, boolean fromCache, Callback onChanged) {
+        if (closed || fromCache || documents == null) return;
+        java.util.Set<String> ids = new java.util.HashSet<>();
+        long oldest = Long.MAX_VALUE;
+        for (DocumentSnapshot document : documents) {
+            ids.add(document.getId());
+            String declared = value(document, "cloud_id", "");
+            if (!declared.isEmpty()) ids.add(declared);
+            Object created = document.get("created_at");
+            if (created instanceof Number) oldest = Math.min(oldest, ((Number) created).longValue());
+        }
+        if (oldest == Long.MAX_VALUE) oldest = 0L;
+        List<String> missing = MeydanPostSync.missingFromCloud(databaseHelper.getActiveCloudPostsForSync(),
+                ids, documents.size(), SYNC_LIMIT, oldest, false);
+        int started = 0;
+        for (String cloudId : missing) {
+            if (started >= RECONCILE_BATCH) break;
+            if (!ZeytinMessagingService.validId(cloudId) || !verifying.add(cloudId)) continue;
+            started++;
+            try {
+                firestore.collection(COLLECTION_POSTS).document(cloudId)
+                        .get(com.google.firebase.firestore.Source.SERVER)
+                        .addOnSuccessListener(doc -> {
+                            verifying.remove(cloudId);
+                            if (closed) return;
+                            if (doc == null || !doc.exists()) {
+                                databaseHelper.deactivatePostsFromCloud(java.util.Collections.singletonList(cloudId));
+                            } else {
+                                importCloudPost(doc);
+                            }
+                            complete(onChanged, true);
+                        })
+                        // Ağ yoksa karar verilmez; gönderi bir sonraki eşleştirmeye kalır.
+                        .addOnFailureListener(error -> verifying.remove(cloudId));
+            } catch (RuntimeException error) {
+                verifying.remove(cloudId);
+            }
+        }
+    }
+
+    private void complete(Callback callback, boolean success) {
+        if (!closed && callback != null) callback.onComplete(success);
     }
     private void finishStored(int key, boolean success) {
         Callback callback = callbacks.remove(key);
         if (!closed && callback != null) callback.onComplete(success);
     }
-    public void close() { closed = true; callbacks.clear(); }
+    public void close() { closed = true; stopLiveSync(); callbacks.clear(); }
 
     /** Fetch a single notification target, without downloading the full feed. */
     public void fetchPost(String cloudId, Callback callback) {

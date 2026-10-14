@@ -116,6 +116,9 @@ public class FeedManager {
 
         public boolean active;
 
+        /** 1: buluta henüz ulaşmadı (yazma/silme bekliyor), 2: senkron. */
+        public int syncState = 2;
+
         public long createdAt;
         public long updatedAt;
 
@@ -1704,6 +1707,13 @@ public class FeedManager {
                         "is_active",
                         1
                 ) == 1;
+
+        item.syncState =
+                getInt(
+                        cursor,
+                        "sync_state",
+                        2
+                );
 
 
         item.createdAt =

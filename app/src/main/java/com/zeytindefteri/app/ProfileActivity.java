@@ -58,6 +58,7 @@ public class ProfileActivity extends Activity {
     // ============================================================
 
     private DatabaseHelper databaseHelper;
+    private SocialCloudRepository postCloud;
     private SessionManager sessionManager;
     private FirebaseAuth firebaseAuth;
 
@@ -210,6 +211,11 @@ public class ProfileActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+
+        if (postCloud != null) {
+            postCloud.close();
+            postCloud = null;
+        }
 
         if (databaseHelper != null) {
 
@@ -1114,6 +1120,13 @@ public class ProfileActivity extends Activity {
 
 
             if (changed > 0) {
+
+                // Silme buluta da yazılır (is_active=0); ağ yoksa bekler, Sohbet açılışında yeniden denenir.
+                try {
+                    if (postCloud == null) postCloud = new SocialCloudRepository(this, databaseHelper);
+                    postCloud.publishPostDeletion(post.id, null);
+                } catch (RuntimeException ignored) {
+                }
 
                 Toast.makeText(
                         this,

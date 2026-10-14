@@ -7827,42 +7827,78 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // DELETE POST
     // ============================================================
 
+    /**
+     * Gönderiyi telefonda gizler. Buluta yüklenmiş bir gönderiyse silme "bekliyor" (sync_state=1)
+     * olarak işaretlenir; SocialCloudRepository bunu buluta is_active=0 olarak yazar. Böylece gönderi
+     * diğer üreticilerden de kalkar ve sonraki senkronda geri gelmez.
+     */
     public int deletePost(
             long postId
     ) {
+        SQLiteDatabase db = getWritableDatabase();
+        String cloudId = "";
+        try (Cursor c = db.query("posts", new String[]{"cloud_id"}, "id = ?",
+                new String[]{String.valueOf(postId)}, null, null, null, "1")) {
+            if (c.moveToFirst()) cloudId = safe(c.getString(0));
+        }
+        ContentValues values = new ContentValues();
+        values.put("is_active", 0);
+        values.put("updated_at", System.currentTimeMillis());
+        values.put("sync_state", cloudId.isEmpty() ? 2 : 1);
+        return db.update("posts", values, "id = ?", new String[]{String.valueOf(postId)});
+    }
 
+    /** Telefonda silinmiş ama silmesi henüz buluta yazılmamış gönderi mi? */
+    public boolean isPostDeletionPending(String cloudId) {
+        if (safe(cloudId).isEmpty()) return false;
+        try (Cursor c = getReadableDatabase().rawQuery(
+                "SELECT 1 FROM posts WHERE cloud_id = ? AND is_active = 0 AND sync_state = 1 LIMIT 1",
+                new String[]{safe(cloudId)})) {
+            return c.moveToFirst();
+        }
+    }
 
-        SQLiteDatabase db =
-                getWritableDatabase();
+    /** Bulutta silinmiş (is_active=0 ya da hiç yok) gönderileri telefonda kapatır. */
+    public int deactivatePostsFromCloud(java.util.Collection<String> cloudIds) {
+        if (cloudIds == null || cloudIds.isEmpty()) return 0;
+        SQLiteDatabase db = getWritableDatabase();
+        int changed = 0;
+        db.beginTransaction();
+        try {
+            ContentValues values = new ContentValues();
+            values.put("is_active", 0);
+            values.put("sync_state", 2);
+            for (String cloudId : cloudIds) {
+                if (safe(cloudId).isEmpty()) continue;
+                changed += db.update("posts", values, "cloud_id = ? AND is_active = 1", new String[]{safe(cloudId)});
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        return changed;
+    }
 
+    /** Eşleştirme için telefondaki etkin, bulut kimliği olan gönderiler. */
+    public java.util.List<MeydanPostSync.LocalPost> getActiveCloudPostsForSync() {
+        java.util.List<MeydanPostSync.LocalPost> out = new java.util.ArrayList<>();
+        try (Cursor c = getReadableDatabase().rawQuery(
+                "SELECT cloud_id, created_at, COALESCE(sync_state, 2) FROM posts "
+                        + "WHERE is_active = 1 AND TRIM(COALESCE(cloud_id, '')) <> ''", null)) {
+            while (c.moveToNext()) out.add(new MeydanPostSync.LocalPost(c.getString(0), c.getLong(1), c.getInt(2)));
+        }
+        return out;
+    }
 
-        ContentValues values =
-                new ContentValues();
-
-
-        values.put(
-                "is_active",
-                0
-        );
-
-
-        values.put(
-                "updated_at",
-                System.currentTimeMillis()
-        );
-
-
-        return db.update(
-                "posts",
-                values,
-                "id = ?",
-
-                new String[]{
-                        String.valueOf(
-                                postId
-                        )
-                }
-        );
+    /** Silmesi buluta yazılmayı bekleyen kendi gönderilerinin yerel kimlikleri. */
+    public java.util.List<Long> getPendingPostDeletionIds(String userId) {
+        java.util.List<Long> out = new java.util.ArrayList<>();
+        try (Cursor c = getReadableDatabase().rawQuery(
+                "SELECT id FROM posts WHERE user_id = ? AND is_active = 0 AND sync_state = 1 "
+                        + "AND TRIM(COALESCE(cloud_id, '')) <> '' ORDER BY id LIMIT 50", new String[]{safe(userId)})) {
+            while (c.moveToNext()) out.add(c.getLong(0));
+        }
+        return out;
     }
 
 

@@ -148,6 +148,7 @@ public class ProducerFeedActivity extends Activity {
     }
     private CommentCloudRepository replyOutbox;
     private String currentSection = "MEYDAN";
+    private boolean liveFeedFirstEvent;
     private String activeType = "ALL";
 
     private final List<LinearLayout> categoryViews =
@@ -287,12 +288,10 @@ public class ProducerFeedActivity extends Activity {
         PushRegistration.requestPermission(this);
 
         if (cloudRepository != null) {
-            cloudRepository.syncLatestPosts(
-                    success ->
-                            runOnUiThread(
-                                    this::refreshCurrentSection
-                            )
-            );
+            // Tek seferlik senkron yerine canlı dinleme: ekran açıkken gelen yeni mesajlar, silinen
+            // gönderiler ve başka telefondan yapılan değişiklikler yenileme beklemeden görünür.
+            liveFeedFirstEvent = true;
+            cloudRepository.startLiveSync(success -> runOnUiThread(this::onLiveFeedChanged));
         }
 
         if (cloudRepository != null) cloudRepository.retryPendingPosts();
@@ -620,6 +619,17 @@ public class ProducerFeedActivity extends Activity {
                 -1,
                 -1
         );
+    }
+
+    /** İlk canlı görüntü eski senkron gibi bölümü yeniler; sonrakiler yalnızca Sohbet açıksa akışı. */
+    private void onLiveFeedChanged() {
+        if (isFinishing() || isDestroyed()) return;
+        if (liveFeedFirstEvent) {
+            liveFeedFirstEvent = false;
+            refreshCurrentSection();
+        } else if ("MEYDAN".equals(currentSection) && feedContainer != null) {
+            loadFeed();
+        }
     }
 
     private void refreshCurrentSection() {
@@ -971,11 +981,18 @@ public class ProducerFeedActivity extends Activity {
         }
         publishingText = true; send.setEnabled(false);
         long id;
-        try { id = cloudRepository.createTextPost(text, activeType); }
+        try {
+            id = cloudRepository.createTextPost(text, activeType, sent -> runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                // Kart "Gönderiliyor…" etiketini bırakır; başarısızsa etiket kalır ve sonraki açılışta yeniden denenir.
+                if ("MEYDAN".equals(currentSection)) loadFeed();
+                if (!sent) Toast.makeText(this, "Mesaj henüz gönderilemedi. Bağlantı gelince yeniden denenecek.",
+                        Toast.LENGTH_SHORT).show();
+            }));
+        }
         catch (RuntimeException error) { id = -1; }
         if (id > 0) {
             messageInput.setText(""); loadFeed();
-            Toast.makeText(this, "Mesaj kaydedildi. Buluta gönderim bekleniyor.", Toast.LENGTH_SHORT).show();
         } else messageInput.setError("Mesaj kaydedilemedi.");
         send.postDelayed(() -> { publishingText = false; send.setEnabled(true); }, 600);
     }
@@ -1366,6 +1383,10 @@ public class ProducerFeedActivity extends Activity {
         identity.addView(author);
         String when = p.createdAt > 0 ? feedThreadDate.format(new Date(p.createdAt)) : "";
         String meta = place(p).isEmpty() ? when : (when.isEmpty() ? place(p) : place(p) + " · " + when);
+        boolean own = firebaseAuth != null && firebaseAuth.getCurrentUser() != null
+                && uid.equals(firebaseAuth.getCurrentUser().getUid());
+        // Kendi mesajı buluta henüz ulaşmadıysa (sync_state=1) diğer üreticiler onu görmüyor demektir.
+        if (own && p.syncState == MeydanPostSync.PENDING) meta = meta.isEmpty() ? "Gönderiliyor…" : meta + " · Gönderiliyor…";
         TextView metadata = text(meta, 12, MUTED, false);
         metadata.setSingleLine(true);
         metadata.setEllipsize(TextUtils.TruncateAt.END);
@@ -6087,6 +6108,8 @@ public class ProducerFeedActivity extends Activity {
     @Override
     protected void onPause() {
         if (settingsContent != null) settingsContent.pause();
+        // Arka planda dinleme sürmesin (pil ve okuma maliyeti); onResume yeniden başlatır.
+        if (cloudRepository != null) cloudRepository.stopLiveSync();
         if (zeytinAssistant != null) {
             zeytinAssistant.pause();
         }
