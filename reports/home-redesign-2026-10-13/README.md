@@ -709,7 +709,7 @@ Tuvaldeki onaylanan tasarımlar ("Aşama 2 · …" panoları) uygulandı. Her ek
   - Tek veritabanı işleminde yalnızca silinen hesaba ait satırlar siliniyor; aynı telefondaki diğer hesapların verisi korunuyor.
   - Gerçek SQLite üzerinde 18 kontrol yapıldı. Test bir hata yakaladı ve düzeltildi: misafir silmesi başka hesabın eski kayıtlarına dokunuyordu.
 - **Web sayfası:** `hosting/hesap-silme/index.html`. `firebase deploy` sonrası `https://<proje-kimliği>.web.app/hesap-silme/` adresinde yayınlanır.
-- **Gizlilik politikası:** 10. bölüm uygulamanın gerçek davranışına göre güncellendi; metin sürümü 1.2. **Yayıncı okuması bekleniyor.**
+- **Gizlilik politikası:** 10. bölüm uygulamanın gerçek davranışına göre güncellendi; metin sürümü 1.2. Yayıncı 14.10.2026 tarihinde onayladı (hukukçu incelemesi değildir).
 
 ### Senin yapman gerekenler
 1. Android Studio'da Gradle eşitlemesi ve derleme. `gradle.properties` içindeki `org.gradle.java.home=/home/test/java17` satırı senin bilgisayarında JDK 17'nin yoluyla eşleşmeli (AGP 8.10 JDK 17 ister).

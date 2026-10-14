@@ -26,7 +26,7 @@ final class LegalDocuments {
      * ve Zeytin Ligi'nin satıştaki paylaşım seçeneğine bağlı olduğu, uygulamadaki gerçek
      * davranışa uygun biçimde açıklandı (yayıncının 14.10.2026 talimatıyla). 14.10.2026 sürüm 1.2: Gizlilik
      * Politikası 10. bölüm, uygulamaya eklenen "Hesabımı Sil" (Play hesap silme şartı) davranışına göre
-     * güncellendi; yayıncının son okuması bekleniyor. Metinler bir hukukçu tarafından incelenmedi; bu bayrak yayıncı kararını gösterir.
+     * güncellendi; yayıncı 14.10.2026 tarihinde sürüm 1.2'yi onayladı. Metinler bir hukukçu tarafından incelenmedi; bu bayrak yayıncı kararını gösterir.
      */
     static final boolean LEGAL_REVIEW_APPROVED = true;
 
