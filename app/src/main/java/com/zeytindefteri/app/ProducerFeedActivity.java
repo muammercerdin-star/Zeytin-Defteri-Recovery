@@ -7003,13 +7003,60 @@ public class ProducerFeedActivity extends Activity {
         contentHost.removeAllViews();
         contentHost.addView(new SeasonReportView(this, loadSeasonReportData(), new SeasonReportView.Actions() {
             @Override public void back() { showSection("REPORTS"); }
-            @Override public void addSale() { startActivity(new Intent(ProducerFeedActivity.this, SaleActivity.class)); }
             @Override public void addElek() { showSection("ELEK"); }
+            @Override public void convertElek() { showElekToSaleDialog(); }
             @Override public void detailedReport() { startActivity(new Intent(ProducerFeedActivity.this, ReportActivity.class)); }
             @Override public void operationHistory() { startActivity(new Intent(ProducerFeedActivity.this, OperationHistoryActivity.class)); }
             @Override public void seasonPicker() { showSeasonPicker(); }
         }), match());
         seasonReportOpen = true;
+    }
+
+    /** Sezon Raporum → satışı olmayan elekleri seçip toplu satışa dönüştür (tahsilat: henüz değil). */
+    private void showElekToSaleDialog() {
+        final ElekSaleBridge bridge = new ElekSaleBridge(db);
+        final java.util.List<ElekSaleBridge.Pending> pending = bridge.pending(db.getActiveSeasonYear());
+        if (pending.isEmpty()) {
+            Toast.makeText(this, "Satışa dönüştürülecek elek kaydı yok.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] labels = new String[pending.size()];
+        final boolean[] checked = new boolean[pending.size()];
+        for (int i = 0; i < labels.length; i++) {
+            ElekSaleBridge.Pending p = pending.get(i);
+            labels[i] = p.garden + " · " + ElekInsights.formatDate(p.date, true) + " · "
+                    + SeasonReportModel.kg(p.kg) + " · " + SeasonReportModel.tl(p.total);
+        }
+        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Sattığın elekleri işaretle")
+                .setMultiChoiceItems(labels, checked, (d, which, isChecked) -> {
+                    checked[which] = isChecked;
+                    int count = 0; for (boolean c : checked) if (c) count++;
+                    android.widget.Button b = ((android.app.AlertDialog) d).getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+                    if (b != null) { b.setText(ElekSaleModel.bulkButton(count)); b.setEnabled(count > 0); }
+                })
+                .setPositiveButton(ElekSaleModel.bulkButton(0), (d, w) -> {
+                    int created = 0, failed = 0;
+                    String uid = db.getActiveOwnerUid() == null ? "" : db.getActiveOwnerUid();
+                    for (int i = 0; i < checked.length; i++) {
+                        if (!checked[i]) continue;
+                        long saleId = bridge.createSale(pending.get(i).elekId, ElekSaleModel.PAY_NONE, 0, "");
+                        if (saleId > 0) {
+                            created++;
+                            try {
+                                com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                                if (user != null && user.getUid().equals(uid)) new ProductionCloudRepository(db).syncSaleByLocalId(uid, saleId);
+                            } catch (Exception ignored) { }
+                        } else if (saleId != ElekSaleBridge.ALREADY_CONVERTED) failed++;
+                    }
+                    Toast.makeText(this, created + " satış oluşturuldu" + (failed > 0 ? ", " + failed + " elek dönüştürülemedi" : "")
+                            + ". Tahsilatı satış kayıtlarından güncelleyebilirsin.", Toast.LENGTH_LONG).show();
+                    openSeasonReport();
+                })
+                .setNegativeButton("Vazgeç", null)
+                .create();
+        dialog.setOnShowListener(d -> dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(false));
+        dialog.show();
     }
 
     private SeasonReportModel.Data loadSeasonReportData() {

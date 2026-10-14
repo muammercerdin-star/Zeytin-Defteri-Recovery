@@ -29,7 +29,7 @@ public final class SeasonReportModelTest {
         String[] miss = SeasonReportModel.missingLink(d);
         eq(miss[0], "Eksik halka: satış kaydı", "missing title");
         eq(miss[1].startsWith("1.247 kg elendi ama hiç satış girilmedi."), true, "missing text");
-        eq(miss[2], "+ Satış kaydı ekle", "missing action");
+        eq(miss[2], "Elekleri satışa dönüştür", "missing action converts elek records");
         eq(SeasonReportModel.harvestNote(d).startsWith("Hasat 190 kg, elek 1.247 kg"), true, "harvest note");
 
         SeasonReportModel.Tile net = SeasonReportModel.net(d);

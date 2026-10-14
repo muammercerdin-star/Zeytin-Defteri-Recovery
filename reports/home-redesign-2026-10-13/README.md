@@ -447,3 +447,42 @@ Tuvaldeki **bahçe filtresi uygulanmadı**. Mevcut veritabanında bahçe bazınd
 - Geri oku ve Android geri tuşunun Lig'e döndürmesi.
 - Satış ekleyip dönünce raporun güncel olması.
 - Bahçe satırlarının ve salamura rakamlarının doğruluğu.
+
+## 17. Elekten satışa (yayıncı kararı: anahtar her zaman varsayılan AÇIK)
+
+### Akış
+- **Elek formu:** Kaydet düğmesinin üstünde **"Bu zeytini sattım"** anahtarı var. Form her açıldığında anahtar açık başlıyor.
+  - Açıkken "Parayı aldın mı?" sorusu çıkıyor (Tamamı / Bir kısmı / Henüz değil). "Bir kısmı" seçilince alınan tutar soruluyor. Alıcı adı isteğe bağlı.
+  - Düğme "Kaydet ve satışı oluştur" oluyor, altında "Elek kaydı + 4.910 TL satış · bahçe · tarih" ipucu çıkıyor.
+  - Elek kaydı kaydedilince aynı sınıf, kilo ve fiyatlarla satış oluşturuluyor.
+  - Satış oluşturulamazsa elek kaydı yine de kalıyor; kullanıcıya makbuzdan tekrar dönüştürebileceği söyleniyor.
+- **Elek makbuzu:** Satışı olmayan elekte **"Satışa dönüştür"** düğmesi var; tahsilat bir pencerede soruluyor. Dönüştürülmüş elekte "✓ Satışa dönüştürüldü · 4.910 TL · tahsilat: …" satırı görünüyor.
+- **Sezon Raporum:** "Eksik halka" kartının düğmesi artık **"Elekleri satışa dönüştür"**. Satışı olmayan elekler çoklu seçimli bir listede açılıyor ve seçilenler toplu dönüştürülüyor. Toplu dönüşümde tahsilat "henüz değil" olarak kaydediliyor. Önceki "+ Satış kaydı ekle" düğmesi ve kullanılmaz hale gelen `addSale` eylemi kaldırıldı.
+
+### Kurallar
+- Satış, mevcut `SaleRepository.addSaleWithGrades` ile yazılıyor. Kalan tutar için açık alacak kaydı da aynı kurallarla oluşuyor.
+- Tarih elekten dönüştürülüyor (ISO → dd.MM.yyyy). Bölge ilçe, yoksa il oluyor. Çeşit bahçeden geliyor. Not: "Elek kaydından oluşturuldu".
+- **Piyasa paylaşımı kapalı başlıyor.** Tahmini elek fiyatları kendiliğinden Piyasa ve Lig verisine karışmıyor; kullanıcı satış kaydından açabilir.
+- **Çift dönüşüm engeli:** Satışa `source_elek_id` (yerel) ve `source_elek_cloud_id` (bulut) yazılıyor.
+  - Kontrol, eklemeden önce ve aynı veritabanı işleminin (transaction) içinde yapılıyor.
+  - Buluttan geri yüklenen satışlar da bulut kimliğiyle tanınıyor.
+  - Satış silinirse elek yeniden dönüştürülebiliyor.
+- **Veritabanı 19 → 20:** İki sütun ve iki indeks ekleniyor. Ekleme idempotent (`addColumnIfMissing`); hem yeni kurulumda hem yükseltmede çalışıyor.
+
+### Bilinen sınırlar
+- Satış oluşturulduktan sonra elek kaydı düzenlenirse satış kendiliğinden güncellenmiyor; satış kaydından düzenlenmesi gerekiyor.
+- Nakliye, kesinti ve vade elek formunda sorulmuyor; satış kaydından düzenleniyor.
+
+### Doğrulama
+- `tests/elek_sale/run.sh`: 26 model kontrolü ve 16 kontrol (şema, bulut alanı, işlem sırası, piyasa paylaşımının kapalı başlaması). Ayrıca bağlantı sorgusu kaynaktan çıkarılıp gerçek SQLite'ta çalıştırılıyor: aynı cihaz, buluttan gelen, başka hesap ve elle girilen satış durumları.
+- Elek formu, fiyat penceresi, arşiv, Sezon Raporum (31 + 13), Ana Sayfa ve lig testleri geçiyor.
+- `tests/league/check_view.py` içindeki eski bir kontrol, 13.6'da eklenen bilgilendirme kartını hesaba katmıyordu ve başarısızdı. Bu turda düzeltildi.
+- Değişen dosyalar tip denetiminden geçti (Firebase ve Glide hariç). APK derlenmedi.
+
+### Cihazda kontrol
+1. Elek kaydedince Satış kutusunun ve Net sonucun güncellenmesi.
+2. "Henüz değil" seçilince açık alacak oluşması.
+3. Makbuzdan dönüştürme.
+4. Rapordan toplu dönüştürme.
+5. Aynı eleğin ikinci kez dönüştürülememesi.
+6. Uygulama güncellemesinde mevcut verinin korunması (veritabanı 20'ye geçiş).

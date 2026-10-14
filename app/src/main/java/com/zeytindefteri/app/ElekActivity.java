@@ -214,6 +214,15 @@ public class ElekActivity extends Activity {
     // AKTİF FİYATLAR
     // ============================================================
 
+    // Elekten satış (varsayılan AÇIK; yayıncı kararı 14.10.2026, her açılışta açık başlar)
+    private boolean saleOnSave = true;
+    private int salePay = ElekSaleModel.PAY_NONE;
+    private android.widget.LinearLayout salePanel;
+    private android.widget.LinearLayout saleToggle;
+    private android.view.View saleTrack, saleKnob;
+    private TextView[] salePayChips;
+    private EditText etSalePartial, etSaleBuyer;
+
     private double priceDouble;
     private double price1;
     private double price2;
@@ -340,6 +349,7 @@ public class ElekActivity extends Activity {
         }
         restoreFormSelection(savedInstanceState);
         setupPriceChips();
+        setupSaleOnSave();
         calculateAll();
 
         loadSeasonArchive();
@@ -2310,10 +2320,23 @@ public class ElekActivity extends Activity {
                 };
 
 
+        final boolean wantSale = saleOnSave;
+        final int pay = salePay;
+        final double partial = etSalePartial == null ? 0 : readDouble(etSalePartial);
+        final String buyer = etSaleBuyer == null ? "" : etSaleBuyer.getText().toString();
+        if (wantSale) {
+            double gross = 0;
+            for (int i = 0; i < kilograms.length; i++) gross += Math.max(0, kilograms[i]) * Math.max(0, prices[i]);
+            String error = ElekSaleModel.partialError(pay, gross, partial);
+            if (!error.isEmpty()) {
+                if (etSalePartial != null) etSalePartial.setError(error);
+                Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
         saving =
                 true;
-
-
         btnSaveElek.setEnabled(
                 false
         );
@@ -2357,7 +2380,7 @@ public class ElekActivity extends Activity {
 
 
         btnSaveElek.setText(
-                "Elek Kaydını Kaydet"
+                ElekSaleModel.saveLabel(saleOnSave)
         );
 
 
@@ -2366,17 +2389,21 @@ public class ElekActivity extends Activity {
         // ========================================================
 
         if (result != -1) {
-
+            long saleId = -1;
+            if (wantSale) {
+                saleId = new ElekSaleBridge(databaseHelper).createSale(result, pay, partial, buyer);
+            }
             Toast.makeText(
                     this,
-                    "Elek kaydı kaydedildi ✓",
-                    Toast.LENGTH_SHORT
+                    ElekSaleModel.successToast(saleId > 0, wantSale),
+                    wantSale && saleId <= 0 ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT
             ).show();
-
-
             syncElekCloud(
                     result
             );
+            if (saleId > 0) syncSaleCloud(saleId);
+            if (etSalePartial != null) etSalePartial.setText("");
+            if (etSaleBuyer != null) etSaleBuyer.setText("");
 
 
             clearKgFields();
@@ -2396,6 +2423,149 @@ public class ElekActivity extends Activity {
         }
     }
 
+
+    private void syncSaleCloud(long saleId) {
+        try {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user == null) return;
+            new ProductionCloudRepository(databaseHelper).syncSaleByLocalId(user.getUid(), saleId);
+        } catch (Exception ignored) {
+            // Offline-first: yerel kayıt tamam; sonraki genel senkron yeniden dener.
+        }
+    }
+
+    /** "Bu zeytini sattım" anahtarı + tahsilat seçimi; kaydet düğmesinin hemen üstüne eklenir. */
+    private void setupSaleOnSave() {
+        if (btnSaveElek == null || !(btnSaveElek.getParent() instanceof android.view.ViewGroup)) return;
+        android.view.ViewGroup parent = (android.view.ViewGroup) btnSaveElek.getParent();
+        float d = getResources().getDisplayMetrics().density;
+        int text = getResources().getColor(R.color.zd_text, null);
+        int soft = getResources().getColor(R.color.zd_text_soft, null);
+        int muted = getResources().getColor(R.color.zd_muted, null);
+
+        saleToggle = new android.widget.LinearLayout(this);
+        saleToggle.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        saleToggle.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        saleToggle.setPadding(Math.round(16 * d), Math.round(14 * d), Math.round(16 * d), Math.round(14 * d));
+        android.widget.LinearLayout copy = new android.widget.LinearLayout(this);
+        copy.setOrientation(android.widget.LinearLayout.VERTICAL);
+        TextView title = new TextView(this);
+        title.setText("Bu zeytini sattım"); title.setTextSize(15); title.setTextColor(text);
+        title.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        TextView sub = new TextView(this);
+        sub.setText("Tüccara verildiyse açık bırak; satış kaydı elekten kendiliğinden oluşur.");
+        sub.setTextSize(12); sub.setTextColor(soft); sub.setPadding(0, Math.round(2 * d), 0, 0);
+        copy.addView(title); copy.addView(sub);
+        saleToggle.addView(copy, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
+        android.widget.FrameLayout switchView = new android.widget.FrameLayout(this);
+        saleTrack = new android.view.View(this);
+        saleKnob = new android.view.View(this);
+        switchView.addView(saleTrack, new android.widget.FrameLayout.LayoutParams(Math.round(48 * d), Math.round(28 * d)));
+        android.widget.FrameLayout.LayoutParams kp = new android.widget.FrameLayout.LayoutParams(Math.round(22 * d), Math.round(22 * d));
+        kp.topMargin = Math.round(3 * d);
+        switchView.addView(saleKnob, kp);
+        android.widget.LinearLayout.LayoutParams sp = new android.widget.LinearLayout.LayoutParams(Math.round(48 * d), Math.round(28 * d));
+        sp.leftMargin = Math.round(12 * d);
+        saleToggle.addView(switchView, sp);
+        saleToggle.setOnClickListener(v -> { saleOnSave = !saleOnSave; renderSaleOnSave(); refreshElekInsights(); });
+
+        salePanel = new android.widget.LinearLayout(this);
+        salePanel.setOrientation(android.widget.LinearLayout.VERTICAL);
+        salePanel.setPadding(Math.round(16 * d), Math.round(14 * d), Math.round(16 * d), Math.round(14 * d));
+        salePanel.setBackground(roundRect(getResources().getColor(R.color.zd_surface, null),
+                getResources().getColor(R.color.zd_border, null), 18 * d));
+        TextView question = new TextView(this);
+        question.setText("Parayı aldın mı?"); question.setTextSize(13); question.setTextColor(text);
+        question.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        salePanel.addView(question);
+        android.widget.LinearLayout chips = new android.widget.LinearLayout(this);
+        chips.setPadding(0, Math.round(10 * d), 0, 0);
+        salePayChips = new TextView[ElekSaleModel.PAY_LABELS.length];
+        for (int i = 0; i < salePayChips.length; i++) {
+            final int option = i;
+            TextView chip = new TextView(this);
+            chip.setText(ElekSaleModel.PAY_LABELS[i]); chip.setTextSize(12);
+            chip.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+            chip.setGravity(android.view.Gravity.CENTER);
+            chip.setOnClickListener(v -> { salePay = option; renderSaleOnSave(); });
+            android.widget.LinearLayout.LayoutParams cp = new android.widget.LinearLayout.LayoutParams(0, Math.round(40 * d), 1);
+            if (i > 0) cp.leftMargin = Math.round(6 * d);
+            chips.addView(chip, cp);
+            salePayChips[i] = chip;
+        }
+        salePanel.addView(chips);
+        etSalePartial = saleField("Alınan tutar (TL)", android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        salePanel.addView(etSalePartial, saleFieldParams(d));
+        etSaleBuyer = saleField("Alıcı (isteğe bağlı)", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        salePanel.addView(etSaleBuyer, saleFieldParams(d));
+        TextView note = new TextView(this);
+        note.setText("Nakliye, kesinti ve piyasa paylaşımını sonra satış kaydından düzenleyebilirsin. Piyasa paylaşımı kapalı başlar.");
+        note.setTextSize(11); note.setTextColor(muted); note.setPadding(0, Math.round(10 * d), 0, 0);
+        salePanel.addView(note);
+
+        int index = parent.indexOfChild(btnSaveElek);
+        android.view.ViewGroup.MarginLayoutParams tp = new android.view.ViewGroup.MarginLayoutParams(-1, -2);
+        tp.topMargin = Math.round(16 * d);
+        parent.addView(saleToggle, index, tp);
+        android.view.ViewGroup.MarginLayoutParams pp = new android.view.ViewGroup.MarginLayoutParams(-1, -2);
+        pp.topMargin = Math.round(8 * d);
+        parent.addView(salePanel, index + 1, pp);
+        renderSaleOnSave();
+    }
+
+    private EditText saleField(String hint, int inputType) {
+        float d = getResources().getDisplayMetrics().density;
+        EditText field = new EditText(this);
+        field.setHint(hint); field.setInputType(inputType); field.setTextSize(14);
+        field.setTextColor(getResources().getColor(R.color.zd_text, null));
+        field.setHintTextColor(getResources().getColor(R.color.zd_muted, null));
+        field.setBackground(roundRect(getResources().getColor(R.color.zd_bg, null),
+                getResources().getColor(R.color.zd_border, null), 12 * d));
+        int pad = Math.round(12 * d);
+        field.setPadding(pad, pad, pad, pad);
+        field.setSingleLine(true);
+        return field;
+    }
+
+    private android.widget.LinearLayout.LayoutParams saleFieldParams(float d) {
+        android.widget.LinearLayout.LayoutParams p = new android.widget.LinearLayout.LayoutParams(-1, -2);
+        p.topMargin = Math.round(8 * d);
+        return p;
+    }
+
+    private android.graphics.drawable.GradientDrawable roundRect(int fill, int stroke, float radius) {
+        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+        g.setColor(fill); g.setCornerRadius(radius);
+        g.setStroke(Math.max(1, Math.round(getResources().getDisplayMetrics().density)), stroke);
+        return g;
+    }
+
+    private void renderSaleOnSave() {
+        if (saleToggle == null) return;
+        float d = getResources().getDisplayMetrics().density;
+        int green = getResources().getColor(R.color.zd_green, null);
+        int border = getResources().getColor(R.color.zd_border, null);
+        int card = getResources().getColor(R.color.zd_card, null);
+        int soft = getResources().getColor(R.color.zd_text_soft, null);
+        int knob = getResources().getColor(R.color.zd_text, null);
+        saleToggle.setBackground(roundRect(saleOnSave ? getResources().getColor(R.color.zd_green_soft, null) : card,
+                saleOnSave ? green : border, 18 * d));
+        saleTrack.setBackground(roundRect(saleOnSave ? green : border, saleOnSave ? green : border, 14 * d));
+        saleKnob.setBackground(roundRect(knob, knob, 11 * d));
+        ((android.widget.FrameLayout.LayoutParams) saleKnob.getLayoutParams()).leftMargin = Math.round((saleOnSave ? 23 : 3) * d);
+        saleKnob.requestLayout();
+        saleToggle.setContentDescription("Bu zeytini sattım, " + (saleOnSave ? "açık" : "kapalı"));
+        salePanel.setVisibility(saleOnSave ? android.view.View.VISIBLE : android.view.View.GONE);
+        for (int i = 0; i < salePayChips.length; i++) {
+            boolean on = i == salePay;
+            salePayChips[i].setTextColor(on ? green : soft);
+            salePayChips[i].setBackground(roundRect(on ? getResources().getColor(R.color.zd_green_soft, null) : 0x00000000,
+                    on ? green : border, 20 * d));
+            salePayChips[i].setContentDescription(ElekSaleModel.PAY_LABELS[i] + (on ? ", seçili" : ""));
+        }
+        etSalePartial.setVisibility(salePay == ElekSaleModel.PAY_PART ? android.view.View.VISIBLE : android.view.View.GONE);
+        if (btnSaveElek != null && !saving) btnSaveElek.setText(ElekSaleModel.saveLabel(saleOnSave));
+    }
 
     private void syncElekCloud(
             long elekId
@@ -2695,12 +2865,15 @@ public class ElekActivity extends Activity {
                     : muted);
         }
         if (tvElekSaveHint != null) {
-            tvElekSaveHint.setText(ElekInsights.saveHint(
-                    totalKg,
-                    selectedGardenId > 0,
-                    selectedGardenName,
-                    tvElekDate == null ? "" : tvElekDate.getText().toString()
-            ));
+            String date = tvElekDate == null ? "" : tvElekDate.getText().toString();
+            String hint = ElekInsights.saveHint(totalKg, selectedGardenId > 0, selectedGardenName, date);
+            if (totalKg > 0 && selectedGardenId > 0) {
+                double[] price = {priceDouble, price1, price2, price3, price4, priceOil};
+                double gross = 0;
+                for (int i = 0; i < kg.length; i++) gross += Math.max(0, kg[i]) * Math.max(0, price[i]);
+                hint = ElekSaleModel.saveHint(saleOnSave, gross, selectedGardenName, date);
+            }
+            tvElekSaveHint.setText(hint);
         }
     }
 

@@ -95,7 +95,7 @@ public final class SeasonReportModel {
         if (d.elekKg > 0 && d.soldKg <= 0 && d.realSaleCount <= 0) {
             return new String[]{"Eksik halka: satış kaydı",
                     kg(d.elekKg) + " elendi ama hiç satış girilmedi. Elek tutarı tahminidir; "
-                            + "satış kaydı girince gelire ve net sonuca eklenir.", "+ Satış kaydı ekle"};
+                            + "sattığın elekleri satışa dönüştürünce gelire ve net sonuca eklenir.", "Elekleri satışa dönüştür"};
         }
         return null;
     }

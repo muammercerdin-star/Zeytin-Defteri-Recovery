@@ -155,6 +155,9 @@ public class ElekReceiptActivity extends Activity {
 
         body.addView(buildPaper());
 
+        // Satış bağlantısı: dönüştürülmemişse düğme, dönüştürülmüşse durum satırı
+        body.addView(buildSaleLink());
+
         // Eylemler
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
@@ -180,6 +183,92 @@ public class ElekReceiptActivity extends Activity {
         body.addView(delete, dpParams);
 
         setContentView(screen);
+    }
+
+    private View buildSaleLink() {
+        ElekSaleBridge bridge = new ElekSaleBridge(databaseHelper);
+        double[] sale = bridge.linkedSaleTotals(recordId);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.setMargins(0, dp(14), 0, 0);
+        if (sale == null) {
+            TextView convert = text("Satışa dönüştür", 14, GreenTheme.color(R.color.zd_green), true);
+            convert.setGravity(Gravity.CENTER);
+            convert.setMinHeight(dp(48));
+            convert.setBackground(rounded(Color.TRANSPARENT, GreenTheme.color(R.color.zd_green), 24));
+            convert.setContentDescription("Bu elek kaydından satış oluştur");
+            convert.setOnClickListener(v -> askPaymentAndConvert());
+            convert.setLayoutParams(lp);
+            return convert;
+        }
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(14), dp(12), dp(14), dp(12));
+        row.setBackground(rounded(GreenTheme.color(R.color.zd_green_soft), GreenTheme.color(R.color.zd_green), 16));
+        TextView check = text("✓", 16, GreenTheme.color(R.color.zd_green), true);
+        check.setPadding(0, 0, dp(10), 0);
+        row.addView(check);
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        copy.addView(text("Satışa dönüştürüldü", 14, GreenTheme.color(R.color.zd_text), true));
+        copy.addView(text(ElekSaleModel.convertedLine(sale[0], sale[1]), 12, GreenTheme.color(R.color.zd_text_soft), false));
+        row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+        row.setContentDescription("Satışa dönüştürüldü. " + ElekSaleModel.convertedLine(sale[0], sale[1]));
+        row.setLayoutParams(lp);
+        return row;
+    }
+
+    private void askPaymentAndConvert() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Parayı aldın mı?")
+                .setItems(ElekSaleModel.PAY_LABELS, (d, which) -> {
+                    if (which == ElekSaleModel.PAY_PART) askPartialAmount();
+                    else convertToSale(which, 0);
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
+    private void askPartialAmount() {
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setHint("Alınan tutar (TL)");
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Ne kadar aldın?")
+                .setView(input)
+                .setPositiveButton("Dönüştür", (d, w) -> {
+                    double amount;
+                    String raw = input.getText().toString().trim();
+                    // "1.500,50" (TR) ya da "1500.5" — virgül varsa nokta binlik ayracıdır.
+                    if (raw.contains(",")) raw = raw.replace(".", "").replace(',', '.');
+                    try { amount = Double.parseDouble(raw); }
+                    catch (NumberFormatException e) { amount = 0; }
+                    convertToSale(ElekSaleModel.PAY_PART, amount);
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
+    private void convertToSale(int pay, double partial) {
+        double gross = 0;
+        for (double v : lineTotal) gross += Math.max(0, v);
+        String error = ElekSaleModel.partialError(pay, gross, partial);
+        if (!error.isEmpty()) { Toast.makeText(this, error, Toast.LENGTH_LONG).show(); return; }
+        long saleId = new ElekSaleBridge(databaseHelper).createSale(recordId, pay, partial, "");
+        if (saleId == ElekSaleBridge.ALREADY_CONVERTED) {
+            Toast.makeText(this, "Bu elek zaten satışa dönüştürülmüş.", Toast.LENGTH_SHORT).show();
+        } else if (saleId > 0) {
+            try {
+                com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                if (user != null) new ProductionCloudRepository(databaseHelper).syncSaleByLocalId(user.getUid(), saleId);
+            } catch (Exception ignored) {
+                // Offline-first: sonraki genel senkron yeniden dener.
+            }
+            Toast.makeText(this, "Satış kaydedildi ✓", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Satış oluşturulamadı.", Toast.LENGTH_LONG).show();
+        }
+        render();
     }
 
     private View buildPaper() {

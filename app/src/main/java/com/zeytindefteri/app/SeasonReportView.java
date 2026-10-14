@@ -18,7 +18,7 @@ import java.util.List;
 public final class SeasonReportView extends ScrollView {
     public interface Actions {
         void back();
-        void addSale();
+        void convertElek();
         void addElek();
         void detailedReport();
         void operationHistory();
@@ -114,7 +114,7 @@ public final class SeasonReportView extends ScrollView {
             TextView action = label(missing[2], 14, green, true);
             action.setGravity(Gravity.CENTER); action.setBackground(round(card, green, 22));
             final boolean sale = d.elekKg > 0;
-            action.setOnClickListener(v -> { if (sale) actions.addSale(); else actions.addElek(); });
+            action.setOnClickListener(v -> { if (sale) actions.convertElek(); else actions.addElek(); });
             LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, dp(44)); bp.topMargin = dp(10);
             where.addView(action, bp);
         }

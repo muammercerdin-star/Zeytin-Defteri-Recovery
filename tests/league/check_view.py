@@ -7,7 +7,7 @@ checks = {
     "no photo in league view": "home_hero_olive" not in v,
     "tiles gate numbers through LeagueBoardModel.publishable": "LeagueBoardModel.publishable(cloud.published, cloud.producerCount)" in v,
     "no single-producer preview wording": "fiyat ön izlemesi" not in v and "1 üreticili" not in v,
-    "own strip rendered after header": re.search(r"header\(\);\s*ownStrip\(\);\s*filters\(\);", v) is not None,
+    "own strip rendered after header (and the one-time contribution notice)": re.search(r"header\(\);\s*contributionNotice\(\);\s*ownStrip\(\);\s*filters\(\);", v) is not None,
     "loading skeleton keeps header without strip": re.search(r"renderLoading\(\) \{\s*body\.removeAllViews\(\); header\(\); filters\(\); gradeFilters\(\);", v) is not None,
     "badges computed for all regions": "LeagueBoardModel.badges(districts)" in v,
     "podium before remaining rows": re.search(r"podium\(table, region\.top\);\s*int first = Math\.min\(3", v) is not None,

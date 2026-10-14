@@ -33,7 +33,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      * senkronizasyonu için cloud_id desteği eklendi.
      */
     private static final int DB_VERSION =
-            19;
+            20; // 20: satışın hangi elekten oluştuğu (sales.source_elek_id / source_elek_cloud_id)
 
 
     // ============================================================
@@ -194,6 +194,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 db
         );
         ensureCommentSyncSchema(db);
+        ensureElekSaleLinkSchema(db);
     }
 
 
@@ -969,6 +970,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 db
         );
         ensureCommentSyncSchema(db);
+        ensureElekSaleLinkSchema(db);
     }
 
 
@@ -8557,6 +8559,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
         return value.trim();
+    }
+
+    /**
+     * v20: Elekten oluşturulan satışın kaynağı. Yerel id aynı cihazda, cloud id cihazlar
+     * arasında aynı eleğin ikinci kez satışa dönüştürülmesini engeller. İdempotent.
+     */
+    static void ensureElekSaleLinkSchema(SQLiteDatabase db) {
+        DatabaseSchema.addColumnIfMissing(db, "sales", "source_elek_id", "INTEGER DEFAULT 0");
+        DatabaseSchema.addColumnIfMissing(db, "sales", "source_elek_cloud_id", "TEXT DEFAULT ''");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_sales_source_elek ON sales(source_elek_id)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_sales_source_elek_cloud ON sales(source_elek_cloud_id)");
     }
 
     private static void ensureCommentSyncSchema(SQLiteDatabase db) {

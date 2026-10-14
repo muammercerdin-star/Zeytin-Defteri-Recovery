@@ -305,6 +305,10 @@ final class DatabaseSchema {
 
                         "market_sync_status TEXT DEFAULT 'PENDING'," +
 
+                        "source_elek_id INTEGER DEFAULT 0," +
+
+                        "source_elek_cloud_id TEXT DEFAULT ''," +
+
                         "created_at INTEGER NOT NULL," +
 
                         "season_year INTEGER DEFAULT 0," +

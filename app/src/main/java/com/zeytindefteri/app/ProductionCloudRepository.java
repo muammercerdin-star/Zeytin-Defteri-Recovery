@@ -301,6 +301,25 @@ public class ProductionCloudRepository {
         return m;
     }
 
+    private String saleSourceElekCloudId(Cursor c) {
+        int col = c.getColumnIndex("source_elek_cloud_id");
+        String cloud = col >= 0 && !c.isNull(col) ? c.getString(col) : "";
+        if (cloud != null && !cloud.trim().isEmpty()) return cloud.trim();
+        int idCol = c.getColumnIndex("source_elek_id");
+        long elekId = idCol >= 0 && !c.isNull(idCol) ? c.getLong(idCol) : 0;
+        if (elekId <= 0) return "";
+        Cursor e = null;
+        try {
+            e = databaseHelper.getReadableDatabase().rawQuery(
+                    "SELECT COALESCE(cloud_id,'') FROM elek_records WHERE id=?", new String[]{String.valueOf(elekId)});
+            return e.moveToFirst() ? e.getString(0) : "";
+        } catch (RuntimeException ignored) {
+            return "";
+        } finally {
+            if (e != null) e.close();
+        }
+    }
+
     private Map<String, Object> saleMap(Cursor c) {
 
         Map<String, Object> m = new HashMap<>();
@@ -322,6 +341,8 @@ public class ProductionCloudRepository {
         m.put("note", value(c, "note"));
         m.put("market_consent", intValue(c, "market_consent"));
         m.put("market_sync_status", value(c, "market_sync_status"));
+        // Elekten oluşturulduysa kaynağın bulut kimliği (cihazlar arası çift dönüşümü önler).
+        m.put("source_elek_cloud_id", saleSourceElekCloudId(c));
         m.put("created_at", longValue(c, "created_at"));
         m.put("updated_at", maxTimestamp(c));
 
@@ -1355,7 +1376,8 @@ public class ProductionCloudRepository {
                 "product_type",
                 "due_date",
                 "note",
-                "market_sync_status"
+                "market_sync_status",
+                "source_elek_cloud_id"
         };
 
         for (String f : ss) {

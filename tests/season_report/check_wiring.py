@@ -16,6 +16,7 @@ checks = {
     "elek totals from the shared archive query": "new ElekRepository(db).getArchiveRecords(d.season, -1, uid)" in a,
     "cursors closed": "elek.close()" in a and "if (c != null) c.close();" in a,
     "detailed report and history kept": "ReportActivity.class" in a and "OperationHistoryActivity.class" in a,
+    "missing-link action converts elek records in bulk": "public void convertElek() { showElekToSaleDialog(); }" in a and "actions.convertElek()" in v,
     "no emoji headings": not re.search(r"[\U0001F300-\U0001FAFF]", v),
 }
 for k, ok in checks.items(): print(("PASS " if ok else "FAIL ") + k)
