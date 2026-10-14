@@ -3668,37 +3668,6 @@ public class ProducerFeedActivity extends Activity {
             container.getChildAt(i).setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
     }
 
-    private void animateHeroHeight(
-            final View hero,
-            int from,
-            int to
-    ) {
-        ValueAnimator animator =
-                ValueAnimator.ofInt(
-                        from,
-                        to
-                );
-
-        animator.setDuration(260);
-
-        animator.addUpdateListener(
-                animation -> {
-                    if (hero.getLayoutParams()
-                            == null) {
-                        return;
-                    }
-
-                    hero.getLayoutParams().height =
-                            (Integer)
-                                    animation
-                                            .getAnimatedValue();
-
-                    hero.requestLayout();
-                }
-        );
-
-        animator.start();
-    }
 
     private void renderWeatherForecastPanel(
             final LinearLayout panel,
@@ -5806,42 +5775,6 @@ public class ProducerFeedActivity extends Activity {
         startActivity(i);
     }
 
-    private String homeGardenPlace(
-            HomeGardenSnapshot garden
-    ) {
-        if (garden == null
-                || garden.id <= 0) {
-            return "Bahçe havası";
-        }
-
-        if (!TextUtils.isEmpty(
-                garden.neighborhood
-        )) {
-            if (!TextUtils.isEmpty(
-                    garden.district
-            )) {
-                return garden.neighborhood
-                        + " • "
-                        + garden.district;
-            }
-
-            return garden.neighborhood;
-        }
-
-        if (!TextUtils.isEmpty(
-                garden.district
-        )) {
-            return garden.district;
-        }
-
-        if (!TextUtils.isEmpty(
-                garden.province
-        )) {
-            return garden.province;
-        }
-
-        return "Bahçe konumu";
-    }
 
     private static class HomeGardenSnapshot {
         long id;
@@ -7712,94 +7645,6 @@ public class ProducerFeedActivity extends Activity {
     // FIREBASE / SOSYAL
     // =========================================================
 
-    private String typeBadge(
-            FeedManager.PostItem p
-    ) {
-        if (p.realSale) {
-            String grade =
-                    safe(
-                            p.saleGrade,
-                            "Satış"
-                    );
-
-            return "▥  "
-                    + grade
-                    + (
-                    p.district == null
-                            || p.district.isEmpty()
-                            ? ""
-                            : " • "
-                            + p.district
-            );
-        }
-
-        String t =
-                p.postType == null
-                        ? "GENERAL"
-                        : p.postType.toUpperCase(
-                        Locale.ROOT
-                );
-
-        switch (t) {
-            case "MARKET":
-                return "▥  Piyasa";
-
-            case "PEST":
-            case "SPRAY":
-                return "🌿  Hastalık";
-
-            case "HARVEST":
-                return "🧺  Hasat";
-
-            case "IRRIGATION":
-                return "💧  Sulama";
-
-            case "FERTILIZER":
-                return "🌱  Gübreleme";
-
-            case "SALE":
-                return "🤝  Alım-Satım";
-
-            case "GARDEN":
-                return "🌳  Bahçem";
-
-            case "QUESTION":
-                return "?  Soru";
-
-            default:
-                return "👥  Genel";
-        }
-    }
-
-    private void openComposerWithDraft() {
-        String draft =
-                messageInput == null
-                        ? ""
-                        : messageInput
-                        .getText()
-                        .toString()
-                        .trim();
-
-        Intent i =
-                new Intent(
-                        this,
-                        CreatePostActivity.class
-                );
-
-        if (!draft.isEmpty()) {
-            i.putExtra(
-                    "draft_content",
-                    draft
-            );
-        }
-
-        i.putExtra(
-                "draft_type",
-                activeType
-        );
-
-        startActivity(i);
-    }
 
     private void syncPrivateCloudData() {
         if (firebaseAuth == null
@@ -8021,77 +7866,7 @@ public class ProducerFeedActivity extends Activity {
         return outer;
     }
 
-    private TextView actionTitle(
-            String title
-    ) {
-        TextView t =
-                text(
-                        title,
-                        21,
-                        TEXT,
-                        true
-                );
 
-        t.setPadding(
-                0,
-                dp(18),
-                0,
-                dp(12)
-        );
-
-        return t;
-    }
-
-    private LinearLayout metricCard(
-            String label,
-            String value,
-            String sub
-    ) {
-        LinearLayout c =
-                verticalCard();
-
-        c.setPadding(
-                dp(16),
-                dp(15),
-                dp(16),
-                dp(15)
-        );
-
-        c.addView(
-                text(
-                        label,
-                        14,
-                        MUTED,
-                        false
-                )
-        );
-
-        c.addView(
-                padded(
-                        text(
-                                value,
-                                23,
-                                GREEN_DARK,
-                                true
-                        ),
-                        5
-                )
-        );
-
-        c.addView(
-                padded(
-                        text(
-                                sub,
-                                12,
-                                MUTED,
-                                false
-                        ),
-                        3
-                )
-        );
-
-        return c;
-    }
 
     private LinearLayout quickButton(
             String icon,
@@ -8174,27 +7949,6 @@ public class ProducerFeedActivity extends Activity {
         return p;
     }
 
-    private LinearLayout.LayoutParams weightCard() {
-        return new LinearLayout.LayoutParams(
-                0,
-                dp(112),
-                1
-        );
-    }
-
-    private LinearLayout.LayoutParams weightCardWithLeft() {
-        LinearLayout.LayoutParams p =
-                weightCard();
-
-        p.setMargins(
-                dp(8),
-                0,
-                0,
-                0
-        );
-
-        return p;
-    }
 
     private LinearLayout verticalCard() {
         LinearLayout c =
@@ -8319,22 +8073,6 @@ public class ProducerFeedActivity extends Activity {
         return v;
     }
 
-    private void openOperation(
-            String type
-    ) {
-        Intent i =
-                new Intent(
-                        this,
-                        NewOperationActivity.class
-                );
-
-        i.putExtra(
-                "operation_type",
-                type
-        );
-
-        startActivity(i);
-    }
 
     private LinearLayout row() {
         LinearLayout l =
