@@ -66,8 +66,7 @@
         <activity android:name=".GardenAnalyticsActivity" android:exported="false"
             android:screenOrientation="portrait" />
 
-        <activity android:name=".GardenEditActivity" android:exported="false"
-            android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
+        
         <activity android:name=".GardenOperationHistoryActivity" android:exported="false"
             android:screenOrientation="portrait" />
 
@@ -163,7 +162,8 @@
         <activity
             android:name=".AddGardenActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
 
 
         <!-- ===================================================== -->

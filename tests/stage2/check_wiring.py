@@ -54,7 +54,7 @@ check('getOperationIcon' not in gd, 'eski getOperationIcon kaldı')
 check('GardenAnalyticsRepository' in gd and 'totalGradeKg()' in gd and 's.revenue' in gd, 'sezon özeti Bahçe Karnesi kaynağını kullanmıyor')
 check('getGardenOperations(gardenId, 0)' in gd, 'uyarı için sezonun tüm işlemleri taranmıyor')
 check('note_draft' in gd and 'screen_owner' in gd, 'not taslağı / sahip durumu saklanmıyor')
-for target in ['NewOperationActivity', 'HarvestActivity', 'ElekActivity', 'SaleActivity', 'GardenEditActivity',
+for target in ['NewOperationActivity', 'HarvestActivity', 'ElekActivity', 'SaleActivity', 'AddGardenActivity',
                'GardenAnalyticsActivity', 'GardenOperationHistoryActivity']:
     check(f'openForGarden({target}.class)' in gd, f'{target} bahçe kimliğiyle açılmıyor')
 layout = (RES / 'layout/activity_garden_detail.xml').read_text(encoding='utf8')

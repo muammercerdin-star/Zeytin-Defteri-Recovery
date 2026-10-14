@@ -3,2838 +3,623 @@ package com.zeytindefteri.app;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
+import android.database.Cursor;
 import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
+/**
+ * Bahçe ekle / ilk bahçe / bahçe düzenle. Üç mod aynı formu kullanır (GardenFormModel.Mode):
+ * - "first_garden" = true → ilk kurulum; kayıttan sonra "Bahçen hazır" ekranı.
+ * - "garden_id" > 0 → düzenleme; GardenRepository.updateGarden, ekran sahibi değişirse kapanır.
+ * - aksi halde yeni bahçe; GardenRepository.addGarden(ForOwner) + bulut eşitleme.
+ */
 public class AddGardenActivity extends Activity {
 
+    private static final int REQUEST_LOCATION_PICKER = 2001;
+    private static final int REQUEST_GARDEN_PHOTO = 2002;
+    private static final String PREFS_NAME = "ZeytinDefteriPrefs";
+    private static final String KEY_WELCOME_COMPLETED = "welcome_completed";
+    private static final String KEY_ONBOARDING_COMPLETED = "onboarding_completed";
 
-    // ============================================================
-    // REQUEST CODE
-    // ============================================================
-
-    private static final int REQUEST_LOCATION_PICKER =
-            2001;
-
-    private static final int REQUEST_GARDEN_PHOTO =
-            2002;
-
-
-    // ============================================================
-    // PREFS
-    // ============================================================
-
-    private static final String PREFS_NAME =
-            "ZeytinDefteriPrefs";
-
-    private static final String KEY_WELCOME_COMPLETED =
-            "welcome_completed";
-
-    private static final String KEY_ONBOARDING_COMPLETED =
-            "onboarding_completed";
-
-
-    // ============================================================
-    // RENKLER
-    // ============================================================
-
-    private static final String COLOR_BG =
-            "#0B1D28";
-
-    private static final String COLOR_GREEN =
-            "#4F745B";
-
-    private static final String COLOR_GREEN_DARK =
-            "#F2F7F0";
-
-    private static final String COLOR_TEXT =
-            "#F4F7F4";
-
-    private static final String COLOR_MUTED =
-            "#9AABA8";
-
-    private static final String COLOR_BORDER =
-            "#29434D";
-
-    private static final String COLOR_CARD =
-            "#132A38";
-
-    private static final String COLOR_SOFT_GREEN =
-            "#19392F";
-
-
-    // ============================================================
-    // İLK BAHÇE
-    // ============================================================
-
-    private boolean firstGarden =
-            false;
-
-
-    // ============================================================
-    // KAYIT DEVAM EDİYOR MU?
-    // ============================================================
-
-    private boolean saving =
-            false;
-
-
-    // ============================================================
-    // VERİTABANI
-    // ============================================================
+    private GardenFormModel.Mode mode = GardenFormModel.Mode.ADD;
+    private long editGardenId = -1;
+    private String screenOwner = "";
+    private boolean saving = false;
 
     private DatabaseHelper databaseHelper;
     private GardenRepository gardenRepository;
     private GardenCloudRepository gardenCloudRepository;
 
+    private EditText etGardenName, etTreeCount, etGardenAge, etVariety, etAreaDecare, etGardenNotes;
+    private TextView btnSaveGarden, tvTitle, tvSubtitle, tvSaveSummary;
+    private TextView tvLocationTitle, tvLocationSubtitle, tvLocationAction;
+    private TextView tvPhotoTitle, tvPhotoStatus, btnRemovePhoto;
+    private ImageView ivPhotoThumb, ivPhotoIcon;
+    private LinearLayout containerIrrigation;
+    private final List<TextView> irrigationChips = new ArrayList<>();
+    private List<String> irrigationOptions = new ArrayList<>();
+    private int irrigationIndex = 0;
 
-    // ============================================================
-    // FORM
-    // ============================================================
+    // Konum: seçiciden gelen adlar ve kimlikler; düzenlemede kayıtlı adlar da tutulur.
+    private String province = "", district = "", settlement = "", settlementType = "";
+    private int provinceId = 0, districtId = 0, settlementId = 0;
+    private String savedProvince = "", savedDistrict = "", savedSettlement = "";
 
-    private EditText etGardenName;
+    private String photoUri = "";
+    // Düzenleme yüklemesinden gelen sulama değeri (seçenekler kurulana kadar tutulur).
+    private String pendingIrrigation = "";
 
-    private EditText etTreeCount;
-
-    private EditText etGardenAge;
-
-    private EditText etVariety;
-
-    private EditText etAreaDecare;
-
-    private EditText etGardenNotes;
-
-
-    // ============================================================
-    // KONUM
-    // ============================================================
-
-    private AutoCompleteTextView etProvince;
-
-    private AutoCompleteTextView etDistrict;
-
-    private AutoCompleteTextView etNeighborhood;
-
-
-    // ============================================================
-    // KONUM ID
-    // ============================================================
-
-    private int selectedProvinceId =
-            0;
-
-    private int selectedDistrictId =
-            0;
-
-    private int selectedSettlementId =
-            0;
-
-
-    private String selectedSettlementType =
-            "";
-
-
-    // ============================================================
-    // DİĞER
-    // ============================================================
-
-    private Spinner spinnerIrrigation;
-
-    private TextView btnSaveGarden;
-
-    private TextView btnBack;
-
-    private View btnPhoto;
-
-    private TextView tvPhotoStatus;
-
-    private TextView tvTitle;
-
-    private TextView tvSubtitle;
-
-
-    // ============================================================
-    // FOTOĞRAF
-    // ============================================================
-
-    private Uri selectedPhotoUri =
-            null;
-
-
-    // ============================================================
-    // SON KAYDEDİLEN BAHÇE
-    // ============================================================
-
-    private long savedGardenId =
-            -1;
-
-    private String savedGardenName =
-            "";
-
-    private int savedTreeCount =
-            0;
-
-    private int savedAge =
-            0;
-
-    private String savedVariety =
-            "";
-
-    private String savedProvince =
-            "";
-
-    private String savedDistrict =
-            "";
-
-    private String savedNeighborhood =
-            "";
-
-
-    // ============================================================
-    // SULAMA TİPLERİ
-    // ============================================================
-
-    private final List<String> irrigationTypes =
-            Arrays.asList(
-                    "Belirtilmedi",
-                    "Damla sulama",
-                    "Salma sulama",
-                    "Yağmurlama",
-                    "Gölet / tanker",
-                    "Kuyu / sondaj",
-                    "Kuru tarım",
-                    "Diğer"
-            );
-
-
-    // ============================================================
-    // ON CREATE
-    // ============================================================
+    // İlk bahçe başarı ekranı için kaydedilen değerler
+    private long savedGardenId = -1;
+    private String savedGardenName = "";
+    private String savedSummary = "";
 
     @Override
-    protected void onCreate(
-            Bundle savedInstanceState
-    ) {
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
+        if (getActionBar() != null) getActionBar().hide();
+        getWindow().setStatusBarColor(GreenTheme.color(R.color.zd_bg));
+        getWindow().setNavigationBarColor(GreenTheme.color(R.color.zd_bg));
+        getWindow().getDecorView().setSystemUiVisibility(0);
+        setContentView(R.layout.activity_add_garden);
 
-        super.onCreate(
-                savedInstanceState
-        );
+        databaseHelper = new DatabaseHelper(this);
+        gardenRepository = new GardenRepository(databaseHelper);
+        gardenCloudRepository = new GardenCloudRepository(databaseHelper);
 
+        editGardenId = getIntent().getLongExtra("garden_id", -1);
+        if (editGardenId > 0) mode = GardenFormModel.Mode.EDIT;
+        else if (getIntent().getBooleanExtra("first_garden", false)) mode = GardenFormModel.Mode.FIRST;
 
-        // ========================================================
-        // ACTION BAR
-        // ========================================================
-
-        if (getActionBar() != null) {
-
-            getActionBar().hide();
-        }
-
-
-        // ========================================================
-        // STATUS BAR
-        // ========================================================
-
-        getWindow().setStatusBarColor(
-                GreenTheme.parse(
-                        COLOR_BG
-                )
-        );
-        getWindow().setNavigationBarColor(GreenTheme.parse(COLOR_BG));
-
-
-        getWindow()
-                .getDecorView()
-                .setSystemUiVisibility(
-                        0
-                );
-
-
-        // ========================================================
-        // LAYOUT
-        // ========================================================
-
-        setContentView(
-                R.layout.activity_add_garden
-        );
-
-
-        // ========================================================
-        // İLK BAHÇE Mİ?
-        // ========================================================
-
-        firstGarden =
-                getIntent().getBooleanExtra(
-                        "first_garden",
-                        false
-                );
-
-
-        // ========================================================
-        // DATABASE
-        // ========================================================
-
-        databaseHelper =
-                new DatabaseHelper(
-                        this
-                );
-
-
-        gardenRepository =
-                new GardenRepository(
-                        databaseHelper
-                );
-
-        gardenCloudRepository =
-                new GardenCloudRepository(
-                        databaseHelper
-                );
-
-
-        // ========================================================
-        // VIEW
-        // ========================================================
+        screenOwner = state == null ? databaseHelper.getActiveOwnerUid() : state.getString("screen_owner", "");
+        if (mode == GardenFormModel.Mode.EDIT && !isSameOwner()) { unavailable(); return; }
 
         findViews();
+        String storedIrrigation = "";
+        if (mode == GardenFormModel.Mode.EDIT && state == null && !loadGardenForEdit()) return;
+        if (mode == GardenFormModel.Mode.EDIT && state == null) storedIrrigation = pendingIrrigation;
+        if (state != null) storedIrrigation = restoreState(state);
 
+        irrigationOptions = GardenFormModel.irrigationOptions(storedIrrigation);
+        irrigationIndex = GardenFormModel.irrigationIndex(irrigationOptions, storedIrrigation);
+        buildIrrigationChips();
 
-        // ========================================================
-        // BAŞLIK
-        // ========================================================
-
-        configureScreenMode();
-
-
-        // ========================================================
-        // KONUM
-        // ========================================================
-
-        setupLocationPicker();
-
-
-        // ========================================================
-        // SULAMA
-        // ========================================================
-
-        setupIrrigationSpinner();
-
-
-        // ========================================================
-        // BUTON
-        // ========================================================
-
+        applyMode();
+        updateLocationRow();
+        updatePhotoRow();
         setupButtons();
-
-
-        // ========================================================
-        // GİRİŞ ANİMASYONU
-        // ========================================================
-
-        animateEntrance();
+        if (state == null) animateEntrance();
     }
-
-
-    // ============================================================
-    // VIEW'LARI BUL
-    // ============================================================
-
-    private void findViews() {
-
-        etGardenName =
-                findViewById(
-                        R.id.etGardenName
-                );
-
-
-        etTreeCount =
-                findViewById(
-                        R.id.etTreeCount
-                );
-
-
-        etGardenAge =
-                findViewById(
-                        R.id.etGardenAge
-                );
-
-
-        etVariety =
-                findViewById(
-                        R.id.etVariety
-                );
-
-
-        etAreaDecare =
-                findViewById(
-                        R.id.etAreaDecare
-                );
-
-
-        etProvince =
-                findViewById(
-                        R.id.etProvince
-                );
-
-
-        etDistrict =
-                findViewById(
-                        R.id.etDistrict
-                );
-
-
-        etNeighborhood =
-                findViewById(
-                        R.id.etNeighborhood
-                );
-
-
-        spinnerIrrigation =
-                findViewById(
-                        R.id.spinnerIrrigation
-                );
-
-
-        etGardenNotes =
-                findViewById(
-                        R.id.etGardenNotes
-                );
-
-
-        btnSaveGarden =
-                findViewById(
-                        R.id.btnSaveGarden
-                );
-
-
-        btnBack =
-                findViewById(
-                        R.id.btnBack
-                );
-
-
-        btnPhoto =
-                findViewById(
-                        R.id.btnPhoto
-                );
-
-
-        tvPhotoStatus =
-                findViewById(
-                        R.id.tvPhotoStatus
-                );
-
-
-        tvTitle =
-                findViewById(
-                        R.id.tvTitle
-                );
-
-
-        tvSubtitle =
-                findViewById(
-                        R.id.tvSubtitle
-                );
-    }
-
-
-    // ============================================================
-    // EKRAN MODU
-    // ============================================================
-
-    private void configureScreenMode() {
-
-        if (firstGarden) {
-
-            if (tvTitle != null) {
-
-                tvTitle.setText(
-                        "İlk bahçeni oluşturalım"
-                );
-            }
-
-
-            if (tvSubtitle != null) {
-
-                tvSubtitle.setText(
-                        "Zeytin Defteri bahçelerin üzerinden çalışır.\n"
-                                + "İlk zeytinliğini kaydederek başlayalım."
-                );
-            }
-
-
-            if (btnSaveGarden != null) {
-
-                btnSaveGarden.setText(
-                        "Bahçemi Kaydet"
-                );
-            }
-
-        } else {
-
-            if (tvTitle != null) {
-
-                tvTitle.setText(
-                        "Yeni bahçe ekle"
-                );
-            }
-
-
-            if (tvSubtitle != null) {
-
-                tvSubtitle.setText(
-                        "Zeytinliğinin temel bilgilerini kaydet."
-                );
-            }
-
-
-            if (btnSaveGarden != null) {
-
-                btnSaveGarden.setText(
-                        "Bahçeyi Kaydet"
-                );
-            }
-        }
-    }
-
-
-    // ============================================================
-    // GİRİŞ ANİMASYONU
-    // ============================================================
-
-    private void animateEntrance() {
-
-        View content =
-                findViewById(
-                        R.id.formContent
-                );
-
-
-        if (content == null) {
-
-            return;
-        }
-
-
-        content.setAlpha(
-                0f
-        );
-
-
-        content.setTranslationY(
-                dp(12)
-        );
-
-
-        content.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(380)
-                .setInterpolator(
-                        new AccelerateDecelerateInterpolator()
-                )
-                .start();
-    }
-
-
-    // ============================================================
-    // KONUM SEÇİMİ
-    // ============================================================
-
-    private void setupLocationPicker() {
-
-        prepareLocationField(
-                etProvince
-        );
-
-
-        prepareLocationField(
-                etDistrict
-        );
-
-
-        prepareLocationField(
-                etNeighborhood
-        );
-
-
-        etProvince.setHint(
-                "İl seç..."
-        );
-
-
-        etDistrict.setHint(
-                "İlçe seç..."
-        );
-
-
-        etNeighborhood.setHint(
-                "Mahalle / köy seç..."
-        );
-
-
-        etProvince.setOnClickListener(
-                view -> openLocationPicker(
-                        LocationPickerActivity.START_PROVINCE
-                )
-        );
-
-
-        etDistrict.setOnClickListener(
-                view -> openLocationPicker(
-                        LocationPickerActivity.START_DISTRICT
-                )
-        );
-
-
-        etNeighborhood.setOnClickListener(
-                view -> openLocationPicker(
-                        LocationPickerActivity.START_SETTLEMENT
-                )
-        );
-    }
-
-
-    // ============================================================
-    // KONUM ALANI
-    // ============================================================
-
-    private void prepareLocationField(
-            AutoCompleteTextView field
-    ) {
-
-        if (field == null) {
-
-            return;
-        }
-
-
-        field.setEnabled(
-                true
-        );
-
-
-        field.setKeyListener(
-                null
-        );
-
-
-        field.setCursorVisible(
-                false
-        );
-
-
-        field.setFocusable(
-                false
-        );
-
-
-        field.setFocusableInTouchMode(
-                false
-        );
-
-
-        field.setClickable(
-                true
-        );
-
-
-        field.setLongClickable(
-                false
-        );
-    }
-
-
-    // ============================================================
-    // KONUM SEÇİCİ
-    // ============================================================
-
-    private void openLocationPicker() {
-
-        openLocationPicker(
-                LocationPickerActivity.START_PROVINCE
-        );
-    }
-
-
-    private void openLocationPicker(
-            int startMode
-    ) {
-
-        Intent intent =
-                new Intent(
-                        AddGardenActivity.this,
-                        LocationPickerActivity.class
-                );
-
-
-        intent.putExtra(
-                LocationPickerActivity.EXTRA_START_MODE,
-                startMode
-        );
-
-
-        intent.putExtra(
-                LocationPickerActivity.EXTRA_PROVINCE_ID,
-                selectedProvinceId
-        );
-
-
-        intent.putExtra(
-                LocationPickerActivity.EXTRA_PROVINCE_NAME,
-                text(
-                        etProvince
-                )
-        );
-
-
-        intent.putExtra(
-                LocationPickerActivity.EXTRA_DISTRICT_ID,
-                selectedDistrictId
-        );
-
-
-        intent.putExtra(
-                LocationPickerActivity.EXTRA_DISTRICT_NAME,
-                text(
-                        etDistrict
-                )
-        );
-
-
-        intent.putExtra(
-                LocationPickerActivity.EXTRA_SETTLEMENT_ID,
-                selectedSettlementId
-        );
-
-
-        intent.putExtra(
-                LocationPickerActivity.EXTRA_SETTLEMENT_NAME,
-                text(
-                        etNeighborhood
-                )
-        );
-
-
-        intent.putExtra(
-                LocationPickerActivity.EXTRA_SETTLEMENT_TYPE,
-                selectedSettlementType
-        );
-
-
-        startActivityForResult(
-                intent,
-                REQUEST_LOCATION_PICKER
-        );
-    }
-
-
-    // ============================================================
-    // ACTIVITY RESULT
-    // ============================================================
 
     @Override
-    protected void onActivityResult(
-            int requestCode,
-            int resultCode,
-            Intent data
-    ) {
+    protected void onResume() {
+        super.onResume();
+        if (mode == GardenFormModel.Mode.EDIT && databaseHelper != null && !isSameOwner()) finish();
+    }
 
-        super.onActivityResult(
-                requestCode,
-                resultCode,
-                data
-        );
+    private void findViews() {
+        etGardenName = findViewById(R.id.etGardenName);
+        etTreeCount = findViewById(R.id.etTreeCount);
+        etGardenAge = findViewById(R.id.etGardenAge);
+        etVariety = findViewById(R.id.etVariety);
+        etAreaDecare = findViewById(R.id.etAreaDecare);
+        etGardenNotes = findViewById(R.id.etGardenNotes);
+        btnSaveGarden = findViewById(R.id.btnSaveGarden);
+        tvTitle = findViewById(R.id.tvTitle);
+        tvSubtitle = findViewById(R.id.tvSubtitle);
+        tvSaveSummary = findViewById(R.id.tvSaveSummary);
+        tvLocationTitle = findViewById(R.id.tvLocationTitle);
+        tvLocationSubtitle = findViewById(R.id.tvLocationSubtitle);
+        tvLocationAction = findViewById(R.id.tvLocationAction);
+        tvPhotoTitle = findViewById(R.id.tvPhotoTitle);
+        tvPhotoStatus = findViewById(R.id.tvPhotoStatus);
+        btnRemovePhoto = findViewById(R.id.btnRemovePhoto);
+        ivPhotoThumb = findViewById(R.id.ivPhotoThumb);
+        ivPhotoIcon = findViewById(R.id.ivPhotoIcon);
+        containerIrrigation = findViewById(R.id.containerIrrigation);
+        ((View) ivPhotoThumb.getParent()).setClipToOutline(true);
+    }
 
+    private void applyMode() {
+        tvTitle.setText(GardenFormModel.title(mode));
+        tvSubtitle.setText(mode == GardenFormModel.Mode.FIRST
+                ? "İlk bahçe kurulumu" : GardenFormModel.subtitle(mode));
+        View intro = findViewById(R.id.cardFirstGardenIntro);
+        intro.setVisibility(mode == GardenFormModel.Mode.FIRST ? View.VISIBLE : View.GONE);
+        ((TextView) findViewById(R.id.tvFirstGardenIntro)).setText(GardenFormModel.subtitle(GardenFormModel.Mode.FIRST));
+        tvSaveSummary.setText(mode == GardenFormModel.Mode.EDIT ? "" : "Bahçe bilgilerin hesabında güvende.");
+        tvSaveSummary.setVisibility(mode == GardenFormModel.Mode.EDIT ? View.GONE : View.VISIBLE);
+        setSavingState(false);
+    }
 
-        // ========================================================
-        // KONUM
-        // ========================================================
+    private void animateEntrance() {
+        View content = findViewById(R.id.mainScroll);
+        content.setAlpha(0f);
+        content.setTranslationY(dp(12));
+        content.animate().alpha(1f).translationY(0f).setDuration(380)
+                .setInterpolator(new AccelerateDecelerateInterpolator()).start();
+    }
 
-        if (requestCode
-                == REQUEST_LOCATION_PICKER) {
+    // ------------------------------------------------------------ düzenleme
 
-            handleLocationResult(
-                    resultCode,
-                    data
-            );
-
-            return;
+    /** Kayıtlı bahçeyi forma doldurur; bulunamazsa ekranı kapatır. */
+    private boolean loadGardenForEdit() {
+        try (Cursor c = databaseHelper.getGarden(editGardenId)) {
+            if (!c.moveToFirst()) { unavailable(); return false; }
+            etGardenName.setText(str(c, "name"));
+            int trees = c.getInt(c.getColumnIndexOrThrow("tree_count"));
+            int age = c.getInt(c.getColumnIndexOrThrow("age"));
+            double area = c.getDouble(c.getColumnIndexOrThrow("area_decare"));
+            etTreeCount.setText(trees > 0 ? String.valueOf(trees) : "");
+            etGardenAge.setText(age > 0 ? String.valueOf(age) : "");
+            etAreaDecare.setText(area > 0 ? GradeFormModel.number(area) : "");
+            etVariety.setText(str(c, "variety"));
+            etGardenNotes.setText(str(c, "notes"));
+            province = savedProvince = str(c, "province");
+            district = savedDistrict = str(c, "district");
+            settlement = savedSettlement = str(c, "neighborhood");
+            pendingIrrigation = str(c, "irrigation_type");
+            photoUri = str(c, "photo_uri");
         }
+        return true;
+    }
 
+    private boolean locationUnchanged() {
+        return province.equals(savedProvince) && district.equals(savedDistrict) && settlement.equals(savedSettlement);
+    }
 
-        // ========================================================
-        // FOTOĞRAF
-        // ========================================================
+    // ------------------------------------------------------------ durum saklama
 
-        if (requestCode
-                == REQUEST_GARDEN_PHOTO) {
+    @Override
+    protected void onSaveInstanceState(Bundle s) {
+        super.onSaveInstanceState(s);
+        s.putString("screen_owner", screenOwner);
+        s.putString("province", province); s.putString("district", district);
+        s.putString("settlement", settlement); s.putString("settlement_type", settlementType);
+        s.putInt("province_id", provinceId); s.putInt("district_id", districtId); s.putInt("settlement_id", settlementId);
+        s.putString("saved_province", savedProvince); s.putString("saved_district", savedDistrict);
+        s.putString("saved_settlement", savedSettlement);
+        s.putString("photo_uri", photoUri);
+        s.putString("irrigation", irrigationOptions.isEmpty() ? "" : irrigationOptions.get(irrigationIndex));
+    }
 
-            handlePhotoResult(
-                    resultCode,
-                    data
-            );
+    /** Döndürmeden sonra alanları geri yükler; sulama değerini döndürür. Metin alanları Android tarafından korunur. */
+    private String restoreState(Bundle s) {
+        province = s.getString("province", ""); district = s.getString("district", "");
+        settlement = s.getString("settlement", ""); settlementType = s.getString("settlement_type", "");
+        provinceId = s.getInt("province_id"); districtId = s.getInt("district_id"); settlementId = s.getInt("settlement_id");
+        savedProvince = s.getString("saved_province", ""); savedDistrict = s.getString("saved_district", "");
+        savedSettlement = s.getString("saved_settlement", "");
+        photoUri = s.getString("photo_uri", "");
+        String irrigation = s.getString("irrigation", "");
+        return "Belirtilmedi".equals(irrigation) ? "" : irrigation;
+    }
+
+    // ------------------------------------------------------------ sulama kutuları
+
+    /** İki sütunlu seçenek kutuları; seçili olan yeşil çerçeveli. */
+    private void buildIrrigationChips() {
+        containerIrrigation.removeAllViews();
+        irrigationChips.clear();
+        LinearLayout row = null;
+        for (int i = 0; i < irrigationOptions.size(); i++) {
+            if (i % 2 == 0) {
+                row = new LinearLayout(this);
+                LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
+                if (i > 0) rp.topMargin = dp(8);
+                containerIrrigation.addView(row, rp);
+            }
+            final int index = i;
+            TextView chip = new TextView(this);
+            chip.setText(irrigationOptions.get(i));
+            chip.setTextSize(13);
+            chip.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            chip.setTextColor(getColorStateList(R.color.choice_text));
+            chip.setGravity(Gravity.CENTER);
+            chip.setMaxLines(1);
+            chip.setBackgroundResource(R.drawable.bg_choice_chip);
+            chip.setOnClickListener(v -> selectIrrigation(index));
+            irrigationChips.add(chip);
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(44), 1);
+            if (i % 2 == 1) p.leftMargin = dp(8);
+            row.addView(chip, p);
+        }
+        if (irrigationOptions.size() % 2 == 1) {
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, 1, 1);
+            p.leftMargin = dp(8);
+            row.addView(new View(this), p);
+        }
+        selectIrrigation(irrigationIndex);
+    }
+
+    private void selectIrrigation(int index) {
+        irrigationIndex = Math.max(0, Math.min(irrigationOptions.size() - 1, index));
+        for (int i = 0; i < irrigationChips.size(); i++) {
+            boolean on = i == irrigationIndex;
+            irrigationChips.get(i).setSelected(on);
+            irrigationChips.get(i).setContentDescription("Sulama: " + irrigationOptions.get(i) + (on ? ", seçili" : ""));
         }
     }
 
+    // ------------------------------------------------------------ konum
 
-    // ============================================================
-    // KONUM SONUCU
-    // ============================================================
+    private void updateLocationRow() {
+        tvLocationTitle.setText(GardenFormModel.locationTitle(province, district, settlement));
+        String sub = GardenFormModel.locationSubtitle(province, district, settlement);
+        tvLocationSubtitle.setText(sub);
+        tvLocationSubtitle.setVisibility(sub.isEmpty() ? View.GONE : View.VISIBLE);
+        boolean empty = GardenFormModel.blank(province) && GardenFormModel.blank(district) && GardenFormModel.blank(settlement);
+        tvLocationAction.setText(empty ? "Seç" : "Değiştir");
+        ((TextView) ((LinearLayout) findViewById(R.id.cardLocation)).getChildAt(0))
+                .setText(mode == GardenFormModel.Mode.FIRST ? "KONUM *" : "KONUM");
+        findViewById(R.id.btnLocation).setContentDescription("Konum: "
+                + GardenFormModel.locationTitle(province, district, settlement) + (sub.isEmpty() ? "" : ", " + sub)
+                + ". " + (empty ? "Seç" : "Değiştir"));
+    }
 
-    private void handleLocationResult(
-            int resultCode,
-            Intent data
-    ) {
+    private void openLocationPicker() {
+        int start = provinceId <= 0 ? LocationPickerActivity.START_PROVINCE
+                : districtId <= 0 ? LocationPickerActivity.START_DISTRICT : LocationPickerActivity.START_SETTLEMENT;
+        Intent intent = new Intent(this, LocationPickerActivity.class)
+                .putExtra(LocationPickerActivity.EXTRA_START_MODE, start)
+                .putExtra(LocationPickerActivity.EXTRA_PROVINCE_ID, provinceId)
+                .putExtra(LocationPickerActivity.EXTRA_PROVINCE_NAME, province)
+                .putExtra(LocationPickerActivity.EXTRA_DISTRICT_ID, districtId)
+                .putExtra(LocationPickerActivity.EXTRA_DISTRICT_NAME, district)
+                .putExtra(LocationPickerActivity.EXTRA_SETTLEMENT_ID, settlementId)
+                .putExtra(LocationPickerActivity.EXTRA_SETTLEMENT_NAME, settlement)
+                .putExtra(LocationPickerActivity.EXTRA_SETTLEMENT_TYPE, settlementType);
+        startActivityForResult(intent, REQUEST_LOCATION_PICKER);
+    }
 
-        if (resultCode
-                != RESULT_OK) {
-
-            return;
-        }
-
-
-        if (data == null) {
-
-            return;
-        }
-
-
-        selectedProvinceId =
-                data.getIntExtra(
-                        LocationPickerActivity.EXTRA_PROVINCE_ID,
-                        0
-                );
-
-
-        selectedDistrictId =
-                data.getIntExtra(
-                        LocationPickerActivity.EXTRA_DISTRICT_ID,
-                        0
-                );
-
-
-        selectedSettlementId =
-                data.getIntExtra(
-                        LocationPickerActivity.EXTRA_SETTLEMENT_ID,
-                        0
-                );
-
-
-        String province =
-                safeString(
-                        data.getStringExtra(
-                                LocationPickerActivity.EXTRA_PROVINCE_NAME
-                        )
-                );
-
-
-        String district =
-                safeString(
-                        data.getStringExtra(
-                                LocationPickerActivity.EXTRA_DISTRICT_NAME
-                        )
-                );
-
-
-        String settlement =
-                safeString(
-                        data.getStringExtra(
-                                LocationPickerActivity.EXTRA_SETTLEMENT_NAME
-                        )
-                );
-
-
-        selectedSettlementType =
-                safeString(
-                        data.getStringExtra(
-                                LocationPickerActivity.EXTRA_SETTLEMENT_TYPE
-                        )
-                );
-
-
-        etProvince.setText(
-                province,
-                false
-        );
-
-
-        etDistrict.setText(
-                district,
-                false
-        );
-
-
-        etNeighborhood.setText(
-                settlement,
-                false
-        );
-
-
-        String location =
-                buildLocationText(
-                        province,
-                        district,
-                        settlement
-                );
-
-
-        if (!location.isEmpty()) {
-
-            Toast.makeText(
-                    this,
-                    location,
-                    Toast.LENGTH_SHORT
-            ).show();
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null) return;
+        if (requestCode == REQUEST_LOCATION_PICKER) {
+            provinceId = data.getIntExtra(LocationPickerActivity.EXTRA_PROVINCE_ID, 0);
+            districtId = data.getIntExtra(LocationPickerActivity.EXTRA_DISTRICT_ID, 0);
+            settlementId = data.getIntExtra(LocationPickerActivity.EXTRA_SETTLEMENT_ID, 0);
+            province = safe(data.getStringExtra(LocationPickerActivity.EXTRA_PROVINCE_NAME));
+            district = safe(data.getStringExtra(LocationPickerActivity.EXTRA_DISTRICT_NAME));
+            settlement = safe(data.getStringExtra(LocationPickerActivity.EXTRA_SETTLEMENT_NAME));
+            settlementType = safe(data.getStringExtra(LocationPickerActivity.EXTRA_SETTLEMENT_TYPE));
+            updateLocationRow();
+        } else if (requestCode == REQUEST_GARDEN_PHOTO && data.getData() != null) {
+            Uri uri = data.getData();
+            try {
+                getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (SecurityException error) {
+                // Kalıcı izin alınamazsa düzenleme ekranındaki eski davranış: başka fotoğraf iste.
+                if (mode == GardenFormModel.Mode.EDIT) {
+                    Toast.makeText(this, "Kalıcı erişim alınamadı. Başka bir fotoğraf seç.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+            }
+            photoUri = uri.toString();
+            updatePhotoRow();
         }
     }
 
-
-    // ============================================================
-    // FOTOĞRAF SEÇ
-    // ============================================================
+    // ------------------------------------------------------------ fotoğraf
 
     private void openPhotoPicker() {
-
         try {
-
-            Intent intent =
-                    new Intent(
-                            Intent.ACTION_OPEN_DOCUMENT
-                    );
-
-
-            intent.addCategory(
-                    Intent.CATEGORY_OPENABLE
-            );
-
-
-            intent.setType(
-                    "image/*"
-            );
-
-
-            intent.addFlags(
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-            );
-
-
-            startActivityForResult(
-                    intent,
-                    REQUEST_GARDEN_PHOTO
-            );
-
-
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                    .addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("image/*")
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            startActivityForResult(intent, REQUEST_GARDEN_PHOTO);
         } catch (Exception e) {
-
-            Toast.makeText(
-                    this,
-                    "Fotoğraf seçici açılamadı.",
-                    Toast.LENGTH_SHORT
-            ).show();
+            Toast.makeText(this, "Fotoğraf seçici açılamadı.", Toast.LENGTH_SHORT).show();
         }
     }
 
-
-    // ============================================================
-    // FOTOĞRAF SONUCU
-    // ============================================================
-
-    private void handlePhotoResult(
-            int resultCode,
-            Intent data
-    ) {
-
-        if (resultCode
-                != RESULT_OK) {
-
-            return;
+    private void updatePhotoRow() {
+        boolean has = !photoUri.isEmpty();
+        ivPhotoThumb.setVisibility(View.GONE);
+        ivPhotoIcon.setVisibility(View.VISIBLE);
+        if (has) {
+            try {
+                ivPhotoThumb.setImageURI(Uri.parse(photoUri));
+                if (ivPhotoThumb.getDrawable() != null) {
+                    ivPhotoThumb.setVisibility(View.VISIBLE);
+                    ivPhotoIcon.setVisibility(View.GONE);
+                }
+            } catch (Exception ignored) {
+                // Fotoğraf okunamazsa ikon kalır; kayıtlı adres değişmez.
+            }
         }
-
-
-        if (data == null
-                || data.getData() == null) {
-
-            return;
-        }
-
-
-        Uri uri =
-                data.getData();
-
-
-        try {
-
-            final int takeFlags =
-                    data.getFlags()
-                            & Intent.FLAG_GRANT_READ_URI_PERMISSION;
-
-
-            getContentResolver()
-                    .takePersistableUriPermission(
-                            uri,
-                            takeFlags
-                    );
-
-
-        } catch (Exception ignored) {
-
-        }
-
-
-        selectedPhotoUri =
-                uri;
-
-
-        if (tvPhotoStatus != null) {
-
-            tvPhotoStatus.setText(
-                    "✓ Fotoğraf seçildi"
-            );
-
-
-            tvPhotoStatus.setTextColor(
-                    GreenTheme.parse(
-                            COLOR_GREEN
-                    )
-            );
-
-
-            tvPhotoStatus.setTypeface(
-                    Typeface.DEFAULT,
-                    Typeface.BOLD
-            );
-        }
-
-
-        Toast.makeText(
-                this,
-                "Bahçe fotoğrafı hazır",
-                Toast.LENGTH_SHORT
-        ).show();
+        tvPhotoTitle.setText(has ? "Fotoğraf seçildi" : "Fotoğraf ekle");
+        tvPhotoStatus.setText(has ? "Değiştirmek için dokun" : "İsteğe bağlı · bahçe kartında görünür");
+        btnRemovePhoto.setVisibility(has ? View.VISIBLE : View.GONE);
+        findViewById(R.id.btnPhoto).setContentDescription(has ? "Bahçe fotoğrafını değiştir" : "Bahçe fotoğrafı ekle");
     }
 
-
-    // ============================================================
-    // SULAMA SPINNER
-    // ============================================================
-
-    private void setupIrrigationSpinner() {
-
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(
-                        this,
-                        android.R.layout.simple_spinner_item,
-                        irrigationTypes
-                );
-
-
-        adapter.setDropDownViewResource(
-                android.R.layout.simple_spinner_dropdown_item
-        );
-
-
-        spinnerIrrigation.setAdapter(
-                adapter
-        );
-    }
-
-
-    // ============================================================
-    // BUTONLAR
-    // ============================================================
+    // ------------------------------------------------------------ düğmeler
 
     private void setupButtons() {
-
-        btnBack.setOnClickListener(
-                view -> {
-
-                    if (!saving) {
-
-                        finish();
-                    }
-                }
-        );
-
-
-        btnPhoto.setOnClickListener(
-                view -> {
-
-                    if (!saving) {
-
-                        pressEffect(
-                                btnPhoto,
-                                this::openPhotoPicker
-                        );
-                    }
-                }
-        );
-
-
-        btnSaveGarden.setOnClickListener(
-                view -> {
-
-                    if (!saving) {
-
-                        pressEffect(
-                                btnSaveGarden,
-                                this::saveGarden
-                        );
-                    }
-                }
-        );
+        findViewById(R.id.btnBack).setOnClickListener(v -> { if (!saving) finish(); });
+        findViewById(R.id.btnLocation).setOnClickListener(v -> { if (!saving) openLocationPicker(); });
+        findViewById(R.id.btnPhoto).setOnClickListener(v -> { if (!saving) openPhotoPicker(); });
+        btnRemovePhoto.setOnClickListener(v -> { photoUri = ""; updatePhotoRow(); });
+        btnSaveGarden.setOnClickListener(v -> { if (!saving) saveGarden(); });
     }
 
-
-    // ============================================================
-    // BAHÇEYİ KAYDET
-    // ============================================================
+    // ------------------------------------------------------------ kaydet
 
     private void saveGarden() {
+        if (saving) return;
+        if (mode == GardenFormModel.Mode.EDIT && !isSameOwner()) { unavailable(); return; }
 
-        if (saving) {
+        String name = text(etGardenName);
+        if (name.isEmpty()) { fieldError(etGardenName, "Bahçe adı gerekli"); return; }
 
-            return;
-        }
+        int treeCount = GardenFormModel.parseCount(text(etTreeCount));
+        if (treeCount < 0) { fieldError(etTreeCount, "Geçerli, sıfır veya daha büyük bir sayı yaz"); return; }
+        if (GardenFormModel.requiresTreeAndAge(mode) && treeCount <= 0) { fieldError(etTreeCount, "Ağaç sayısını yaz"); return; }
 
+        int age = GardenFormModel.parseCount(text(etGardenAge));
+        if (age < 0) { fieldError(etGardenAge, "Geçerli, sıfır veya daha büyük bir sayı yaz"); return; }
+        if (GardenFormModel.requiresTreeAndAge(mode) && age <= 0) { fieldError(etGardenAge, "Ağaç yaşını yaz"); return; }
 
-        // ========================================================
-        // BAHÇE ADI
-        // ========================================================
+        double area = GardenFormModel.parseArea(text(etAreaDecare));
+        if (area < 0) { fieldError(etAreaDecare, "Geçerli, sıfır veya daha büyük bir sayı yaz"); return; }
 
-        String name =
-                text(
-                        etGardenName
-                );
-
-
-        if (name.isEmpty()) {
-
-            etGardenName.setError(
-                    "Bahçe adı gerekli"
-            );
-
-
-            etGardenName.requestFocus();
-
-            return;
-        }
-
-
-        // ========================================================
-        // AĞAÇ
-        // ========================================================
-
-        int treeCount =
-                readInt(
-                        etTreeCount
-                );
-
-
-        if (firstGarden
-                && treeCount <= 0) {
-
-            etTreeCount.setError(
-                    "Ağaç sayısını yaz"
-            );
-
-
-            etTreeCount.requestFocus();
-
-            return;
-        }
-
-
-        // ========================================================
-        // YAŞ
-        // ========================================================
-
-        int age =
-                readInt(
-                        etGardenAge
-                );
-
-
-        if (firstGarden
-                && age <= 0) {
-
-            etGardenAge.setError(
-                    "Ağaç yaşını yaz"
-            );
-
-
-            etGardenAge.requestFocus();
-
-            return;
-        }
-
-
-        // ========================================================
-        // ALAN
-        // ========================================================
-
-        double areaDecare =
-                readDouble(
-                        etAreaDecare
-                );
-
-
-        // ========================================================
-        // ÇEŞİT
-        // ========================================================
-
-        String variety =
-                text(
-                        etVariety
-                );
-
-
-        // ========================================================
-        // KONUM
-        // ========================================================
-
-        String province =
-                text(
-                        etProvince
-                );
-
-
-        String district =
-                text(
-                        etDistrict
-                );
-
-
-        String neighborhood =
-                text(
-                        etNeighborhood
-                );
-
-
-        // ========================================================
-        // İLK BAHÇEDE KONUM GEREKLİ
-        // ========================================================
-
-        if (firstGarden
-                && (
-                selectedProvinceId <= 0
-                        || selectedDistrictId <= 0
-                        || selectedSettlementId <= 0
-        )) {
-
-            Toast.makeText(
-                    this,
-                    "İlk bahçenin konumunu seçelim",
-                    Toast.LENGTH_SHORT
-            ).show();
-
-
-            openLocationPicker();
-
-            return;
-        }
-
-
-        // ========================================================
-        // NORMAL MODDA YARIM KONUM KONTROLÜ
-        // ========================================================
-
-        if (!province.isEmpty()
-                || !district.isEmpty()
-                || !neighborhood.isEmpty()) {
-
-            if (selectedProvinceId <= 0
-                    || selectedDistrictId <= 0
-                    || selectedSettlementId <= 0) {
-
-                Toast.makeText(
-                        this,
-                        "Konumu listeden yeniden seç.",
-                        Toast.LENGTH_SHORT
-                ).show();
-
-
+        switch (GardenFormModel.checkLocation(mode, province, district, settlement,
+                provinceId, districtId, settlementId, locationUnchanged())) {
+            case PICK_REQUIRED:
+                Toast.makeText(this, "İlk bahçenin konumunu seçelim", Toast.LENGTH_SHORT).show();
                 openLocationPicker();
-
                 return;
-            }
+            case PICK_AGAIN:
+                Toast.makeText(this, "Konumu listeden yeniden seç.", Toast.LENGTH_SHORT).show();
+                openLocationPicker();
+                return;
+            default:
+                break;
         }
 
+        String variety = text(etVariety);
+        String irrigation = GardenFormModel.irrigationToStore(irrigationOptions.get(irrigationIndex));
+        String notes = text(etGardenNotes);
 
-        // ========================================================
-        // SULAMA
-        // ========================================================
-
-        String irrigationType =
-                "";
-
-
-        if (spinnerIrrigation != null
-                && spinnerIrrigation.getSelectedItem() != null) {
-
-            irrigationType =
-                    spinnerIrrigation
-                            .getSelectedItem()
-                            .toString();
+        setSavingState(true);
+        if (mode == GardenFormModel.Mode.EDIT) {
+            saveEdit(name, treeCount, age, variety, area, irrigation, notes);
+            return;
         }
-
-
-        if ("Belirtilmedi".equals(
-                irrigationType
-        )) {
-
-            irrigationType =
-                    "";
-        }
-
-
-        // ========================================================
-        // NOT
-        // ========================================================
-
-        String notes =
-                text(
-                        etGardenNotes
-                );
-
-
-        // ========================================================
-        // FOTOĞRAF
-        // ========================================================
-
-        String photoUri =
-                selectedPhotoUri == null
-                        ? ""
-                        : selectedPhotoUri.toString();
-
-
-        // ========================================================
-        // KAYIT
-        // ========================================================
-
-        setSavingState(
-                true
-        );
-
 
         long result;
-
-
         try {
-
-            FirebaseUser currentUser =
-                    FirebaseAuth.getInstance().getCurrentUser();
-
-            if (currentUser != null
-                    && currentUser.getUid() != null
-                    && !currentUser.getUid().trim().isEmpty()) {
-
-                String ownerUid =
-                        currentUser.getUid().trim();
-
-                String cloudId =
-                        UUID.randomUUID().toString();
-
-                result =
-                        gardenRepository.addGardenForOwner(
-                                ownerUid,
-                                cloudId,
-                                name,
-                                treeCount,
-                                age,
-                                variety,
-                                areaDecare,
-                                province,
-                                district,
-                                neighborhood,
-                                irrigationType,
-                                notes,
-                                photoUri
-                        );
-
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null && user.getUid() != null && !user.getUid().trim().isEmpty()) {
+                result = gardenRepository.addGardenForOwner(user.getUid().trim(), UUID.randomUUID().toString(),
+                        name, treeCount, age, variety, area, province, district, settlement, irrigation, notes, photoUri);
             } else {
-
-                result =
-                        gardenRepository.addGarden(
-                                name,
-                                treeCount,
-                                age,
-                                variety,
-                                areaDecare,
-                                province,
-                                district,
-                                neighborhood,
-                                irrigationType,
-                                notes,
-                                photoUri
-                        );
+                result = gardenRepository.addGarden(name, treeCount, age, variety, area,
+                        province, district, settlement, irrigation, notes, photoUri);
             }
-
-
         } catch (Exception e) {
-
-            result =
-                    -1;
+            result = -1;
         }
-
-
-        // ========================================================
-        // HATA
-        // ========================================================
-
         if (result == -1) {
-
-            setSavingState(
-                    false
-            );
-
-
-            Toast.makeText(
-                    this,
-                    "Bahçe kaydedilemedi.",
-                    Toast.LENGTH_SHORT
-            ).show();
-
-
+            setSavingState(false);
+            Toast.makeText(this, "Bahçe kaydedilemedi.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-
-        // ========================================================
-        // BAŞARI BİLGİSİ
-        // ========================================================
-
-        savedGardenId =
-                result;
-
-        savedGardenName =
-                name;
-
-        savedTreeCount =
-                treeCount;
-
-        savedAge =
-                age;
-
-        savedVariety =
-                variety;
-
-        savedProvince =
-                province;
-
-        savedDistrict =
-                district;
-
-        savedNeighborhood =
-                neighborhood;
-
-
-        FirebaseUser syncUser =
-                FirebaseAuth.getInstance().getCurrentUser();
-
-        if (syncUser != null
-                && syncUser.getUid() != null
-                && !syncUser.getUid().trim().isEmpty()) {
-
-            gardenCloudRepository.syncGardenByLocalId(
-                    syncUser.getUid().trim(),
-                    savedGardenId
-            );
+        savedGardenId = result;
+        savedGardenName = name;
+        savedSummary = GardenFormModel.summary(treeCount, age, variety, province, district, settlement);
+        FirebaseUser syncUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (syncUser != null && syncUser.getUid() != null && !syncUser.getUid().trim().isEmpty()) {
+            gardenCloudRepository.syncGardenByLocalId(syncUser.getUid().trim(), savedGardenId);
         }
 
-
-        // ========================================================
-        // İLK KURULUM
-        // ========================================================
-
-        if (firstGarden) {
-
+        if (mode == GardenFormModel.Mode.FIRST) {
             markFirstSetupCompleted();
-
             showFirstGardenSuccess();
-
             return;
         }
-
-
-        // ========================================================
-        // NORMAL BAHÇE EKLEME
-        // ========================================================
-
-        Toast.makeText(
-                this,
-                "Bahçe kaydedildi ✓",
-                Toast.LENGTH_SHORT
-        ).show();
-
-
-        setResult(
-                RESULT_OK
-        );
-
-
+        Toast.makeText(this, "Bahçe kaydedildi", Toast.LENGTH_SHORT).show();
+        setResult(RESULT_OK);
         finish();
     }
 
-
-    // ============================================================
-    // KAYDETME DURUMU
-    // ============================================================
-
-    private void setSavingState(
-            boolean value
-    ) {
-
-        saving =
-                value;
-
-
-        if (btnSaveGarden != null) {
-
-            btnSaveGarden.setEnabled(
-                    !value
-            );
-
-
-            btnSaveGarden.setAlpha(
-                    value
-                            ? 0.78f
-                            : 1f
-            );
-
-
-            if (value) {
-
-                btnSaveGarden.setText(
-                        "Kaydediliyor..."
-                );
-
-            } else {
-
-                if (firstGarden) {
-
-                    btnSaveGarden.setText(
-                            "Bahçemi Kaydet"
-                    );
-
-                } else {
-
-                    btnSaveGarden.setText(
-                            "Bahçeyi Kaydet"
-                    );
-                }
+    /** Düzenleme: yalnızca yerel güncelleme; bulut kimliği değişmez, ana ekranın eşitlemesi sonra yükler. */
+    private void saveEdit(String name, int trees, int age, String variety, double area, String irrigation, String notes) {
+        try {
+            boolean updated = gardenRepository.updateGarden(editGardenId, name, trees, age, variety, area,
+                    province, district, settlement, irrigation, notes, photoUri) == 1;
+            if (!updated) {
+                setSavingState(false);
+                Toast.makeText(this, "Bahçe güncellenemedi. Bahçeyi ve oturumu kontrol et.", Toast.LENGTH_LONG).show();
+                return;
             }
+        } catch (android.database.SQLException error) {
+            setSavingState(false);
+            Toast.makeText(this, "Değişiklikler kaydedilemedi. Tekrar dene.", Toast.LENGTH_LONG).show();
+            return;
         }
+        setResult(RESULT_OK);
+        Toast.makeText(this, "Bahçe güncellendi", Toast.LENGTH_SHORT).show();
+        finish();
     }
 
-
-    // ============================================================
-    // İLK KURULUM PREFS
-    // ============================================================
+    private void setSavingState(boolean value) {
+        saving = value;
+        btnSaveGarden.setEnabled(!value);
+        btnSaveGarden.setAlpha(value ? 0.78f : 1f);
+        btnSaveGarden.setText(value ? "Kaydediliyor…" : GardenFormModel.saveLabel(mode));
+    }
 
     private void markFirstSetupCompleted() {
-
-        SharedPreferences preferences =
-                getSharedPreferences(
-                        PREFS_NAME,
-                        MODE_PRIVATE
-                );
-
-
-        preferences.edit()
-
-                .putBoolean(
-                        KEY_WELCOME_COMPLETED,
-                        true
-                )
-
-                .putBoolean(
-                        KEY_ONBOARDING_COMPLETED,
-                        true
-                )
-
-                .apply();
+        SharedPreferences preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        preferences.edit().putBoolean(KEY_WELCOME_COMPLETED, true).putBoolean(KEY_ONBOARDING_COMPLETED, true).apply();
     }
 
-
-    // ============================================================
-    // BAŞARI EKRANI
-    // ============================================================
+    // ------------------------------------------------------------ ilk bahçe başarı ekranı
 
     private void showFirstGardenSuccess() {
-
-        saving =
-                false;
-
-
-        // ========================================================
-        // ROOT
-        // ========================================================
-
-        LinearLayout root =
-                new LinearLayout(
-                        this
-                );
-
-
-        root.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-
-        root.setGravity(
-                Gravity.CENTER_HORIZONTAL
-        );
-
-
-        root.setBackgroundColor(
-                GreenTheme.parse(
-                        COLOR_BG
-                )
-        );
-
-
-        ScrollView scroll =
-                new ScrollView(
-                        this
-                );
-
-
-        scroll.setFillViewport(
-                true
-        );
-
-
-        LinearLayout content =
-                new LinearLayout(
-                        this
-                );
-
-
-        content.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-
-        content.setGravity(
-                Gravity.CENTER_HORIZONTAL
-        );
-
-
-        content.setPadding(
-                dp(24),
-                dp(42),
-                dp(24),
-                dp(30)
-        );
-
-
-        // ========================================================
-        // CHECK
-        // ========================================================
-
-        TextView check =
-                new TextView(
-                        this
-                );
-
-
-        check.setText(
-                "✓"
-        );
-
-
-        check.setTextSize(
-                38
-        );
-
-
-        check.setTextColor(
-                Color.WHITE
-        );
-
-
-        check.setGravity(
-                Gravity.CENTER
-        );
-
-
-        check.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-
-
-        check.setBackground(
-                rounded(
-                        "#5E9B43",
-                        60,
-                        null,
-                        0
-                )
-        );
-
-
-        content.addView(
-                check,
-                new LinearLayout.LayoutParams(
-                        dp(86),
-                        dp(86)
-                )
-        );
-
-
-        // ========================================================
-        // BAŞLIK
-        // ========================================================
-
-        TextView title =
-                new TextView(
-                        this
-                );
-
-
-        title.setText(
-                "Bahçen hazır!"
-        );
-
-
-        title.setTextSize(
-                30
-        );
-
-
-        title.setTextColor(
-                GreenTheme.parse(
-                        COLOR_GREEN_DARK
-                )
-        );
-
-
-        title.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-
-
-        title.setGravity(
-                Gravity.CENTER
-        );
-
-
-        LinearLayout.LayoutParams titleParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        titleParams.topMargin =
-                dp(22);
-
-
-        content.addView(
-                title,
-                titleParams
-        );
-
-
-        // ========================================================
-        // ALT METİN
-        // ========================================================
-
-        TextView subtitle =
-                new TextView(
-                        this
-                );
-
-
-        subtitle.setText(
-                "Artık kaydettiğin bahçenle\n"
-                        + "tüm sezonunu yönetebilirsin."
-        );
-
-
-        subtitle.setTextSize(
-                14
-        );
-
-
-        subtitle.setTextColor(
-                GreenTheme.parse(
-                        COLOR_MUTED
-                )
-        );
-
-
-        subtitle.setGravity(
-                Gravity.CENTER
-        );
-
-
-        subtitle.setLineSpacing(
-                dp(3),
-                1f
-        );
-
-
-        LinearLayout.LayoutParams subtitleParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        subtitleParams.topMargin =
-                dp(9);
-
-
-        content.addView(
-                subtitle,
-                subtitleParams
-        );
-
-
-        // ========================================================
-        // AĞAÇ HERO
-        // ========================================================
-
-        TextView treeHero =
-                new TextView(
-                        this
-                );
-
-
-        treeHero.setText(
-                "🌳"
-        );
-
-
-        treeHero.setTextSize(
-                86
-        );
-
-
-        treeHero.setGravity(
-                Gravity.CENTER
-        );
-
-
-        LinearLayout.LayoutParams treeParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(155)
-                );
-
-
-        treeParams.topMargin =
-                dp(8);
-
-
-        content.addView(
-                treeHero,
-                treeParams
-        );
-
-
-        // ========================================================
-        // BAHÇE KARTI
-        // ========================================================
-
-        LinearLayout gardenCard =
-                new LinearLayout(
-                        this
-                );
-
-
-        gardenCard.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-
-        gardenCard.setPadding(
-                dp(20),
-                dp(19),
-                dp(20),
-                dp(19)
-        );
-
-
-        gardenCard.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        23,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        gardenCard.setElevation(
-                dp(3)
-        );
-
-
-        TextView gardenName =
-                new TextView(
-                        this
-                );
-
-
-        gardenName.setText(
-                savedGardenName
-        );
-
-
-        gardenName.setTextSize(
-                22
-        );
-
-
-        gardenName.setTextColor(
-                GreenTheme.parse(
-                        COLOR_TEXT
-                )
-        );
-
-
-        gardenName.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-
-
-        gardenName.setGravity(
-                Gravity.CENTER
-        );
-
-
-        gardenCard.addView(
-                gardenName
-        );
-
-
-        // ========================================================
-        // ÖZET
-        // ========================================================
-
-        TextView summary =
-                new TextView(
-                        this
-                );
-
-
-        summary.setText(
-                buildGardenSummary()
-        );
-
-
-        summary.setTextSize(
-                13
-        );
-
-
-        summary.setTextColor(
-                GreenTheme.color(R.color.zd_muted)
-        );
-
-
-        summary.setGravity(
-                Gravity.CENTER
-        );
-
-
-        summary.setLineSpacing(
-                dp(4),
-                1f
-        );
-
-
-        LinearLayout.LayoutParams summaryParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        summaryParams.topMargin =
-                dp(12);
-
-
-        gardenCard.addView(
-                summary,
-                summaryParams
-        );
-
-
-        // ========================================================
-        // MESAJ
-        // ========================================================
-
-        TextView savedMessage =
-                new TextView(
-                        this
-                );
-
-
-        savedMessage.setText(
-                "Bahçen başarıyla kaydedildi.\n"
-                        + "Şimdi ilk sezon kaydını oluşturmaya hazırsın."
-        );
-
-
-        savedMessage.setTextSize(
-                12
-        );
-
-
-        savedMessage.setTextColor(
-                GreenTheme.parse(
-                        COLOR_MUTED
-                )
-        );
-
-
-        savedMessage.setGravity(
-                Gravity.CENTER
-        );
-
-
-        savedMessage.setLineSpacing(
-                dp(3),
-                1f
-        );
-
-
-        LinearLayout.LayoutParams messageParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        messageParams.topMargin =
-                dp(17);
-
-
-        gardenCard.addView(
-                savedMessage,
-                messageParams
-        );
-
-
-        LinearLayout.LayoutParams cardParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-
-        cardParams.topMargin =
-                dp(4);
-
-
-        content.addView(
-                gardenCard,
-                cardParams
-        );
-
-
-        // ========================================================
-        // BAHÇEME GİT
-        // ========================================================
-
-        TextView btnGoGarden =
-                createPrimaryButton(
-                        "Bahçeme Git   →"
-                );
-
-
-        LinearLayout.LayoutParams goParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(62)
-                );
-
-
-        goParams.topMargin =
-                dp(22);
-
-
-        content.addView(
-                btnGoGarden,
-                goParams
-        );
-
-
-        btnGoGarden.setOnClickListener(
-                view -> pressEffect(
-                        btnGoGarden,
-                        this::openMainAfterFirstSetup
-                )
-        );
-
-
-        // ========================================================
-        // BAŞKA BAHÇE EKLE
-        // ========================================================
-
-        TextView btnAnotherGarden =
-                createSecondaryButton(
-                        "Başka Bahçe Ekle   +"
-                );
-
-
-        LinearLayout.LayoutParams anotherParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(56)
-                );
-
-
-        anotherParams.topMargin =
-                dp(10);
-
-
-        content.addView(
-                btnAnotherGarden,
-                anotherParams
-        );
-
-
-        btnAnotherGarden.setOnClickListener(
-                view -> pressEffect(
-                        btnAnotherGarden,
-                        this::restartAsNormalGarden
-                )
-        );
-
-
-        // ========================================================
-        // SCROLL
-        // ========================================================
-
-        scroll.addView(
-                content,
-                new ScrollView.LayoutParams(
-                        ScrollView.LayoutParams.MATCH_PARENT,
-                        ScrollView.LayoutParams.WRAP_CONTENT
-                )
-        );
-
-
-        root.addView(
-                scroll,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        0,
-                        1f
-                )
-        );
-
-
-        // ========================================================
-        // GÖSTER
-        // ========================================================
-
-        setContentView(
-                root
-        );
-
-
-        content.setAlpha(
-                0f
-        );
-
-
-        content.setTranslationY(
-                dp(12)
-        );
-
-
-        content.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(420)
-                .setInterpolator(
-                        new AccelerateDecelerateInterpolator()
-                )
-                .start();
-
-
-        check.setScaleX(
-                0.55f
-        );
-
-
-        check.setScaleY(
-                0.55f
-        );
-
-
-        check.setAlpha(
-                0f
-        );
-
-
-        check.animate()
-                .alpha(1f)
-                .scaleX(1f)
-                .scaleY(1f)
-                .setDuration(430)
-                .setInterpolator(
-                        new AccelerateDecelerateInterpolator()
-                )
-                .start();
+        saving = false;
+        int text = GreenTheme.color(R.color.zd_text), muted = GreenTheme.color(R.color.zd_muted);
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(GreenTheme.color(R.color.zd_bg));
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setGravity(Gravity.CENTER_HORIZONTAL);
+        content.setPadding(dp(20), dp(56), dp(20), dp(28));
+
+        FrameLayout disc = new FrameLayout(this);
+        disc.setBackgroundResource(R.drawable.bg_icon_disc);
+        ImageView check = new ImageView(this);
+        check.setImageResource(R.drawable.ic_op_check);
+        check.setColorFilter(GreenTheme.color(R.color.zd_green));
+        check.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        disc.addView(check, new FrameLayout.LayoutParams(dp(36), dp(36), Gravity.CENTER));
+        content.addView(disc, new LinearLayout.LayoutParams(dp(80), dp(80)));
+
+        TextView title = label("Bahçen hazır", 26, text, true);
+        title.setPadding(0, dp(20), 0, 0);
+        content.addView(title);
+        TextView sub = label("Artık kaydettiğin bahçenle tüm sezonunu yönetebilirsin.", 14, muted, false);
+        sub.setPadding(0, dp(8), 0, dp(24));
+        content.addView(sub);
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER_HORIZONTAL);
+        card.setBackgroundResource(R.drawable.bg_card);
+        card.setPadding(dp(18), dp(18), dp(18), dp(18));
+        ImageView tree = new ImageView(this);
+        tree.setImageResource(R.drawable.ic_op_tree);
+        tree.setColorFilter(GreenTheme.color(R.color.zd_green));
+        tree.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        card.addView(tree, new LinearLayout.LayoutParams(dp(32), dp(32)));
+        TextView gardenName = label(savedGardenName, 20, text, true);
+        gardenName.setPadding(0, dp(10), 0, 0);
+        card.addView(gardenName);
+        if (!savedSummary.isEmpty()) {
+            TextView summary = label(savedSummary, 13, muted, false);
+            summary.setPadding(0, dp(6), 0, 0);
+            card.addView(summary);
+        }
+        TextView message = label("Şimdi ilk sezon kaydını oluşturmaya hazırsın.", 12, muted, false);
+        message.setPadding(0, dp(12), 0, 0);
+        card.addView(message);
+        content.addView(card, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView go = label("Bahçeme git", 16, GreenTheme.color(R.color.zd_bg), true);
+        go.setBackgroundResource(R.drawable.bg_green_button);
+        go.setOnClickListener(v -> openMainAfterFirstSetup());
+        LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(-1, dp(54));
+        gp.topMargin = dp(24);
+        content.addView(go, gp);
+
+        TextView another = label("Başka bahçe ekle", 15, GreenTheme.color(R.color.zd_green), true);
+        another.setBackgroundResource(R.drawable.bg_search);
+        another.setOnClickListener(v -> restartAsNormalGarden());
+        LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(-1, dp(50));
+        ap.topMargin = dp(10);
+        content.addView(another, ap);
+
+        scroll.addView(content);
+        setContentView(scroll);
+        content.setAlpha(0f);
+        content.setTranslationY(dp(12));
+        content.animate().alpha(1f).translationY(0f).setDuration(420)
+                .setInterpolator(new AccelerateDecelerateInterpolator()).start();
     }
-
-
-    // ============================================================
-    // ÖZET
-    // ============================================================
-
-    private String buildGardenSummary() {
-
-        StringBuilder builder =
-                new StringBuilder();
-
-
-        if (savedTreeCount > 0) {
-
-
-            builder.append(
-                    savedTreeCount
-            );
-
-            builder.append(
-                    " ağaç"
-            );
-        }
-
-
-        if (savedAge > 0) {
-
-            appendSeparator(
-                    builder
-            );
-
-
-
-            builder.append(
-                    savedAge
-            );
-
-            builder.append(
-                    " yaş"
-            );
-        }
-
-
-        if (!safeString(
-                savedVariety
-        ).isEmpty()) {
-
-            appendSeparator(
-                    builder
-            );
-
-
-
-            builder.append(
-                    savedVariety
-            );
-        }
-
-
-        String location =
-                buildLocationText(
-                        savedProvince,
-                        savedDistrict,
-                        savedNeighborhood
-                );
-
-
-        if (!location.isEmpty()) {
-
-            if (builder.length() > 0) {
-
-                builder.append(
-                        "\n"
-                );
-            }
-
-
-
-            builder.append(
-                    location
-            );
-        }
-
-
-        return builder.toString();
-    }
-
-
-    // ============================================================
-    // AYIRAÇ
-    // ============================================================
-
-    private void appendSeparator(
-            StringBuilder builder
-    ) {
-
-        if (builder.length() > 0) {
-
-            builder.append(
-                    "   •   "
-            );
-        }
-    }
-
-
-    // ============================================================
-    // İLK KURULUM SONRASI ANA EKRAN
-    // ============================================================
 
     private void openMainAfterFirstSetup() {
-
-        Intent intent =
-                new Intent(
-                        AddGardenActivity.this,
-                        MainActivity.class
-                );
-
-
-        intent.putExtra(
-                "first_setup_completed",
-                true
-        );
-
-
-        intent.putExtra(
-                "first_garden_id",
-                savedGardenId
-        );
-
-
-        intent.putExtra(
-                "first_garden_name",
-                savedGardenName
-        );
-
-
-        intent.addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK
-                        | Intent.FLAG_ACTIVITY_CLEAR_TASK
-        );
-
-
-        startActivity(
-                intent
-        );
-
-
-        overridePendingTransition(
-                android.R.anim.fade_in,
-                android.R.anim.fade_out
-        );
-
-
+        Intent intent = new Intent(this, MainActivity.class)
+                .putExtra("first_setup_completed", true)
+                .putExtra("first_garden_id", savedGardenId)
+                .putExtra("first_garden_name", savedGardenName)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         finish();
     }
-
-
-    // ============================================================
-    // BAŞKA BAHÇE EKLE
-    // ============================================================
 
     private void restartAsNormalGarden() {
-
-        Intent intent =
-                new Intent(
-                        AddGardenActivity.this,
-                        AddGardenActivity.class
-                );
-
-
-        intent.putExtra(
-                "first_garden",
-                false
-        );
-
-
-        startActivity(
-                intent
-        );
-
-
-        overridePendingTransition(
-                android.R.anim.fade_in,
-                android.R.anim.fade_out
-        );
-
-
+        startActivity(new Intent(this, AddGardenActivity.class).putExtra("first_garden", false));
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         finish();
     }
 
+    // ------------------------------------------------------------ yardımcılar
 
-    // ============================================================
-    // PRIMARY BUTTON
-    // ============================================================
-
-    private TextView createPrimaryButton(
-            String text
-    ) {
-
-        TextView button =
-                new TextView(
-                        this
-                );
-
-
-        button.setText(
-                text
-        );
-
-
-        button.setTextSize(
-                17
-        );
-
-
-        button.setTextColor(
-                Color.WHITE
-        );
-
-
-        button.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-
-
-        button.setGravity(
-                Gravity.CENTER
-        );
-
-
-        button.setClickable(
-                true
-        );
-
-
-        button.setFocusable(
-                true
-        );
-
-
-        button.setBackground(
-                rounded(
-                        COLOR_GREEN,
-                        19,
-                        null,
-                        0
-                )
-        );
-
-
-        button.setElevation(
-                dp(3)
-        );
-
-
-        return button;
+    private boolean isSameOwner() {
+        if (databaseHelper == null) return false;
+        String active = databaseHelper.getActiveOwnerUid();
+        return (screenOwner == null ? "" : screenOwner).equals(active == null ? "" : active);
     }
 
-
-    // ============================================================
-    // SECONDARY BUTTON
-    // ============================================================
-
-    private TextView createSecondaryButton(
-            String text
-    ) {
-
-        TextView button =
-                new TextView(
-                        this
-                );
-
-
-        button.setText(
-                text
-        );
-
-
-        button.setTextSize(
-                15
-        );
-
-
-        button.setTextColor(
-                GreenTheme.parse(
-                        COLOR_GREEN
-                )
-        );
-
-
-        button.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-
-
-        button.setGravity(
-                Gravity.CENTER
-        );
-
-
-        button.setClickable(
-                true
-        );
-
-
-        button.setFocusable(
-                true
-        );
-
-
-        button.setBackground(
-                rounded(
-                        "#102632",
-                        19,
-                        COLOR_GREEN,
-                        1
-                )
-        );
-
-
-        return button;
+    private void unavailable() {
+        Toast.makeText(this, "Bahçe bulunamadı veya oturum değişti", Toast.LENGTH_SHORT).show();
+        finish();
     }
 
-
-    // ============================================================
-    // BASMA ANİMASYONU
-    // ============================================================
-
-    private void pressEffect(
-            View view,
-            Runnable runnable
-    ) {
-
-        if (view == null) {
-
-            if (runnable != null) {
-
-                runnable.run();
-            }
-
-            return;
-        }
-
-
-        view.animate()
-                .cancel();
-
-
-        view.animate()
-                .scaleX(0.975f)
-                .scaleY(0.975f)
-                .setDuration(80)
-                .withEndAction(
-                        () -> view.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(100)
-                                .withEndAction(
-                                        () -> {
-
-                                            if (runnable != null) {
-
-                                                runnable.run();
-                                            }
-                                        }
-                                )
-                                .start()
-                )
-                .start();
+    private void fieldError(EditText field, String message) {
+        field.setError(message);
+        field.requestFocus();
     }
 
-
-    // ============================================================
-    // KONUM METNİ
-    // ============================================================
-
-    private String buildLocationText(
-            String province,
-            String district,
-            String neighborhood
-    ) {
-
-        StringBuilder builder =
-                new StringBuilder();
-
-
-        appendLocationPart(
-                builder,
-                province
-        );
-
-
-        appendLocationPart(
-                builder,
-                district
-        );
-
-
-        appendLocationPart(
-                builder,
-                neighborhood
-        );
-
-
-        return builder.toString();
+    private TextView label(String s, float size, int color, boolean bold) {
+        TextView t = new TextView(this);
+        t.setText(s);
+        t.setTextSize(size);
+        t.setTextColor(color);
+        t.setGravity(Gravity.CENTER);
+        if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        return t;
     }
 
-
-    private void appendLocationPart(
-            StringBuilder builder,
-            String value
-    ) {
-
-        value =
-                safeString(
-                        value
-                );
-
-
-        if (value.isEmpty()) {
-
-            return;
-        }
-
-
-        if (builder.length() > 0) {
-
-            builder.append(
-                    " / "
-            );
-        }
-
-
-        builder.append(
-                value
-        );
+    private static String str(Cursor c, String column) {
+        int i = c.getColumnIndex(column);
+        String v = i < 0 || c.isNull(i) ? "" : c.getString(i);
+        return v == null ? "" : v.trim();
     }
 
-
-    // ============================================================
-    // DRAWABLE
-    // ============================================================
-
-    private GradientDrawable rounded(
-            String color,
-            int radius,
-            String strokeColor,
-            int strokeWidth
-    ) {
-
-        GradientDrawable drawable =
-                new GradientDrawable();
-
-
-        drawable.setColor(
-                GreenTheme.parse(
-                        color
-                )
-        );
-
-
-        drawable.setCornerRadius(
-                dp(radius)
-        );
-
-
-        if (strokeColor != null
-                && strokeWidth > 0) {
-
-            drawable.setStroke(
-                    dp(strokeWidth),
-                    GreenTheme.parse(
-                            strokeColor
-                    )
-            );
-        }
-
-
-        return drawable;
+    private String text(EditText editText) {
+        return editText == null ? "" : editText.getText().toString().trim();
     }
 
-
-    // ============================================================
-    // TEXT
-    // ============================================================
-
-    private String text(
-            EditText editText
-    ) {
-
-        if (editText == null) {
-
-            return "";
-        }
-
-
-        return editText
-                .getText()
-                .toString()
-                .trim();
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
     }
 
-
-    // ============================================================
-    // SAFE
-    // ============================================================
-
-    private String safeString(
-            String value
-    ) {
-
-        return value == null
-                ? ""
-                : value.trim();
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
-
-
-    // ============================================================
-    // INT
-    // ============================================================
-
-    private int readInt(
-            EditText editText
-    ) {
-
-        String value =
-                text(
-                        editText
-                );
-
-
-        if (value.isEmpty()) {
-
-            return 0;
-        }
-
-
-        try {
-
-            return Integer.parseInt(
-                    value
-            );
-
-
-        } catch (Exception e) {
-
-            return 0;
-        }
-    }
-
-
-    // ============================================================
-    // DOUBLE
-    // ============================================================
-
-    private double readDouble(
-            EditText editText
-    ) {
-
-        String value =
-                text(
-                        editText
-                )
-                        .replace(
-                                ",",
-                                "."
-                        );
-
-
-        if (value.isEmpty()) {
-
-            return 0;
-        }
-
-
-        try {
-
-            return Double.parseDouble(
-                    value
-            );
-
-
-        } catch (Exception e) {
-
-            return 0;
-        }
-    }
-
-
-    // ============================================================
-    // DP
-    // ============================================================
-
-    private int dp(
-            int value
-    ) {
-
-        return Math.round(
-                value
-                        * getResources()
-                        .getDisplayMetrics()
-                        .density
-        );
-    }
-
-
-    // ============================================================
-    // DESTROY
-    // ============================================================
 
     @Override
     protected void onDestroy() {
-
         if (databaseHelper != null) {
-
             databaseHelper.close();
-
-            databaseHelper =
-                    null;
+            databaseHelper = null;
         }
-
-
         super.onDestroy();
     }
-
 }

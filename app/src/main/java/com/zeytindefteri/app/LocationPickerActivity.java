@@ -52,18 +52,7 @@ public class LocationPickerActivity extends Activity {
             "settlement_type";
 
 
-    // ============================================================
-    // GEÇİCİ UYUMLULUK
-    //
-    // AddGardenActivity henüz eski alanları kullanıyor olabilir.
-    // Bir sonraki adımda onları da tamamen kaldıracağız.
-    // ============================================================
-
-    public static final String EXTRA_STREET_ID =
-            "street_id";
-
-    public static final String EXTRA_STREET_NAME =
-            "street_name";
+    
 
 
     // ============================================================
@@ -82,9 +71,7 @@ public class LocationPickerActivity extends Activity {
     public static final int START_SETTLEMENT =
             3;
 
-    // Eski AddGardenActivity Build vermesin diye geçici duruyor.
-    public static final int START_STREET =
-            4;
+    
 
 
     // ============================================================
@@ -519,25 +506,7 @@ public class LocationPickerActivity extends Activity {
         }
 
 
-        // ========================================================
-        // ESKİ STREET İSTEĞİ GELİRSE
-        //
-        // Artık sokak yok.
-        // Mahalle / Köy ekranını aç.
-        // ========================================================
-
-        if (startMode == START_STREET) {
-
-
-            if (selectedProvinceId > 0
-                    && selectedDistrictId > 0) {
-
-
-                showSettlementMode();
-
-                return;
-            }
-        }
+        
 
 
         // ========================================================
@@ -1988,21 +1957,7 @@ public class LocationPickerActivity extends Activity {
         );
 
 
-        // ========================================================
-        // ESKİ SOKAK ALANLARINI BOŞ DÖNDÜR
-        // AddGardenActivity temizlenene kadar Build uyumluluğu.
-        // ========================================================
-
-        result.putExtra(
-                EXTRA_STREET_ID,
-                0
-        );
-
-
-        result.putExtra(
-                EXTRA_STREET_NAME,
-                ""
-        );
+        
 
 
         setResult(
