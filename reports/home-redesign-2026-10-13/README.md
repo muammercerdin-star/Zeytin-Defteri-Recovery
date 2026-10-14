@@ -858,3 +858,10 @@ Sohbet mesaj denetiminde bulunan dört sorun düzeltildi. Firebase'e deploy yap�
 - Diğer test sonuçları değişmedi (önceden başarısız olan 3 test aynı nedenle başarısız). `functions` testleri: 84 geçti, 0 başarısız, 12 atlandı (emülatör yok).
 - Firebase kütüphaneleri bu ortamda olmadığı için Firestore çağrıları derleyiciyle doğrulanamadı; API kullanımı elle kontrol edildi.
 - Cihazda ve emülatörde denenmedi.
+
+**Düzeltme (cihaz testi sonrası): mesaj "Gönderiliyor…" olarak kalıyordu.**
+- Neden: Canlı dinleyici, telefonun gönderdiği mesajın sunucu onayından önceki kopyasını (yankısını) içeri alıyor ve yerel kaydın `updated_at` değerini değiştiriyordu. Onay gelince `sync_state=2` yazan sorgu (`updated_at = gönderim başındaki değer`) eşleşmiyordu.
+- Yan etki: `retryPendingPosts` başarıda kendini yeniden çağırdığı için aynı gönderi uygulama açıkken tekrar tekrar buluta yazılabiliyordu.
+- Çözüm: Buluta yazılmamış yerel değişikliği olan gönderi (`sync_state=1`: yeni mesaj, düzenleme ya da silme) buluttan gelen kopyayla ezilmiyor (`isPostLocalChangePending`). Yeniden deneme, yalnızca gönderi gerçekten senkron olduysa sıradakine geçiyor.
+- Takılı kalan mesaj, yeni sürümle uygulama bir sonraki açılışta yeniden gönderilince düzelir.
+- Testler: `tests/meydan_sync` 18 + 17 + 29 kontrol geçti; diğer sonuçlar değişmedi. Cihazda yeniden denenmedi.

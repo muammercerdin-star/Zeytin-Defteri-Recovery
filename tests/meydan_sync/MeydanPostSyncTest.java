@@ -37,7 +37,7 @@ public class MeydanPostSyncTest {
         eq(MeydanPostSync.missingFromCloud(local, ids(), 0, 0, 0, false), new ArrayList<String>(), "sınır 0");
 
         eq(MeydanPostSync.importAction(true, false), MeydanPostSync.Action.UPSERT, "etkin");
-        eq(MeydanPostSync.importAction(true, true), MeydanPostSync.Action.SKIP, "yerelde silinmiş, bulutta bekliyor");
+        eq(MeydanPostSync.importAction(true, true), MeydanPostSync.Action.SKIP, "yerelde bekleyen değişiklik (silme ya da gönderim) ezilmez");
         eq(MeydanPostSync.importAction(false, false), MeydanPostSync.Action.DEACTIVATE, "bulutta silinmiş");
         eq(MeydanPostSync.importAction(false, true), MeydanPostSync.Action.DEACTIVATE, "iki tarafta silinmiş");
 

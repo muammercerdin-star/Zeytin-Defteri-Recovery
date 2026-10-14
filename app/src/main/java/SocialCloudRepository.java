@@ -653,11 +653,13 @@ public class SocialCloudRepository {
             return;
         }
 
-        // Bulutta silinmiş gönderi telefonda da kapanır; telefonda silinip buluta henüz yazılmamış
-        // gönderi ise geri getirilmez (eskiden upsert is_active=1 yazıp silinen gönderiyi diriltiyordu).
+        // Bulutta silinmiş gönderi telefonda da kapanır. Telefonda buluta henüz yazılmamış değişikliği
+        // olan gönderi (silinmiş ya da gönderilmekte olan) ezilmez: eskiden upsert is_active=1 yazıp
+        // silinen gönderiyi diriltiyordu; canlı akış ise gönderilen mesajın onaylanmamış yankısını
+        // okuyup updated_at'i değiştiriyor, onay kaydı eşleyemiyor ve mesaj "Gönderiliyor…" kalıyordu.
         MeydanPostSync.Action action = MeydanPostSync.importAction(
                 MeydanPostSync.cloudActive(document.get("is_active")),
-                databaseHelper.isPostDeletionPending(cloudId));
+                databaseHelper.isPostLocalChangePending(cloudId));
         if (action == MeydanPostSync.Action.DEACTIVATE) {
             databaseHelper.deactivatePostsFromCloud(java.util.Collections.singletonList(cloudId));
             return;
@@ -1321,7 +1323,9 @@ public class SocialCloudRepository {
                 long id = c.getLong(0);
                 if (pendingWrites.add(id)) publishLocalPost(id, success -> {
                     pendingWrites.remove(id);
-                    if (success && !closed) retryPendingPosts();
+                    // Sıradakilere yalnızca bu gönderi gerçekten senkron olduysa geç; olmadıysa aynı
+                    // gönderiyi tekrar tekrar yazan bir döngü oluşur. Kalanlar sonraki açılışta denenir.
+                    if (success && !closed && !isPostPending(id)) retryPendingPosts();
                 });
             }
         }
@@ -1386,6 +1390,14 @@ public class SocialCloudRepository {
         } catch (RuntimeException error) {
             pendingDeletes.remove(postId);
             finishStored(key, false);
+        }
+    }
+
+    private boolean isPostPending(long postId) {
+        try (Cursor c = databaseHelper.getReadableDatabase().rawQuery(
+                "SELECT 1 FROM posts WHERE id = ? AND sync_state = 1 LIMIT 1",
+                new String[]{String.valueOf(postId)})) {
+            return c.moveToFirst();
         }
     }
 

@@ -58,11 +58,13 @@ final class MeydanPostSync {
     /**
      * Buluttan gelen belge telefona nasıl yansır.
      * @param cloudActive   bulutta is_active (alan yoksa 1 kabul edilir)
-     * @param pendingDelete telefonda bu gönderi silinmiş ve silme henüz buluta yazılmamış
+     * @param pendingLocal  telefonda buluta henüz yazılmamış değişiklik var (yeni mesaj, düzenleme ya da
+     *                      silme). Yerel sürüm kazanır: silinen gönderi geri gelmez, gönderilmekte olan
+     *                      mesajın kaydı kendi yankısıyla ezilmez.
      */
-    static Action importAction(boolean cloudActive, boolean pendingDelete) {
+    static Action importAction(boolean cloudActive, boolean pendingLocal) {
         if (!cloudActive) return Action.DEACTIVATE;
-        if (pendingDelete) return Action.SKIP; // Kullanıcının sildiği gönderi geri gelmesin.
+        if (pendingLocal) return Action.SKIP;
         return Action.UPSERT;
     }
 

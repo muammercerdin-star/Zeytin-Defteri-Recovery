@@ -18,7 +18,7 @@ def part(src, start, end):
     i = src.index(start); return src[i:src.index(end, i + len(start))]
 
 imp = part(scr, 'private void importCloudPost(', 'databaseHelper.upsertPostFromCloud(')
-check('MeydanPostSync.importAction(' in imp and 'isPostDeletionPending(cloudId)' in imp, 'içe alma silme durumuna bakmıyor')
+check('MeydanPostSync.importAction(' in imp and 'isPostLocalChangePending(cloudId)' in imp, 'içe alma bekleyen yerel değişikliğe bakmıyor')
 check('Action.DEACTIVATE' in imp and 'deactivatePostsFromCloud(' in imp, 'bulutta silinen gönderi kapatılmıyor')
 check('Action.SKIP' in imp, 'telefonda silinen gönderi diriltilebilir')
 
@@ -34,6 +34,7 @@ pf = part(rules, 'function postFields()', '}')
 check("'is_active'" in pf and "'updated_at'" in pf, 'firestore.rules is_active/updated_at güncellemesine izin vermiyor')
 
 retry = part(scr, 'public void retryPendingPosts()', 'public void publishPostDeletion(')
+check('!isPostPending(id)) retryPendingPosts()' in retry, 'yeniden deneme senkron olmayan gönderide döngüye girebilir')
 check('getPendingPostDeletionIds(user.getUid())' in retry and 'publishPostDeletion(' in retry, 'bekleyen silmeler yeniden denenmiyor')
 
 live = part(scr, 'public void startLiveSync(', 'public void stopLiveSync()')

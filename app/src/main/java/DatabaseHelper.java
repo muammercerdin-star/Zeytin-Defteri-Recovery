@@ -7848,11 +7848,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return db.update("posts", values, "id = ?", new String[]{String.valueOf(postId)});
     }
 
-    /** Telefonda silinmiş ama silmesi henüz buluta yazılmamış gönderi mi? */
-    public boolean isPostDeletionPending(String cloudId) {
+    /**
+     * Bu gönderide buluta henüz yazılmamış yerel değişiklik (yeni mesaj, düzenleme ya da silme) var mı?
+     * Varsa buluttan gelen kopya yerel kaydın üzerine yazılmaz; yazılırsa updated_at değişir ve
+     * gönderim onayı kaydı "senkron" yapamaz (mesaj "Gönderiliyor…" olarak takılı kalır).
+     */
+    public boolean isPostLocalChangePending(String cloudId) {
         if (safe(cloudId).isEmpty()) return false;
         try (Cursor c = getReadableDatabase().rawQuery(
-                "SELECT 1 FROM posts WHERE cloud_id = ? AND is_active = 0 AND sync_state = 1 LIMIT 1",
+                "SELECT 1 FROM posts WHERE cloud_id = ? AND sync_state = 1 LIMIT 1",
                 new String[]{safe(cloudId)})) {
             return c.moveToFirst();
         }

@@ -21,7 +21,7 @@ def sql_in(segment, opener):
     m = re.match(r'\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', s)
     return ''.join(re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1)))
 
-q_pending = sql_in(body(dbh, 'public boolean isPostDeletionPending('), 'rawQuery(')
+q_pending = sql_in(body(dbh, 'public boolean isPostLocalChangePending('), 'rawQuery(')
 w_deact = sql_in(body(dbh, 'public int deactivatePostsFromCloud('), 'db.update("posts", values,')
 q_active = sql_in(body(dbh, 'getActiveCloudPostsForSync()'), 'rawQuery(')
 q_deletes = sql_in(body(dbh, 'getPendingPostDeletionIds(String userId)'), 'rawQuery(')
@@ -48,7 +48,8 @@ check(active == ['c1', 'c2', 'c4', 'c7', 'c8'], f'etkin bulut gönderileri yanl�
 check([r[2] for r in con.execute(q_active) if r[0] == 'c8'] == [2], 'sync_state NULL → 2 sayılmıyor')
 delete_post(7); delete_post(3)
 check(con.execute(q_pending, ('c7',)).fetchone() is not None, 'silinen bulut gönderisi bekleyen sayılmıyor')
-check(con.execute(q_pending, ('c1',)).fetchone() is None, 'etkin gönderi bekleyen sayıldı')
+check(con.execute(q_pending, ('c1',)).fetchone() is None, 'senkron gönderi bekleyen sayıldı')
+check(con.execute(q_pending, ('c2',)).fetchone() is not None, 'gönderilmekte olan mesaj bekleyen sayılmıyor (yankısı onu ezer)')
 check(con.execute('SELECT sync_state FROM posts WHERE id=3').fetchone()[0] == 2, 'bulutta olmayan silme bekletiliyor')
 check([r[0] for r in con.execute(q_deletes, ('me',))] == [7], 'bekleyen silme listesi yanlış')
 check([r[0] for r in con.execute(q_deletes, ('other',))] == [], 'başkasının silmesi listede')
