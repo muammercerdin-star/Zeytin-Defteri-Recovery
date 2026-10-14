@@ -134,10 +134,14 @@ public class ElekReceiptActivity extends Activity {
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(dp(8), dp(12), dp(16), dp(8));
-        TextView back = text("‹", 30, GreenTheme.color(R.color.zd_text), false);
-        back.setGravity(Gravity.CENTER);
+        android.widget.ImageView back = new android.widget.ImageView(this);
+        back.setImageResource(R.drawable.ic_elek_back_chevron);
+        back.setColorFilter(GreenTheme.color(R.color.zd_text));
+        back.setPadding(dp(11), dp(11), dp(11), dp(11));
         back.setContentDescription("Geri");
-        back.setBackgroundResource(android.R.drawable.list_selector_background);
+        TypedValue ripple = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, ripple, true);
+        back.setBackgroundResource(ripple.resourceId);
         back.setOnClickListener(v -> finish());
         bar.addView(back, new LinearLayout.LayoutParams(dp(44), dp(44)));
         TextView title = text("Elek kaydı", 20, GreenTheme.color(R.color.zd_text), true);
@@ -264,7 +268,7 @@ public class ElekReceiptActivity extends Activity {
             } catch (Exception ignored) {
                 // Offline-first: sonraki genel senkron yeniden dener.
             }
-            Toast.makeText(this, "Satış kaydedildi ✓", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Satış kaydedildi", Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(this, "Satış oluşturulamadı.", Toast.LENGTH_LONG).show();
         }

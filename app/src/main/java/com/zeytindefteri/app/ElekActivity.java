@@ -95,7 +95,7 @@ public class ElekActivity extends Activity {
     // ÜST ALAN
     // ============================================================
 
-    private TextView btnElekBack;
+    private android.view.View btnElekBack;
     private TextView tvElekDate;
     private TextView tvElekGarden;
 

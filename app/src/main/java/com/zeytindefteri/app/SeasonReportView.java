@@ -41,8 +41,9 @@ public final class SeasonReportView extends ScrollView {
 
         // Başlık: geri + "Sezon Raporum" + sezon seçici
         LinearLayout header = row(); header.setPadding(0, dp(8), 0, dp(8));
-        TextView back = label("‹", 28, text, false);
-        back.setGravity(Gravity.CENTER); back.setContentDescription("Zeytin Ligi'ne dön");
+        android.widget.ImageView back = new android.widget.ImageView(getContext());
+        back.setImageResource(R.drawable.ic_elek_back_chevron); back.setColorFilter(text);
+        back.setPadding(dp(11), dp(11), dp(11), dp(11)); back.setContentDescription("Zeytin Ligi'ne dön");
         back.setOnClickListener(v -> actions.back());
         header.addView(back, new LinearLayout.LayoutParams(dp(44), dp(44)));
         LinearLayout titles = column(); titles.setPadding(dp(4), 0, dp(8), 0);

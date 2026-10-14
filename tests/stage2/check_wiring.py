@@ -108,6 +108,18 @@ pr = (APP / 'ProfileActivity.java').read_text(encoding='utf8')
 check(not EMOJI.search(pr), f'profilde emoji kaldı: {EMOJI.findall(pr)[:5]}')
 check('applyAvatarGlyph(' in pr and 'R.drawable.ic_op_pin' in pr and 'R.drawable.ic_op_camera' in pr, 'profil çizgi ikonları bağlı değil')
 
+# Yeni tasarımlı ekranlarda metinle çizilmiş eski "‹" geri düğmesi kalmamalı
+NEW_SCREENS = [APP / 'GardenDetailActivity.java', APP / 'NewOperationActivity.java', JAVA / 'HarvestActivity.java',
+               JAVA / 'SaleActivity.java', APP / 'ElekActivity.java', JAVA / 'ElekArchiveActivity.java',
+               APP / 'ElekReceiptActivity.java', APP / 'SeasonReportView.java']
+NEW_LAYOUTS = ['activity_garden_detail', 'activity_new_operation', 'activity_harvest', 'activity_sale',
+               'activity_elek', 'activity_elek_archive', 'elek_archive_header', 'item_elek_archive']
+for f in NEW_SCREENS:
+    check('‹' not in f.read_text(encoding='utf8'), f'{f.name}: eski "‹" geri düğmesi kaldı')
+for lay in NEW_LAYOUTS:
+    check('‹' not in (RES / 'layout' / (lay + '.xml')).read_text(encoding='utf8'), f'{lay}: eski "‹" geri düğmesi kaldı')
+check('"Satış kaydedildi ✓"' not in (APP / 'ElekReceiptActivity.java').read_text(encoding='utf8'), 'makbuz bildiriminde onay işareti kaldı')
+
 if failures:
     print('\n'.join('HATA: ' + f for f in failures))
     sys.exit(1)

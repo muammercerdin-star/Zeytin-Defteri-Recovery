@@ -37,7 +37,7 @@ public class ElekArchiveActivity extends Activity {
 
     private DatabaseHelper databaseHelper;
 
-    private TextView btnArchiveBack;
+    private View btnArchiveBack;
     private TextView btnArchiveYear;
     private TextView tvArchiveScreenScope;
     private TextView tvArchiveScreenTotalKg;
