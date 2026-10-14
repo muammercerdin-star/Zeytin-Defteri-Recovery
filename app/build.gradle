@@ -3,6 +3,21 @@ plugins {
     id 'com.google.gms.google-services'
 }
 
+// Supabase istemci ayarları repoda tutulmaz. Proje kökündeki local.properties (git'e gitmez)
+// ya da aynı adlı ortam değişkenlerinden okunur ve BuildConfig'e yazılır (bkz. MarketBackendConfig).
+//   SUPABASE_URL=https://<proje>.supabase.co
+//   SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+// Yoksa boş yazılır; uygulama Supabase'i "yapılandırılmadı" sayar ve istek göndermez.
+def zdLocalProperties = new Properties()
+def zdLocalFile = rootProject.file('local.properties')
+if (zdLocalFile.exists()) {
+    zdLocalFile.withInputStream { zdLocalProperties.load(it) }
+}
+def zdBuildString = { String name ->
+    def value = (zdLocalProperties.getProperty(name) ?: System.getenv(name) ?: '').trim()
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+}
+
 android {
     namespace 'com.zeytindefteri.app'
     compileSdk 36
@@ -13,6 +28,13 @@ android {
         targetSdk 36
         versionCode 1
         versionName '1.0'
+
+        buildConfigField 'String', 'SUPABASE_URL', zdBuildString('SUPABASE_URL')
+        buildConfigField 'String', 'SUPABASE_PUBLISHABLE_KEY', zdBuildString('SUPABASE_PUBLISHABLE_KEY')
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {

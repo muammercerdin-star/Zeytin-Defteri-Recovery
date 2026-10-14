@@ -762,3 +762,18 @@ Kapsam: Meydan gönderi kuralları, Firebase Storage kuralları ve moderasyon is
 | `blocks.rules.test.js`, `reports.rules.test.js` | Eksik alanlı gönderi yerine kurala uygun gönderi kullanacak şekilde güncellendi (emülatör yok, çalıştırılmadı) |
 
 Değişiklikten önce de başarısız olan üç test aynı kaldı: `tests/blocks/check_blocks.py`, `tests/feed_thread/check_preview.py`, `tests/market-production-five-java.py` (`JSON_JAR` yok).
+
+## 24. Supabase ayarı: local.properties → BuildConfig (1 commit)
+
+Sorun (14.10.2026, cihazda görüldü): Bu daldan derlenen APK'larda Supabase adresi `REPLACE_ME` kalıyordu, çünkü gerçek değerler bilerek repoda tutulmuyor. Çalışan eski APK'lar, elle düzenlenmiş yerel kopyalardan derlenmişti. Ayrıca canlı veritabanında `market_league_regions` için `anon` çalıştırma izni eksikti. Bu izni yayıncı, repodaki SQL tanımıyla aynı olacak şekilde verdi (canlı değişiklik; bu commit'in parçası değil).
+
+**Çözüm:**
+- `app/build.gradle`, `SUPABASE_URL` ve `SUPABASE_PUBLISHABLE_KEY` değerlerini proje kökündeki `local.properties` dosyasından (git'e gitmez) ya da aynı adlı ortam değişkenlerinden okuyup `BuildConfig`'e yazar.
+- `MarketBackendConfig` bu değerleri `BuildConfig`'ten okur. Değer yoksa yer tutucuya düşer; `isConfigured()` false döner ve Supabase'e istek gitmez. `BuildConfig`'e doğrudan bağlı olmadığı için masaüstü testleri değişmeden çalışır.
+- Kod küçültme açılırsa diye `proguard-rules.pro`'ya `BuildConfig` için koruma kuralı eklendi.
+- `gradle.properties` içindeki makineye özel `org.gradle.java.home=/home/test/java17` satırı kaldırıldı. Gerekirse bu ayar `~/.gradle/gradle.properties` içine yazılır.
+
+**Testler:**
+- `tests/security/MarketBackendConfigTest`: BuildConfig yok / boş / dolu (uydurma deneme değerleri) durumlarında 16 kontrol.
+- `check_static`: 56 kontrol. Repoda gerçek Supabase anahtarı ya da uygulama kodunda gerçek proje adresi olmadığını tarar.
+- Diğer test takımlarının sonuçları değişmedi.

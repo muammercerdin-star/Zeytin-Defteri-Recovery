@@ -126,8 +126,32 @@ for name in ['ModerationBackendClient.java', 'ModerationTransport.java', 'Modera
     check(not re.search(r'Log\.\w\([^;]*token', code, re.I) and 'printStackTrace' not in code, f'{name}: token/ayrıntı kaydı')
 for name in ['ModerationActivity.java', 'ModeratorManagementActivity.java']:
     check('Code.UNAVAILABLE' in read(APP / name) and 'UNAVAILABLE_MESSAGE' in read(APP / name), f'{name}: anlaşılır hata mesajı yok')
-check(read(APP / 'MarketBackendConfig.java') == at_base('app/src/main/java/com/zeytindefteri/app/MarketBackendConfig.java'),
-      'MarketBackendConfig değişmiş (Supabase bağlantısı uydurulmamalı)')
+# 7b) Supabase ayarı repoda değil, local.properties → BuildConfig yoluyla gelir; repoda gerçek değer yok.
+cfg = read(APP / 'MarketBackendConfig.java')
+check('PLACEHOLDER_URL = "https://REPLACE_ME.supabase.co"' in cfg and 'PLACEHOLDER_KEY = "sb_publishable_REPLACE_ME"' in cfg,
+      'yer tutucular değişmiş')
+check('buildValue("SUPABASE_URL", PLACEHOLDER_URL)' in cfg and 'buildValue("SUPABASE_PUBLISHABLE_KEY", PLACEHOLDER_KEY)' in cfg
+      and 'Class.forName("com.zeytindefteri.app.BuildConfig")' in cfg, 'değerler BuildConfig\'ten okunmuyor')
+check('PUBLIC_MARKET_MIN_PRODUCERS = 5;' in cfg, 'gizlilik eşiği değişmiş')
+gradle = read(ROOT / 'app/build.gradle')
+check("rootProject.file('local.properties')" in gradle and "buildConfigField 'String', 'SUPABASE_URL'" in gradle
+      and "buildConfigField 'String', 'SUPABASE_PUBLISHABLE_KEY'" in gradle and 'buildConfig true' in gradle,
+      'build.gradle local.properties değerlerini BuildConfig\'e yazmıyor')
+check(re.search(r'^local\.properties$', read(ROOT / '.gitignore'), re.M), 'local.properties git\'e gidebilir')
+check('BuildConfig' in read(ROOT / 'app/proguard-rules.pro'), 'kod küçültmede BuildConfig korunmuyor')
+check(not re.search(r'^\s*org\.gradle\.java\.home\s*=', read(ROOT / 'gradle.properties'), re.M), 'makineye özel JDK yolu repoda')
+tracked = subprocess.run(['git', 'ls-files', '-z'], cwd=ROOT, capture_output=True, text=True).stdout.split('\0')
+leaks = []
+for rel in filter(None, tracked):
+    path = ROOT / rel
+    if not path.is_file() or path.stat().st_size > 2_000_000: continue
+    try: text = path.read_text(encoding='utf8')
+    except (UnicodeDecodeError, OSError): continue
+    for key in re.findall(r'sb_(?:publishable|secret)_[A-Za-z0-9_-]{8,}', text):
+        if 'REPLACE_ME' not in key and key != 'sb_publishable_TEST_ONLY_not_a_real_key': leaks.append(f'{rel}: {key[:18]}…')
+    if rel.startswith('app/') and re.search(r'https://(?!REPLACE_ME\.)(?!abcdefghijklmnopqrst\.)[a-z0-9]+\.supabase\.co', text):
+        leaks.append(f'{rel}: gerçek Supabase adresi')
+check(not leaks, f'repoda Supabase değeri var: {leaks[:5]}')
 roles = subprocess.run(['git', 'diff', BASE, '--', 'functions/moderation', 'supabase', 'app/src/main/java/com/zeytindefteri/app/ModerationAccess.java'],
                        cwd=ROOT, capture_output=True, text=True).stdout
 check(roles == '', 'moderasyon yetki kodu değişmiş')
