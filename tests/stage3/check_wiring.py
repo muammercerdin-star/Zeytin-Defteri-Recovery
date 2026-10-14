@@ -76,6 +76,19 @@ dbh = (JAVA / 'DatabaseHelper.java').read_text(encoding='utf8')
 i = dbh.index('public Cursor getOperationsFiltered(')
 check("COALESCE(o.owner_uid,'') = ? OR COALESCE(o.owner_uid,'') = ''" in dbh[i:i + 2500], 'filtreli sorguda kayıt sahibi koruması yok')
 
+# ---- Profil
+pr = (APP / 'ProfileActivity.java').read_text(encoding='utf8')
+check(not EMOJI.search(pr) and '‹' not in pr and '"•••"' not in pr and '＋' not in pr, 'Profil: emoji / eski geri / metin menü / tam genişlik artı kaldı')
+check('"Zeytinliğim"' not in pr and 'createShortBio' not in pr and 'setElevation' not in pr, 'Profil: eski kapak, bilgi kartı veya gölge kaldı')
+check('R.drawable.bg_segment_item' in pr and 'R.color.segment_text' in pr, 'Profil sekmeleri bölmeli düğme değil')
+for keep in ['showProfilePhotoMenu()', 'showEditProfileDialog()', 'showAccountMenu()', 'confirmLogout()',
+             'reactionManager.setupReactionButton(', 'commentManager.showComments(', 'sharePost(post)',
+             'showOwnPostMenu(post)', 'postMediaManager.addPostMediaToCard(', 'CreatePostActivity.class', 'MainActivity.class',
+             'getOwnPosts()', 'applyProfilePhoto(ivProfilePhoto, tvProfilePhotoFallback)', '"Misafir oturumu"']:
+    check(keep in pr, f'Profil davranışı kaybolmuş: {keep}')
+check('sessionManager.isGuest() ? "Giriş yap" : "Profili düzenle"' in pr or 'guest ? "Giriş yap" : "Profili düzenle"' in pr, 'misafirde Giriş yap düğmesi yok')
+check('Gönderi paylaşmak için hesapla giriş yapmalısın.' in pr, 'misafir gönderi uyarısı kaybolmuş')
+
 if failures:
     print('\n'.join('HATA: ' + f for f in failures))
     sys.exit(1)

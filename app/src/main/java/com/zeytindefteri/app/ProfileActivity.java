@@ -7,7 +7,6 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -142,8 +141,6 @@ public class ProfileActivity extends Activity {
     private static final int COLOR_CARD =
             GreenTheme.color(R.color.zd_card);
 
-    private static final int COLOR_WHITE =
-            GreenTheme.parse("#FFFFFF");
 
     private static final int COLOR_DARK =
             GreenTheme.color(R.color.zd_text);
@@ -151,8 +148,6 @@ public class ProfileActivity extends Activity {
     private static final int COLOR_GREEN =
             GreenTheme.color(R.color.zd_green);
 
-    private static final int COLOR_GREEN_2 =
-            GreenTheme.color(R.color.zd_green);
 
     private static final int COLOR_SOFT_GREEN =
             GreenTheme.color(R.color.zd_green_soft);
@@ -166,14 +161,10 @@ public class ProfileActivity extends Activity {
     private static final int COLOR_MUTED =
             GreenTheme.color(R.color.zd_muted);
 
-    private static final int COLOR_DIVIDER =
-            GreenTheme.color(R.color.zd_border);
 
     private static final int COLOR_DANGER =
             GreenTheme.color(R.color.zd_danger);
 
-    private static final int COLOR_TAB_BG =
-            GreenTheme.color(R.color.zd_green_soft);
 
 
     private final Locale TR =
@@ -343,1112 +334,452 @@ public class ProfileActivity extends Activity {
     // SCREEN
     // ============================================================
 
-    private void buildScreen() {
 
-        LinearLayout root =
-                new LinearLayout(this);
-
-        root.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        root.setBackgroundColor(
-                COLOR_BG
-        );
-
-
-        // ========================================================
-        // TOP BAR
-        // ========================================================
-
-        root.addView(
-                createTopBar()
-        );
-
-
-        // ========================================================
-        // SCROLL
-        // ========================================================
-
-        scrollView =
-                new ScrollView(this);
-
-        scrollView.setFillViewport(true);
-        scrollView.setClipToPadding(false);
-
-
-        contentRoot =
-                new LinearLayout(this);
-
-        contentRoot.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        contentRoot.setPadding(
-                dp(16),
-                0,
-                dp(16),
-                dp(36)
-        );
-
-
-        createProfileHero(
-                contentRoot
-        );
-
-        createProfileStats(
-                contentRoot
-        );
-
-        createProfileActions(
-                contentRoot
-        );
-
-        createShortBio(
-                contentRoot
-        );
-
-        createTabs(
-                contentRoot
-        );
-
-
-        dynamicTabContainer =
-                new LinearLayout(this);
-
-        dynamicTabContainer.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        LinearLayout.LayoutParams dynamicParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        dynamicParams.topMargin =
-                dp(10);
-
-
-        contentRoot.addView(
-                dynamicTabContainer,
-                dynamicParams
-        );
-
-
-        scrollView.addView(
-                contentRoot
-        );
-
-
-        root.addView(
-                scrollView,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        0,
-                        1f
-                )
-        );
-
-
-        setContentView(
-                root
-        );
-    }
 
 
     // ============================================================
     // TOP BAR
     // ============================================================
 
-    private View createTopBar() {
 
-        LinearLayout bar =
-                new LinearLayout(this);
-
-        bar.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-        bar.setGravity(
-                Gravity.CENTER_VERTICAL
-        );
-
-        bar.setPadding(
-                dp(14),
-                dp(10),
-                dp(10),
-                dp(10)
-        );
-
-
-        TextView back =
-                createText(
-                        "‹",
-                        36,
-                        COLOR_DARK,
-                        true
-                );
-
-        back.setGravity(
-                Gravity.CENTER
-        );
-
-        back.setOnClickListener(
-                v -> finish()
-        );
-
-
-        bar.addView(
-                back,
-                new LinearLayout.LayoutParams(
-                        dp(48),
-                        dp(48)
-                )
-        );
-
-
-        LinearLayout titleArea =
-                new LinearLayout(this);
-
-        titleArea.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-
-        TextView mini =
-                createText(
-                        "ZEYTİN DEFTERİ",
-                        10,
-                        COLOR_GREEN_2,
-                        true
-                );
-
-
-        TextView title =
-                createText(
-                        "Profil",
-                        24,
-                        COLOR_DARK,
-                        true
-                );
-
-
-        titleArea.addView(
-                mini
-        );
-
-        titleArea.addView(
-                title
-        );
-
-
-        LinearLayout.LayoutParams titleParams =
-                new LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                );
-
-        titleParams.leftMargin =
-                dp(6);
-
-
-        bar.addView(
-                titleArea,
-                titleParams
-        );
-
-
-        TextView menu =
-                createText(
-                        "•••",
-                        20,
-                        COLOR_DARK,
-                        true
-                );
-
-        menu.setGravity(
-                Gravity.CENTER
-        );
-
-        menu.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        999,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-        menu.setOnClickListener(
-                v -> showAccountMenu()
-        );
-
-
-        bar.addView(
-                menu,
-                new LinearLayout.LayoutParams(
-                        dp(48),
-                        dp(48)
-                )
-        );
-
-
-        return bar;
-    }
 
 
     // ============================================================
     // PROFILE HERO
     // ============================================================
 
-    private void createProfileHero(
-            LinearLayout parent
-    ) {
 
-        LinearLayout hero =
-                new LinearLayout(this);
-
-        hero.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        hero.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        24,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-        hero.setElevation(
-                dp(2)
-        );
-
-
-        // ========================================================
-        // COVER
-        // ========================================================
-
-        LinearLayout cover =
-                new LinearLayout(this);
-
-        cover.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        cover.setGravity(
-                Gravity.CENTER
-        );
-
-        cover.setBackground(
-                rounded(
-                        COLOR_DARK,
-                        24,
-                        null,
-                        0
-                )
-        );
-
-
-        TextView coverIcon =
-                glyphText(
-                        R.drawable.ic_op_olive,
-                        34,
-                        COLOR_GREEN
-                );
-
-        coverIcon.setGravity(
-                Gravity.CENTER
-        );
-
-
-        TextView coverTitle =
-                createText(
-                        "Zeytinliğim",
-                        14,
-                        GreenTheme.color(R.color.zd_green_soft),
-                        true
-                );
-
-        coverTitle.setGravity(
-                Gravity.CENTER
-        );
-
-
-        cover.addView(
-                coverIcon
-        );
-
-        cover.addView(
-                coverTitle
-        );
-
-
-        hero.addView(
-                cover,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(145)
-                )
-        );
-
-
-        // ========================================================
-        // AVATAR
-        // Google fotoğrafı -> kullanıcı fotoğrafı -> baş harf
-        // ========================================================
-
-        FrameLayout avatarFrame =
-                new FrameLayout(this);
-
-        avatarFrame.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        999,
-                        COLOR_WHITE,
-                        4
-                )
-        );
-
-        avatarFrame.setClipToOutline(
-                false
-        );
-
-
-        ivProfilePhoto =
-                new ImageView(this);
-
-        ivProfilePhoto.setScaleType(
-                ImageView.ScaleType.CENTER_CROP
-        );
-
-        ivProfilePhoto.setBackground(
-                rounded(
-                        COLOR_SOFT_GREEN,
-                        999,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-        ivProfilePhoto.setClipToOutline(
-                true
-        );
-
-
-        tvProfilePhotoFallback =
-                createText(
-                        avatarText(),
-                        30,
-                        COLOR_DARK,
-                        true
-                );
-        applyAvatarGlyph(
-                tvProfilePhotoFallback,
-                30
-        );
-
-        tvProfilePhotoFallback.setGravity(
-                Gravity.CENTER
-        );
-
-        tvProfilePhotoFallback.setBackground(
-                rounded(
-                        COLOR_SOFT_GREEN,
-                        999,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        FrameLayout.LayoutParams photoParams =
-                new FrameLayout.LayoutParams(
-                        dp(88),
-                        dp(88),
-                        Gravity.CENTER
-                );
-
-
-        avatarFrame.addView(
-                ivProfilePhoto,
-                photoParams
-        );
-
-        avatarFrame.addView(
-                tvProfilePhotoFallback,
-                photoParams
-        );
-
-
-        TextView cameraBadge =
-                glyphText(
-                        R.drawable.ic_op_camera,
-                        16,
-                        COLOR_DARK
-                );
-        
-
-        cameraBadge.setGravity(
-                Gravity.CENTER
-        );
-
-        cameraBadge.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        999,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        FrameLayout.LayoutParams cameraParams =
-                new FrameLayout.LayoutParams(
-                        dp(34),
-                        dp(34),
-                        Gravity.END | Gravity.BOTTOM
-                );
-
-        cameraParams.rightMargin =
-                dp(1);
-
-        cameraParams.bottomMargin =
-                dp(1);
-
-
-        avatarFrame.addView(
-                cameraBadge,
-                cameraParams
-        );
-
-
-        View.OnClickListener photoClickListener =
-                v -> showProfilePhotoMenu();
-
-
-        avatarFrame.setOnClickListener(
-                photoClickListener
-        );
-
-        ivProfilePhoto.setOnClickListener(
-                photoClickListener
-        );
-
-        tvProfilePhotoFallback.setOnClickListener(
-                photoClickListener
-        );
-
-        cameraBadge.setOnClickListener(
-                photoClickListener
-        );
-
-
-        LinearLayout.LayoutParams avatarParams =
-                new LinearLayout.LayoutParams(
-                        dp(100),
-                        dp(100)
-                );
-
-        avatarParams.gravity =
-                Gravity.CENTER_HORIZONTAL;
-
-        avatarParams.topMargin =
-                dp(-50);
-
-
-        hero.addView(
-                avatarFrame,
-                avatarParams
-        );
-
-
-        applyProfilePhoto(
-                ivProfilePhoto,
-                tvProfilePhotoFallback
-        );
-
-
-        // ========================================================
-        // NAME
-        // ========================================================
-
-        tvProfileName =
-                createText(
-                        getCurrentDisplayName(),
-                        24,
-                        COLOR_DARK,
-                        true
-                );
-
-        tvProfileName.setGravity(
-                Gravity.CENTER
-        );
-
-
-        LinearLayout.LayoutParams nameParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        nameParams.topMargin =
-                dp(9);
-
-
-        hero.addView(
-                tvProfileName,
-                nameParams
-        );
-
-
-        tvProfileMeta =
-                createText(
-                        buildProfileMeta(),
-                        12,
-                        COLOR_MUTED,
-                        false
-                );
-
-        tvProfileMeta.setGravity(
-                Gravity.CENTER
-        );
-
-        tvProfileMeta.setPadding(
-                dp(18),
-                dp(4),
-                dp(18),
-                dp(17)
-        );
-
-
-        hero.addView(
-                tvProfileMeta
-        );
-
-
-        parent.addView(
-                hero
-        );
-    }
 
 
     // ============================================================
     // STATS
     // ============================================================
 
-    private void createProfileStats(
-            LinearLayout parent
-    ) {
 
-        LinearLayout stats =
-                new LinearLayout(this);
-
-        stats.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-        stats.setGravity(
-                Gravity.CENTER
-        );
-
-        stats.setPadding(
-                dp(8),
-                dp(13),
-                dp(8),
-                dp(13)
-        );
-
-        stats.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        20,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        LinearLayout.LayoutParams statsParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        statsParams.topMargin =
-                dp(12);
-
-
-        tvGardenCount =
-                createStatBlock(
-                        stats,
-                        "0",
-                        "Bahçe"
-                );
-
-
-        addVerticalDivider(
-                stats
-        );
-
-
-        tvPostCount =
-                createStatBlock(
-                        stats,
-                        "0",
-                        "Gönderi"
-                );
-
-
-        addVerticalDivider(
-                stats
-        );
-
-
-        tvHarvestCount =
-                createStatBlock(
-                        stats,
-                        "0 kg",
-                        "Hasat"
-                );
-
-
-        parent.addView(
-                stats,
-                statsParams
-        );
-    }
-
-
-    private TextView createStatBlock(
-            LinearLayout parent,
-            String value,
-            String label
-    ) {
-
-        LinearLayout block =
-                new LinearLayout(this);
-
-        block.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        block.setGravity(
-                Gravity.CENTER
-        );
-
-
-        TextView valueView =
-                createText(
-                        value,
-                        18,
-                        COLOR_DARK,
-                        true
-                );
-
-        valueView.setGravity(
-                Gravity.CENTER
-        );
-
-
-        TextView labelView =
-                createText(
-                        label,
-                        10,
-                        COLOR_MUTED,
-                        false
-                );
-
-        labelView.setGravity(
-                Gravity.CENTER
-        );
-
-
-        block.addView(
-                valueView
-        );
-
-        block.addView(
-                labelView
-        );
-
-
-        parent.addView(
-                block,
-                new LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                )
-        );
-
-
-        return valueView;
-    }
-
-
-    private void addVerticalDivider(
-            LinearLayout parent
-    ) {
-
-        View divider =
-                new View(this);
-
-        divider.setBackgroundColor(
-                COLOR_DIVIDER
-        );
-
-
-        parent.addView(
-                divider,
-                new LinearLayout.LayoutParams(
-                        dp(1),
-                        dp(40)
-                )
-        );
-    }
 
 
     // ============================================================
     // ACTION BUTTONS
     // ============================================================
 
-    private void createProfileActions(
-            LinearLayout parent
-    ) {
 
-        LinearLayout row =
-                new LinearLayout(this);
-
-        row.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-        row.setGravity(
-                Gravity.CENTER_VERTICAL
-        );
-
-
-        LinearLayout.LayoutParams rowParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        rowParams.topMargin =
-                dp(12);
-
-
-        TextView edit =
-                createPillButton(
-                        "Profili Düzenle",
-                        COLOR_GREEN,
-                        COLOR_BG
-                );
-
-
-        TextView newPost =
-                createPillButton(
-                        "＋  Gönderi",
-                        COLOR_CARD,
-                        COLOR_DARK
-                );
-
-        newPost.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        16,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        LinearLayout.LayoutParams left =
-                new LinearLayout.LayoutParams(
-                        0,
-                        dp(50),
-                        1f
-                );
-
-        left.rightMargin =
-                dp(6);
-
-
-        LinearLayout.LayoutParams right =
-                new LinearLayout.LayoutParams(
-                        0,
-                        dp(50),
-                        1f
-                );
-
-        right.leftMargin =
-                dp(6);
-
-
-        row.addView(
-                edit,
-                left
-        );
-
-        row.addView(
-                newPost,
-                right
-        );
-
-
-        edit.setOnClickListener(
-                v -> showEditProfileDialog()
-        );
-
-
-        newPost.setOnClickListener(
-                v -> {
-
-                    if (sessionManager.isGuest()) {
-
-                        Toast.makeText(
-                                this,
-                                "Gönderi paylaşmak için hesapla giriş yapmalısın.",
-                                Toast.LENGTH_LONG
-                        ).show();
-
-                        return;
-                    }
-
-                    startActivity(
-                            new Intent(
-                                    this,
-                                    CreatePostActivity.class
-                            )
-                    );
-                }
-        );
-
-
-        parent.addView(
-                row,
-                rowParams
-        );
-    }
 
 
     // ============================================================
     // SHORT BIO
     // ============================================================
 
-    private void createShortBio(
-            LinearLayout parent
-    ) {
 
-        LinearLayout card =
-                new LinearLayout(this);
-
-        card.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        card.setPadding(
-                dp(16),
-                dp(14),
-                dp(16),
-                dp(14)
-        );
-
-        card.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        18,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        params.topMargin =
-                dp(12);
-
-
-        TextView title =
-                createText(
-                        "Üretici bilgileri",
-                        14,
-                        COLOR_DARK,
-                        true
-                );
-
-
-        TextView body =
-                createText(
-                        buildBioText(),
-                        12,
-                        COLOR_TEXT,
-                        false
-                );
-
-        body.setLineSpacing(
-                dp(2),
-                1f
-        );
-
-        body.setPadding(
-                0,
-                dp(7),
-                0,
-                0
-        );
-
-
-        card.addView(
-                title
-        );
-
-        card.addView(
-                body
-        );
-
-
-        parent.addView(
-                card,
-                params
-        );
-    }
 
 
     // ============================================================
-    // TABS
+    // ============================================================
+    // EKRAN (Aşama 3 tasarımı)
+    // Başlık · bilgi kartı (fotoğraf, ad, konum, düğmeler, sayılar) · sekmeler · sekme içeriği
     // ============================================================
 
-    private void createTabs(
-            LinearLayout parent
-    ) {
+    private void buildScreen() {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(COLOR_BG);
+        root.addView(createTopBar());
 
-        LinearLayout tabs =
-                new LinearLayout(this);
-
-        tabs.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-        tabs.setGravity(
-                Gravity.CENTER
-        );
-
-
-        LinearLayout.LayoutParams tabsParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        tabsParams.topMargin =
-                dp(16);
-
-
-        tabPosts =
-                createTab(
-                        "Gönderiler"
-                );
-
-        tabGardens =
-                createTab(
-                        "Bahçeler"
-                );
-
-        tabAbout =
-                createTab(
-                        "Hakkında"
-                );
-
-
-        tabs.addView(
-                tabPosts,
-                tabParams()
-        );
-
-        tabs.addView(
-                tabGardens,
-                tabParams()
-        );
-
-        tabs.addView(
-                tabAbout,
-                tabParams()
-        );
-
-
-        tabPosts.setOnClickListener(
-                v -> changeTab("POSTS")
-        );
-
-        tabGardens.setOnClickListener(
-                v -> changeTab("GARDENS")
-        );
-
-        tabAbout.setOnClickListener(
-                v -> changeTab("ABOUT")
-        );
-
-
-        parent.addView(
-                tabs,
-                tabsParams
-        );
+        scrollView = new ScrollView(this);
+        scrollView.setFillViewport(true);
+        scrollView.setClipToPadding(false);
+        contentRoot = new LinearLayout(this);
+        contentRoot.setOrientation(LinearLayout.VERTICAL);
+        contentRoot.setPadding(dp(16), dp(6), dp(16), dp(36));
+        createProfileCard(contentRoot);
+        createTabs(contentRoot);
+        dynamicTabContainer = new LinearLayout(this);
+        dynamicTabContainer.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams dynamicParams = new LinearLayout.LayoutParams(-1, -2);
+        dynamicParams.topMargin = dp(12);
+        contentRoot.addView(dynamicTabContainer, dynamicParams);
+        scrollView.addView(contentRoot);
+        root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1f));
+        setContentView(root);
     }
 
+    private View createTopBar() {
+        LinearLayout bar = new LinearLayout(this);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setPadding(dp(8), dp(14), dp(10), dp(6));
+        ImageView back = iconButton(R.drawable.ic_elek_back_chevron, "Geri");
+        back.setOnClickListener(v -> finish());
+        bar.addView(back, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        TextView title = createText("Profil", 22, COLOR_DARK, true);
+        title.setPadding(dp(8), 0, 0, 0);
+        bar.addView(title, new LinearLayout.LayoutParams(0, -2, 1f));
+        ImageView menu = iconButton(R.drawable.ic_op_more, "Profil seçenekleri");
+        menu.setOnClickListener(v -> showAccountMenu());
+        bar.addView(menu, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        return bar;
+    }
 
-    private TextView createTab(
-            String text
-    ) {
+    /** Bilgi kartı: fotoğraf (dokununca fotoğraf menüsü), ad, konum, düğmeler ve üç sayı. */
+    private void createProfileCard(LinearLayout parent) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(16), dp(16), dp(14));
+        card.setBackgroundResource(R.drawable.bg_card);
 
-        TextView tab =
-                createText(
-                        text,
-                        12,
-                        COLOR_MUTED,
-                        true
-                );
+        LinearLayout top = new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        FrameLayout avatarFrame = new FrameLayout(this);
+        ivProfilePhoto = new ImageView(this);
+        ivProfilePhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        ivProfilePhoto.setBackground(rounded(COLOR_SOFT_GREEN, 999, GreenTheme.color(R.color.zd_green_chip), 1));
+        ivProfilePhoto.setClipToOutline(true);
+        tvProfilePhotoFallback = createText(avatarText(), 30, COLOR_DARK, true);
+        applyAvatarGlyph(tvProfilePhotoFallback, 30);
+        tvProfilePhotoFallback.setGravity(Gravity.CENTER);
+        tvProfilePhotoFallback.setBackground(rounded(COLOR_SOFT_GREEN, 999, GreenTheme.color(R.color.zd_green_chip), 1));
+        FrameLayout.LayoutParams photoParams = new FrameLayout.LayoutParams(dp(76), dp(76), Gravity.TOP | Gravity.START);
+        avatarFrame.addView(ivProfilePhoto, photoParams);
+        avatarFrame.addView(tvProfilePhotoFallback, photoParams);
+        TextView cameraBadge = glyphText(R.drawable.ic_op_camera, 15, COLOR_DARK);
+        cameraBadge.setGravity(Gravity.CENTER);
+        cameraBadge.setBackground(rounded(COLOR_CARD, 999, COLOR_BORDER, 1));
+        avatarFrame.addView(cameraBadge, new FrameLayout.LayoutParams(dp(30), dp(30), Gravity.END | Gravity.BOTTOM));
+        avatarFrame.setContentDescription("Profil fotoğrafı. Değiştir");
+        View.OnClickListener photoClick = v -> showProfilePhotoMenu();
+        avatarFrame.setOnClickListener(photoClick);
+        ivProfilePhoto.setOnClickListener(photoClick);
+        tvProfilePhotoFallback.setOnClickListener(photoClick);
+        cameraBadge.setOnClickListener(photoClick);
+        top.addView(avatarFrame, new LinearLayout.LayoutParams(dp(80), dp(80)));
+        applyProfilePhoto(ivProfilePhoto, tvProfilePhotoFallback);
 
-        tab.setGravity(
-                Gravity.CENTER
-        );
+        LinearLayout names = new LinearLayout(this);
+        names.setOrientation(LinearLayout.VERTICAL);
+        names.setPadding(dp(14), 0, 0, 0);
+        tvProfileName = createText(getCurrentDisplayName(), 20, COLOR_DARK, true);
+        tvProfileName.setMaxLines(2);
+        names.addView(tvProfileName);
+        tvProfileMeta = createText(buildProfileMeta(), 12, COLOR_MUTED, false);
+        tvProfileMeta.setCompoundDrawablePadding(dp(4));
+        android.graphics.drawable.Drawable pin = getDrawable(R.drawable.ic_op_pin).mutate();
+        pin.setTint(COLOR_MUTED);
+        pin.setBounds(0, 0, dp(13), dp(13));
+        tvProfileMeta.setCompoundDrawables(pin, null, null, null);
+        tvProfileMeta.setPadding(0, dp(3), 0, 0);
+        names.addView(tvProfileMeta);
+        top.addView(names, new LinearLayout.LayoutParams(0, -2, 1f));
+        card.addView(top);
 
-        tab.setPadding(
-                dp(8),
-                dp(11),
-                dp(8),
-                dp(11)
-        );
+        LinearLayout actions = new LinearLayout(this);
+        LinearLayout.LayoutParams actionsParams = new LinearLayout.LayoutParams(-1, -2);
+        actionsParams.topMargin = dp(14);
+        boolean guest = sessionManager.isGuest();
+        TextView edit = createPillButton(guest ? "Giriş yap" : "Profili düzenle", COLOR_CARD, COLOR_TEXT);
+        edit.setBackgroundResource(R.drawable.bg_search);
+        edit.setOnClickListener(v -> showEditProfileDialog());
+        TextView newPost = createPillButton("+ Gönderi", COLOR_GREEN, COLOR_BG);
+        newPost.setBackgroundResource(R.drawable.bg_green_button);
+        newPost.setOnClickListener(v -> openCreatePost());
+        LinearLayout.LayoutParams left = new LinearLayout.LayoutParams(0, dp(44), 1f);
+        LinearLayout.LayoutParams right = new LinearLayout.LayoutParams(0, dp(44), 1f);
+        right.leftMargin = dp(10);
+        actions.addView(edit, left);
+        actions.addView(newPost, right);
+        card.addView(actions, actionsParams);
 
+        View line = new View(this);
+        line.setBackgroundColor(COLOR_BORDER);
+        LinearLayout.LayoutParams lineParams = new LinearLayout.LayoutParams(-1, dp(1));
+        lineParams.topMargin = dp(14);
+        card.addView(line, lineParams);
+        LinearLayout stats = new LinearLayout(this);
+        stats.setPadding(0, dp(12), 0, 0);
+        tvGardenCount = createStatBlock(stats, "0", "Bahçe");
+        tvPostCount = createStatBlock(stats, "0", "Gönderi");
+        tvHarvestCount = createStatBlock(stats, "0 kg", "Hasat");
+        card.addView(stats);
+        parent.addView(card);
+    }
+
+    private TextView createStatBlock(LinearLayout parent, String value, String label) {
+        LinearLayout block = new LinearLayout(this);
+        block.setOrientation(LinearLayout.VERTICAL);
+        block.setGravity(Gravity.CENTER);
+        TextView valueView = createText(value, 18, COLOR_DARK, true);
+        valueView.setGravity(Gravity.CENTER);
+        TextView labelView = createText(label, 12, COLOR_MUTED, false);
+        labelView.setGravity(Gravity.CENTER);
+        block.addView(valueView);
+        block.addView(labelView);
+        parent.addView(block, new LinearLayout.LayoutParams(0, -2, 1f));
+        return valueView;
+    }
+
+    private void openCreatePost() {
+        if (sessionManager.isGuest()) {
+            Toast.makeText(this, "Gönderi paylaşmak için hesapla giriş yapmalısın.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        startActivity(new Intent(this, CreatePostActivity.class));
+    }
+
+    /** Sekmeler tek bir bölmeli düğme çubuğunda: seçili sekme dolu yeşil. */
+    private void createTabs(LinearLayout parent) {
+        LinearLayout tabs = new LinearLayout(this);
+        tabs.setBackgroundResource(R.drawable.bg_segment);
+        tabs.setPadding(dp(4), dp(4), dp(4), dp(4));
+        tabPosts = createTab("Gönderiler", "POSTS");
+        tabGardens = createTab("Bahçeler", "GARDENS");
+        tabAbout = createTab("Hakkında", "ABOUT");
+        tabs.addView(tabPosts, new LinearLayout.LayoutParams(0, dp(40), 1f));
+        tabs.addView(tabGardens, new LinearLayout.LayoutParams(0, dp(40), 1f));
+        tabs.addView(tabAbout, new LinearLayout.LayoutParams(0, dp(40), 1f));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.topMargin = dp(14);
+        parent.addView(tabs, params);
+    }
+
+    private TextView createTab(String text, String key) {
+        TextView tab = createText(text, 14, 0, true);
+        tab.setTextColor(getColorStateList(R.color.segment_text));
+        tab.setGravity(Gravity.CENTER);
+        tab.setBackgroundResource(R.drawable.bg_segment_item);
+        tab.setOnClickListener(v -> changeTab(key));
         return tab;
     }
 
+    private void updateTabStyles() {
+        styleTab(tabPosts, "POSTS".equals(activeTab));
+        styleTab(tabGardens, "GARDENS".equals(activeTab));
+        styleTab(tabAbout, "ABOUT".equals(activeTab));
+    }
 
-    private LinearLayout.LayoutParams tabParams() {
+    private void styleTab(TextView tab, boolean active) {
+        if (tab == null) return;
+        tab.setSelected(active);
+        String name = tab.getText().toString();
+        tab.setContentDescription(name + " sekmesi" + (active ? ", seçili" : ""));
+    }
 
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                );
+    // ------------------------------------------------------------ Gönderiler sekmesi
 
-        params.leftMargin =
-                dp(3);
+    private void loadPostsTab() {
+        if (dynamicTabContainer == null) return;
+        dynamicTabContainer.removeAllViews();
+        List<FeedManager.PostItem> posts = getOwnPosts();
+        if (tvPostCount != null) tvPostCount.setText(String.valueOf(posts.size()));
+        if (posts.isEmpty()) {
+            dynamicTabContainer.addView(createEmptyPostsView());
+            return;
+        }
+        for (FeedManager.PostItem post : posts) {
+            if (post != null) dynamicTabContainer.addView(createProfilePostCard(post));
+        }
+    }
 
-        params.rightMargin =
-                dp(3);
+    private View createEmptyPostsView() {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER_HORIZONTAL);
+        card.setPadding(dp(20), dp(24), dp(20), dp(22));
+        card.setBackgroundResource(R.drawable.bg_card);
+        FrameLayout disc = new FrameLayout(this);
+        disc.setBackgroundResource(R.drawable.bg_icon_disc);
+        TextView icon = glyphText(R.drawable.ic_op_olive, 26, COLOR_GREEN);
+        icon.setGravity(Gravity.CENTER);
+        disc.addView(icon, new FrameLayout.LayoutParams(-1, -1));
+        card.addView(disc, new LinearLayout.LayoutParams(dp(52), dp(52)));
+        TextView title = createText("Henüz gönderin yok", 15, COLOR_DARK, true);
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0, dp(10), 0, 0);
+        card.addView(title);
+        TextView text = createText("Bahçenden bir gelişme, hasat sonucu veya üretici deneyimi paylaşabilirsin.", 12, COLOR_MUTED, false);
+        text.setGravity(Gravity.CENTER);
+        text.setPadding(dp(10), dp(4), dp(10), dp(14));
+        card.addView(text);
+        TextView button = createPillButton("Gönderi paylaş", COLOR_GREEN, COLOR_BG);
+        button.setBackgroundResource(R.drawable.bg_green_button);
+        button.setPadding(dp(20), 0, dp(20), 0);
+        button.setOnClickListener(v -> openCreatePost());
+        card.addView(button, new LinearLayout.LayoutParams(-2, dp(44)));
+        return card;
+    }
 
-        return params;
+    private View createProfilePostCard(FeedManager.PostItem post) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(14), dp(16), dp(6));
+        card.setBackgroundResource(R.drawable.bg_card);
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(-1, -2);
+        cardParams.bottomMargin = dp(12);
+        card.setLayoutParams(cardParams);
+
+        LinearLayout header = new LinearLayout(this);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.addView(createProfilePhotoView(dp(38), 14), new LinearLayout.LayoutParams(dp(38), dp(38)));
+        LinearLayout nameArea = new LinearLayout(this);
+        nameArea.setOrientation(LinearLayout.VERTICAL);
+        nameArea.setPadding(dp(10), 0, 0, 0);
+        nameArea.addView(createText(safeOr(post.userName, getCurrentDisplayName()), 14, COLOR_DARK, true));
+        nameArea.addView(createText(buildPostMeta(post), 11, COLOR_MUTED, false));
+        header.addView(nameArea, new LinearLayout.LayoutParams(0, -2, 1f));
+        ImageView menu = iconButton(R.drawable.ic_op_more, "Gönderi seçenekleri");
+        menu.setColorFilter(COLOR_MUTED);
+        menu.setOnClickListener(v -> showOwnPostMenu(post));
+        header.addView(menu, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        card.addView(header);
+
+        TextView body = createText(safe(post.content), 14, COLOR_TEXT, false);
+        body.setLineSpacing(dp(2), 1f);
+        LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(-1, -2);
+        bodyParams.topMargin = dp(10);
+        card.addView(body, bodyParams);
+        if (postMediaManager != null) postMediaManager.addPostMediaToCard(card, post.id, post.photoUri);
+
+        String tags = buildPostTags(post);
+        if (!tags.isEmpty()) {
+            TextView tag = createText(tags, 12, COLOR_MUTED, false);
+            tag.setPadding(0, dp(8), 0, 0);
+            card.addView(tag);
+        }
+        TextView counters = createText(buildCounterText(post), 11, COLOR_MUTED, false);
+        counters.setPadding(0, dp(6), 0, 0);
+        card.addView(counters);
+
+        View divider = new View(this);
+        divider.setBackgroundColor(COLOR_BORDER);
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(-1, dp(1));
+        dividerParams.topMargin = dp(10);
+        card.addView(divider, dividerParams);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        // "Faydalı" düğmesinin metni ve tepki seçicisi Meydan ile ortak ReactionManager'dan gelir.
+        TextView reaction = createActionText("Faydalı", R.drawable.ic_op_heart);
+        TextView comment = createActionText("Yorum", R.drawable.ic_op_chat);
+        if (reactionManager != null) reactionManager.setupReactionButton(reaction, post.id, getCurrentReactionUserKey());
+        comment.setOnClickListener(v -> { if (commentManager != null) commentManager.showComments(post.id); });
+        ImageView share = iconButton(R.drawable.ic_op_share, "Gönderiyi paylaş");
+        share.setColorFilter(GreenTheme.color(R.color.zd_text_soft));
+        share.setOnClickListener(v -> sharePost(post));
+        actions.addView(reaction, new LinearLayout.LayoutParams(-2, dp(44)));
+        LinearLayout.LayoutParams commentParams = new LinearLayout.LayoutParams(-2, dp(44));
+        commentParams.leftMargin = dp(18);
+        actions.addView(comment, commentParams);
+        actions.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+        actions.addView(share, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        card.addView(actions);
+        return card;
+    }
+
+    private TextView createActionText(String text, int icon) {
+        int color = GreenTheme.color(R.color.zd_text_soft);
+        TextView view = createText(text, 13, color, true);
+        view.setGravity(Gravity.CENTER_VERTICAL);
+        android.graphics.drawable.Drawable d = getDrawable(icon).mutate();
+        d.setTint(color);
+        d.setBounds(0, 0, dp(16), dp(16));
+        view.setCompoundDrawables(d, null, null, null);
+        view.setCompoundDrawablePadding(dp(6));
+        view.setClickable(true);
+        view.setFocusable(true);
+        return view;
+    }
+
+    // ------------------------------------------------------------ Bahçeler sekmesi
+
+    private void loadGardensTab() {
+        dynamicTabContainer.removeAllViews();
+        int gardenCount = 0;
+        double harvest = 0;
+        try { gardenCount = databaseHelper.getGardenCount(); } catch (Exception ignored) { }
+        try { harvest = databaseHelper.getTotalHarvestKg(); } catch (Exception ignored) { }
+        LinearLayout card = new LinearLayout(this);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(16), dp(14), dp(12), dp(14));
+        card.setBackgroundResource(R.drawable.bg_card);
+        card.setClickable(true);
+        TextView icon = glyphText(R.drawable.ic_op_tree, 24, COLOR_GREEN);
+        card.addView(icon, new LinearLayout.LayoutParams(dp(28), -2));
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        texts.setPadding(dp(12), 0, dp(8), 0);
+        texts.addView(createText(gardenCount + " kayıtlı bahçe", 15, COLOR_DARK, true));
+        texts.addView(createText("Toplam kayıtlı hasat: " + formatKg(harvest), 12, COLOR_MUTED, false));
+        card.addView(texts, new LinearLayout.LayoutParams(0, -2, 1f));
+        ImageView chevron = new ImageView(this);
+        chevron.setImageResource(R.drawable.ic_elek_back_chevron);
+        chevron.setRotation(180f);
+        chevron.setColorFilter(COLOR_GREEN);
+        chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        card.addView(chevron, new LinearLayout.LayoutParams(dp(18), dp(18)));
+        card.setContentDescription(gardenCount + " kayıtlı bahçe. Bahçelerimi görüntüle");
+        card.setOnClickListener(v -> {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+            finish();
+        });
+        dynamicTabContainer.addView(card);
+    }
+
+    // ------------------------------------------------------------ Hakkında sekmesi
+
+    private void loadAboutTab() {
+        dynamicTabContainer.removeAllViews();
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(4), dp(16), dp(4));
+        card.setBackgroundResource(R.drawable.bg_card);
+        addAboutRow(card, R.drawable.ic_op_worker, "AD SOYAD", getCurrentDisplayName(), false);
+        addAboutRow(card, R.drawable.ic_op_pin, "KONUM", getLocationText(), true);
+        addAboutRow(card, R.drawable.ic_op_mail, "E-POSTA",
+                sessionManager.isGuest() ? "Misafir oturumu" : safeOr(getCurrentEmail(), "Belirtilmedi"), true);
+        dynamicTabContainer.addView(card);
+    }
+
+    private void addAboutRow(LinearLayout parent, int icon, String title, String value, boolean line) {
+        if (line) {
+            View divider = new View(this);
+            divider.setBackgroundColor(COLOR_BORDER);
+            parent.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
+        }
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(10), 0, dp(10));
+        row.addView(glyphText(icon, 18, COLOR_GREEN), new LinearLayout.LayoutParams(dp(24), -2));
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        texts.setPadding(dp(12), 0, 0, 0);
+        TextView titleView = createText(title, 11, COLOR_MUTED, true);
+        titleView.setLetterSpacing(0.06f);
+        texts.addView(titleView);
+        texts.addView(createText(safeOr(value, "Belirtilmedi"), 14, COLOR_TEXT, false));
+        row.addView(texts, new LinearLayout.LayoutParams(0, -2, 1f));
+        row.setContentDescription(title + ": " + safeOr(value, "Belirtilmedi"));
+        parent.addView(row);
+    }
+
+    // ------------------------------------------------------------ küçük yardımcılar
+
+    private ImageView iconButton(int icon, String description) {
+        ImageView view = new ImageView(this);
+        view.setImageResource(icon);
+        view.setColorFilter(COLOR_DARK);
+        view.setPadding(dp(11), dp(11), dp(11), dp(11));
+        view.setContentDescription(description);
+        android.util.TypedValue ripple = new android.util.TypedValue();
+        getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, ripple, true);
+        view.setBackgroundResource(ripple.resourceId);
+        return view;
+    }
+
+    private TextView createPillButton(String text, int background, int textColor) {
+        TextView button = createText(text, 14, textColor, true);
+        button.setGravity(Gravity.CENTER);
+        button.setClickable(true);
+        button.setFocusable(true);
+        button.setBackground(rounded(background, 14, null, 0));
+        return button;
     }
 
 
@@ -1464,55 +795,6 @@ public class ProfileActivity extends Activity {
     }
 
 
-    private void updateTabStyles() {
-
-        styleTab(
-                tabPosts,
-                "POSTS".equals(activeTab)
-        );
-
-        styleTab(
-                tabGardens,
-                "GARDENS".equals(activeTab)
-        );
-
-        styleTab(
-                tabAbout,
-                "ABOUT".equals(activeTab)
-        );
-    }
-
-
-    private void styleTab(
-            TextView tab,
-            boolean active
-    ) {
-
-        if (tab == null) {
-            return;
-        }
-
-        tab.setTextColor(
-                active
-                        ? COLOR_GREEN
-                        : COLOR_MUTED
-        );
-
-        tab.setBackground(
-                rounded(
-                        active
-                                ? COLOR_TAB_BG
-                                : Color.TRANSPARENT,
-                        999,
-                        active
-                                ? COLOR_BORDER
-                                : null,
-                        active
-                                ? 1
-                                : 0
-                )
-        );
-    }
 
 
     // ============================================================
@@ -1636,71 +918,7 @@ public class ProfileActivity extends Activity {
     // POSTS TAB
     // ============================================================
 
-    private void loadPostsTab() {
 
-        if (dynamicTabContainer == null) {
-            return;
-        }
-
-
-        dynamicTabContainer.removeAllViews();
-
-
-        TextView section =
-                createText(
-                        "Gönderiler",
-                        19,
-                        COLOR_DARK,
-                        true
-                );
-
-        section.setPadding(
-                dp(2),
-                dp(4),
-                0,
-                dp(10)
-        );
-
-
-        dynamicTabContainer.addView(
-                section
-        );
-
-
-        List<FeedManager.PostItem> posts =
-                getOwnPosts();
-
-
-        if (tvPostCount != null) {
-
-            tvPostCount.setText(
-                    String.valueOf(posts.size())
-            );
-        }
-
-
-        if (posts.isEmpty()) {
-
-            dynamicTabContainer.addView(
-                    createEmptyPostsView()
-            );
-
-            return;
-        }
-
-
-        for (FeedManager.PostItem post : posts) {
-
-            if (post == null) {
-                continue;
-            }
-
-
-            dynamicTabContainer.addView(
-                    createProfilePostCard(post)
-            );
-        }
-    }
 
 
     private List<FeedManager.PostItem> getOwnPosts() {
@@ -1779,549 +997,13 @@ public class ProfileActivity extends Activity {
     }
 
 
-    private View createEmptyPostsView() {
-
-        LinearLayout card =
-                new LinearLayout(this);
-
-        card.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        card.setGravity(
-                Gravity.CENTER
-        );
-
-        card.setPadding(
-                dp(20),
-                dp(28),
-                dp(20),
-                dp(28)
-        );
-
-        card.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        20,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        TextView icon =
-                glyphText(
-                        R.drawable.ic_op_olive,
-                        34,
-                        COLOR_GREEN
-                );
-
-        icon.setGravity(
-                Gravity.CENTER
-        );
-
-
-        TextView title =
-                createText(
-                        "Henüz gönderin yok",
-                        16,
-                        COLOR_DARK,
-                        true
-                );
-
-        title.setGravity(
-                Gravity.CENTER
-        );
-
-        title.setPadding(
-                0,
-                dp(9),
-                0,
-                0
-        );
-
-
-        TextView text =
-                createText(
-                        "Bahçenden bir gelişme, hasat sonucu veya üretici deneyimi paylaşabilirsin.",
-                        12,
-                        COLOR_MUTED,
-                        false
-                );
-
-        text.setGravity(
-                Gravity.CENTER
-        );
-
-        text.setPadding(
-                dp(15),
-                dp(5),
-                dp(15),
-                dp(14)
-        );
-
-
-        TextView button =
-                createPillButton(
-                        "＋ İlk gönderini paylaş",
-                        COLOR_GREEN,
-                        COLOR_BG
-                );
-
-
-        button.setOnClickListener(
-                v -> startActivity(
-                        new Intent(
-                                this,
-                                CreatePostActivity.class
-                        )
-                )
-        );
-
-
-        card.addView(icon);
-        card.addView(title);
-        card.addView(text);
-
-        card.addView(
-                button,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(48)
-                )
-        );
-
-
-        return card;
-    }
 
 
     // ============================================================
     // POST CARD
     // ============================================================
 
-    private View createProfilePostCard(
-            FeedManager.PostItem post
-    ) {
 
-        LinearLayout card =
-                new LinearLayout(this);
-
-        card.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        card.setPadding(
-                dp(14),
-                dp(14),
-                dp(14),
-                dp(12)
-        );
-
-        card.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        20,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-        card.setElevation(
-                dp(1)
-        );
-
-
-        LinearLayout.LayoutParams cardParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        cardParams.bottomMargin =
-                dp(11);
-
-        card.setLayoutParams(
-                cardParams
-        );
-
-
-        // ========================================================
-        // HEADER
-        // ========================================================
-
-        LinearLayout header =
-                new LinearLayout(this);
-
-        header.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-        header.setGravity(
-                Gravity.CENTER_VERTICAL
-        );
-
-
-        FrameLayout postAvatarFrame =
-                createProfilePhotoView(
-                        dp(44),
-                        14
-                );
-
-
-        header.addView(
-                postAvatarFrame,
-                new LinearLayout.LayoutParams(
-                        dp(44),
-                        dp(44)
-                )
-        );
-
-
-        LinearLayout nameArea =
-                new LinearLayout(this);
-
-        nameArea.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-
-        TextView name =
-                createText(
-                        safeOr(
-                                post.userName,
-                                getCurrentDisplayName()
-                        ),
-                        14,
-                        COLOR_DARK,
-                        true
-                );
-
-
-        TextView meta =
-                createText(
-                        buildPostMeta(post),
-                        10,
-                        COLOR_MUTED,
-                        false
-                );
-
-
-        nameArea.addView(
-                name
-        );
-
-        nameArea.addView(
-                meta
-        );
-
-
-        LinearLayout.LayoutParams nameParams =
-                new LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                );
-
-        nameParams.leftMargin =
-                dp(10);
-
-
-        header.addView(
-                nameArea,
-                nameParams
-        );
-
-
-        TextView menu =
-                createText(
-                        "•••",
-                        18,
-                        COLOR_MUTED,
-                        true
-                );
-
-        menu.setGravity(
-                Gravity.CENTER
-        );
-
-        menu.setOnClickListener(
-                v -> showOwnPostMenu(post)
-        );
-
-
-        header.addView(
-                menu,
-                new LinearLayout.LayoutParams(
-                        dp(46),
-                        dp(42)
-                )
-        );
-
-
-        card.addView(
-                header
-        );
-
-
-        // ========================================================
-        // CONTENT
-        // ========================================================
-
-        TextView body =
-                createText(
-                        safe(post.content),
-                        13,
-                        COLOR_TEXT,
-                        false
-                );
-
-        body.setLineSpacing(
-                dp(2),
-                1f
-        );
-
-
-        LinearLayout.LayoutParams bodyParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        bodyParams.topMargin =
-                dp(11);
-
-
-        card.addView(
-                body,
-                bodyParams
-        );
-
-
-        // ========================================================
-        // MEDIA
-        // ========================================================
-
-        if (postMediaManager != null) {
-
-            postMediaManager.addPostMediaToCard(
-                    card,
-                    post.id,
-                    post.photoUri
-            );
-        }
-
-
-        // ========================================================
-        // TAG / LOCATION
-        // ========================================================
-
-        String tags =
-                buildPostTags(post);
-
-
-        if (!tags.isEmpty()) {
-
-            TextView tag =
-                    createText(
-                            tags,
-                            10,
-                            COLOR_GREEN_2,
-                            true
-                    );
-
-
-            LinearLayout.LayoutParams tagParams =
-                    new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                    );
-
-            tagParams.topMargin =
-                    dp(8);
-
-
-            card.addView(
-                    tag,
-                    tagParams
-            );
-        }
-
-
-        // ========================================================
-        // COUNTERS
-        // ========================================================
-
-        TextView counters =
-                createText(
-                        buildCounterText(post),
-                        10,
-                        COLOR_MUTED,
-                        false
-                );
-
-
-        LinearLayout.LayoutParams countParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        countParams.topMargin =
-                dp(9);
-
-
-        card.addView(
-                counters,
-                countParams
-        );
-
-
-        // ========================================================
-        // DIVIDER
-        // ========================================================
-
-        View divider =
-                new View(this);
-
-        divider.setBackgroundColor(
-                COLOR_DIVIDER
-        );
-
-
-        LinearLayout.LayoutParams dividerParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(1)
-                );
-
-        dividerParams.topMargin =
-                dp(10);
-
-        dividerParams.bottomMargin =
-                dp(5);
-
-
-        card.addView(
-                divider,
-                dividerParams
-        );
-
-
-        // ========================================================
-        // ACTIONS
-        // ========================================================
-
-        LinearLayout actions =
-                new LinearLayout(this);
-
-        actions.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-
-        TextView reaction =
-                createActionText(
-                        "Faydalı"
-                );
-
-
-        TextView comment =
-                createActionText(
-                        "Yorum"
-                );
-
-
-        TextView share =
-                createActionText(
-                        "↗ Paylaş"
-                );
-
-
-        if (reactionManager != null) {
-
-            reactionManager.setupReactionButton(
-                    reaction,
-                    post.id,
-                    getCurrentReactionUserKey()
-            );
-        }
-
-
-        comment.setOnClickListener(
-                v -> {
-
-                    if (commentManager != null) {
-
-                        commentManager.showComments(
-                                post.id
-                        );
-                    }
-                }
-        );
-
-
-        share.setOnClickListener(
-                v -> sharePost(post)
-        );
-
-
-        actions.addView(
-                reaction,
-                actionParams()
-        );
-
-        actions.addView(
-                comment,
-                actionParams()
-        );
-
-        actions.addView(
-                share,
-                actionParams()
-        );
-
-
-        card.addView(
-                actions
-        );
-
-
-        return card;
-    }
-
-
-    private LinearLayout.LayoutParams actionParams() {
-
-        return new LinearLayout.LayoutParams(
-                0,
-                dp(44),
-                1f
-        );
-    }
-
-
-    private TextView createActionText(
-            String text
-    ) {
-
-        TextView view =
-                createText(
-                        text,
-                        11,
-                        GreenTheme.color(R.color.zd_muted),
-                        true
-                );
-
-        view.setGravity(
-                Gravity.CENTER
-        );
-
-        view.setClickable(true);
-        view.setFocusable(true);
-
-        return view;
-    }
 
 
     // ============================================================
@@ -2575,350 +1257,14 @@ public class ProfileActivity extends Activity {
     // GARDENS TAB
     // ============================================================
 
-    private void loadGardensTab() {
 
-        dynamicTabContainer.removeAllViews();
-
-
-        TextView title =
-                createText(
-                        "Bahçelerim",
-                        19,
-                        COLOR_DARK,
-                        true
-                );
-
-        title.setPadding(
-                dp(2),
-                dp(4),
-                0,
-                dp(10)
-        );
-
-
-        dynamicTabContainer.addView(
-                title
-        );
-
-
-        int gardenCount =
-                0;
-
-        double harvest =
-                0;
-
-
-        try {
-            gardenCount =
-                    databaseHelper.getGardenCount();
-        } catch (Exception ignored) {
-        }
-
-
-        try {
-            harvest =
-                    databaseHelper.getTotalHarvestKg();
-        } catch (Exception ignored) {
-        }
-
-
-        LinearLayout card =
-                new LinearLayout(this);
-
-        card.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        card.setPadding(
-                dp(17),
-                dp(16),
-                dp(17),
-                dp(16)
-        );
-
-        card.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        20,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        TextView icon =
-                glyphText(
-                        R.drawable.ic_op_tree,
-                        30,
-                        COLOR_GREEN
-                );
-
-
-        TextView count =
-                createText(
-                        gardenCount + " kayıtlı bahçe",
-                        16,
-                        COLOR_DARK,
-                        true
-                );
-
-        count.setPadding(
-                0,
-                dp(7),
-                0,
-                0
-        );
-
-
-        TextView info =
-                createText(
-                        "Toplam kayıtlı hasat: "
-                                + formatKg(harvest),
-                        12,
-                        COLOR_MUTED,
-                        false
-                );
-
-        info.setPadding(
-                0,
-                dp(4),
-                0,
-                dp(12)
-        );
-
-
-        TextView goHome =
-                createPillButton(
-                        "Bahçelerimi görüntüle",
-                        COLOR_GREEN,
-                        COLOR_BG
-                );
-
-
-        goHome.setOnClickListener(
-                v -> {
-
-                    Intent intent =
-                            new Intent(
-                                    this,
-                                    MainActivity.class
-                            );
-
-                    intent.addFlags(
-                            Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    );
-
-                    startActivity(intent);
-                    finish();
-                }
-        );
-
-
-        card.addView(icon);
-        card.addView(count);
-        card.addView(info);
-
-        card.addView(
-                goHome,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(48)
-                )
-        );
-
-
-        dynamicTabContainer.addView(
-                card
-        );
-    }
 
 
     // ============================================================
     // ABOUT TAB
     // ============================================================
 
-    private void loadAboutTab() {
 
-        dynamicTabContainer.removeAllViews();
-
-
-        TextView title =
-                createText(
-                        "Hakkında",
-                        19,
-                        COLOR_DARK,
-                        true
-                );
-
-        title.setPadding(
-                dp(2),
-                dp(4),
-                0,
-                dp(10)
-        );
-
-
-        dynamicTabContainer.addView(
-                title
-        );
-
-
-        LinearLayout card =
-                new LinearLayout(this);
-
-        card.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-        card.setPadding(
-                dp(17),
-                dp(16),
-                dp(17),
-                dp(16)
-        );
-
-        card.setBackground(
-                rounded(
-                        COLOR_CARD,
-                        20,
-                        COLOR_BORDER,
-                        1
-                )
-        );
-
-
-        addAboutRow(
-                card,
-                R.drawable.ic_op_worker,
-                "Ad Soyad",
-                getCurrentDisplayName()
-        );
-
-
-        addAboutRow(
-                card,
-                R.drawable.ic_op_pin,
-                "Konum",
-                getLocationText()
-        );
-
-
-        addAboutRow(
-                card,
-                R.drawable.ic_op_mail,
-                "E-posta",
-                sessionManager.isGuest()
-                        ? "Misafir oturumu"
-                        : safeOr(
-                        getCurrentEmail(),
-                        "Belirtilmedi"
-                )
-        );
-
-
-        dynamicTabContainer.addView(
-                card
-        );
-    }
-
-
-    private void addAboutRow(
-            LinearLayout parent,
-            int icon,
-            String title,
-            String value
-    ) {
-
-        LinearLayout row =
-                new LinearLayout(this);
-
-        row.setOrientation(
-                LinearLayout.HORIZONTAL
-        );
-
-        row.setGravity(
-                Gravity.CENTER_VERTICAL
-        );
-
-        row.setPadding(
-                0,
-                dp(8),
-                0,
-                dp(8)
-        );
-
-
-        TextView iconView =
-                glyphText(
-                        icon,
-                        20,
-                        COLOR_GREEN
-                );
-
-        iconView.setGravity(
-                Gravity.CENTER
-        );
-
-
-        LinearLayout textArea =
-                new LinearLayout(this);
-
-        textArea.setOrientation(
-                LinearLayout.VERTICAL
-        );
-
-
-        TextView titleView =
-                createText(
-                        title,
-                        11,
-                        COLOR_MUTED,
-                        true
-                );
-
-
-        TextView valueView =
-                createText(
-                        safeOr(value, "Belirtilmedi"),
-                        13,
-                        COLOR_TEXT,
-                        false
-                );
-
-
-        textArea.addView(titleView);
-        textArea.addView(valueView);
-
-
-        LinearLayout.LayoutParams textParams =
-                new LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                );
-
-        textParams.leftMargin =
-                dp(10);
-
-
-        row.addView(
-                iconView,
-                new LinearLayout.LayoutParams(
-                        dp(36),
-                        dp(36)
-                )
-        );
-
-        row.addView(
-                textArea,
-                textParams
-        );
-
-
-        parent.addView(
-                row
-        );
-    }
 
 
     // ============================================================
@@ -4137,52 +2483,6 @@ public class ProfileActivity extends Activity {
     }
 
 
-    private String buildBioText() {
-
-        int gardenCount =
-                0;
-
-
-        try {
-
-            gardenCount =
-                    databaseHelper.getGardenCount();
-
-        } catch (Exception ignored) {
-        }
-
-
-        String location =
-                getLocationText();
-
-
-        StringBuilder text =
-                new StringBuilder();
-
-
-        text.append(
-                gardenCount
-        );
-
-        text.append(
-                " kayıtlı bahçe"
-        );
-
-
-        if (!location.isEmpty()) {
-
-            text.append(
-                    " • "
-            );
-
-            text.append(
-                    location
-            );
-        }
-
-
-        return text.toString();
-    }
 
 
     private String buildPostMeta(
@@ -4858,44 +3158,6 @@ public class ProfileActivity extends Activity {
     }
 
 
-    private TextView createPillButton(
-            String text,
-            int background,
-            int textColor
-    ) {
-
-        TextView button =
-                createText(
-                        text,
-                        12,
-                        textColor,
-                        true
-                );
-
-        button.setGravity(
-                Gravity.CENTER
-        );
-
-        button.setClickable(
-                true
-        );
-
-        button.setFocusable(
-                true
-        );
-
-        button.setBackground(
-                rounded(
-                        background,
-                        16,
-                        null,
-                        0
-                )
-        );
-
-
-        return button;
-    }
 
 
     private GradientDrawable rounded(
