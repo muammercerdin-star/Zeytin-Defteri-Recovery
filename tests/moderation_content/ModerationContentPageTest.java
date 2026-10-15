@@ -33,19 +33,24 @@ public class ModerationContentPageTest {
         check(remove.keySet().equals(new HashSet<>(Arrays.asList("reporter_uid", "report_id", "expected_status"))), "kaldırma gövdesi: " + remove.keySet());
         check("REVIEWED".equals(remove.get("expected_status")), "beklenen durum");
 
-        String live = ModerationPage.contentText(content(true, true, false, "  argo mesaj ", "Bora"));
-        check(live.contains("Yazan: Bora") && live.contains("Durum: Yayında") && live.endsWith("argo mesaj"), live);
-        check(ModerationPage.removable(content(true, true, false, "x", "B")), "yayındaki içerik kaldırılabilir");
-        check(!ModerationPage.removable(content(true, false, true, "x", "B")), "kaldırılmış içerik yeniden kaldırılmaz");
-        check(ModerationPage.contentText(content(true, false, true, "x", "B")).contains("Moderatör tarafından kaldırıldı"), "moderatör durumu");
-        check(ModerationPage.contentText(content(true, false, false, "x", "B")).contains("Yazan kişi tarafından silindi"), "sahip silmesi");
-        check(!ModerationPage.removable(content(false, false, false, "", "")), "olmayan içerik");
-        check(ModerationPage.contentText(content(false, false, false, "", "")).startsWith("İçerik bulunamadı"), "olmayan içerik metni");
-        check(ModerationPage.contentText(content(true, true, false, "   ", null)).contains("Yazan: Üretici") , "adsız yazar");
-        check(ModerationPage.contentText(content(true, true, false, "   ", null)).endsWith("(metin yok)"), "boş metin");
+        ModerationPage.Reported live = ModerationPage.reported(content(true, true, false, "  argo mesaj ", "Bora"));
+        check(live.author.equals("Bora") && live.body.equals("argo mesaj") && live.badge().equals("YAYINDA"), "yayında: " + live.body);
+        check(live.removable(), "yayındaki içerik kaldırılabilir");
+        ModerationPage.Reported moderated = ModerationPage.reported(content(true, false, true, "x", "B"));
+        check(!moderated.removable() && moderated.badge().equals("KALDIRILDI"), "kaldırılmış içerik yeniden kaldırılmaz");
+        ModerationPage.Reported deleted = ModerationPage.reported(content(true, false, false, "x", "B"));
+        check(!deleted.removable() && deleted.badge().equals("SAHİBİ SİLDİ"), "sahip silmesi");
+        ModerationPage.Reported missing = ModerationPage.reported(content(false, false, false, "", ""));
+        check(!missing.removable() && missing.body.startsWith("İçerik bulunamadı") && missing.badge().equals("BULUNAMADI"), "olmayan içerik");
+        ModerationPage.Reported blank = ModerationPage.reported(content(true, true, false, "   ", null));
+        check(blank.author.equals("Üretici") && blank.body.equals("(metin yok)"), "adsız yazar / boş metin");
+        Map<String, Object> timed = content(true, true, false, "x", "B"); timed.put("created_at", 1700000000000L);
+        check(ModerationPage.reported(timed).createdAt == 1700000000000L, "yazılma zamanı");
+        timed.put("created_at", "1700000000000");
+        check(ModerationPage.reported(timed).createdAt == 0, "metin zaman sayılmaz");
         // Beklenmeyen yanıt: kaldırma kapalı kalır.
-        check(!ModerationPage.removable(null) && !ModerationPage.removable("x"), "geçersiz yanıt");
-        check(!ModerationPage.removable(content("true", "true", false, "x", "B")), "metin 'true' boolean sayılmaz");
+        check(!ModerationPage.reported(null).removable() && !ModerationPage.reported("x").removable(), "geçersiz yanıt");
+        check(!ModerationPage.reported(content("true", "true", false, "x", "B")).removable(), "metin 'true' boolean sayılmaz");
         System.out.println("ModerationContentPageTest: " + checks + " kontrol geçti");
     }
 }

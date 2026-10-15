@@ -56,24 +56,41 @@ final class ModerationPage {
         data.put("expected_status", row.get("status"));
         return data;
     }
-    /** Sunucunun içerik yanıtından ekranda gösterilecek metin. */
-    static String contentText(Object response) {
-        if (!(response instanceof Map)) return "İçerik okunamadı.";
+    /** Sunucunun içerik yanıtı, ekranda gösterilecek parçalara ayrılmış hâliyle. */
+    static final class Reported {
+        static final int LIVE = 0, MODERATED = 1, OWNER_DELETED = 2, MISSING = 3;
+        final int state;
+        final String author, body;
+        final long createdAt;
+        Reported(int state, String author, String body, long createdAt) {
+            this.state = state; this.author = author; this.body = body; this.createdAt = createdAt;
+        }
+        /** Kaldırma düğmesi yalnızca içerik bulutta varsa ve hâlâ yayındaysa açılır. */
+        boolean removable() { return state == LIVE; }
+        String badge() {
+            switch (state) {
+                case LIVE: return "YAYINDA";
+                case MODERATED: return "KALDIRILDI";
+                case OWNER_DELETED: return "SAHİBİ SİLDİ";
+                default: return "BULUNAMADI";
+            }
+        }
+    }
+
+    static Reported reported(Object response) {
+        if (!(response instanceof Map)) return new Reported(Reported.MISSING, "", "İçerik okunamadı.", 0);
         Map<?, ?> data = (Map<?, ?>) response;
-        if (!Boolean.TRUE.equals(data.get("exists"))) return "İçerik bulunamadı (yazan kişi kalıcı olarak silmiş olabilir).";
-        Object text = data.get("content"), author = data.get("author_name");
+        if (!Boolean.TRUE.equals(data.get("exists")))
+            return new Reported(Reported.MISSING, "", "İçerik bulunamadı; yazan kişi kalıcı olarak silmiş olabilir.", 0);
+        Object text = data.get("content"), author = data.get("author_name"), created = data.get("created_at");
         String body = text instanceof String && !((String) text).trim().isEmpty() ? ((String) text).trim() : "(metin yok)";
-        String who = author instanceof String && !((String) author).isEmpty() ? (String) author : "Üretici";
-        String state = Boolean.TRUE.equals(data.get("moderated")) ? "Moderatör tarafından kaldırıldı"
-                : Boolean.TRUE.equals(data.get("is_active")) ? "Yayında" : "Yazan kişi tarafından silindi";
-        return "Yazan: " + who + "\nDurum: " + state + "\n\n" + body;
+        String who = author instanceof String && !((String) author).trim().isEmpty() ? ((String) author).trim() : "Üretici";
+        long at = created instanceof Number && ((Number) created).longValue() > 0 ? ((Number) created).longValue() : 0;
+        int state = Boolean.TRUE.equals(data.get("moderated")) ? Reported.MODERATED
+                : Boolean.TRUE.equals(data.get("is_active")) ? Reported.LIVE : Reported.OWNER_DELETED;
+        return new Reported(state, who, body, at);
     }
-    /** Kaldırma düğmesi yalnızca içerik bulutta varsa ve hâlâ yayındaysa açılır. */
-    static boolean removable(Object response) {
-        if (!(response instanceof Map)) return false;
-        Map<?, ?> data = (Map<?, ?>) response;
-        return Boolean.TRUE.equals(data.get("exists")) && Boolean.TRUE.equals(data.get("is_active"));
-    }
+
     static Map<String, Object> update(Map<String, Object> row, String next) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("reporter_uid", row.get("reporter_uid")); data.put("report_id", row.get("report_id"));

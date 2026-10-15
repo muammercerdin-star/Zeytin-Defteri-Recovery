@@ -896,3 +896,31 @@ Sohbet mesaj denetiminde bulunan dört sorun düzeltildi. Firebase'e deploy yap�
 - `tests/security/check_static.py` güncellendi: yorum kurallarında yalnızca moderasyon korumasına, moderasyon kodunda yetki denetimi dışındaki eklemelere izin veriyor.
 - Deno bu ortamda kurulamadı; Supabase fonksiyonu derleyiciyle denetlenmedi. Değişiklik iki yönlendirme satırı ve Firebase kopyasıyla birebir aynı servis kodu.
 - Cihazda denenmedi.
+
+## 29. Moderasyon Merkezi yeniden tasarımı (1 commit)
+
+Tuvaldeki onaylanan üç pano (liste, şikâyet detayı, kaldırma onayı) uygulandı. Sunucu tarafı değişmedi; bölüm 28'de yayımlanan işlemler kullanılıyor.
+
+**Liste:** Geri oku, başlık ve sağ üstte yenile simgesi; durum çipleri (Açık / İncelendi / İşlem Yapıldı / Reddedildi). Her kartta şikâyet türü simgesi (gönderi, yanıt, kullanıcı), neden, zaman ve durum rozeti var. Liste boşsa "… şikâyet yok" kartı gösteriliyor. Eski düz yeşil düğmeler ("←  Moderasyon Merkezi", "Yenile") kaldırıldı.
+
+**Şikâyet detayı (tam ekran):**
+- En üstte şikâyet edilen içerik: yazan kişi, tarih, metin ve durum rozeti (YAYINDA / KALDIRILDI / SAHİBİ SİLDİ / BULUNAMADI).
+- Altında şikâyet özeti: neden, durum, tür, tarih.
+- Kimlik numaraları "Teknik bilgiler" altında kapalı; açılınca kopyalanabiliyor.
+- Altta **İçeriği kaldır**, **Şikâyeti reddet** (tek dokunuş; Durumu değiştir ile geri alınabilir) ve **Durumu değiştir**.
+- Kaldırma düğmesi içerik okunup yayında olduğu görülene kadar kapalı.
+- Kullanıcı şikâyetinde içerik kartı ve kaldırma yok.
+- Geri tuşu listeye döndürüyor: Android 13+ için BackCompat, 12 ve altı için `onBackPressed`.
+
+**Kaldırma onayı:** Alttan açılan pencere; kaldırınca ne olacağını madde madde söylüyor. Yanıtlarda "yalnızca bu yanıt gizlenir, ana gönderi kalır" yazıyor. Pencere ekran görüntüsüne kapalı (`FLAG_SECURE`), Moderasyon Merkezi'nin geri kalanı gibi.
+
+**Kaldırılan eski kod:** Detay `AlertDialog`'u, `ModerationPage.contentText` ve `removable(Object)`. Yerlerine yapılandırılmış `ModerationPage.Reported` geldi.
+
+**Yeni ikonlar:** `ic_op_refresh`, `ic_op_flag`, `ic_op_user`, `ic_op_eye_off`, `ic_op_code`.
+
+**Testler:**
+- `tests/moderation_content`: 18 mantık + 23 bağlantı kontrolü geçti (eski tasarım kalıntısı ve ikon kontrolleri dahil). `functions` moderasyon testleri: 46 geçti.
+- `tests/release/check_target_sdk.py`: sabit "iki ekran" sayısı yerine "onBackPressed kullanan her ekran Android 13+ için BackCompat ile de kayıtlı" kuralı eklendi.
+- Firebase kütüphaneleri olmadığı için sunucu yanıtı blokları ayrıca taklit sınıflarla (Task, FirebaseAuth) derlenerek denetlendi; bilerek eklenen bir hata yakalandı, gerçek kodda hata yok.
+- Diğer sonuçlar değişmedi.
+- Cihazda denenmedi.

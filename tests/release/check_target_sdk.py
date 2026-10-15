@@ -31,7 +31,10 @@ checks = {
         and 'BackCompat.unregister(this, seasonReportBack)' in feed,
     'Konum seçici geri tuşu Android 13+ için kayıtlı': 'BackCompat.register(this, this::handleBack)' in picker,
     'KEYCODE_BACK yakalanmıyor (Android 16 göndermez)': 'KEYCODE_BACK' not in all_java,
-    'onBackPressed yalnızca bilinen iki ekranda': len(re.findall(r'public void onBackPressed\(', all_java)) == 2,
+    # onBackPressed yalnızca Android 12 ve altında çağrılır; onu kullanan her ekran 13+ için BackCompat ile de kayıtlı olmalı.
+    'onBackPressed kullanan her ekran Android 13+ için de kayıtlı': all('BackCompat.register(' in p.read_text(encoding='utf8')
+        for p in J.rglob('*.java') if 'public void onBackPressed(' in p.read_text(encoding='utf8')),
+    'onBackPressed yalnızca bilinen üç ekranda (akış, konum seçici, moderasyon)': len(re.findall(r'public void onBackPressed\(', all_java)) == 3,
 }
 for k, ok in checks.items():
     print(('PASS ' if ok else 'FAIL ') + k)
