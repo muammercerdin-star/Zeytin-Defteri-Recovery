@@ -14,3 +14,6 @@ local.properties
 node_modules/
 # Firebase local configuration
 app/google-services.json
+
+# Supabase CLI yerel durum klasörü (proje bağlantısı, sürüm önbelleği); repoya girmez.
+supabase/.temp/
