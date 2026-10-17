@@ -54,6 +54,9 @@ public final class ZeytinAssistantController {
     private int session,listenVersion;
     private String lastAnswer="",lastQuestion="";
     private String pendingQuestion;
+    private DatabaseHelper marketDb;
+    private MarketCloudRepository market;
+    private String marketOwner="";
 
     // Panel görünümü
     private View dot;
@@ -422,6 +425,23 @@ public final class ZeytinAssistantController {
                     if(!resolution.error.isEmpty() && (!isGlobal(cmd.target) || !resolution.error.startsWith("Önce"))){post(token,owner,season,active,cmd,false,gardenName,resolution.error);return;}
                     main.post(()->{if(current(token,owner,season,active)){long id=resolution.garden==null?0:resolution.garden.id;transition(State.ANSWERING,"Ekranı açıyorum…");haptic();Toast.makeText(activity,"Ekranı açıyorum…",Toast.LENGTH_SHORT).show();dialog.dismiss();host.navigate(cmd.target,id);}});return;
                 }
+                if(cmd.kind==Kind.MARKET && !ZeytinAssistantMarket.ownSales(cmd.text)){
+                    // Piyasa sorusu: kendi bölgenin (ya da söylenen bölgenin) anonim fiyatları. Bölgeye
+                    // ulaşılamazsa kendi satış kayıtlarından cevap, bunu açıkça söyleyerek.
+                    String regionId="",regionName="";
+                    DatabaseHelper helper=new DatabaseHelper(activity.getApplicationContext());
+                    try{
+                        ZeytinLeagueRepository.Result local=new ZeytinLeagueRepository().local(helper,season,owner);
+                        if(local.local!=null && local.local.region!=null)regionId=local.local.region;
+                        for(ZeytinLeagueRepository.Region r:local.regions)if(r!=null && regionId.equals(r.id) && r.name!=null)regionName=r.name;
+                    }catch(RuntimeException ignored){regionId="";}finally{helper.close();}
+                    if("Bölge belirtilmemiş".equals(regionName))regionId="";
+                    final String ownId=regionId,ownName=regionName;
+                    final String fallback=data.answer(cmd,resolution.garden,gardens,false);
+                    if(!data.unchanged())return;
+                    main.post(()->regionMarket(token,owner,season,active,cmd,ownId,ownName,fallback));
+                    return;
+                }
                 boolean all=cmd.total && !resolution.explicit && cmd.kind!=Kind.ACTIVE;
                 if(!resolution.error.isEmpty() && !(all && resolution.error.startsWith("Önce")) && cmd.kind!=Kind.MARKET && cmd.kind!=Kind.COMPARISON && !cmd.crossGarden){post(token,owner,season,active,cmd,all,gardenName,resolution.error);return;}
                 if(cmd.kind==Kind.TODAY){
@@ -460,13 +480,55 @@ public final class ZeytinAssistantController {
         }catch(Exception e){post(token,owner,season,active,cmd,false,"","Bugünkü kayıtlar okunamadı. Tekrar deneyebilirsin.");}});
         });
     }
+    private void regionMarket(int token,String owner,int season,long active,ZeytinAssistantCommand cmd,String ownId,String ownName,String fallback){
+        if(!current(token,owner,season,active))return;
+        final String own="KENDİ SATIŞ KAYITLARIN";
+        transition(State.PROCESSING,"Bölge fiyatlarına bakıyorum…");
+        MarketCloudRepository cloud=marketRepository(owner);
+        if(cloud==null||!cloud.canUseCloud()){post(token,owner,season,active,cmd,false,"",own,"Bölge fiyatlarına şu an ulaşılamıyor. "+fallback);return;}
+        cloud.loadLeagueRegions(season,(regions,error)->{
+            if(!current(token,owner,season,active))return;
+            Map<String,String> names=new LinkedHashMap<>();
+            if(regions!=null)for(MarketCloudRepository.LeagueRegionStat r:regions)if(r!=null && !r.id.isEmpty())names.put(r.id,r.name);
+            // Bölge dizini gelmese de kullanıcı kendi bölgesini adıyla sorabilsin ("Alaşehir'de 1 numara").
+            if(!ownId.isEmpty() && !names.containsKey(ownId))names.put(ownId,ownName);
+            String named=ZeytinAssistantMarket.regionFor(cmd.text,names);
+            if(named==null){post(token,owner,season,active,cmd,false,"","ANONİM BÖLGE VERİSİ",ZeytinAssistantMarket.unknownRegion());return;}
+            final String id=named.isEmpty()?ownId:named;
+            final String name=named.isEmpty()?ownName:names.get(named);
+            if(id==null||id.isEmpty()){post(token,owner,season,active,cmd,false,"",own,ZeytinAssistantMarket.noRegion());return;}
+            cloud.loadLeagueRegionReport(season,id,name==null?"":name,(report,failure)->{
+                if(!current(token,owner,season,active))return;
+                if(report==null||(failure!=null && report.producerCount==0 && report.grades.isEmpty())){
+                    post(token,owner,season,active,cmd,false,"",own,"Bölge fiyatlarına şu an ulaşılamıyor. "+fallback);return;
+                }
+                List<ZeytinAssistantMarket.Grade> grades=new ArrayList<>();
+                for(MarketCloudRepository.LeagueGradeReport g:report.grades)if(g!=null)
+                    grades.add(new ZeytinAssistantMarket.Grade(g.grade,g.producerCount,g.medianPrice,g.averagePrice,g.trendAvailable,g.trendPct));
+                String label=report.regionName.isEmpty()?(name==null?"":name):report.regionName;
+                String place=MeydanMarketStrip.shortRegion(label).toUpperCase(new Locale("tr","TR"));
+                post(token,owner,season,active,cmd,false,"",place.isEmpty()?"ANONİM BÖLGE VERİSİ":"ANONİM BÖLGE VERİSİ · "+place,
+                        ZeytinAssistantMarket.answer(label,report.producerCount,report.available,grades,ZeytinAssistantMarket.grade(cmd.grade)));
+            });
+        });
+    }
+    private MarketCloudRepository marketRepository(String owner){
+        try{
+            if(marketDb==null)marketDb=new DatabaseHelper(activity.getApplicationContext());
+            if(market==null||!owner.equals(marketOwner)){market=new MarketCloudRepository(marketDb,owner);marketOwner=owner;}
+            return market;
+        }catch(RuntimeException e){return null;}
+    }
     private static boolean isGlobal(String target){return Arrays.asList("HOME","GARDENS","MARKET","MEYDAN","REPORTS","BRINE","ELEK").contains(target);}
     private void post(int token,String owner,int season,long active,ZeytinAssistantCommand cmd,boolean all,String gardenName,String raw){
+        post(token,owner,season,active,cmd,all,gardenName,null,raw);
+    }
+    private void post(int token,String owner,int season,long active,ZeytinAssistantCommand cmd,boolean all,String gardenName,String sourceLabel,String raw){
         // Tarihler ekranda ve sesli okumada aynı okunur biçimde: "1 Ekim (16 gün önce)".
         final String shown=ZeytinAssistantText.humanDates(raw,System.currentTimeMillis());
         main.post(()->{
             if(!current(token,owner,season,active))return;
-            lastAnswer=shown;answer.setText(shown);source.setText(ZeytinAssistantText.source(cmd.kind,all,gardenName));
+            lastAnswer=shown;answer.setText(shown);source.setText(sourceLabel!=null?sourceLabel:ZeytinAssistantText.source(cmd.kind,all,gardenName));
             followUps.removeAllViews();
             for(String q:ZeytinAssistantText.followUps(cmd.kind,lastQuestion))followUps.addView(chip(q));
             transition(State.ANSWERING,ttsReady?"Cevabı okuyorum…":"Cevap hazır");haptic();speak();
@@ -508,7 +570,10 @@ public final class ZeytinAssistantController {
         if(wave!=null)wave.listening(false);
     }
     public void stop(){if(dialog!=null&&dialog.isShowing())dialog.dismiss();else releasePanel();}
-    public void destroy(){stop();closed=true;worker.shutdownNow();main.removeCallbacksAndMessages(null);}
+    public void destroy(){
+        stop();closed=true;worker.shutdownNow();main.removeCallbacksAndMessages(null);
+        market=null;if(marketDb!=null){try{marketDb.close();}catch(Exception ignored){}marketDb=null;}
+    }
 
     // ============================================================ GÖRÜNÜM PARÇALARI
 

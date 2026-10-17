@@ -950,3 +950,25 @@ Tuvaldeki onaylanan dört pano (dinleme, cevap, yazarak sor, durumlar) uyguland�
 - Mevcut asistan testleri (`assistant`, `assistant_ux`, `final_assistant`) geçti; diğer sonuçlar değişmedi.
 - Panel Firebase kullanmadığı için kodun tamamı Android API'sine karşı derleyiciyle denetlendi; asistan dosyalarında hata yok.
 - Cihazda denenmedi: mikrofon, ses tanıma, sesli okuma ve klavye davranışı cihazda doğrulanmalı.
+
+## 31. Asistan: piyasa sorusu bölge fiyatlarına bağlandı (1 commit)
+
+Önceden "1 numara kaç para?" sorusu yalnızca kullanıcının kendi satış kayıtlarından cevaplanıyordu. Artık Zeytin Ligi bölge kartıyla aynı anonim Supabase bölge raporu kullanılıyor (`market_league_region_report`; o yoksa güvenli yedek RPC'ler).
+
+**Nasıl çalışıyor:**
+- **Bölge:** Kullanıcının kendi elek kayıtlarından, Zeytin Ligi ve Sohbet şeridiyle aynı kuralla (`ZeytinLeagueRepository.local`) bulunuyor. Soruda kayıtlı bir bölge adı geçerse ("Alaşehir'de double fiyatı ne?") o bölge kullanılıyor. Bilinmeyen bir yer söylenirse ("Salihli'de …") kullanıcının kendi bölgesine sessizce geçilmiyor, bu açıkça söyleniyor.
+- **Elek sorulduysa:** "Alaşehir, 1 No: bu sezon medyan 100 TL/kg (7 üretici). Son 7 günde %3,2 arttı." Trend, sunucu ancak her iki dönemde de yeterli üretici olduğunda gösteriyor.
+- **Elek sorulmadıysa:** Görünür eleklerin medyanları sırayla, ardından "Diğer eleklerde yeterli üretici yok."
+- **Gizlilik:** Bölgede ya da elekte 5 farklı üretici yoksa fiyat ve trend söylenmiyor, yalnızca "şu an n/5" deniyor. `MarketCloudRepository` zaten temizliyor; `ZeytinAssistantMarket` ikinci kez denetliyor.
+- **Kendi satışı:** "Benim / kendi / kaça sattım" geçen sorular eskisi gibi kullanıcının kendi satış kayıtlarından cevaplanıyor.
+- **Bağlantı yoksa:** "Bölge fiyatlarına şu an ulaşılamıyor." deniyor, ardından kendi satış kayıtlarından cevap veriliyor.
+- **Bölge belli değilse:** "Elek kaydı girdiğinde bölgenin fiyatlarını söyleyebilirim."
+- **Kaynak satırı:** Cevap kartında "ANONİM BÖLGE VERİSİ · ALAŞEHİR" ya da "KENDİ SATIŞ KAYITLARIN" yazıyor. Her cevapta "fiyat garantisi değildir" notu var.
+
+**Yan etki notu:** Bölge raporu yüklenirken `MarketCloudRepository`, Zeytin Ligi ekranında olduğu gibi, kullanıcının anonim katkısı açıksa bekleyen katkıları eşitliyor. Asistan yerel hiçbir kaydı değiştirmiyor.
+
+**Testler:**
+- `tests/assistant_market`: 33 mantık + 9 bağlantı kontrolü geçti. Kapsadıkları: elek eşleme, bölge seçimi, bilinmeyen bölge, eşik altı fiyatın hiçbir cevapta görünmemesi, NaN. Kesme işaretli bölge adındaki ("Salihli'de") hata da bu sırada test sayesinde bulunup düzeltildi.
+- Diğer sonuçlar değişmedi.
+- Ağ yanıtı blokları dahil asistan kodu derleyiciyle denetlendi; bilerek eklenen bir hata yakalandı, gerçek kodda hata yok.
+- Cihazda denenmedi.
