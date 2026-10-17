@@ -924,3 +924,29 @@ Tuvaldeki onaylanan üç pano (liste, şikâyet detayı, kaldırma onayı) uygul
 - Firebase kütüphaneleri olmadığı için sunucu yanıtı blokları ayrıca taklit sınıflarla (Task, FirebaseAuth) derlenerek denetlendi; bilerek eklenen bir hata yakalandı, gerçek kodda hata yok.
 - Diğer sonuçlar değişmedi.
 - Cihazda denenmedi.
+
+## 30. Sesli asistan paneli yeniden tasarımı (1 commit)
+
+Tuvaldeki onaylanan dört pano (dinleme, cevap, yazarak sor, durumlar) uygulandı. Asistanın anladığı sorular, cevap motoru (`ZeytinAssistantData`, `ZeytinAssistantCommand`), güvenlik kuralları ve veri erişimi değişmedi.
+
+**Panel:**
+- Alt menünün üstünde yüzen bir kart. Üstte durum noktası, başlık ve kapat düğmesi var.
+- **Dinlerken:** Gerçek ses düzeyiyle hareket eden 19 çubuklu dalga ve o ana kadar duyulan sözler büyük yazıyla görünüyor. Düğmeler: Durdur / Yaz.
+- **Cevapta:** Soru sağda balon içinde, cevap kartta. Kartın üstünde cevabın kaynağı yazıyor: "KAYITLARINDAN · [BAHÇE]", "HAVA TAHMİNİ", "KENDİ SATIŞ KAYITLARIN"… Altında üç hazır soru var. Düğmeler: hoparlör (okumayı durdur/başlat), Tekrar sor, Yaz.
+- **Yazarak sorarken:** Yazı alanı ve gönder düğmesi var; altında konulara göre örnek sorular ve Sesle sor düğmesi.
+- **Hata ve izin durumları:** Her durumda başlık, açıklama ve iki seçenek var: mikrofon izni gerekiyor, izin kapalı, anlayamadım/duyamadım, bağlantı yok, meşgul, ses tanıma hizmeti yok.
+- Alt menüdeki küre hâlâ dokunulabilir (`FLAG_NOT_TOUCH_MODAL`); konuşma bitince dokunmak dinlemeyi bitiriyor.
+
+**Okunur tarihler:** Cevaplardaki `2026-10-01` ve `01.10.2026` biçimleri "1 Ekim (16 gün önce)", "dün (16 Ekim)", "bugün", "yarın (18 Ekim)" olarak yazılıyor. Başka yılın tarihlerine yıl ekleniyor. Ekranda ve sesli okumada aynı metin kullanılıyor. kg, TL ve % gibi diğer sayılara dokunulmuyor; geçersiz tarihler olduğu gibi kalıyor. Kural `ZeytinAssistantText` sınıfında.
+
+**Türkçe ses paketi:** Metin okuma motoru çalışıyor ama Türkçe ses yoksa cevabın altında "Türkçe ses paketi yok; cevap yalnızca yazılı · Ses ayarları" satırı çıkıyor. Önceden cevap sessizce yalnızca yazıyla kalıyordu.
+
+**Kaldırılan eski kod:** `AlertDialog` paneli, standart `Button`'lar ("Tekrar Sor", "Kapat", "Yazarak sor"), düz beyaz yazı, eski 5 çubuklu dalga.
+
+**Yeni ikonlar:** `ic_op_mic`, `ic_op_keyboard`, `ic_op_speaker`, `ic_op_stop`, `ic_op_close`.
+
+**Testler:**
+- `tests/assistant_panel`: 36 mantık + 22 bağlantı kontrolü geçti. Kapsadıkları: tarih biçimleri, yıl geçişi, sayılara dokunulmaması, kaynak etiketleri, örnek ve hazır soruların gerçekten anlaşılan sorular olması.
+- Mevcut asistan testleri (`assistant`, `assistant_ux`, `final_assistant`) geçti; diğer sonuçlar değişmedi.
+- Panel Firebase kullanmadığı için kodun tamamı Android API'sine karşı derleyiciyle denetlendi; asistan dosyalarında hata yok.
+- Cihazda denenmedi: mikrofon, ses tanıma, sesli okuma ve klavye davranışı cihazda doğrulanmalı.

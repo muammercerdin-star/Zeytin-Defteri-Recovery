@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Çizgi ikon (24x24, 1.9 kalınlık). Rengi koddan setColorFilter/setTint ile verilir. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M9,6a3,3 0,0 1,6 0v5a3,3 0,0 1,-6 0zM5,11a7,7 0,0 0,14 0M12,18v3"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>
