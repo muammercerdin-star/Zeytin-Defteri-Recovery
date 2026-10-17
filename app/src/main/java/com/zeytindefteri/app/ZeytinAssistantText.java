@@ -83,6 +83,24 @@ public final class ZeytinAssistantText {
         }
     }
 
+    /**
+     * Anlaşılmayan soruya verilecek cevap. Selamlaşma ve teşekküre kısa karşılık; kayıt silme/değiştirme ve
+     * ilaç dozu / hastalık teşhisi isteklerine neden yapılmadığını açıkça söyler (asistan yalnızca okur ve
+     * tarımsal reçete vermez). Diğer her şey için genel cevap.
+     */
+    public static String unknownReply(String raw) {
+        String s = ZeytinAssistantCommand.normalize(raw);
+        if (s.matches("(merhaba|selam|selamlar|selamun aleykum|gunaydin|iyi gunler|iyi aksamlar|hey|alo)( .*)?"))
+            return "Merhaba! Kayıtların, hava ve piyasa hakkında sorabilirsin. Örneğin “Son sulama ne zaman?”";
+        if (s.matches(".*\\b(tesekkur\\w*|sagol\\w*|eyvallah|eline saglik)\\b.*"))
+            return "Rica ederim. Başka bir sorun olursa buradayım.";
+        if (s.matches(".*\\b(sil|silsene|kaydet|guncelle|degistir|duzelt)\\b.*"))
+            return "Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.";
+        if (s.matches(".*\\b(doz|dozu|teshis|hasta|hastalik\\w*|kac litre|kac gram|ne kadar ilac|hangi ilac)\\b.*") || s.contains("kac litre") || s.contains("kac gram"))
+            return "İlaç dozu ya da hastalık teşhisi veremem. Ürün etiketine uy ve bir ziraat mühendisine ya da ilçe tarım müdürlüğüne danış.";
+        return "Bu soruyu henüz bilmiyorum. Aşağıdaki örneklerden birini deneyebilir ya da “Yaz”a dokunup konulara göz atabilirsin.";
+    }
+
     /** Yazarak sorma ekranındaki örnek sorular, konulara göre. */
     public static final String[][] EXAMPLES = {
             {"BAHÇE KAYITLARI", "Son sulama ne zaman?", "Son ilaçlama ne zaman?", "Hangi bahçe daha çok verdi?"},

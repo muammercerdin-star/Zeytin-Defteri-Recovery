@@ -10,6 +10,10 @@ public final class ZeytinAssistantPeriod {
         return new ZeytinAssistantPeriod("");
     }
     public boolean limited(){return !name.isEmpty();}
+    /** Cevapta görünen Türkçe ad (name ASCII'ye çevrilmiş anahtar: "gecen hafta" → "geçen hafta"). */
+    public String label(){
+        switch(name){case "bugun":return "bugün";case "dun":return "dün";case "gecen hafta":return "geçen hafta";case "gecen ay":return "geçen ay";default:return name;}
+    }
     public long[] bounds(long now){
         Calendar start=Calendar.getInstance(TimeZone.getTimeZone("Europe/Istanbul"));start.setTimeInMillis(now);
         start.set(Calendar.HOUR_OF_DAY,0);start.set(Calendar.MINUTE,0);start.set(Calendar.SECOND,0);start.set(Calendar.MILLISECOND,0);

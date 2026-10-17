@@ -420,7 +420,7 @@ public final class ZeytinAssistantController {
                 List<Garden> gardens=data.gardens();
                 Resolution resolution=ZeytinAssistantCommand.resolve(raw,gardens,active,cmd.kind==Kind.MARKET);
                 String gardenName=resolution.garden==null?"":resolution.garden.name;
-                if(cmd.kind==Kind.UNKNOWN){post(token,owner,season,active,cmd,false,"","Bu soruyu henüz bilmiyorum. Aşağıdaki örneklerden birini deneyebilir ya da “Yaz”a dokunup konulara göz atabilirsin.");return;}
+                if(cmd.kind==Kind.UNKNOWN){post(token,owner,season,active,cmd,false,"",ZeytinAssistantText.unknownReply(raw));return;}
                 if(cmd.kind==Kind.NAVIGATION){
                     if(!resolution.error.isEmpty() && (!isGlobal(cmd.target) || !resolution.error.startsWith("Önce"))){post(token,owner,season,active,cmd,false,gardenName,resolution.error);return;}
                     main.post(()->{if(current(token,owner,season,active)){long id=resolution.garden==null?0:resolution.garden.id;transition(State.ANSWERING,"Ekranı açıyorum…");haptic();Toast.makeText(activity,"Ekranı açıyorum…",Toast.LENGTH_SHORT).show();dialog.dismiss();host.navigate(cmd.target,id);}});return;

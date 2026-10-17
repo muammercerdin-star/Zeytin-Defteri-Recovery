@@ -9,11 +9,16 @@ public final class ZeytinAssistantCommand {
         HARVEST, EXPENSE, REVENUE, SOLD, ELEK, BRINE, READY, MARKET, WEATHER, SUMMARY, AREA, LOCATION, WATER_TYPE, NOTE, OPERATION, TODAY, COMPARISON, UNKNOWN }
     public final Kind kind;
     public final String text, target, grade;
+    /** Kayıtlı işlem türü (Budama, Sinek tuzağı…); yalnızca genel işlem sorularında dolu. */
+    public final String opType;
     public final boolean total, tomorrow, farmingQuestion;
     public final ZeytinAssistantPeriod period;
     public final boolean latest, count, ranking, crossGarden;
     private ZeytinAssistantCommand(Kind kind, String text, String target, String grade) {
-        this.kind=kind; this.text=text; this.target=target; this.grade=grade;
+        this(kind,text,target,grade,"");
+    }
+    private ZeytinAssistantCommand(Kind kind, String text, String target, String grade, String opType) {
+        this.kind=kind; this.text=text; this.target=target; this.grade=grade; this.opType=opType==null?"":opType;
         period=ZeytinAssistantPeriod.parse(text);
         latest=text.contains("son ");
         count=has(text,"kac kez","kac defa","attim mi","var mi","yaptim mi");
@@ -56,14 +61,16 @@ public final class ZeytinAssistantCommand {
             else if(has(s,"ana sayfa","anasayfa"))target="HOME";
             if(!target.isEmpty())k=Kind.NAVIGATION;
         } else if(has(s,"karsilastir"))k=Kind.COMPARISON;
-        else if(has(s,"ne yapmam lazim","bugun ne var","bugun bahcede ne var","bugun ne oner","icin bugun"))k=Kind.TODAY;
+        else if(has(s,"ne yapmam lazim","bugun ne var","bugun bahcede ne var","bugun ne oner","icin bugun","onemli bir sey"))k=Kind.TODAY;
         else if(has(s,"dekar","donum"))k=Kind.AREA;
         else if(has(s,"nerede","konumu"))k=Kind.LOCATION;
         else if(has(s,"sulama tipi","sulama yontemi"))k=Kind.WATER_TYPE;
         else if(has(s,"bahce not","notu"))k=Kind.NOTE;
         else if(has(s,"hangi bahce secili","aktif bahce","bahce secili","su an hangi bahce")) k=Kind.ACTIVE;
         else if(has(s,"atayim","yapayim") && has(s,"ilac","sulama"))k=Kind.WEATHER;
-        else if(has(s,"agac"))k=Kind.TREES;
+        // "Gübre masrafım", "ilaç maliyeti": türün masrafı (son gübre tarihi değil).
+        else if(has(s,"masraf","harca","gider","maliyet") && (has(s,"gubre","ilac","sulama") || !operationType(s).isEmpty()))k=Kind.EXPENSE;
+        else if(s.matches(".*\\bagac.*") && !has(s,"yasinda","yasi "))k=Kind.TREES;
         else if(has(s,"yasinda","yasi"))k=Kind.AGE;
         else if(has(s,"cesidi","cesit"))k=Kind.VARIETY;
         else if(has(s,"sulad","sulama","su verd","suyu ne zaman verd"))k=Kind.IRRIGATION;
@@ -77,12 +84,35 @@ public final class ZeytinAssistantCommand {
         else if(has(s,"hazir urun"))k=Kind.READY;
         else if(has(s,"salamura","stok"))k=Kind.BRINE;
         else if(has(s,"piyasa","kac para","fiyat"))k=Kind.MARKET;
-        else if(has(s,"hava","yagmur","yagis","ruzgar","nem","derece","en yuksek","en dusuk"))k=Kind.WEATHER;
+        // Kısa kelimeler kelime sınırıyla: "önemli" içindeki "nem", "havale" içindeki "hava" hava sorusu sayılmasın.
+        else if(s.matches(".*\\b(hava|havasi|havalar|yagmur\\w*|yagis\\w*|ruzgar\\w*|nem|nemi|derece|sicaklik\\w*)\\b.*")
+                || has(s,"en yuksek","en dusuk","yagacak","yagar mi"))k=Kind.WEATHER;
         else if(has(s,"elek","numara","yaglik","double","duble"))k=Kind.ELEK;
         if(k==Kind.UNKNOWN && has(s,"bu yil","bu sezon") && has(s,"ne yapt"))k=Kind.SUMMARY;
+        String op=operationType(s);
+        if(k==Kind.UNKNOWN && !op.isEmpty())return new ZeytinAssistantCommand(Kind.OPERATION,s,target,grade,op);
+        // Türe göre masraf: "mazot masrafı", "gübre masrafı" o türün toplamı; genel masraf toplamı değil.
+        if(k==Kind.EXPENSE){
+            String expenseType=!op.isEmpty()?op:has(s,"gubre")?"Gübre":has(s,"ilac")?"İlaçlama":has(s,"sulama")?"Sulama":"";
+            if(!expenseType.isEmpty())return new ZeytinAssistantCommand(k,s,target,grade,expenseType);
+        }
         if(k==Kind.UNKNOWN && has(s,"islem","ne yapt","ne attik"))k=Kind.OPERATION;
         if(k==Kind.UNKNOWN && s.contains("kilo cikti") && grade.isEmpty())k=Kind.HARVEST;
         return new ZeytinAssistantCommand(k,s,target,grade);
+    }
+    /** Kullanıcı bölge fiyatını değil kendi satış fiyatını mı soruyor? (normalize edilmiş metin) */
+    public static boolean ownSales(String s){
+        if(s==null)return false;
+        return has(s,"benim","kendi","sattigim","satisim","kaca sattim","kac liraya sattim");
+    }
+    /** Uygulamadaki diğer işlem türleri (OperationKinds.TYPES). Sulama/gübre/ilaç kendi sorularıyla ayrıca karşılanır. */
+    static String operationType(String s){
+        if(has(s,"budama","budad","budar"))return "Budama";
+        if(has(s,"tuzak","tuzag"))return "Sinek tuzağı";
+        if(has(s,"toprak isle","surum","surdu"))return "Toprak İşleme";
+        if(has(s,"iscilik","isci"))return "İşçilik";
+        if(has(s,"mazot"))return "Mazot";
+        return "";
     }
     /** Small phrase/stem vocabulary shared across intent families, not full-sentence matching. */
     private static String language(String s){
@@ -132,19 +162,19 @@ public final class ZeytinAssistantCommand {
         }
         if(!market && query.matches(".+ (havasi|kac agac|kac yasinda).*")) {
             String prefix=query.replaceFirst(" (havasi|kac agac|kac yasinda).*", "");
-            if(!prefix.matches("(bahcenin|bahcemin|aktif bahcenin|bahcemde|bu bahcede)")) {
+            if(!prefix.matches("(bahce|bahcem|bahcenin|bahcemin|aktif bahcenin|bahcemde|bu bahcede|bu bahce|zeytinligim|zeytinligimin|agaclarim|agaclar)")) {
                 out.error="Söylediğin bahçeyi eşleştiremedim. Kayıtlı tam adını söyle.";return out;
             }
         }
         if(!market) {
             java.util.regex.Matcher prefix=java.util.regex.Pattern.compile("^(.+?) (en son|son sulama|son gubre|toplam|bu sezon|masrafi|havasi|kac yasinda|kac agac)\\b").matcher(query);
-            if(prefix.find() && !prefix.group(1).matches("(bugun|dun|bu hafta|gecen hafta|bu ay|gecen ay|bu sezon|bu sene|ben|benim|bu|bu yil|bu bahceyi|bu bahcede|bahcemin|bahcemde|bu sezon|aktif bahcenin)")) {
+            if(prefix.find() && !prefix.group(1).replaceFirst("^(bugun|dun|bu hafta|gecen hafta|bu ay|gecen ay|bu sezon|bu sene|bu yil) ","").matches("(bugun|dun|bu hafta|gecen hafta|bu ay|gecen ay|bu sezon|bu sene|ben|benim|bu|bu yil|bu bahceyi|bu bahcede|bahcemin|bahcemde|bu sezon|aktif bahcenin|bahce|bahcem|bahcenin|zeytinligim|zeytinligimin|agaclarim|agaclar|mazot|iscilik|isci|nakliye|gubre|ilac|ilaclama|sulama|budama|hasat|toprak isleme|sinek tuzagi|tuzak)")) {
                 out.error="Söylediğin bahçeyi eşleştiremedim. Kayıtlı tam adını söyle.";return out;
             }
         }
         if(!market){
             java.util.regex.Matcher extra=java.util.regex.Pattern.compile("^(.+?) (kac dekar|kac donum|nerede|sulama tipi|notu|ne durumda|ne alemde|ne kadar masraf|kac kilo cikti)\\b").matcher(query);
-            if(extra.find() && !extra.group(1).matches("(bahce|bahcem|bahcemin|bu bahce|aktif bahce|salamura|stok|ben|benim)")){
+            if(extra.find() && !extra.group(1).replaceFirst("^(bugun|dun|bu hafta|gecen hafta|bu ay|gecen ay|bu sezon|bu sene|bu yil) ","").matches("(bahce|bahcem|bahcemin|bu bahce|aktif bahce|salamura|stok|ben|benim|kar zarar|kar|zarar|genel|isler|durum|her sey|sezon|bu sezon|bu yil|toplam|hasat|satislar)")){
                 out.error="Söylediğin bahçeyi eşleştiremedim. Kayıtlı tam adını söyle.";return out;
             }
             java.util.regex.Matcher form=java.util.regex.Pattern.compile("^(.+?) (sulama|gubreleme|ilaclama|hasat|satis|elek) (ekle|ac)\\b").matcher(query);

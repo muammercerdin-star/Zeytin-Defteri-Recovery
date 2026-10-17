@@ -31,17 +31,20 @@ public final class ZeytinAssistantData implements AutoCloseable {
         if(cmd.kind==ZeytinAssistantCommand.Kind.MARKET)return market(cmd,owned);
         if(cmd.kind==ZeytinAssistantCommand.Kind.COMPARISON)return compare(cmd,owned);
         if(cmd.ranking && cmd.text.contains("bahce") && (cmd.kind==ZeytinAssistantCommand.Kind.HARVEST || cmd.kind==ZeytinAssistantCommand.Kind.EXPENSE || cmd.kind==ZeytinAssistantCommand.Kind.REVENUE || cmd.kind==ZeytinAssistantCommand.Kind.SOLD || cmd.kind==ZeytinAssistantCommand.Kind.IRRIGATION))return ranking(cmd,owned);
+        if(cmd.kind==ZeytinAssistantCommand.Kind.OPERATION && !cmd.opType.isEmpty())
+            return cmd.count||cmd.period.limited()?operations(cmd,garden,cmd.opType):last(garden,cmd.opType);
         if(cmd.kind==ZeytinAssistantCommand.Kind.OPERATION)return operations(cmd,garden,"");
         if(cmd.text.contains("en buyuk masraf"))return biggestExpense(cmd,garden);
+        if((cmd.kind==ZeytinAssistantCommand.Kind.REVENUE || cmd.kind==ZeytinAssistantCommand.Kind.SOLD) && (cmd.text.contains("kime") || cmd.text.contains("alici")))return latest(cmd,garden);
         if(cmd.latest && (cmd.kind==ZeytinAssistantCommand.Kind.HARVEST || cmd.kind==ZeytinAssistantCommand.Kind.REVENUE || cmd.kind==ZeytinAssistantCommand.Kind.SOLD || cmd.kind==ZeytinAssistantCommand.Kind.EXPENSE))return latest(cmd,garden);
         if((cmd.kind==ZeytinAssistantCommand.Kind.REVENUE || cmd.kind==ZeytinAssistantCommand.Kind.SOLD) && (cmd.text.contains("kaca") || cmd.text.contains("hangi elek")))return saleDistribution(cmd,garden);
 
-        String scope=(all ? "Tüm bahçelerin" : garden.name)+", "+season+" sezonu"+(cmd.period.limited()?", "+cmd.period.name:"")+": ";
+        String scope=(all ? "Tüm bahçelerin" : garden.name)+", "+season+" sezonu"+(cmd.period.limited()?", "+cmd.period.label():"")+": ";
         switch(cmd.kind) {
             case AREA:return garden.area.isEmpty()?"Alan kaydı bulunamadı.":garden.name+": "+garden.area+" dekar kayıtlı.";
             case LOCATION:String place=(garden.province+" "+garden.district+" "+garden.neighborhood).trim();return place.isEmpty()?"Konum kaydı bulunamadı.":garden.name+": "+place;
-            case WATER_TYPE:return garden.waterType.isEmpty()?"Sulama tipi kaydı bulunamadı.":garden.waterType;
-            case NOTE:return garden.note.isEmpty()?"Bahçe notu bulunamadı.":garden.note;
+            case WATER_TYPE:return garden.waterType.isEmpty()?garden.name+": sulama tipi kaydı bulunamadı.":garden.name+": sulama tipi "+garden.waterType+".";
+            case NOTE:return garden.note.isEmpty()?garden.name+": bahçe notu bulunamadı.":garden.name+" notu: "+garden.note;
             case ACTIVE:return "Şu anda aktif bahçen "+garden.name+".";
             case TREES:return garden.trees==null ? "Ağaç sayısı kaydı bulunamadı." : garden.name+" için "+garden.trees+" ağaç kayıtlı.";
             case AGE:return garden.age==null ? "Yaş kaydı bulunamadı." : garden.name+" için kayıtlı yaş "+garden.age+".";
@@ -53,6 +56,7 @@ public final class ZeytinAssistantData implements AutoCloseable {
             default:break;
         }
         List<Garden> selected=all?owned:Collections.singletonList(garden);
+        if(cmd.kind==ZeytinAssistantCommand.Kind.EXPENSE && !cmd.opType.isEmpty())return typedExpense(cmd,selected,scope);
         Totals t=totals(selected,all,cmd.period);
         switch(cmd.kind) {
             case HARVEST:return scope+value(t.harvestRows,t.harvest,"kg hasat");
@@ -68,7 +72,7 @@ public final class ZeytinAssistantData implements AutoCloseable {
                 if(!cmd.grade.isEmpty())return scope+(t.grades.containsKey(cmd.grade)?number(t.grades.get(cmd.grade))+" kg "+gradeName(cmd.grade)+" kayıtlı.":gradeName(cmd.grade)+" için elek kaydı bulunamadı.");
                 StringBuilder distribution=new StringBuilder(scope);
                 for(Map.Entry<String,Double> entry:t.grades.entrySet())distribution.append(gradeName(entry.getKey())).append(": ").append(number(entry.getValue())).append(" kg; ");
-                return distribution.toString();
+                return distribution.substring(0,distribution.length()-2)+".";
             case SUMMARY:
                 String summary=scope+"hasat "+brief(t.harvestRows,t.harvest,"kg")+", masraf "+brief(t.expenseRows,t.expenses,"TL")+", satış geliri "+brief(t.saleRows,t.revenue,"TL")+".";
                 if(t.saleRows>0 && t.expenseRows>0)summary+=" Kayıtlı gelir eksi masraf "+number(t.revenue-t.expenses)+" TL. Bu, kayıtların tamamlığına bağlıdır.";
@@ -89,7 +93,8 @@ public final class ZeytinAssistantData implements AutoCloseable {
         String label=type.equals("Gübre")?"gübreleme":type.toLowerCase(new Locale("tr","TR"));
         if(latest==null)return garden.name+", "+season+" sezonu için "+(found?label+" kaydının tarihi doğrulanamadı.":label+" kaydı bulamadım.");
         long days=(now-latest)/86400000L;
-        return garden.name+", "+season+" sezonunda son "+label+" "+(days==0?"bugün":days+" gün önce")+" yapılmış.";
+        SimpleDateFormat iso=new SimpleDateFormat("yyyy-MM-dd",Locale.US);iso.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return garden.name+", "+season+" sezonunda son "+label+" "+(days==0?"bugün":iso.format(new Date(latest)))+" yapılmış.";
     }
     private static final class Totals {
         int harvestRows,expenseRows,saleRows,brineRows;
@@ -122,9 +127,36 @@ public final class ZeytinAssistantData implements AutoCloseable {
             else try(Cursor events=db.getBrineEvents(id(c,"id"))){while(events.moveToNext())if(inPeriod(events,"event_date",period)){t.expenseRows++;t.expenses+=num(events,"cost");}}}}
         return t;
     }
+    /**
+     * "Benim 1 numara satış fiyatım": kullanıcının kendi gerçek satışları (SALE). Bu kendi verisi olduğu için
+     * piyasa paylaşım izni aranmaz; bölge süzgeci uygulanmaz. Elek söylenmediyse her elek için ortanca.
+     */
+    private String ownPrices(ZeytinAssistantCommand command,List<Garden> owned){
+        Map<String,List<Double>> byGrade=new LinkedHashMap<>();
+        for(String g:new String[]{"DOUBLE","1","2","3","4","YAGLIK"})byGrade.put(g,new ArrayList<>());
+        SaleRepository sales=new SaleRepository(db);
+        for(Garden g:owned)try(Cursor c=db.getGardenSales(g.id)){while(c.moveToNext()){
+            if(!"SALE".equals(str(c,"sale_kind")) || !inPeriod(c,"sale_date",command.period))continue;
+            try(Cursor lines=sales.getSaleGrades(id(c,"id"))){while(lines.moveToNext()){
+                double price=num(lines,"price_per_kg");String grade=str(lines,"grade");
+                if(num(lines,"kg")>0 && price>0 && byGrade.containsKey(grade))byGrade.get(grade).add(price);
+            }}
+        }}
+        String scope=season+" sezonu"+(command.period.limited()?", "+command.period.label():"")+", kendi satışların: ";
+        if(!command.grade.isEmpty()){
+            List<Double> p=byGrade.get(command.grade);
+            if(p==null||p.isEmpty())return scope+gradeName(command.grade)+" için satış kaydı bulunamadı.";
+            return scope+gradeName(command.grade)+" ortanca fiyat "+number(median(p))+" TL/kg ("+p.size()+" satır).";
+        }
+        List<String> parts=new ArrayList<>();
+        for(Map.Entry<String,List<Double>> e:byGrade.entrySet())if(!e.getValue().isEmpty())parts.add(gradeName(e.getKey())+" "+number(median(e.getValue())));
+        return parts.isEmpty()?scope+"elek fiyatlı satış kaydı bulunamadı.":scope+"ortanca fiyatlar "+String.join(", ",parts)+" TL/kg.";
+    }
+    private static double median(List<Double> values){List<Double> v=new ArrayList<>(values);Collections.sort(v);int n=v.size();return n%2==1?v.get(n/2):(v.get(n/2-1)+v.get(n/2))/2;}
     private String market(ZeytinAssistantCommand command,List<Garden> owned) {
         // Preserve market consent/SALE/positive kg & price rules, but never scan other owners' sales.
         if(command.text.contains("fark"))return "Piyasa geneliyle karşılaştırılabilir güncel veri bulunamadı. Kendi satış fiyatını sorabilirsin.";
+        if(ZeytinAssistantCommand.ownSales(command.text))return ownPrices(command,owned);
         String grade=command.grade.isEmpty()?"2":command.grade;
         List<Double> prices=new ArrayList<>(); Set<String> regions=new LinkedHashSet<>();
         SaleRepository sales=new SaleRepository(db);
@@ -182,13 +214,13 @@ public final class ZeytinAssistantData implements AutoCloseable {
     private static String today(){SimpleDateFormat f=new SimpleDateFormat("yyyy-MM-dd",Locale.US);f.setTimeZone(TimeZone.getTimeZone("Europe/Istanbul"));return f.format(new Date());}
     private String operations(ZeytinAssistantCommand cmd,Garden garden,String wanted){
         List<Entry> list=entries(garden,cmd.period,"operation");if(!wanted.isEmpty())list.removeIf(e->!type(e.label).equals(type(wanted)));
-        String scope=garden.name+", "+season+" sezonu"+(cmd.period.limited()?", "+cmd.period.name:"")+": ";
+        String scope=garden.name+", "+season+" sezonu"+(cmd.period.limited()?", "+cmd.period.label():"")+": ";
         if(wanted.isEmpty() && cmd.period.limited() && cmd.text.contains("ne yapt")){
             Totals t=totals(Collections.singletonList(garden),false,cmd.period);
             if(list.isEmpty() && t.harvestRows==0 && t.saleRows==0 && t.brineRows==0)return scope+"kayıt bulunamadı.";
             return scope+list.size()+" işlem kaydı; hasat "+brief(t.harvestRows,t.harvest,"kg")+", masraf "+brief(t.expenseRows,t.expenses,"TL")+", satış "+brief(t.saleRows,t.revenue,"TL")+".";
         }
-        if(list.isEmpty())return scope+"işlem kaydı bulunamadı.";
+        if(list.isEmpty())return scope+(wanted.isEmpty()?"işlem":wanted.equals("Gübre")?"gübreleme":wanted.toLowerCase(new Locale("tr","TR")))+" kaydı bulunamadı.";
         if(cmd.count || (cmd.period.limited()&&!cmd.latest))return scope+list.size()+" "+(wanted.isEmpty()?"işlem":wanted)+" kaydı. Son kayıt: "+list.get(0).label+", "+list.get(0).date+".";
         Entry e=list.get(0);return scope+"son işlem "+e.label+", "+e.date+".";
     }
@@ -202,6 +234,13 @@ public final class ZeytinAssistantData implements AutoCloseable {
                 Entry e=new Entry();e.day=d;e.date=str(events,"event_date");e.label="Salamura işlemi";e.cost=num(events,"cost");list.add(e);
             }}
         }}list.removeIf(e->e.cost<=0);Collections.sort(list,(a,b)->Long.compare(b.day,a.day));return list;
+    }
+    /** "Mazot masrafı", "gübre masrafı": yalnızca o türdeki işlem kayıtlarının maliyeti. */
+    private String typedExpense(ZeytinAssistantCommand cmd,List<Garden> gardens,String scope){
+        int rows=0;double sum=0;
+        for(Garden g:gardens)for(Entry e:entries(g,cmd.period,"operation"))if(type(e.label).equals(type(cmd.opType))){rows++;sum+=e.cost;}
+        String label=cmd.opType.equals("Gübre")?"gübreleme":cmd.opType.toLowerCase(new Locale("tr","TR"));
+        return rows==0?scope+label+" masrafı kaydı bulunamadı.":scope+label+" masrafı "+number(sum)+" TL ("+rows+" kayıt).";
     }
     private String biggestExpense(ZeytinAssistantCommand cmd,Garden garden){
         List<Entry> list=expenses(garden,cmd.period);if(list.isEmpty())return "Masraf kaydı bulunamadı.";
@@ -246,14 +285,14 @@ public final class ZeytinAssistantData implements AutoCloseable {
             double n=cmd.kind==ZeytinAssistantCommand.Kind.HARVEST?t.harvest:cmd.kind==ZeytinAssistantCommand.Kind.EXPENSE?t.expenses:cmd.kind==ZeytinAssistantCommand.Kind.SOLD?t.sold:t.revenue;
             if(n>max){max=n;winner=g.name;}else if(n==max)winner+=" / "+g.name;
         }
-        return winner.isEmpty()?"Karşılaştırılabilir kayıt bulunamadı.":season+" sezonu, "+cmd.period.name+": "+winner+" en yüksek kayıtlı değere sahip: "+number(max)+" "+unit+".";
+        return winner.isEmpty()?"Karşılaştırılabilir kayıt bulunamadı.":season+" sezonu"+(cmd.period.limited()?", "+cmd.period.label():"")+": "+winner+" en yüksek kayıtlı değere sahip: "+number(max)+" "+unit+".";
     }
     private String compare(ZeytinAssistantCommand cmd,List<Garden> owned){
         String[] parts=cmd.text.split("\\bile\\b");if(parts.length!=2)return "Karşılaştırmak istediğin iki bahçeyi 'Girelli ile Afşar' şeklinde söyle.";
         ZeytinAssistantCommand.Resolution a=ZeytinAssistantCommand.resolve(parts[0],owned,0,false),b=ZeytinAssistantCommand.resolve(parts[1],owned,0,false);
         if(!a.explicit||!b.explicit||a.garden==null||b.garden==null||a.garden.id==b.garden.id)return "İki farklı bahçeyi kesin olarak eşleştiremedim. Tam adlarını söyle.";
         StringBuilder out=new StringBuilder(season+" sezonu: ");
-        for(Garden g:Arrays.asList(a.garden,b.garden)){Totals t=totals(Collections.singletonList(g),false,cmd.period);out.append(g.name).append(": hasat ").append(brief(t.harvestRows,t.harvest,"kg")).append(", masraf ").append(brief(t.expenseRows,t.expenses,"TL")).append(", satış ").append(brief(t.saleRows,t.revenue,"TL")).append(". ");}return out.toString();
+        for(Garden g:Arrays.asList(a.garden,b.garden)){Totals t=totals(Collections.singletonList(g),false,cmd.period);out.append(g.name).append(": hasat ").append(brief(t.harvestRows,t.harvest,"kg")).append(", masraf ").append(brief(t.expenseRows,t.expenses,"TL")).append(", satış ").append(brief(t.saleRows,t.revenue,"TL")).append(". ");}return out.toString().trim();
     }
     public String advice(Garden garden,WeatherRepository.WeatherForecast forecast){
         GardenTodayAdvisor.Scope scope=new GardenTodayAdvisor.Scope(owner,season,garden.id);

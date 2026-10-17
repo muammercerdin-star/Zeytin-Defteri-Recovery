@@ -972,3 +972,37 @@ Tuvaldeki onaylanan dört pano (dinleme, cevap, yazarak sor, durumlar) uyguland�
 - Diğer sonuçlar değişmedi.
 - Ağ yanıtı blokları dahil asistan kodu derleyiciyle denetlendi; bilerek eklenen bir hata yakalandı, gerçek kodda hata yok.
 - Cihazda denenmedi.
+
+## 32. Asistan cevap denetimi ve düzeltmeler (1 commit)
+
+**Yöntem:**
+- İki bahçelik, sayıları bilinen bir veri seti kuruldu.
+- Bir çiftçinin sorabileceği yaklaşık 95 soru, farklı söyleyişlerle gerçek asistan koduna soruldu: ayrıştırıcı, bahçe çözümü, cevap motoru ve okunur tarih.
+- Her sayı elle hesaplanan değerle karşılaştırıldı. Hava cevapları bilinen bir tahminle denendi.
+- Ayrıca asistanın okuduğu her sütunun gerçek veritabanı şemasında bulunduğu doğrulandı: gardens, operations, harvests, sales, elek_records, elek_grades, brine_batches, brine_events, sale_grades. Tarih biçimleri de (yyyy-MM-dd, dd.MM.yyyy) desteklendikleri için kontrol edildi.
+
+**Doğru çıkanlar:** Masraf, satış geliri (teklifler hariç, nakliye ve kesinti sonrası), satılan kilo, ağırlıklı birim fiyat, hasat, elek, salamura, bahçe bilgileri, dönem süzgeçleri (bu hafta/ay, geçen hafta, bugün, dün), bahçeler arası sıralama ve karşılaştırma, hava cevapları ve ekran açma komutları.
+
+**Bulunan ve düzeltilen hatalar:**
+1. **"Yarın yağmur yağacak mı?" ağaç sayısıyla cevaplanıyordu.** "yağacak" içindeki "ağaç" eşleşiyordu; bu, ana sayfadaki hazır sorulardan biri. Ağaç kelimesi artık kelime başında aranıyor. Hava kelimeleri de kelime sınırıyla aranıyor; böylece "önemli" içindeki "nem" ve "havale" içindeki "hava" hava sorusu sayılmıyor.
+2. **"Bahçem / Ağaçlarım / Zeytinliğim kaç yaşında" bahçe adı hatası veriyordu.** Genel ifadeler bahçe adı sanılıyordu.
+3. **"Kar zarar ne durumda" ve "Bu ay mazot masrafı" bahçe adı hatası veriyordu.** Baştaki dönem sözcükleri ("bu ay") ayıklanıyor; genel ifadeler kabul ediliyor.
+4. **Budama, sinek tuzağı, toprak işleme, işçilik ve mazot soruları anlaşılmıyordu.** Uygulamadaki işlem türleri artık soruluyor: son ne zaman, bu sezon kaç kez.
+5. **"Mazot masrafı", "Gübre masrafım ne kadar" yanlış cevaplanıyordu.** Mazot sorusu bahçe adı hatası veriyordu, gübre sorusu son gübre tarihini veriyordu. Artık yalnızca o türün masraf toplamı veriliyor.
+6. **"Kime sattım" alıcı yerine satılan kiloyu veriyordu.** Artık son alıcıyı söylüyor.
+7. **"Benim 1 numara satış fiyatım" "yeterli veri yok" diyordu.** "benim" sözcüğü yer adı sanılıyordu; ayrıca kendi verisi için piyasa paylaşım izni aranıyordu. Artık kullanıcının kendi gerçek satışlarından elek bazında ortanca fiyat veriliyor.
+8. **Son sulama, gübre ve ilaç cevaplarında tarih yoktu.** Yalnızca "7 gün önce" yazıyordu; artık "10 Ekim (7 gün önce)" yazıyor.
+9. **Dönem adları ASCII görünüyordu** ("bugun:", "gecen hafta:"); artık Türkçe karakterli.
+10. **Biçim kusurları:**
+    - Sıralama cevabında ", :" kalıntısı.
+    - Elek dağılımı sonunda "; ".
+    - Sulama tipi ve bahçe notunun bahçe adı olmadan çıplak yazılması.
+    - Karşılaştırmanın sonunda boşluk.
+11. **Anlaşılmayan istekler:** Selamlaşma ve teşekküre kısa karşılık veriliyor. Kayıt silme/değiştirme isteğine "asistan kayıt değiştirmez, ilgili ekrandan yapabilirsin" deniyor. İlaç dozu ve hastalık teşhisine "veremem; ürün etiketi ve ziraat mühendisi / ilçe tarım müdürlüğü" deniyor.
+
+**Bilinçli olarak değiştirilmeyen:** "Ne kadar kazandım?" sorusu, mevcut testteki karara uygun olarak satış gelirini veriyor; cevapta "satış geliri" açıkça yazıyor. Kâr için "kar zarar" sorusu var.
+
+**Testler:**
+- Yeni `tests/assistant_answers`: 74 kontrol geçti. Tarihler bugüne göre üretiliyor; test her gün çalışır. Düzeltmelerden biri geçici olarak geri alındığında test 4 hata verdi, yani gerçekten yakalıyor.
+- Mevcut asistan testleri (55 + 25 + 165 + 36 + 21 + 30 + 36), panel ve piyasa testleri geçti. Diğer sonuçlar değişmedi.
+- Cihazda denenmedi. Asıl risk ses tanımanın sözcükleri nasıl yazdığı: örneğin "Afşar" yerine "afşar'ın" gibi. Bu ancak cihazda görülür.

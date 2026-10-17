@@ -36,11 +36,7 @@ final class ZeytinAssistantMarket {
     }
 
     /** Kullanıcı kendi satış fiyatını mı soruyor (bölge değil)? */
-    static boolean ownSales(String normalized) {
-        String s = normalized == null ? "" : normalized;
-        return s.contains("benim") || s.contains("kendi") || s.contains("sattigim") || s.contains("satisim")
-                || s.contains("kaca sattim") || s.contains("kac liraya sattim");
-    }
+    static boolean ownSales(String normalized) { return ZeytinAssistantCommand.ownSales(normalized); }
 
     private static final Set<String> NOT_PLACES = new HashSet<>(Arrays.asList(
             "piyasa", "bolge", "bolgem", "sezon", "hafta", "elek", "bura", "sura", "ora", "simdi", "zeytin", "fiyat",
