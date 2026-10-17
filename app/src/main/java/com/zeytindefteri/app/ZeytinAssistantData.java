@@ -80,6 +80,22 @@ public final class ZeytinAssistantData implements AutoCloseable {
             default:return "Bu soruyu henüz cevaplayamıyorum.";
         }
     }
+    /**
+     * Bu sezon kaydı olan konular (yakın soru önerileri için): kaydı olmayan konunun sorusu önerilmez.
+     * Hava ve piyasa yerel kayıt istemez. Mevcut sahip + sezon kapsamındaki okuma fonksiyonları; yeni SQL yok.
+     */
+    public Set<ZeytinAssistantHints.Topic> recordedTopics(List<Garden> owned){
+        Set<ZeytinAssistantHints.Topic> out=EnumSet.of(ZeytinAssistantHints.Topic.WEATHER,ZeytinAssistantHints.Topic.MARKET);
+        for(Garden g:owned)try(Cursor c=db.getGardenOperations(g.id)){while(c.moveToNext()){
+            String t=type(str(c,"type"));
+            if(t.equals("sulama"))out.add(ZeytinAssistantHints.Topic.IRRIGATION);
+            else if(t.equals("gubre")||t.equals("ilaclama"))out.add(ZeytinAssistantHints.Topic.CARE);
+        }}
+        Totals t=totals(owned,true,ZeytinAssistantPeriod.parse(""));
+        if(t.harvestRows>0||t.brineRows>0||!t.grades.isEmpty())out.add(ZeytinAssistantHints.Topic.HARVEST);
+        if(t.expenseRows>0||t.saleRows>0)out.add(ZeytinAssistantHints.Topic.MONEY);
+        return out;
+    }
     private String last(Garden garden,String type) {
         Long latest=null; boolean found=false; long now=date(today());
         try(Cursor c=db.getGardenOperations(garden.id)) {

@@ -68,6 +68,31 @@ public final class ZeytinAssistantController {
     private TextView primary,secondary,problemPrimary,problemSecondary;
     private ImageView speaker;
     private EditText input;
+    // Anlama katmanı (tuval: "yarım anlama / konu kartları / anladığım etiketleri / etiketi düzelt")
+    private LinearLayout tagsBox,tagsRow,hintBox;
+    private boolean hinting,offerTopics;
+    private Set<ZeytinAssistantHints.Topic> recordedTopics=EnumSet.of(ZeytinAssistantHints.Topic.WEATHER,ZeytinAssistantHints.Topic.MARKET);
+    private String lastRaw="";
+    private ZeytinAssistantCommand lastCmd;
+    private AnswerScope lastScope;
+    private Dialog tagSheet;
+    /** Cevabın hangi bahçe(ler) için hesaplandığı; etiketten bahçe/zaman değiştirmek için saklanır. */
+    private static final class AnswerScope {
+        final Garden garden; final boolean all; final List<Garden> gardens;
+        AnswerScope(Garden garden,boolean all,List<Garden> gardens){this.garden=garden;this.all=all;this.gardens=gardens==null?Collections.<Garden>emptyList():gardens;}
+        long gardenId(){return garden==null?0:garden.id;}
+    }
+    /** Etiketten seçilen bahçe ya da "Tüm bahçeler": sorudaki bahçe adı yeniden çözülmez. */
+    private static final class Pick {
+        final long gardenId; final boolean all;
+        Pick(long gardenId,boolean all){this.gardenId=gardenId;this.all=all;}
+        Resolution resolve(List<Garden> gardens){
+            Resolution r=new Resolution();
+            for(Garden g:gardens)if(g.id==gardenId){r.garden=g;r.explicit=true;return r;}
+            if(!all)r.error="Seçtiğin bahçe kayıtlarında bulunamadı.";
+            return r;
+        }
+    }
     private final int bg,surface,card,border,text,soft,muted,green,greenSoft,warning,warningSoft,danger;
 
     public ZeytinAssistantController(Activity activity,Host host){
@@ -165,12 +190,20 @@ public final class ZeytinAssistantController {
         question.setBackground(bubble);question.setMaxLines(4);question.setEllipsize(TextUtils.TruncateAt.END);
         LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(-2,-2);qp.gravity=Gravity.END;qp.topMargin=dp(14);qp.leftMargin=dp(40);root.addView(question,qp);
 
+        // Anladığım: konu · bahçe · zaman. Ok işaretli etikete dokununca değiştirilebilir.
+        tagsBox=column();
+        TextView tagsOver=label("ANLADIĞIM",11,muted,true);tagsOver.setLetterSpacing(0.08f);tagsOver.setPadding(0,0,0,dp(6));tagsBox.addView(tagsOver);
+        tagsRow=row();HorizontalScrollView tagScroll=new HorizontalScrollView(activity);tagScroll.setHorizontalScrollBarEnabled(false);tagScroll.addView(tagsRow);
+        tagsBox.addView(tagScroll);
+        root.addView(tagsBox,margins(-1,-2,dp(12),0));
+
         progress=new ProgressBar(activity);progress.setIndeterminate(true);
         LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(dp(24),dp(24));pp.gravity=Gravity.CENTER;pp.topMargin=dp(14);root.addView(progress,pp);
 
         answerCard=column();answerCard.setPadding(dp(14),dp(14),dp(14),dp(14));answerCard.setBackground(round(surface,border,18));
         source=label("",11,muted,true);source.setLetterSpacing(0.06f);answerCard.addView(source);
         answer=label("",17,text,true);answer.setLineSpacing(dp(3),1f);answer.setTextIsSelectable(true);answer.setPadding(0,dp(6),0,0);answerCard.addView(answer);
+        hintBox=column();answerCard.addView(hintBox);
         ttsRow=row();ttsRow.setPadding(0,dp(10),0,0);
         ImageView mute=icon(R.drawable.ic_op_speaker,muted);ttsRow.addView(mute,new LinearLayout.LayoutParams(dp(16),dp(16)));
         ttsNotice=label("Türkçe ses paketi yok; cevap yalnızca yazılı.",12,muted,false);ttsNotice.setPadding(dp(8),0,dp(8),0);ttsRow.addView(ttsNotice,new LinearLayout.LayoutParams(0,-2,1));
@@ -229,6 +262,8 @@ public final class ZeytinAssistantController {
     }
     private void secondaryAction(){
         if(typing){setTyping(false);listen();return;}
+        // Yakın soru önerilerinde ikinci düğme "Konular": konu kartlarını açar (yeni kayıt okuması yok).
+        if(conversation.state()==State.ANSWERING && offerTopics){stopTts();showHint(ZeytinAssistantHints.cards("Bir konu seç:"),false);return;}
         if(conversation.state()==State.LISTENING){conversation.nextTurn();stopRecognizer();}
         stopTts();setTyping(true);
     }
@@ -251,7 +286,7 @@ public final class ZeytinAssistantController {
         if(!message.contentEquals(state.getText()))state.setText(message);
         boolean listening=next==State.LISTENING, processing=next==State.PROCESSING, answering=next==State.ANSWERING;
         title.setText(typing?"Yazarak sor":listening?"Dinliyorum":processing?"Kontrol ediyorum":"Zeytin Asistanı");
-        int tone=typing?warning:next==State.ERROR?danger:green;
+        int tone=typing?warning:next==State.ERROR?danger:answering && hinting?warning:green;
         dot.setBackground(round(tone,tone,5));
         wave.setVisibility(listening && !typing?View.VISIBLE:View.GONE);wave.listening(listening && !typing);
         heard.setVisibility(listening && !typing && heard.length()>0?View.VISIBLE:View.GONE);
@@ -260,7 +295,8 @@ public final class ZeytinAssistantController {
         answerCard.setVisibility(answering && !typing && lastAnswer.length()>0?View.VISIBLE:View.GONE);
         if(next!=State.ERROR || typing)problemCard.setVisibility(View.GONE);
         typed.setVisibility(typing?View.VISIBLE:View.GONE);
-        followScroll.setVisibility(answering && !typing && followUps.getChildCount()>0?View.VISIBLE:View.GONE);
+        tagsBox.setVisibility(answering && !typing && !hinting && tagsRow.getChildCount()>0?View.VISIBLE:View.GONE);
+        followScroll.setVisibility(answering && !typing && !hinting && followUps.getChildCount()>0?View.VISIBLE:View.GONE);
         speaker.setVisibility(answering && !typing && ttsReady && lastAnswer.length()>0?View.VISIBLE:View.GONE);
         speaker.setContentDescription(speaking?"Sesli okumayı durdur":"Cevabı sesli oku");
         speaker.setColorFilter(speaking?green:text);
@@ -270,7 +306,9 @@ public final class ZeytinAssistantController {
         if(listening){setButton(primary,"Durdur",R.drawable.ic_op_stop,false);primary.setContentDescription("Dinlemeyi durdur");}
         else{setButton(primary,"Tekrar sor",R.drawable.ic_op_mic,true);primary.setContentDescription("Sesle tekrar sor");}
         primary.setEnabled(!processing && permissionStage!=PermissionStage.REQUESTING);primary.setAlpha(primary.isEnabled()?1f:.5f);
-        if(typing)setButton(secondary,"Sesle sor",R.drawable.ic_op_mic,false);else setButton(secondary,"Yaz",R.drawable.ic_op_keyboard,false);
+        if(typing){setButton(secondary,"Sesle sor",R.drawable.ic_op_mic,false);secondary.setContentDescription("Sesle sor");}
+        else if(answering && offerTopics){setButton(secondary,"Konular",0,false);secondary.setContentDescription("Konulara göz at");}
+        else{setButton(secondary,"Yaz",R.drawable.ic_op_keyboard,false);secondary.setContentDescription("Yazarak sor");}
         LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)secondary.getLayoutParams();
         if(lp!=null){lp.width=typing?0:dp(104);lp.weight=typing?1:0;secondary.setLayoutParams(lp);}
         if(changed && visible())state.announceForAccessibility(title.getText()+". "+message);
@@ -344,7 +382,7 @@ public final class ZeytinAssistantController {
             if(permissionStage==PermissionStage.BLOCKED){problem(Fault.PERMISSION);return;}
             requestMicrophone();return;
         }
-        permissionStage=PermissionStage.READY;heard.setText("");answer.setText("");lastAnswer="";lastQuestion="";followUps.removeAllViews();
+        permissionStage=PermissionStage.READY;heard.setText("");answer.setText("");lastAnswer="";lastQuestion="";followUps.removeAllViews();clearAnswerExtras();
         transition(State.LISTENING,"Mikrofon hazırlanıyor…");
         try {
             if(!SpeechRecognizer.isRecognitionAvailable(activity)){
@@ -408,19 +446,38 @@ public final class ZeytinAssistantController {
     }
     private void submit(String raw){
         if(!visible()||raw.trim().isEmpty())return;
-        stopRecognizer();stopTts();typing=false;hideKeyboard();input.setText("");
-        lastQuestion=raw.trim();question.setText(lastQuestion);heard.setText("");answer.setText("");lastAnswer="";followUps.removeAllViews();
+        typing=false;hideKeyboard();input.setText("");
+        lastQuestion=raw.trim();lastRaw=raw;question.setText(lastQuestion);heard.setText("");
+        run(raw,ZeytinAssistantCommand.parse(raw),null);
+    }
+    /** "Anladığım" etiketinden zaman ya da bahçe değişti: soru balonu aynı kalır, cevap yeniden hesaplanır. */
+    private void rerun(ZeytinAssistantCommand cmd,Pick pick){
+        if(!visible()||cmd==null||lastRaw.isEmpty())return;
+        run(lastRaw,cmd,pick);
+    }
+    private void run(String raw,final ZeytinAssistantCommand cmd,final Pick pick){
+        stopRecognizer();stopTts();
+        answer.setText("");lastAnswer="";followUps.removeAllViews();clearAnswerExtras();
         transition(State.PROCESSING,"Kayıtlarını kontrol ediyorum…");
         final int token=conversation.nextTurn();final String owner=host.owner();final int season=host.season();final long active=host.activeGarden();
-        final ZeytinAssistantCommand cmd=ZeytinAssistantCommand.parse(raw);
         log("intent="+cmd.kind);
         worker.execute(()->{
             try(ZeytinAssistantData data=new ZeytinAssistantData(activity.getApplicationContext())){
                 if(!data.owner.equals(owner)||data.season!=season)return;
                 List<Garden> gardens=data.gardens();
-                Resolution resolution=ZeytinAssistantCommand.resolve(raw,gardens,active,cmd.kind==Kind.MARKET);
+                Resolution resolution=pick!=null?pick.resolve(gardens):ZeytinAssistantCommand.resolve(raw,gardens,active,cmd.kind==Kind.MARKET);
                 String gardenName=resolution.garden==null?"":resolution.garden.name;
-                if(cmd.kind==Kind.UNKNOWN){post(token,owner,season,active,cmd,false,"",ZeytinAssistantText.unknownReply(raw));return;}
+                if(cmd.kind==Kind.UNKNOWN){
+                    // Selam, teşekkür, kayıt silme, ilaç dozu: sabit cevap önce (dozda ilaçlama sorusu önerilmez).
+                    String special=ZeytinAssistantText.special(raw);
+                    if(special!=null){post(token,owner,season,active,cmd,false,"",special);return;}
+                    // Kalıba uymadı: sorudaki konu kelimelerinden yakın sorular ya da konu kartları.
+                    Set<ZeytinAssistantHints.Topic> recorded=data.recordedTopics(gardens);
+                    String named=resolution.explicit && resolution.garden!=null?resolution.garden.name:"";
+                    ZeytinAssistantHints.Hint hint=ZeytinAssistantHints.hint(raw,named,recorded);
+                    if(data.unchanged())postHint(token,owner,season,active,hint,recorded);
+                    return;
+                }
                 if(cmd.kind==Kind.NAVIGATION){
                     if(!resolution.error.isEmpty() && (!isGlobal(cmd.target) || !resolution.error.startsWith("Önce"))){post(token,owner,season,active,cmd,false,gardenName,resolution.error);return;}
                     main.post(()->{if(current(token,owner,season,active)){long id=resolution.garden==null?0:resolution.garden.id;transition(State.ANSWERING,"Ekranı açıyorum…");haptic();Toast.makeText(activity,"Ekranı açıyorum…",Toast.LENGTH_SHORT).show();dialog.dismiss();host.navigate(cmd.target,id);}});return;
@@ -442,14 +499,15 @@ public final class ZeytinAssistantController {
                     main.post(()->regionMarket(token,owner,season,active,cmd,ownId,ownName,fallback));
                     return;
                 }
-                boolean all=cmd.total && !resolution.explicit && cmd.kind!=Kind.ACTIVE;
+                boolean all=pick!=null?pick.all:cmd.total && !resolution.explicit && cmd.kind!=Kind.ACTIVE;
+                final AnswerScope scope=new AnswerScope(resolution.garden,all,gardens);
                 if(!resolution.error.isEmpty() && !(all && resolution.error.startsWith("Önce")) && cmd.kind!=Kind.MARKET && cmd.kind!=Kind.COMPARISON && !cmd.crossGarden){post(token,owner,season,active,cmd,all,gardenName,resolution.error);return;}
                 if(cmd.kind==Kind.TODAY){
                     main.post(()->{if(!current(token,owner,season,active))return;
                         transition(State.PROCESSING,"Hava tahminine bakıyorum…");
                         host.weather(resolution.garden,new WeatherRepository.ForecastCallback(){
-                            public void onSuccess(WeatherRepository.WeatherForecast forecast){advisorReply(token,owner,season,active,cmd,resolution.garden,forecast);}
-                            public void onError(String message){advisorReply(token,owner,season,active,cmd,resolution.garden,null);}
+                            public void onSuccess(WeatherRepository.WeatherForecast forecast){advisorReply(token,owner,season,active,cmd,resolution.garden,forecast,scope);}
+                            public void onError(String message){advisorReply(token,owner,season,active,cmd,resolution.garden,null,scope);}
                         });
                     });return;
                 }
@@ -460,23 +518,23 @@ public final class ZeytinAssistantController {
                             public void onSuccess(WeatherRepository.WeatherForecast forecast){
                                 Calendar date=Calendar.getInstance(TimeZone.getTimeZone("Europe/Istanbul"));date.add(Calendar.DAY_OF_MONTH,1);
                                 SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd",Locale.US);format.setTimeZone(date.getTimeZone());
-                                post(token,owner,season,active,cmd,false,gardenName,ZeytinAssistantWeather.answer(cmd,resolution.garden.name,forecast,format.format(date.getTime())));
+                                post(token,owner,season,active,cmd,false,gardenName,null,ZeytinAssistantWeather.answer(cmd,resolution.garden.name,forecast,format.format(date.getTime())),scope);
                             }
                             public void onError(String message){post(token,owner,season,active,cmd,false,gardenName,"Hava verisi alınamadı. Kayıtlarınla ilgili soruları sormaya devam edebilirsin.");}
                         });
                     });return;
                 }
                 String result=data.answer(cmd,resolution.garden,gardens,all);
-                if(data.unchanged())post(token,owner,season,active,cmd,all,gardenName,result);
+                if(data.unchanged())post(token,owner,season,active,cmd,all,gardenName,null,result,scope);
             }catch(Exception e){post(token,owner,season,active,cmd,false,"","Kayıtlar okunamadı. Daha sonra tekrar deneyebilirsin; herhangi bir kayıt değiştirilmedi.");}
         });
     }
-    private void advisorReply(int token,String owner,int season,long active,ZeytinAssistantCommand cmd,Garden garden,WeatherRepository.WeatherForecast forecast){
+    private void advisorReply(int token,String owner,int season,long active,ZeytinAssistantCommand cmd,Garden garden,WeatherRepository.WeatherForecast forecast,AnswerScope scope){
         main.post(()->{
         if(!current(token,owner,season,active))return;
         worker.execute(()->{try(ZeytinAssistantData data=new ZeytinAssistantData(activity.getApplicationContext())){
             if(!owner.equals(data.owner)||season!=data.season)return;
-            String result=data.advice(garden,forecast);if(data.unchanged())post(token,owner,season,active,cmd,false,garden==null?"":garden.name,result);
+            String result=data.advice(garden,forecast);if(data.unchanged())post(token,owner,season,active,cmd,false,garden==null?"":garden.name,null,result,scope);
         }catch(Exception e){post(token,owner,season,active,cmd,false,"","Bugünkü kayıtlar okunamadı. Tekrar deneyebilirsin.");}});
         });
     }
@@ -524,15 +582,178 @@ public final class ZeytinAssistantController {
         post(token,owner,season,active,cmd,all,gardenName,null,raw);
     }
     private void post(int token,String owner,int season,long active,ZeytinAssistantCommand cmd,boolean all,String gardenName,String sourceLabel,String raw){
+        post(token,owner,season,active,cmd,all,gardenName,sourceLabel,raw,null);
+    }
+    /** @param scope kayıtlardan hesaplanmış cevapta dolu: "Anladığım" etiketleri çizilir. Hata cevaplarında null. */
+    private void post(int token,String owner,int season,long active,ZeytinAssistantCommand cmd,boolean all,String gardenName,String sourceLabel,String raw,AnswerScope scope){
         // Tarihler ekranda ve sesli okumada aynı okunur biçimde: "1 Ekim (16 gün önce)".
         final String shown=ZeytinAssistantText.humanDates(raw,System.currentTimeMillis());
         main.post(()->{
             if(!current(token,owner,season,active))return;
+            clearAnswerExtras();
             lastAnswer=shown;answer.setText(shown);source.setText(sourceLabel!=null?sourceLabel:ZeytinAssistantText.source(cmd.kind,all,gardenName));
+            lastCmd=scope==null?null:cmd;lastScope=scope;
+            if(scope!=null)renderTags(ZeytinAssistantHints.understood(cmd,gardenName,all,scope.gardens.size()),cmd);
             followUps.removeAllViews();
             for(String q:ZeytinAssistantText.followUps(cmd.kind,lastQuestion))followUps.addView(chip(q));
             transition(State.ANSWERING,ttsReady?"Cevabı okuyorum…":"Cevap hazır");haptic();speak();
         });
+    }
+    private void postHint(int token,String owner,int season,long active,ZeytinAssistantHints.Hint hint,Set<ZeytinAssistantHints.Topic> recorded){
+        main.post(()->{
+            if(!current(token,owner,season,active))return;
+            recordedTopics=recorded;
+            showHint(hint,true);
+        });
+    }
+
+    // ============================================================ ANLAMA: yakın sorular, konu kartları, etiketler
+
+    /** Yakın sorular (A) ya da konu kartları (B). Kart/konu geçişleri yerel: yeni kayıt okuması yok. */
+    private void showHint(ZeytinAssistantHints.Hint hint,boolean speakIt){
+        clearAnswerExtras();lastCmd=null;lastScope=null;
+        hinting=true;offerTopics=!hint.cards;
+        lastAnswer=hint.message;answer.setText(hint.message);answer.setTextSize(15);
+        source.setText(hint.header);source.setTextColor(warning);
+        android.graphics.drawable.Drawable lens=tinted(R.drawable.ic_op_search,warning,14);
+        source.setCompoundDrawablesRelative(lens,null,null,null);source.setCompoundDrawablePadding(dp(6));
+        if(hint.cards){
+            // Kartlar doğrudan panelde (tasarım B): cevap kartının çerçevesi yok.
+            answerCard.setBackground(null);answerCard.setPadding(0,0,0,0);source.setVisibility(View.GONE);
+            ZeytinAssistantHints.Topic[] topics=ZeytinAssistantHints.Topic.values();
+            for(int i=0;i<topics.length;i+=2){
+                LinearLayout line=row();line.setGravity(Gravity.TOP);
+                LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,-2,1);left.rightMargin=dp(10);
+                line.addView(tile(topics[i]),left);
+                if(i+1<topics.length)line.addView(tile(topics[i+1]),new LinearLayout.LayoutParams(0,-2,1));
+                hintBox.addView(line,margins(-1,-2,dp(10),0));
+            }
+        }else{
+            int icon=topicIcon(hint.topics.isEmpty()?null:hint.topics.get(0));
+            for(int i=0;i<hint.questions.size();i++){
+                String q=hint.questions.get(i);
+                ZeytinAssistantCommand qc=ZeytinAssistantCommand.parse(q);
+                hintBox.addView(suggestion(q,qc.kind==Kind.NAVIGATION?R.drawable.ic_op_add:icon,i==0),margins(-1,-2,dp(10),0));
+            }
+        }
+        transition(State.ANSWERING,hint.cards?"Hangi konuda soracaktın?":"Tam anlayamadım, yakın sorular buldum");
+        if(speakIt){haptic();speak();}
+    }
+    private void showTopic(ZeytinAssistantHints.Topic topic){
+        if(!visible())return;
+        stopTts();showHint(ZeytinAssistantHints.topic(topic,recordedTopics),false);
+    }
+    /** Önceki cevabın öneri, kart ve etiketlerini temizler; cevap kartını varsayılan görünümüne döndürür. */
+    private void clearAnswerExtras(){
+        if(hintBox==null)return;
+        hintBox.removeAllViews();tagsRow.removeAllViews();hinting=false;offerTopics=false;
+        answer.setTextSize(17);source.setTextColor(muted);source.setCompoundDrawablesRelative(null,null,null,null);source.setVisibility(View.VISIBLE);
+        answerCard.setBackground(round(surface,border,18));answerCard.setPadding(dp(14),dp(14),dp(14),dp(14));
+        if(tagSheet!=null){try{tagSheet.dismiss();}catch(Exception ignored){}tagSheet=null;}
+    }
+    private View suggestion(String q,int iconRes,boolean first){
+        LinearLayout r=row();r.setMinimumHeight(dp(52));r.setPadding(dp(14),dp(8),dp(12),dp(8));
+        r.setBackground(round(bg,first?green:border,16));
+        ImageView i=icon(iconRes,green);r.addView(i,new LinearLayout.LayoutParams(dp(18),dp(18)));
+        TextView t=label(q,14,text,true);t.setPadding(dp(10),0,dp(8),0);r.addView(t,new LinearLayout.LayoutParams(0,-2,1));
+        r.addView(icon(R.drawable.ic_op_chevron,muted),new LinearLayout.LayoutParams(dp(16),dp(16)));
+        r.setContentDescription("Sor: "+q);r.setOnClickListener(v->submit(q));
+        return r;
+    }
+    private View tile(ZeytinAssistantHints.Topic topic){
+        LinearLayout t=column();t.setPadding(dp(12),dp(12),dp(12),dp(12));t.setMinimumHeight(dp(78));
+        t.setBackground(round(surface,border,18));
+        t.addView(icon(topicIcon(topic),green),new LinearLayout.LayoutParams(dp(22),dp(22)));
+        TextView name=label(topic.label,14,text,true);name.setPadding(0,dp(6),0,0);t.addView(name);
+        t.addView(label(topic.sub,11,muted,false));
+        t.setContentDescription(topic.label+": "+topic.sub);t.setOnClickListener(v->showTopic(topic));
+        return t;
+    }
+    private static int topicIcon(ZeytinAssistantHints.Topic topic){
+        if(topic==null)return R.drawable.ic_op_leaf;
+        switch(topic){
+            case IRRIGATION:return R.drawable.ic_op_water;
+            case CARE:return R.drawable.ic_op_flask;
+            case HARVEST:return R.drawable.ic_op_olive;
+            case MONEY:return R.drawable.ic_op_tag;
+            case WEATHER:return R.drawable.ic_op_cloud;
+            default:return R.drawable.ic_op_chart;
+        }
+    }
+    private static int kindIcon(Kind kind){
+        switch(kind){
+            case IRRIGATION:case WATER_TYPE:return R.drawable.ic_op_water;
+            case FERTILIZER:case SPRAY:return R.drawable.ic_op_flask;
+            case HARVEST:case ELEK:case BRINE:case READY:return R.drawable.ic_op_olive;
+            case EXPENSE:case REVENUE:case SOLD:case SUMMARY:return R.drawable.ic_op_tag;
+            case WEATHER:return R.drawable.ic_op_cloud;
+            case MARKET:return R.drawable.ic_op_chart;
+            case TREES:case AGE:case VARIETY:case AREA:case LOCATION:case NOTE:case ACTIVE:return R.drawable.ic_op_tree;
+            default:return R.drawable.ic_op_leaf;
+        }
+    }
+    private void renderTags(List<ZeytinAssistantHints.Tag> tags,ZeytinAssistantCommand cmd){
+        tagsRow.removeAllViews();
+        for(ZeytinAssistantHints.Tag tag:tags){
+            TextView t=label(tag.text,12,text,true);t.setGravity(Gravity.CENTER_VERTICAL);t.setMinHeight(dp(34));t.setPadding(dp(10),0,dp(10),0);
+            t.setBackground(round(surface,border,17));
+            int iconRes=tag.type==ZeytinAssistantHints.TagType.TOPIC?kindIcon(cmd.kind):tag.type==ZeytinAssistantHints.TagType.GARDEN?R.drawable.ic_op_tree:R.drawable.ic_op_calendar;
+            t.setCompoundDrawablesRelative(tinted(iconRes,green,14),null,tag.editable?tinted(R.drawable.ic_op_down,muted,14):null,null);
+            t.setCompoundDrawablePadding(dp(6));
+            String what=tag.type==ZeytinAssistantHints.TagType.TOPIC?"Konu":tag.type==ZeytinAssistantHints.TagType.GARDEN?"Bahçe":"Zaman";
+            t.setContentDescription(what+": "+tag.text+(tag.editable?". Değiştirmek için dokun":""));
+            if(tag.editable){final ZeytinAssistantHints.TagType type=tag.type;t.setOnClickListener(v->openTagSheet(type));}
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,dp(34));lp.rightMargin=dp(6);tagsRow.addView(t,lp);
+        }
+    }
+    /** Etiketi düzeltme sayfası (tasarım D): seçince cevap aynı soru için yeniden hesaplanır. */
+    private void openTagSheet(ZeytinAssistantHints.TagType type){
+        if(!visible()||lastCmd==null||lastScope==null)return;
+        final ZeytinAssistantCommand cmd=lastCmd;final AnswerScope scope=lastScope;
+        stopTts();
+        final Dialog sheet=new Dialog(activity);sheet.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout box=column();box.setPadding(dp(18),dp(10),dp(18),dp(28));
+        GradientDrawable shape=new GradientDrawable();shape.setColor(card);float r=dp(26);shape.setCornerRadii(new float[]{r,r,r,r,0,0,0,0});shape.setStroke(dp(1),border);
+        box.setBackground(shape);
+        View handle=new View(activity);handle.setBackground(round(border,border,2));
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(dp(40),dp(4));hp.gravity=Gravity.CENTER_HORIZONTAL;hp.bottomMargin=dp(14);box.addView(handle,hp);
+        boolean period=type==ZeytinAssistantHints.TagType.PERIOD;
+        box.addView(label(period?"Hangi zaman?":"Hangi bahçe?",16,text,true));
+        TextView sub=label("Seçince cevap hemen yeniden hesaplanır, tekrar konuşman gerekmez.",12,muted,false);sub.setPadding(0,dp(4),0,dp(10));box.addView(sub);
+        LinearLayout options=column();
+        if(period){
+            for(String[] p:ZeytinAssistantHints.periodOptions(cmd.period)){
+                final String key=p[0];
+                options.addView(option(p[1],key.equals(cmd.period.name),()->{sheet.dismiss();rerun(cmd.withPeriod(key),new Pick(scope.gardenId(),scope.all));}));
+            }
+        }else{
+            boolean every=ZeytinAssistantHints.everyGarden(cmd,scope.all);
+            for(Garden g:scope.gardens){
+                final long id=g.id;
+                options.addView(option(g.name,!every && id==scope.gardenId(),()->{sheet.dismiss();rerun(cmd,new Pick(id,false));}));
+            }
+            if(ZeytinAssistantHints.supportsAll(cmd))
+                options.addView(option("Tüm bahçeler",every,()->{sheet.dismiss();rerun(cmd,new Pick(scope.gardenId(),true));}));
+        }
+        ScrollView scroll=new ScrollView(activity);scroll.addView(options);box.addView(scroll,new LinearLayout.LayoutParams(-1,-2));
+        sheet.setContentView(box);
+        sheet.setOnDismissListener(d->{if(tagSheet==sheet)tagSheet=null;});
+        tagSheet=sheet;sheet.show();
+        Window window=sheet.getWindow();if(window!=null){
+            window.setBackgroundDrawableResource(android.R.color.transparent);window.setGravity(Gravity.BOTTOM);
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
+            WindowManager.LayoutParams wp=window.getAttributes();wp.dimAmount=.55f;window.setAttributes(wp);window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+        }
+    }
+    private View option(String name,boolean selected,Runnable action){
+        TextView o=label(name,15,text,selected);o.setGravity(Gravity.CENTER_VERTICAL);o.setMinHeight(dp(50));o.setPadding(dp(14),0,dp(14),0);
+        if(selected){o.setBackground(round(greenSoft,greenSoft,14));o.setCompoundDrawablesRelative(null,null,tinted(R.drawable.ic_op_check,green,18),null);}
+        o.setContentDescription(name+(selected?", seçili":""));o.setOnClickListener(v->action.run());
+        return o;
+    }
+    private android.graphics.drawable.Drawable tinted(int res,int color,int size){
+        android.graphics.drawable.Drawable d=activity.getDrawable(res);if(d==null)return null;
+        d=d.mutate();d.setTint(color);d.setBounds(0,0,dp(size),dp(size));return d;
     }
     private void speak(){
         if(!visible()||lastAnswer.isEmpty()||conversation.state()!=State.ANSWERING)return;
@@ -561,6 +782,7 @@ public final class ZeytinAssistantController {
     }
     private void releasePanel(){
         session++;conversation.nextTurn();stopRecognizer();stopTts();hideKeyboard();
+        if(tagSheet!=null){try{tagSheet.dismiss();}catch(Exception ignored){}tagSheet=null;}
         transition(State.IDLE,"Asistan kapatıldı");if(wave!=null)wave.listening(false);ttsReady=false;typing=false;
         if(tts!=null){try{tts.shutdown();}catch(Exception ignored){}tts=null;}
     }

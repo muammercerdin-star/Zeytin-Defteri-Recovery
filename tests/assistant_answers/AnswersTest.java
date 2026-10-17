@@ -58,6 +58,17 @@ public class AnswersTest {
 
   try(ZeytinAssistantData d=new ZeytinAssistantData(new Context())){
    data=d;gardens=d.gardens();
+   // Anlama katmanı: kayıtlı konular (yakın soru önerileri bunlarla süzülür) ve etiketten yeniden hesaplama.
+   Set<ZeytinAssistantHints.Topic> rec=d.recordedTopics(gardens);
+   check(rec.equals(EnumSet.allOf(ZeytinAssistantHints.Topic.class)),"kayıtlı konular: "+rec);
+   check(d.recordedTopics(Collections.singletonList(gardens.get(1))).contains(ZeytinAssistantHints.Topic.IRRIGATION)
+        && !d.recordedTopics(Collections.singletonList(gardens.get(1))).contains(ZeytinAssistantHints.Topic.CARE),"Afşar: sulama var, ilaç/gübre yok");
+   String month=d.answer(cmd("Son sulama ne zaman?").withPeriod("bu ay"),gardens.get(0),gardens,false);
+   check(month.contains("Girelli Zeytinliği") && (day(-7).substring(0,7).equals(day(0).substring(0,7))?month.contains(day(-7)):month.contains("kaydı bulunamadı")),"etiket: son sulama → bu ay: "+month);
+   String afsar=d.answer(cmd("Toplam hasat kaç?"),gardens.get(1),gardens,false);
+   check(afsar.startsWith("Afşar Bahçesi") && afsar.contains("800 kg hasat"),"etiket: tüm bahçeler → Afşar: "+afsar);
+   String every=d.answer(cmd("Bu sezon kaç kilo hasat yaptım?"),gardens.get(0),gardens,true);
+   check(every.startsWith("Tüm bahçelerin") && every.contains("2.000 kg hasat"),"etiket: Girelli → tüm bahçeler: "+every);
    // Sayılar (elle hesap): Girelli masraf = işlem 300+250+1500+800+900 + hasat 3000+500 + salamura 200+50 = 7.500
    has("Masrafım kaç","7.500 TL");has("Bu sezon masrafım kaç?","7.500 TL");
    has("Toplam masraf ne kadar","9.300 TL");                       // + Afşar 200+1600

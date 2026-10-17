@@ -9,6 +9,6 @@ with tempfile.TemporaryDirectory(prefix='zeytin-answers-') as d:
     exec('if True:\n'+stubs_code,ns)
     for name,content in ns['stubs'].items():
         p=temp/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content)
-    prod=[root/'app/src/main/java/com/zeytindefteri/app'/f for f in ['ZeytinAssistantCommand.java','ZeytinAssistantData.java','ZeytinAssistantWeather.java','ZeytinAssistantPeriod.java','GardenTodayAdvisor.java','ZeytinAssistantText.java']]
+    prod=[root/'app/src/main/java/com/zeytindefteri/app'/f for f in ['ZeytinAssistantCommand.java','ZeytinAssistantData.java','ZeytinAssistantWeather.java','ZeytinAssistantPeriod.java','GardenTodayAdvisor.java','ZeytinAssistantText.java','ZeytinAssistantHints.java']]
     subprocess.run(['javac','-nowarn','-encoding','UTF-8','-d',str(temp/'c')]+[str(temp/n) for n in ns['stubs']]+list(map(str,prod))+[str(root/'tests/assistant_answers/AnswersTest.java')],check=True,stderr=subprocess.DEVNULL)
     subprocess.run(['java','-Dfile.encoding=UTF-8','-cp',str(temp/'c'),'AnswersTest'],check=True)

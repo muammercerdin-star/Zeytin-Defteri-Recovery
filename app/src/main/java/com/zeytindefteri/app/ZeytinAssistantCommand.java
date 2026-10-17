@@ -28,6 +28,15 @@ public final class ZeytinAssistantCommand {
         tomorrow=text.contains("yarin");
         farmingQuestion=text.contains("atayim") || text.contains("yapayim") || text.contains("doz") || text.contains("hastalik");
     }
+    /**
+     * Aynı soru, başka bir dönemle ("Anladığım" etiketinden zaman seçimi). Soru türü, bahçe ve elek aynı kalır;
+     * yalnızca metindeki dönem sözü değiştirilir. Boş anahtar: dönem yok (bu sezonun tamamı).
+     */
+    public ZeytinAssistantCommand withPeriod(String key) {
+        String base=text.replaceAll("\\b(gecen hafta|bu hafta|gecen ay|bu ay|bugun|dun)\\b"," ").replaceAll("\\s+"," ").trim();
+        String next=key==null||key.trim().isEmpty()?base:(key.trim()+" "+base).trim();
+        return new ZeytinAssistantCommand(kind,next,target,grade,opType);
+    }
     public static String normalize(String s) {
         if (s==null) return "";
         s=s.toLowerCase(new Locale("tr","TR")).replace('ı','i');

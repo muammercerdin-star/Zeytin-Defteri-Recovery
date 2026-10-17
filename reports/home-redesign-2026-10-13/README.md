@@ -1006,3 +1006,60 @@ Tuvaldeki onaylanan dört pano (dinleme, cevap, yazarak sor, durumlar) uyguland�
 - Yeni `tests/assistant_answers`: 74 kontrol geçti. Tarihler bugüne göre üretiliyor; test her gün çalışır. Düzeltmelerden biri geçici olarak geri alındığında test 4 hata verdi, yani gerçekten yakalıyor.
 - Mevcut asistan testleri (55 + 25 + 165 + 36 + 21 + 30 + 36), panel ve piyasa testleri geçti. Diğer sonuçlar değişmedi.
 - Cihazda denenmedi. Asıl risk ses tanımanın sözcükleri nasıl yazdığı: örneğin "Afşar" yerine "afşar'ın" gibi. Bu ancak cihazda görülür.
+
+## 33. Asistan: yarım anlama, konu kartları ve "Anladığım" etiketleri (1 commit)
+
+**Amaç:** Çiftçi hangi soruların kayıtlı olduğunu bilmez. Asistan bir soruyu anlamadığında artık yalnızca "bilmiyorum" demiyor; çiftçiye doğru soruyu kullanırken öğretiyor. Tasarım tuvaldeki beş tahtadan uygulandı: yarım anlama, konu kartları, anladığım etiketleri, etiketi düzelt, kurallar.
+
+**Ne değişti:**
+1. **Yarım anlama ("Bunu mu demek istedin?").**
+   - Asistan kalıba uymayan bir soruda konu kelimelerini arıyor: su/sula/damla, ilaç/gübre/zirai, hasat/topla/elek/salamura, masraf/para/sat/kâr, hava/yağmur/rüzgâr/soğuk, fiyat/piyasa/tüccar.
+   - O konunun en çok 3 sorusunu önerilerek gösteriyor. Soruda bahçe adı ("Girelli") ya da dönem ("bu ay") geçtiyse önerilere aynen taşınıyor.
+   - Örnek: "Girelli'ye suyu en son ne vakit verdik ya" → "Girelli için son sulama ne zaman?" ve iki benzeri.
+   - Öneriye dokununca cevap hemen geliyor.
+2. **Konu kartları.**
+   - Hiç tanıdık kelime yoksa ya da "Ne sorabilirim?" denirse 6 kart çıkıyor: Sulama, İlaç ve gübre, Hasat ve elek, Para ve satış, Hava, Piyasa.
+   - Karta dokununca o konunun 3 sorusu açılıyor. Yakın soru önerilerinde ikinci düğme "Konular" oluyor ve kartlara götürüyor.
+3. **Kaydı olmayan konu önerilmiyor.**
+   - Örnek: bu sezon hiç sulama kaydı yoksa "Henüz sulama kaydın yok. “Sulama aç” dersen ekleyebilirsin." deniyor.
+   - Kayıt kontrolü mevcut okuma fonksiyonlarıyla yapılıyor; yeni SQL yok.
+4. **"Anladığım" etiketleri.**
+   - Kayıtlardan hesaplanan cevabın üstünde konu · bahçe · zaman etiketleri görünüyor.
+   - Ok işaretli etikete dokununca bir alt sayfa açılıyor. Zaman için Bugün / Bu hafta / Bu ay / Geçen ay / Bu sezon; bahçe için bahçe listesi var. Tüm bahçelerden hesaplanabilen sorularda bahçe listesinde "Tüm bahçeler" seçeneği de bulunuyor.
+   - Seçim yapılınca aynı soru, tekrar konuşmaya gerek kalmadan yeniden hesaplanıyor. Soru türü değişmiyor.
+   - Etiket cevabı doğru anlatıyor: bugünkü motor "Toplam sulama" gibi bir soruyu yine tek bahçe için hesaplıyorsa etiket "Tüm bahçeler" değil bahçe adını yazıyor.
+5. **Özel cevaplar önce geliyor.**
+   - Selam, teşekkür, kayıt silme/kaydetme ve ilaç dozu / teşhis cevapları değişmedi ve önerilerden önce veriliyor.
+   - "Gübre dozu kaç gram?" sorusunda içinde "gübre" geçse bile gübre sorusu önerilmiyor.
+
+**Değişmeyenler:**
+- Bugünkü kalıplar ve cevaplar aynı. Yeni davranış yalnızca anlaşılamayan sorularda ve cevabın üstündeki etiketlerde var.
+- Yapay zekâ yok; internet gerekmez.
+- Asistan kayıt yazmıyor ve rakam tahmin etmiyor.
+- Anlaşılamayan sorular hiçbir yere gönderilmiyor ve saklanmıyor.
+- Önerilen her soru göstermeden önce bugünkü ayrıştırıcıdan geçiriliyor; beklenen türe düşmeyen öneri gösterilmiyor.
+
+**Dosyalar:**
+- Yeni `ZeytinAssistantHints.java` (saf Java).
+- `ZeytinAssistantCommand.withPeriod`: aynı soruyu başka dönemle sorar.
+- `ZeytinAssistantText.special`: `unknownReply` davranışı aynı.
+- `ZeytinAssistantData.recordedTopics`.
+- `ZeytinAssistantController`: öneri ve kart görünümü, etiketler, düzeltme sayfası.
+- İkonlar: `ic_op_cloud`, `ic_op_calendar`, `ic_op_search`.
+
+**Testler:**
+- Yeni `tests/assistant_hints`: 1408 mantık kontrolü ve 25 bağlantı kontrolü geçti.
+  - Her öneri kalıbı 7 dönem ve 4 bahçe adıyla üretildi. Her biri beklenen türe düşüyor, dönem korunuyor, bahçe doğru çözülüyor.
+  - Bugün anlaşılmayan 11 gerçekçi soru doğru konuya gidiyor.
+  - Özel cevaplar önce geliyor.
+  - Kaydı olmayan konu süzülüyor.
+  - Etiketler ve dönem değiştirme doğru çalışıyor.
+  - Bağlantı denetiminde özel cevap sırası bilerek bozulduğunda hata yakalandı.
+- `tests/assistant_answers`: 79 kontrol geçti (5 yeni). Kayıtlı konular, "son sulama → bu ay", "Girelli → tüm bahçeler" ve "→ Afşar" yeniden hesaplamaları bilinen sayılarla karşılaştırıldı.
+- Mevcut asistan testleri (55 + 25 + 165 + 36 + 21), panel (36 + 22), piyasa (33 + 9) ve ölçüm (36) testleri geçti. Bugünkü 165 soru kalıbının sınıflandırması değişmedi.
+- İki eski test düzeneğinin derleme listesine yeni dosya eklendi.
+- Asistan kodu Android SDK'sına karşı tip denetiminden geçti: hata sayısı 493'te kaldı; bu hataların hepsi ortamda olmayan Firebase/AndroidX kaynaklı. Bilerek eklenen hata yakalandı.
+- Depodaki diğer testlerde `blocks/check_blocks`, `feed_thread/check_preview`, `location/check_location` ve `season_report/check_wiring` bu değişiklikten önce de başarısızdı; sonuçları değişmedi.
+- Cihazda ya da emülatörde denenmedi.
+  - Panelin görünümü (kartların, etiketlerin ve alt sayfanın küçük ekrana sığması) cihazda görülmeli.
+  - Ses tanımanın gerçek söyleyişleri nasıl yazdığı da cihazda görülmeli.

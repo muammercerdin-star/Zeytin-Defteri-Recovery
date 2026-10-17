@@ -31,7 +31,7 @@ public class DatabaseHelper {
     for name,content in stubs.items():
         p=temp/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content)
     compiler=temp/'Compile.java';compiler.write_text('import javax.tools.ToolProvider; public class Compile {public static void main(String[] args){System.exit(ToolProvider.getSystemJavaCompiler().run(null,System.out,System.err,args));}}')
-    production=[root/'app/src/main/java/com/zeytindefteri/app'/f for f in ['ZeytinAssistantCommand.java','ZeytinAssistantData.java','ZeytinAssistantWeather.java','ZeytinAssistantPeriod.java','GardenTodayAdvisor.java']]
+    production=[root/'app/src/main/java/com/zeytindefteri/app'/f for f in ['ZeytinAssistantCommand.java','ZeytinAssistantData.java','ZeytinAssistantWeather.java','ZeytinAssistantPeriod.java','GardenTodayAdvisor.java','ZeytinAssistantHints.java']]
     tests=[root/'tests/assistant/AssistantCommandTest.java',root/'tests/assistant/AssistantDataTest.java',root/'tests/final_assistant/FinalCommandTest.java',root/'tests/final_assistant/FinalDataTest.java',root/'tests/today/GardenTodayAdvisorTest.java']
     subprocess.run(['java',str(compiler),'--release','8','-encoding','UTF-8','-d',str(temp/'classes')]+[str(temp/n) for n in stubs]+list(map(str,production+tests)),check=True)
     for test in ['AssistantCommandTest','AssistantDataTest','FinalCommandTest','FinalDataTest','GardenTodayAdvisorTest']:subprocess.run(['java','-cp',str(temp/'classes'),test],check=True)

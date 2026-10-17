@@ -89,6 +89,16 @@ public final class ZeytinAssistantText {
      * tarımsal reçete vermez). Diğer her şey için genel cevap.
      */
     public static String unknownReply(String raw) {
+        String special = special(raw);
+        return special != null ? special
+                : "Bu soruyu henüz bilmiyorum. Aşağıdaki örneklerden birini deneyebilir ya da “Yaz”a dokunup konulara göz atabilirsin.";
+    }
+
+    /**
+     * Selamlaşma, teşekkür, kayıt silme/değiştirme ve ilaç dozu / teşhis için sabit cevap; başka her şeyde null.
+     * Panel bunları yakın soru önerilerinden önce kullanır: "kaç gram ilaç" sorusuna ilaçlama sorusu önerilmez.
+     */
+    public static String special(String raw) {
         String s = ZeytinAssistantCommand.normalize(raw);
         if (s.matches("(merhaba|selam|selamlar|selamun aleykum|gunaydin|iyi gunler|iyi aksamlar|hey|alo)( .*)?"))
             return "Merhaba! Kayıtların, hava ve piyasa hakkında sorabilirsin. Örneğin “Son sulama ne zaman?”";
@@ -98,7 +108,7 @@ public final class ZeytinAssistantText {
             return "Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.";
         if (s.matches(".*\\b(doz|dozu|teshis|hasta|hastalik\\w*|kac litre|kac gram|ne kadar ilac|hangi ilac)\\b.*") || s.contains("kac litre") || s.contains("kac gram"))
             return "İlaç dozu ya da hastalık teşhisi veremem. Ürün etiketine uy ve bir ziraat mühendisine ya da ilçe tarım müdürlüğüne danış.";
-        return "Bu soruyu henüz bilmiyorum. Aşağıdaki örneklerden birini deneyebilir ya da “Yaz”a dokunup konulara göz atabilirsin.";
+        return null;
     }
 
     /** Yazarak sorma ekranındaki örnek sorular, konulara göre. */
