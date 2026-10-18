@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gizlilik Politikası · Zeytin Defteri</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fffdf8;--ink:#1d2a1f;--muted:#5d665c;--line:#e2ddd0;--accent:#4d6b2f;--accent-soft:#eef2e4}
+@media (prefers-color-scheme:dark){:root{--bg:#121611;--card:#1a2018;--ink:#e9eee4;--muted:#a6af9f;--line:#2c3429;--accent:#a9c97a;--accent-soft:#232c1d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 64px}
+.top{font-size:14px;margin-bottom:20px}
+.top a{color:var(--accent);text-decoration:none}
+h1{font-size:28px;line-height:1.25;margin:0 0 6px}
+.meta{color:var(--muted);font-size:14px;margin:0 0 24px}
+h2{font-size:19px;margin:32px 0 8px;padding-top:16px;border-top:1px solid var(--line)}
+p,li{overflow-wrap:anywhere}
+ul,ol{padding-left:22px}
+a{color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card h3{margin:0 0 6px;font-size:18px}
+.card ul{margin:6px 0 0}
+.note{background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin:18px 0}
+footer{margin-top:48px;color:var(--muted);font-size:13px}
+</style></head>
+<body><main><div class="top"><a href="index.html">← Zeytin Defteri</a></div><h1>Zeytin Defteri · Gizlilik Politikası</h1><p class="meta">Sürüm 1.2 · 14 Ekim 2026</p><p>Bu politika, Zeytin Defteri&#x27;nin hangi hizmetleri kullandığını, verilerinin nerede tutulduğunu ve nasıl silinebileceğini açıklar. Kişisel verilerin işlenmesine ilişkin yasal bilgilendirme için ayrıca &quot;KVKK Aydınlatma Metni&quot;ni inceleyebilirsin.</p>
+<p>Yayıncı: Muammer Çerdin (bireysel geliştirici)</p>
+<p>İletişim: <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a></p>
+<h2>1. Hesap ve giriş</h2>
+<p>Hesabın Google&#x27;ın Firebase Authentication hizmetiyle yönetilir. E-posta ile kayıt olursan ad soyad ve e-posta adresin Firebase&#x27;e iletilir. Şifren Zeytin Defteri tarafından görülmez, uygulamada veya sunucularımızda düz metin olarak saklanmaz; doğrulaması doğrudan Firebase tarafından yapılır.</p>
+<p>Google ile giriş yaparsan Google hesabındaki ad, e-posta adresi ve profil fotoğrafı bağlantısı kullanılır. Google hesabının şifresi uygulamaya iletilmez.</p>
+<h2>2. Bahçe ve sezon kayıtları</h2>
+<p>Bahçe, işlem, hasat, elek, salamura, stok, satış ve hatırlatma kayıtların önce cihazındaki uygulama veritabanında tutulur. Giriş yaptığında bu kayıtlar, yalnızca senin hesabının erişebileceği şekilde Cloud Firestore&#x27;da saklanır ve cihazların arasında eşitlenir.</p>
+<p>Android&#x27;in uygulama yedekleme özelliği açıksa, cihazındaki uygulama verileri Android&#x27;in kendi yedekleme mekanizmasına dahil olabilir; bu yedekleme Google hesabın ve cihaz ayarların tarafından yönetilir.</p>
+<h2>3. Konum ve hava durumu</h2>
+<p>Uygulama cihazının konum iznini istemez. Bahçenin il/ilçe/mahalle bilgisini ve gerekirse konumunu sen seçersin. Hava durumunu göstermek için bahçenin koordinatları veya yer adı Open-Meteo hizmetine gönderilir; hesap bilgilerin gönderilmez. Bölge listeleri için Türkiye il/ilçe/mahalle veri servislerine yalnızca arama bilgisi gönderilir.</p>
+<h2>4. Meydan (sohbet) ve kullanıcı içerikleri</h2>
+<p>Meydan&#x27;da paylaştığın gönderiler ve yanıtlar, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisiyle birlikte diğer üyelere gösterilir. Meydan şu anda yalnızca metin içerik destekler; fotoğraf yüklenmez.</p>
+<p>Bir içeriği veya kullanıcıyı şikâyet edebilir, kullanıcıları engelleyebilirsin. Şikâyetler ve moderasyon işlemleri kayıt altına alınır ve yetkili moderatörler tarafından incelenir.</p>
+<h2>5. Piyasa ve Zeytin Ligi</h2>
+<p>Bu özellikler iki ayrı tercihle çalışır.</p>
+<ul>
+<li>Bölge istatistikleri (Piyasa ve Zeytin Ligi bölge kartları): &quot;Piyasaya Anonim Katkı&quot; seçeneği varsayılan olarak açıktır ve Zeytin Ligi ekranını ilk açtığında sana bildirilir. Açıkken elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi Supabase&#x27;e gönderilir. Bu katkılar kullanıcı kimliğin yerine geri döndürülemez bir üretici koduyla saklanır. Seçeneği Ayarlar → &quot;Piyasaya Anonim Katkı&quot; bölümünden istediğin zaman kapatabilirsin. Bir bölgede en az 5 farklı üretici olmadan o bölgenin rakamları yayınlanmaz.</li>
+<li>Zeytin Ligi sıralaması: Satış kaydında piyasa paylaşımını işaretlediğin satışlar ve bunlara bağlı elek kayıtları doğrulandıktan sonra sıralama hesabına katılır. Sıralamada adın gösterilmez; &quot;Üretici 3&quot; gibi bir sıra etiketiyle kilogram, tutar ve puan görünür. Bir bölgenin sıralaması, en az 4 üretici sıralama şartlarını sağladığında yayınlanır.</li>
+</ul>
+<p>İki tercihi de istediğin zaman kapatabilirsin.</p>
+<h2>6. Bildirimler</h2>
+<p>Meydan yanıtları gibi bildirimleri gönderebilmek için cihazının Firebase Cloud Messaging bildirim anahtarı hesabınla ilişkilendirilir. Çıkış yaptığında bu anahtar silinir. Hatırlatmalar cihazında yerel olarak planlanır. Bildirim iznini Android ayarlarından istediğin zaman kapatabilirsin.</p>
+<h2>7. Sesli asistan</h2>
+<p>Mikrofon izni yalnızca sesli asistanı kullandığında istenir. Konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür; bu hizmetin işleyişi cihazındaki sağlayıcının (çoğunlukla Google) koşullarına tabidir. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.</p>
+<h2>8. Analitik, reklam ve hata kayıtları</h2>
+<p>Uygulamada reklam, reklam kimliği veya üçüncü taraf analitik/hata raporlama kütüphanesi bulunmaz. Hata mesajlarına şifre veya giriş bilgisi yazılmaz.</p>
+<h2>9. Üçüncü taraf hizmetler</h2>
+<ul>
+<li>Google Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging)</li>
+<li>Google ile giriş (Android Credential Manager)</li>
+<li>Supabase (anonim piyasa istatistikleri ve moderasyon)</li>
+<li>Open-Meteo (hava durumu ve konum araması)</li>
+<li>Türkiye il/ilçe/mahalle veri servisleri</li>
+<li>Android konuşma tanıma ve metin okuma hizmetleri (cihazdaki sağlayıcı)</li>
+</ul>
+<p>Bu hizmetler verileri kendi gizlilik koşullarına göre işler ve sunucuları yurt dışında bulunabilir.</p>
+<h2>10. Saklama ve silme</h2>
+<p>Kayıtların, hesabın açık olduğu ve sen silmediğin sürece saklanır.</p>
+<ul>
+<li>Tek tek kayıtlar: Bahçe ve işlem kayıtlarını uygulama içinden silebilirsin; silinen kayıtlar diğer cihazlarına da silme bilgisi olarak iletilir.</li>
+<li>Meydan içerikleri: Kendi gönderi ve yanıtlarını uygulama içinden kaldırabilirsin.</li>
+<li>Piyasa katkıları: &quot;Piyasaya Anonim Katkı&quot;yı kapattığında yeni katkı gönderilmez ve bu cihazdan gönderilmiş katkıların sunucudan geri çekilir. Başka bir cihazdan ya da uygulamayı yeniden kurmadan önce gönderilmiş katkıların kaldırılmasını <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a> adresinden talep edebilirsin.</li>
+<li>Hesabın tamamı: Ayarlar &gt; &quot;Hesabımı Sil&quot; ile hesabını ve ilişkili verilerini uygulama içinden kalıcı olarak silebilirsin. Güvenliğin için son birkaç dakika içinde giriş yapmış olman gerekir. Bu işlemle giriş hesabın, bulut yedeklerin (bahçe, işlem, hasat, elek, satış ve salamura kayıtları), Meydan gönderilerin ve fotoğrafların, engelleme listen, verdiğin şikayetler, Zeytin Ligi kayıtların ve bu cihazdan gönderilmiş anonim piyasa katkıların silinir; başka gönderilere yazdığın yorumların içeriği silinir ve &quot;Silinmiş kullanıcı&quot; olarak görünür. Bu cihazdaki kayıtların da silinir. Başka kullanıcıların senin hakkında verdiği şikayet kayıtları güvenlik ve moderasyon amacıyla saklanabilir; kimlik içermeyen toplu piyasa istatistikleri silinmez. Uygulamaya erişemiyorsan silme talebini, hesabında kayıtlı e-posta adresinden <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a> adresine yazarak da iletebilirsin; talebin, kimliğin doğrulandıktan sonra işleme alınır.</li>
+</ul>
+<p>Kanunen saklanması zorunlu olan bilgiler ile hizmet sağlayıcıların yedeklerinde kalan kopyalar, ilgili yükümlülük ve sağlayıcı süreçleri çerçevesinde ayrıca değerlendirilir.</p>
+<h2>11. Çocuklar</h2>
+<p>Zeytin Defteri tarımsal üretim kayıtları için tasarlanmıştır ve çocuklara yönelik değildir.</p>
+<h2>12. Değişiklikler</h2>
+<p>Bu politika güncellendiğinde sürüm numarası ve tarih değişir; önemli değişiklikler uygulama içinde duyurulur.</p>
+<footer>Geliştirici: Muammer Çerdin · <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a></footer>
+</main></body></html>

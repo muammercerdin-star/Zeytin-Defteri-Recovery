@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KVKK Aydınlatma Metni · Zeytin Defteri</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fffdf8;--ink:#1d2a1f;--muted:#5d665c;--line:#e2ddd0;--accent:#4d6b2f;--accent-soft:#eef2e4}
+@media (prefers-color-scheme:dark){:root{--bg:#121611;--card:#1a2018;--ink:#e9eee4;--muted:#a6af9f;--line:#2c3429;--accent:#a9c97a;--accent-soft:#232c1d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 64px}
+.top{font-size:14px;margin-bottom:20px}
+.top a{color:var(--accent);text-decoration:none}
+h1{font-size:28px;line-height:1.25;margin:0 0 6px}
+.meta{color:var(--muted);font-size:14px;margin:0 0 24px}
+h2{font-size:19px;margin:32px 0 8px;padding-top:16px;border-top:1px solid var(--line)}
+p,li{overflow-wrap:anywhere}
+ul,ol{padding-left:22px}
+a{color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card h3{margin:0 0 6px;font-size:18px}
+.card ul{margin:6px 0 0}
+.note{background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin:18px 0}
+footer{margin-top:48px;color:var(--muted);font-size:13px}
+</style></head>
+<body><main><div class="top"><a href="index.html">← Zeytin Defteri</a></div><h1>Zeytin Defteri · KVKK Aydınlatma Metni</h1><p class="meta">Sürüm 1.2 · 14 Ekim 2026</p><p>Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu&#x27;nun (&quot;KVKK&quot;) 10. maddesi uyarınca, Zeytin Defteri mobil uygulamasını kullanırken kişisel verilerinin nasıl işlendiği hakkında seni bilgilendirmek için hazırlanmıştır. Bu metin bir sözleşme veya açık rıza beyanı değildir; yalnızca bilgilendirme amaçlıdır.</p>
+<h2>1. Veri sorumlusu</h2>
+<p>Zeytin Defteri bireysel bir geliştirici tarafından yayınlanmaktadır.</p>
+<ul>
+<li>Veri sorumlusu: Muammer Çerdin</li>
+<li>İletişim ve başvuru e-postası: <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a></li>
+</ul>
+<h2>2. İşlenen kişisel veri kategorileri</h2>
+<p>Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlenir:</p>
+<ul>
+<li>Kimlik ve hesap bilgileri: ad soyad veya görünen ad, e-posta adresi, Firebase tarafından atanan kullanıcı kimliği (UID). Google ile giriş yaparsan Google hesabındaki ad, e-posta ve profil fotoğrafı bağlantısı.</li>
+<li>Bahçe ve üretim kayıtları: bahçe adı, il/ilçe/mahalle bilgisi, haritadan seçtiğin bahçe konumu (koordinat), ağaç bilgileri, bakım işlemleri, masraf, hasat, elek, salamura, stok ve satış kayıtları, hatırlatmalar.</li>
+<li>Topluluk (Meydan) içerikleri: paylaştığın gönderi ve yanıt metinleri, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisi.</li>
+<li>Güvenlik ve topluluk kayıtları: oluşturduğun şikâyetler ve engellediğin kullanıcılar; sana yönelik şikâyet ve moderasyon kayıtları.</li>
+<li>Cihaz ve bildirim bilgileri: bildirim gönderebilmek için cihazına ait bildirim anahtarı (FCM token) ve oturum kimliği.</li>
+<li>Piyasa katkısı (&quot;Piyasaya Anonim Katkı&quot; seçeneği açıkken; varsayılan açık, Ayarlar&#x27;dan kapatılabilir): elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi. Bu kayıtlar kullanıcı kimliğin yerine geri döndürülemez şekilde dönüştürülmüş bir üretici koduyla saklanır.</li>
+<li>Zeytin Ligi (yalnızca satış kaydında piyasa paylaşımını işaretlediğin satışlar için): ilgili satış ve elek kaydının miktar, tutar ve sınıf bilgileri; sıralamada adın yerine sıra etiketi gösterilir.</li>
+<li>Sesli asistan: mikrofon iznini verirsen konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.</li>
+</ul>
+<h2>3. İşleme amaçları</h2>
+<ul>
+<li>Hesabını oluşturmak, giriş yapmanı sağlamak ve hesabını güvende tutmak,</li>
+<li>Bahçe ve sezon kayıtlarını saklamak, cihazların arasında eşitlemek ve sana raporlar sunmak,</li>
+<li>Bahçe konumuna göre hava durumu bilgisi göstermek,</li>
+<li>Meydan topluluk özelliğini sunmak, yanıt bildirimleri göndermek,</li>
+<li>Şikâyetleri incelemek, kötüye kullanımı önlemek ve topluluk kurallarını uygulamak,</li>
+<li>Anonim bölgesel piyasa istatistikleri ve (satışta paylaşımı işaretlediğinde) Zeytin Ligi sıralamaları oluşturmak,</li>
+<li>Taleplerine ve başvurularına yanıt vermek, hukuki yükümlülükleri yerine getirmek.</li>
+</ul>
+<h2>4. Hukuki sebepler</h2>
+<ul>
+<li>Hesap, bahçe kayıtları, eşitleme, bildirimler ve topluluk özelliği: bir sözleşmenin kurulması veya ifasıyla doğrudan ilgili olması (KVKK m. 5/2-c).</li>
+<li>Güvenlik, kötüye kullanımın önlenmesi ve moderasyon: temel hak ve özgürlüklerine zarar vermemek kaydıyla veri sorumlusunun meşru menfaati (KVKK m. 5/2-f) ve bir hakkın tesisi, kullanılması veya korunması (KVKK m. 5/2-e).</li>
+<li>Kanundan doğan talepler ve yükümlülükler: hukuki yükümlülüğün yerine getirilmesi (KVKK m. 5/2-ç).</li>
+<li>Piyasa katkısı ve Zeytin Ligi: &quot;Piyasaya Anonim Katkı&quot; ayarı varsayılan olarak açıktır ve ilk kullanımda bildirilir; Zeytin Ligi sıralaması ise yalnızca satıştaki piyasa paylaşımı seçeneğini işaretlediğin satışları kapsar. Tercihlerini istediğin zaman kapatabilirsin; kapattığında bu cihazdan gönderilen anonim katkıların geri çekilir. Kapatman uygulamanın diğer özelliklerini kullanmanı engellemez.</li>
+</ul>
+<h2>5. Toplama yöntemi</h2>
+<p>Veriler; uygulamadaki formlara girdiğin bilgilerden, Google ile giriş yaptığında Google hesabından, uygulamanın çalışması sırasında otomatik olarak (bildirim anahtarı, eşitleme bilgileri) ve elektronik ortamda toplanır.</p>
+<h2>6. Veri alıcıları ve aktarım amaçları</h2>
+<p>Kişisel verilerin satılmaz. Hizmetin çalışması için yalnızca aşağıdaki hizmet sağlayıcılarla, belirtilen amaçlarla paylaşılır:</p>
+<ul>
+<li>Google LLC / Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging): hesap yönetimi, verilerin saklanması ve eşitlenmesi, bildirim gönderimi.</li>
+<li>Google Android konuşma tanıma hizmeti (cihazındaki sağlayıcı): sesli asistan komutlarının metne dönüştürülmesi.</li>
+<li>Supabase: anonim piyasa istatistikleri ve moderasyon işlemleri.</li>
+<li>Open-Meteo: bahçe konumuna ait koordinat veya yer adıyla hava durumu ve konum araması; hesap bilgilerin bu hizmete gönderilmez.</li>
+<li>Türkiye il/ilçe/mahalle veri servisleri: bölge listesi araması; hesap bilgilerin gönderilmez.</li>
+<li>Diğer kullanıcılar: Meydan&#x27;da paylaştığın içerikler ve görünen adın, uygulamayı kullanan diğer üyelere gösterilir.</li>
+<li>Yetkili kamu kurum ve kuruluşları: yalnızca kanunen zorunlu olduğu durumlarda.</li>
+</ul>
+<h2>7. Yurt dışına aktarım</h2>
+<p>Firebase ve Supabase altyapısını kullandığımız için kişisel verilerin yurt dışında bulunan sunucularda işlenebilir. Bu aktarımlar KVKK m. 9&#x27;da öngörülen usullere uygun olarak yapılır. Aktarımın dayandığı güvence ve sunucu konumlarına ilişkin güncel bilgiye <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a> adresinden ulaşabilirsin.</p>
+<h2>8. KVKK m. 11 kapsamındaki hakların</h2>
+<p>Veri sorumlusuna başvurarak:</p>
+<ul>
+<li>Kişisel verilerinin işlenip işlenmediğini öğrenme,</li>
+<li>İşlenmişse buna ilişkin bilgi talep etme,</li>
+<li>İşlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme,</li>
+<li>Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme,</li>
+<li>Eksik veya yanlış işlenmişse düzeltilmesini isteme,</li>
+<li>KVKK m. 7&#x27;deki şartlar çerçevesinde silinmesini veya yok edilmesini isteme,</li>
+<li>Düzeltme, silme ve yok etme işlemlerinin aktarıldığı üçüncü kişilere bildirilmesini isteme,</li>
+<li>Münhasıran otomatik sistemlerle analiz edilmesi sonucu aleyhine bir sonuç çıkmasına itiraz etme,</li>
+<li>Kanuna aykırı işleme nedeniyle zarara uğraman hâlinde zararın giderilmesini talep etme</li>
+</ul>
+<p>haklarına sahipsin.</p>
+<h2>9. Başvuru yöntemi</h2>
+<p>Taleplerini, kimliğini doğrulamamıza yetecek bilgilerle (ad soyad, hesabında kayıtlı e-posta adresi ve talebin) <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a> adresine, hesabında kayıtlı e-posta adresinden yazarak iletebilirsin. Başvurular, talebin niteliğine göre en kısa sürede ve en geç otuz gün içinde ücretsiz olarak sonuçlandırılır; işlemin ayrıca bir maliyet gerektirmesi hâlinde Kişisel Verileri Koruma Kurulu&#x27;nca belirlenen tarifedeki ücret alınabilir.</p>
+<footer>Geliştirici: Muammer Çerdin · <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a></footer>
+</main></body></html>

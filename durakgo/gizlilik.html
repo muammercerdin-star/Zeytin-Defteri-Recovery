@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gizlilik Politikası · DurakGo</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fffdf8;--ink:#1d2a1f;--muted:#5d665c;--line:#e2ddd0;--accent:#4d6b2f;--accent-soft:#eef2e4}
+@media (prefers-color-scheme:dark){:root{--bg:#121611;--card:#1a2018;--ink:#e9eee4;--muted:#a6af9f;--line:#2c3429;--accent:#a9c97a;--accent-soft:#232c1d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 64px}
+.top{font-size:14px;margin-bottom:20px}
+.top a{color:var(--accent);text-decoration:none}
+h1{font-size:28px;line-height:1.25;margin:0 0 6px}
+.meta{color:var(--muted);font-size:14px;margin:0 0 24px}
+h2{font-size:19px;margin:32px 0 8px;padding-top:16px;border-top:1px solid var(--line)}
+p,li{overflow-wrap:anywhere}
+ul,ol{padding-left:22px}
+a{color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card h3{margin:0 0 6px;font-size:18px}
+.card ul{margin:6px 0 0}
+.note{background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin:18px 0}
+footer{margin-top:48px;color:var(--muted);font-size:13px}
+</style></head>
+<body><main><div class="top"><a href="index.html">← DurakGo</a></div><h1>DurakGo · Gizlilik Politikası</h1><p class="meta">Son Güncelleme: 18 Ekim 2026</p><h2>1. Genel</h2>
+<p>Bu Gizlilik Politikası, DurakGo mobil uygulamasının kullanımı sırasında hangi bilgilerin işlendiğini, bu bilgilerin hangi amaçlarla kullanıldığını, nerede tutulduğunu ve nasıl silinebileceğini açıklar.</p>
+<p>DurakGo, S.S. 66 No&#x27;lu Sarıgöl Motorlu Taşıyıcılar Kooperatifi&#x27;nin yolcularının sefer saatlerine, canlı araç konumlarına, durak ve kooperatif duyurularına ulaşmasını kolaylaştırmak amacıyla geliştirilmiştir.</p>
+<p>Yayıncı ve geliştirici: Muammer Çerdin (bireysel geliştirici)</p>
+<p>İletişim: <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a></p>
+<p>Normal yolcu kullanımı için DurakGo&#x27;da hesap oluşturma veya üyelik bulunmaz. Uygulama içinden yeni hesap açılamaz; şoför ve yönetici hesapları yalnızca kooperatif tarafından tanımlanır.</p>
+<h2>2. Yolcu Kullanımında İşlenen Bilgiler</h2>
+<p>Yolcu olarak ad, soyad, telefon numarası veya e-posta adresi girmen gerekmez.</p>
+<p>Bildirimlerin çalışması için aşağıdaki teknik bilgiler sunucuya iletilir:</p>
+<ul>
+<li>Firebase Cloud Messaging (FCM) cihaz bildirim anahtarı (token),</li>
+<li>platformun Android olduğu bilgisi,</li>
+<li>duyuru, sefer ve gecikme bildirim tercihlerin,</li>
+<li>bildirim kaydının güncellenme zamanı.</li>
+</ul>
+<p>FCM anahtarı, bildirimlerin bu cihaza ulaşmasını sağlayan teknik bir tanımlayıcıdır; kimliğini göstermez.</p>
+<h2>3. Konum</h2>
+<p>Yolcu konumu: Canlı harita ekranında kendi konumunu görmek istersen konum izni istenir. Bu konum yalnızca telefonundaki haritada gösterilir; sunucuya gönderilmez ve saklanmaz. İzni vermeden de uygulamanın tüm yolcu özelliklerini kullanabilirsin.</p>
+<p>Şoför konumu: Kooperatif tarafından tanımlanmış bir şoför hesabıyla giriş yapılıp sefer başlatıldığında, aracın konumu (enlem, boylam, doğruluk, hız, yön ve zaman) sefer süresince sunucuya gönderilir ve yolculara canlı haritada araç konumu olarak gösterilir. Bu sırada bildirim alanında sürekli bir &quot;konum paylaşılıyor&quot; bildirimi görünür. Sefer bittiğinde veya şoför çıkış yaptığında konum paylaşımı durur ve canlı konum kaydı temizlenir.</p>
+<h2>4. Sefer Hatırlatmaları ve Cihazda Saklanan Bilgiler</h2>
+<p>Seçtiğin sefer hatırlatmaları ve uygulama tercihlerin yalnızca telefonunda saklanır. Hatırlatmaların zamanında çalması için Android&#x27;in alarm hizmeti kullanılır; bunun için senden &quot;Alarmlar ve hatırlatıcılar&quot; izni istenebilir. Telefon yeniden başlatıldığında kurulu hatırlatmalar yeniden planlanır.</p>
+<p>Sesli hatırlatma, telefonundaki Android metin okuma (TTS) hizmetiyle cihaz üzerinde seslendirilir; mikrofon kullanılmaz ve ses kaydı yapılmaz.</p>
+<p>Sefer operasyonları ve duyurular gibi herkese açık veriler, uygulamanın hızlı ve bağlantı sorunlarında dayanıklı çalışması için telefonda geçici olarak önbelleğe alınabilir.</p>
+<h2>5. Diğer İzinler</h2>
+<p>DurakGo kamera, mikrofon, rehber, SMS veya dosya erişimi istemez. Uygulamada reklam, reklam kimliği veya üçüncü taraf analitik kütüphanesi bulunmaz.</p>
+<h2>6. Şoför ve Yönetici Hesapları</h2>
+<p>Şoför hesabı: Şoförler kooperatifin verdiği şoför kodu ve PIN ile giriş yapar. Oturum bilgisi, seçilen araç, başlatılan seferler, gecikme bildirimleri ve sefer sırasındaki konum (bkz. 3. madde) işlenir.</p>
+<p>Yönetici hesabı: Yetkili kooperatif yöneticileri e-posta ve parola ile giriş yapar. Yönetici e-posta adresi, kullanıcı kimliği, rol/yetki bilgisi, oturum ve yenileme anahtarları ile parola sıfırlama işlemleri işlenir.</p>
+<p>Parolalar ve PIN&#x27;ler uygulamada düz metin olarak saklanmaz; kimlik doğrulama Supabase altyapısı üzerinden yapılır.</p>
+<h2>7. Kullanılan Üçüncü Taraf Hizmetler</h2>
+<ul>
+<li>Firebase Cloud Messaging (Google): bildirim göndermek için.</li>
+<li>Supabase: sefer operasyonları, duyurular, canlı araç konumu, bildirim cihaz kayıtları ile şoför ve yönetici kimlik doğrulaması için.</li>
+<li>OpenFreeMap (MapLibre harita kütüphanesiyle): canlı haritadaki harita görüntüleri buradan yüklenir; harita sağlayıcısına yalnızca görüntülenen harita bölgesi ve standart bağlantı bilgileri (IP adresi gibi) iletilir, konumun veya kimlik bilgin iletilmez.</li>
+</ul>
+<p>Bu hizmetler verileri kendi gizlilik koşullarına göre işler ve sunucuları yurt dışında bulunabilir. Uygulama ile sunucular arasındaki tüm iletişim şifreli (HTTPS) bağlantıyla yapılır.</p>
+<h2>8. Verilerin Paylaşılması</h2>
+<p>Bilgiler satılmaz ve reklam amacıyla kullanılmaz. Uygulamanın çalışması için kullanılan teknik hizmet sağlayıcılar dışında üçüncü kişilerle paylaşılmaz. Şoför konumu yalnızca sefer süresince araç konumu olarak yolculara gösterilir. Yetkili kamu kurumlarından hukuka uygun ve bağlayıcı bir talep gelmesi halinde, mevzuat kapsamında gerekli bilgiler paylaşılabilir.</p>
+<h2>9. Saklama ve Silme</h2>
+<p>Telefondaki veriler: Uygulamanın verilerini temizlediğinde veya uygulamayı kaldırdığında telefondaki tüm DurakGo verileri (hatırlatmalar, tercihler, önbellek) silinir.</p>
+<p>Bildirim kaydı: Uygulama kaldırıldığında bildirim anahtarı geçersiz hale gelir ve cihaza bildirim ulaşmaz. Sunucudaki bildirim kaydının silinmesini aşağıdaki adresten talep edebilirsin.</p>
+<p>Şoför konumu: Canlı konum kaydı sefer bitince temizlenir.</p>
+<p>Şoför ve yönetici hesapları: Bu hesaplar kooperatif tarafından açılır ve kapatılır. Hesabının ve ilişkili verilerin silinmesini istersen kooperatife veya <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a> adresine yazabilirsin; talebin kimliğin doğrulandıktan sonra en geç 30 gün içinde işleme alınır.</p>
+<p>Silme talepleri ve ayrıntılar için: <a href="https://muammercerdin-star.github.io/Zeytin-Defteri-Recovery/durakgo/veri-silme.html">https://muammercerdin-star.github.io/Zeytin-Defteri-Recovery/durakgo/veri-silme.html</a></p>
+<h2>10. Veri Güvenliği</h2>
+<p>Bilgilerin yetkisiz erişime, değiştirilmeye veya açıklanmaya karşı korunması için makul teknik ve idari önlemler alınır. Bununla birlikte internet üzerinden yapılan hiçbir aktarım veya elektronik saklama yöntemi mutlak güvenlik sağlayamaz.</p>
+<h2>11. Çocukların Gizliliği</h2>
+<p>DurakGo genel bir ulaşım bilgilendirme hizmetidir ve çocuklara yönelik değildir; çocuklardan bilerek kişisel bilgi toplamaz.</p>
+<h2>12. Başvurular</h2>
+<p>6698 sayılı Kişisel Verilerin Korunması Kanunu kapsamındaki başvuru ve taleplerini <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a> adresine iletebilirsin.</p>
+<h2>13. Politika Değişiklikleri</h2>
+<p>DurakGo&#x27;nun özellikleri veya kullandığı hizmetler değiştiğinde bu politika güncellenir. Güncel metin uygulama içindeki Gizlilik Politikası bölümünde ve <a href="https://muammercerdin-star.github.io/Zeytin-Defteri-Recovery/durakgo/gizlilik.html">https://muammercerdin-star.github.io/Zeytin-Defteri-Recovery/durakgo/gizlilik.html</a> adresinde yayımlanır.</p>
+<h2>14. İletişim</h2>
+<p>Geliştirici: Muammer Çerdin — <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a></p>
+<p>S.S. 66 No&#x27;lu Sarıgöl Motorlu Taşıyıcılar Kooperatifi</p>
+<p>Sarıgöl Durak Noktası: Ayan, İstiklal Cd., 45500 Sarıgöl/Manisa</p>
+<p>Telefon: 0236 867 58 71</p>
+<footer>Geliştirici: Muammer Çerdin · <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a></footer>
+</main></body></html>
