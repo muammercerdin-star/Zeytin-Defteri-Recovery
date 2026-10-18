@@ -18,6 +18,25 @@ def zdBuildString = { String name ->
     return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
 }
 
+// Play yayın imzası (upload key). Anahtar ve şifreler ASLA repoya girmez; yalnız telefondaki
+// ~/.gradle/gradle.properties dosyasından okunur:
+//   ZEYTIN_UPLOAD_STORE_FILE=~/zeytin-anahtar/zeytin-upload.jks
+//   ZEYTIN_UPLOAD_STORE_PASSWORD=...
+//   ZEYTIN_UPLOAD_KEY_ALIAS=zeytin-upload
+//   ZEYTIN_UPLOAD_KEY_PASSWORD=...
+// Ayar yoksa debug derlemesi normal çalışır; yalnız bundleRelease/assembleRelease durdurulur.
+def zdUploadProperty = { String name ->
+    def value = project.findProperty(name)
+    return value == null ? '' : value.toString().trim()
+}
+def zdUploadStorePath = zdUploadProperty('ZEYTIN_UPLOAD_STORE_FILE')
+if (zdUploadStorePath.startsWith('~/')) {
+    zdUploadStorePath = System.getProperty('user.home') + zdUploadStorePath.substring(1)
+}
+def zdHasUploadKey = !zdUploadStorePath.isEmpty() && new File(zdUploadStorePath).isFile() &&
+        ['ZEYTIN_UPLOAD_STORE_PASSWORD', 'ZEYTIN_UPLOAD_KEY_ALIAS', 'ZEYTIN_UPLOAD_KEY_PASSWORD']
+                .every { !zdUploadProperty(it).isEmpty() }
+
 android {
     namespace 'com.zeytindefteri.app'
     compileSdk 36
@@ -37,11 +56,25 @@ android {
         buildConfig true
     }
 
+    signingConfigs {
+        if (zdHasUploadKey) {
+            upload {
+                storeFile file(zdUploadStorePath)
+                storePassword zdUploadProperty('ZEYTIN_UPLOAD_STORE_PASSWORD')
+                keyAlias zdUploadProperty('ZEYTIN_UPLOAD_KEY_ALIAS')
+                keyPassword zdUploadProperty('ZEYTIN_UPLOAD_KEY_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         debug {
             minifyEnabled false
         }
         release {
+            if (zdHasUploadKey) {
+                signingConfig signingConfigs.upload
+            }
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -51,6 +84,18 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+// İmzasız bir paketin yanlışlıkla Play'e hazırlanmasını önler.
+tasks.matching { it.name == 'bundleRelease' || it.name == 'assembleRelease' }.configureEach {
+    doFirst {
+        if (!zdHasUploadKey) {
+            throw new GradleException(
+                    'Yayın imzası bulunamadı. ~/.gradle/gradle.properties içinde ZEYTIN_UPLOAD_STORE_FILE, ' +
+                    'ZEYTIN_UPLOAD_STORE_PASSWORD, ZEYTIN_UPLOAD_KEY_ALIAS ve ZEYTIN_UPLOAD_KEY_PASSWORD ' +
+                    'tanımlı olmalı ve anahtar dosyası mevcut olmalı.')
+        }
     }
 }
 
