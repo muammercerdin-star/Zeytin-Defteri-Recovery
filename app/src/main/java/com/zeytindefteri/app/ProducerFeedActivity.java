@@ -5904,8 +5904,12 @@ public class ProducerFeedActivity extends Activity {
 
         TextView title = text(label, 10, active ? GREEN : MUTED, active);
         title.setGravity(Gravity.CENTER);
-        title.setMinLines(2);
-        title.setMaxLines(2);
+        // Tek satır: dar ekranda "Bahçelerim" kelimenin ortasından bölünmesin; sığmazsa yazı biraz küçülür.
+        title.setSingleLine(true);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            title.setAutoSizeTextTypeUniformWithConfiguration(7, 10, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+        }
         title.setIncludeFontPadding(false);
         title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(-1, -2);
