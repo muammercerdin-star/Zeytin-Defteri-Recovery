@@ -110,12 +110,46 @@ public final class BuyerDirectoryTest {
         ok(forSale != null && forSale.id == hasan && forSale.phone.equals("0532 000 00 00"), "satışın alıcısı");
         ok(BuyerDirectory.buyerForSale(db, 99999) == null, "olmayan satış");
 
+        // --- Elek performansı (ayrı kullanıcı u3, temiz veri)
+        db.execSQL("INSERT INTO buyers(name, created_at, owner_uid) VALUES('Ali', 1, 'u3'), ('Veli', 1, 'u3'), ('Az', 1, 'u3')");
+        long ali = BuyerDirectory.find(db, "u3", "Ali"), veli = BuyerDirectory.find(db, "u3", "Veli"), az = BuyerDirectory.find(db, "u3", "Az");
+        long a1 = sale3(db, ali, 2026, "SALE");
+        grade(db, a1, "DOUBLE", 10, 130); grade(db, a1, "1", 30, 100); grade(db, a1, "2", 40, 70); grade(db, a1, "4", 15, 30); grade(db, a1, "YAGLIK", 5, 20);
+        long v1 = sale3(db, veli, 2026, "SALE");
+        grade(db, v1, "1", 20, 100); grade(db, v1, "2", 30, 70); grade(db, v1, "3", 30, 40); grade(db, v1, "4", 20, 30);
+        long old = sale3(db, veli, 2025, "SALE");
+        grade(db, old, "DOUBLE", 500, 130);
+        long offer = sale3(db, veli, 2026, "OFFER");
+        grade(db, offer, "DOUBLE", 500, 130);
+        long a2 = sale3(db, az, 2026, "SALE");
+        grade(db, a2, "DOUBLE", 20, 130);
+        java.util.Map<Long, BuyerDirectory.ElekStats> st = BuyerDirectory.elekStats(db, "u3", 2026);
+        BuyerDirectory.ElekStats sa = st.get(ali), sv = st.get(veli);
+        ok(near(sa.totalKg, 100) && near(sa.topShare(), 40) && near(sa.lowShare(), 20), "Ali dağılımı");
+        ok(near(sa.avgPerKg(), (1300 + 3000 + 2800 + 450 + 100) / 100.0), "Ali kg başı ortalama");
+        ok(near(sv.totalKg, 100) && near(sv.topShare(), 20), "geçen sezon ve teklif sayılmaz");
+        ok(BuyerDirectory.elekLine(sa).equals("İri %40 · Ufak %20 · 76,5 TL/kg"), "liste satırı: " + BuyerDirectory.elekLine(sa));
+        ok(BuyerDirectory.elekLine(null).isEmpty(), "satışsız alıcıda satır yok");
+        BuyerDirectory.ElekStats othersOfAli = BuyerDirectory.others(st, ali);
+        ok(near(othersOfAli.totalKg, 120), "diğerleri toplamı");
+        ok(BuyerDirectory.elekVerdict(sa, othersOfAli).equals("İri oranı diğer alıcılarından 7 puan yüksek."),
+                "karşılaştırma: " + BuyerDirectory.elekVerdict(sa, othersOfAli));
+        ok(BuyerDirectory.elekVerdict(st.get(az), BuyerDirectory.others(st, az)).isEmpty(), "az kiloda hüküm yok");
+        ok(BuyerDirectory.elekVerdict(sv, BuyerDirectory.others(st, veli)).contains("düşük"), "düşük iri oranı");
+        ok(BuyerDirectory.elekStats(db, "u1", 2026).get(ali) == null, "başka kullanıcının verisi karışmaz");
+
         System.out.println("PASS: " + checks + " alıcı rehberi kontrolü (gerçek SQLite)");
     }
 
     private static long sale(SQLiteDatabase db, int garden, long buyer, String date, double kg, double gross, double received, int season) {
         db.execSQL("INSERT INTO sales(garden_id, buyer_id, sale_date, total_kg, gross_total, amount_received, season_year, owner_uid) "
                 + "VALUES(?, ?, ?, ?, ?, ?, ?, 'u1')", new Object[]{garden, buyer, date, kg, gross, received, season});
+        return lastId(db, "sales");
+    }
+
+    private static long sale3(SQLiteDatabase db, long buyer, int season, String kind) {
+        db.execSQL("INSERT INTO sales(garden_id, buyer_id, sale_date, sale_kind, season_year, owner_uid) VALUES(1, ?, '2026-10-19', ?, ?, 'u3')",
+                new Object[]{buyer, kind, season});
         return lastId(db, "sales");
     }
 

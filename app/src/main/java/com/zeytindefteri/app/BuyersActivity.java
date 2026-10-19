@@ -86,6 +86,7 @@ public final class BuyersActivity extends Activity {
     private void renderList() {
         int season = databaseHelper.getActiveSeasonYear();
         List<BuyerDirectory.Summary> all = BuyerDirectory.list(databaseHelper.getReadableDatabase(), owner, season);
+        final java.util.Map<Long, BuyerDirectory.ElekStats> elek = safeElekStats(season);
 
         LinearLayout head = header("Alıcılarım", null);
         TextView add = pill("+ Ekle", true);
@@ -138,12 +139,12 @@ public final class BuyersActivity extends Activity {
             List<BuyerDirectory.Summary> active = new ArrayList<>(), idle = new ArrayList<>();
             for (BuyerDirectory.Summary s : shown) (s.saleCount > 0 ? active : idle).add(s);
             if (shown.isEmpty()) rows.addView(text("Aramaya uyan alıcı yok.", 15, GreenTheme.color(R.color.zd_muted), false), gap(14));
-            for (BuyerDirectory.Summary s : active) rows.addView(listRow(s), gap(10));
+            for (BuyerDirectory.Summary s : active) rows.addView(listRow(s, elek.get(s.id)), gap(10));
             if (!idle.isEmpty()) {
                 TextView cap = text("BU SEZON SATIŞ YOK", 13, GreenTheme.color(R.color.zd_muted), true);
                 cap.setLetterSpacing(0.06f);
                 rows.addView(cap, gap(16));
-                for (BuyerDirectory.Summary s : idle) rows.addView(listRow(s), gap(8));
+                for (BuyerDirectory.Summary s : idle) rows.addView(listRow(s, null), gap(8));
             }
         };
         search.addTextChangedListener(new TextWatcher() {
@@ -158,7 +159,7 @@ public final class BuyersActivity extends Activity {
         body.addView(note, gap(20));
     }
 
-    private View listRow(BuyerDirectory.Summary s) {
+    private View listRow(BuyerDirectory.Summary s, BuyerDirectory.ElekStats elek) {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(14), dp(12), dp(14), dp(12));
@@ -177,11 +178,20 @@ public final class BuyersActivity extends Activity {
                 : join(s.region, s.lastSaleDate.isEmpty() ? "henüz satış yok" : "son satış " + BuyerDirectory.shortDate(s.lastSaleDate));
         copy.addView(text(sub, 14, GreenTheme.color(R.color.zd_muted), false));
         if (s.receivable > 0.009) copy.addView(text(ElekSaleModel.tl(s.receivable) + " alacak", 14, GreenTheme.color(R.color.zd_warning), true));
+        String elekLine = BuyerDirectory.elekLine(elek);
+        if (!elekLine.isEmpty()) {
+            // Elek performansı: bu alıcıya verilen zeytinin sınıf dağılımı, tek bakışta.
+            copy.addView(gradeBar(elek, 6), sized(-1, 6, 8));
+            TextView line = text(elekLine, 13, GreenTheme.color(R.color.zd_text_soft), false);
+            line.setPadding(0, dp(4), 0, 0);
+            copy.addView(line);
+        }
         row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
         if (s.gross > 0) row.addView(text(ElekSaleModel.tl(s.gross), 16, GreenTheme.color(R.color.zd_text), true));
         row.setClickable(true);
         row.setFocusable(true);
-        row.setContentDescription(s.name + ", " + sub + (s.receivable > 0.009 ? ", " + ElekSaleModel.tl(s.receivable) + " alacak" : ""));
+        row.setContentDescription(s.name + ", " + sub + (s.receivable > 0.009 ? ", " + ElekSaleModel.tl(s.receivable) + " alacak" : "")
+                + (elekLine.isEmpty() ? "" : ", elek: " + elekLine));
         row.setOnClickListener(v -> open(this, s.id));
         return row;
     }
@@ -229,6 +239,10 @@ public final class BuyersActivity extends Activity {
             due.addView(line);
             body.addView(due, gap(12));
         }
+
+        java.util.Map<Long, BuyerDirectory.ElekStats> elek = safeElekStats(season);
+        BuyerDirectory.ElekStats mine = elek.get(buyerId);
+        if (mine != null && mine.totalKg > 0) body.addView(elekCard(buyer, mine, BuyerDirectory.others(elek, buyerId)), gap(12));
 
         List<BuyerDirectory.PriceRow> prices = BuyerDirectory.priceComparison(databaseHelper.getReadableDatabase(), owner, buyerId, season);
         boolean comparable = false;
@@ -284,6 +298,77 @@ public final class BuyersActivity extends Activity {
         TextView edit = pill("Bilgileri düzenle", false);
         edit.setOnClickListener(v -> editBuyer(buyer));
         body.addView(edit, sized(-1, 48, 18));
+    }
+
+    private java.util.Map<Long, BuyerDirectory.ElekStats> safeElekStats(int season) {
+        try { return BuyerDirectory.elekStats(databaseHelper.getReadableDatabase(), owner, season); }
+        catch (RuntimeException e) { return new java.util.HashMap<>(); }
+    }
+
+    private static final int[] GRADE_COLORS = {
+            R.color.elek_badge_double, R.color.elek_badge_one, R.color.elek_badge_two,
+            R.color.elek_badge_three, R.color.elek_badge_four, R.color.elek_badge_oil
+    };
+
+    /** Sınıf renkleriyle yatay dağılım çubuğu (elek makbuzundaki ile aynı renkler). */
+    private View gradeBar(BuyerDirectory.ElekStats s, int heightDp) {
+        LinearLayout bar = new LinearLayout(this);
+        bar.setBackground(BuyerPicker.round(this, GreenTheme.color(R.color.zd_surface), 0, heightDp / 2));
+        bar.setClipToOutline(true);
+        boolean first = true;
+        for (int i = 0; i < s.kg.length; i++) {
+            if (s.kg[i] <= 0) continue;
+            View seg = new View(this);
+            seg.setBackgroundColor(GreenTheme.color(GRADE_COLORS[i]));
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -1, (float) s.kg[i]);
+            if (!first) p.leftMargin = Math.max(1, dp(1));
+            first = false;
+            bar.addView(seg, p);
+        }
+        bar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        return bar;
+    }
+
+    /** Karnedeki "Elek performansı" kartı: sınıf yüzdeleri, diğer alıcılarla karşılaştırma. */
+    private View elekCard(BuyerDirectory.Summary buyer, BuyerDirectory.ElekStats mine, BuyerDirectory.ElekStats others) {
+        LinearLayout box = card(GreenTheme.color(R.color.zd_card), GreenTheme.color(R.color.zd_border));
+        box.addView(text("Elek performansı", 17, GreenTheme.color(R.color.zd_text), true));
+        box.addView(text("Bu sezon bu alıcıya verdiğin zeytinin sınıf dağılımı", 14, GreenTheme.color(R.color.zd_muted), false));
+        box.addView(gradeBar(mine, 10), sized(-1, 10, 12));
+        boolean hasOthers = others.totalKg > 0;
+        int ink = GreenTheme.color(R.color.zd_text), muted = GreenTheme.color(R.color.zd_muted);
+        int green = GreenTheme.color(R.color.zd_green), warn = GreenTheme.color(R.color.zd_warning);
+        box.addView(priceLine("Sınıf", buyer.name, hasOthers ? "Diğerleri" : "", muted, muted, false), gap(12));
+        for (int i = 0; i < mine.kg.length; i++) {
+            if (mine.kg[i] <= 0 && others.kg[i] <= 0) continue;
+            double a = mine.share(i), b = others.share(i);
+            String mark = "";
+            int color = ink;
+            if (hasOthers && Math.abs(a - b) >= 3 && (i <= 1 || i >= 4)) {
+                boolean higher = a > b;
+                mark = higher ? " ▲" : " ▼";
+                // İri sınıfta fazlası iyi, ufak sınıfta (4, Yağlık) fazlası kötü.
+                color = (i <= 1) == higher ? green : warn;
+            }
+            box.addView(priceLine(BuyerDirectory.GRADE_LABELS[i], "%" + BuyerDirectory.pct(a) + mark,
+                    hasOthers ? "%" + BuyerDirectory.pct(b) : "", color, ink, true), gap(8));
+        }
+        box.addView(priceLine("Kg başı", BuyerDirectory.oneDecimal(mine.avgPerKg()) + " TL",
+                hasOthers ? BuyerDirectory.oneDecimal(others.avgPerKg()) + " TL" : "", ink, ink, true), gap(10));
+        String verdict = BuyerDirectory.elekVerdict(mine, others);
+        if (verdict.isEmpty()) {
+            verdict = hasOthers ? "Karşılaştırma için iki tarafta da en az " + Math.round(BuyerDirectory.MIN_COMPARE_KG) + " kg satış gerekir."
+                    : "Karşılaştırma için başka alıcıya da satış kaydı gerekir.";
+            box.addView(text(verdict, 14, muted, false), gap(12));
+        } else {
+            int vColor = verdict.contains("yüksek") ? green : verdict.contains("düşük") ? warn : ink;
+            box.addView(text(verdict, 15, vColor, true), gap(12));
+        }
+        TextView caveat = text("Fark zeytinin kendisinden de olabilir; aynı bahçenin aynı haftadaki satışlarını karşılaştırınca daha doğru sonuç verir.",
+                13, muted, false);
+        caveat.setLineSpacing(0, 1.15f);
+        box.addView(caveat, gap(6));
+        return box;
     }
 
     private void editBuyer(BuyerDirectory.Summary b) {

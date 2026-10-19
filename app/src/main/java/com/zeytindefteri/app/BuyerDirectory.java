@@ -297,6 +297,85 @@ public final class BuyerDirectory {
         return rows;
     }
 
+    /**
+     * Elek performansı: bu alıcıya verilen zeytinin sınıflara dağılımı (kg) ve kg başı ortalama.
+     * Halk arasında "kimin eleği iri çıkarıyor" diye konuşulan şeyin kullanıcının kendi kayıtlarından hesabı.
+     */
+    public static final class ElekStats {
+        public final double[] kg = new double[6];
+        public double totalKg, totalTl;
+
+        public double share(int i) { return totalKg > 0 ? kg[i] * 100.0 / totalKg : 0; }
+        /** İri: Double + 1 Numara yüzdesi. */
+        public double topShare() { return totalKg > 0 ? (kg[0] + kg[1]) * 100.0 / totalKg : 0; }
+        /** Ufak: 4 Numara + Yağlık yüzdesi. */
+        public double lowShare() { return totalKg > 0 ? (kg[4] + kg[5]) * 100.0 / totalKg : 0; }
+        public double avgPerKg() { return totalKg > 0 ? totalTl / totalKg : 0; }
+        void add(ElekStats o) {
+            for (int i = 0; i < kg.length; i++) kg[i] += o.kg[i];
+            totalKg += o.totalKg; totalTl += o.totalTl;
+        }
+    }
+
+    /** Karşılaştırma için en az bu kadar kilo gerekir; azında fark tesadüf olabilir. */
+    public static final double MIN_COMPARE_KG = 50;
+
+    /** Sezonda her alıcının elek dağılımı (alıcı id → istatistik). */
+    public static Map<Long, ElekStats> elekStats(SQLiteDatabase db, String owner, int season) {
+        Map<Long, ElekStats> out = new HashMap<>();
+        Cursor c = db.rawQuery("SELECT s.buyer_id, sg.grade, SUM(sg.kg), SUM(sg.kg * sg.price_per_kg) "
+                + "FROM sale_grades sg INNER JOIN sales s ON s.id=sg.sale_id "
+                + "WHERE COALESCE(s.owner_uid,'')=? AND s.season_year=? AND s.buyer_id IS NOT NULL "
+                + "AND COALESCE(s.sale_kind,'SALE')='SALE' AND sg.kg>0 "
+                + "GROUP BY s.buyer_id, sg.grade", new String[]{owner(owner), String.valueOf(season)});
+        try {
+            while (c.moveToNext()) {
+                int i = gradeIndex(c.getString(1));
+                if (i < 0) continue;
+                ElekStats st = out.get(c.getLong(0));
+                if (st == null) { st = new ElekStats(); out.put(c.getLong(0), st); }
+                st.kg[i] += c.getDouble(2);
+                st.totalKg += c.getDouble(2);
+                st.totalTl += Math.max(0, c.getDouble(3));
+            }
+        } finally { c.close(); }
+        return out;
+    }
+
+    /** Bu alıcı dışındaki bütün alıcıların toplam dağılımı. */
+    public static ElekStats others(Map<Long, ElekStats> all, long buyerId) {
+        ElekStats o = new ElekStats();
+        for (Map.Entry<Long, ElekStats> e : all.entrySet()) if (e.getKey() != buyerId) o.add(e.getValue());
+        return o;
+    }
+
+    /** Listede alıcının altındaki kısa satır: "İri %25 · Ufak %22 · 61 TL/kg". */
+    public static String elekLine(ElekStats s) {
+        if (s == null || s.totalKg <= 0) return "";
+        return "İri %" + pct(s.topShare()) + " · Ufak %" + pct(s.lowShare()) + " · " + oneDecimal(s.avgPerKg()) + " TL/kg";
+    }
+
+    /**
+     * Diğer alıcılarla karşılaştırma cümlesi; veri azsa boş.
+     * Fark 3 puandan küçükse "benzer" sayılır.
+     */
+    public static String elekVerdict(ElekStats buyer, ElekStats others) {
+        if (buyer == null || others == null || buyer.totalKg < MIN_COMPARE_KG || others.totalKg < MIN_COMPARE_KG) return "";
+        double diff = buyer.topShare() - others.topShare();
+        long points = Math.round(Math.abs(diff));
+        if (points < 3) return "İri oranı diğer alıcılarınla benzer.";
+        return "İri oranı diğer alıcılarından " + points + " puan " + (diff > 0 ? "yüksek." : "düşük.");
+    }
+
+    static String pct(double v) { return String.valueOf(Math.round(Math.max(0, v))); }
+
+    static String oneDecimal(double v) {
+        java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(new Locale("tr", "TR"));
+        nf.setMaximumFractionDigits(1);
+        nf.setMinimumFractionDigits(0);
+        return nf.format(Math.max(0, v));
+    }
+
     private static final String[] MONTHS = {"Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
             "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"};
 
