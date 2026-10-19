@@ -18,8 +18,8 @@ final class LegalDocuments {
     static final String CONTACT_EMAIL = "muammercerdin@gmail.com";
     /** Veri sorumlusunun doğrulanmış ad soyadı. Doğrulanmadan doldurulmamalı. */
     static final String CONTROLLER_NAME = "Muammer Çerdin";
-    static final String VERSION = "1.2";
-    static final String DATE = "14 Ekim 2026";
+    static final String VERSION = "1.3";
+    static final String DATE = "20 Ekim 2026";
     /**
      * Yayıncı onayı: 13.10.2026 tarihinde yayıncı (Muammer Çerdin) metinleri sürüm 1.0 olarak
      * yürürlüğe aldı. 14.10.2026 sürüm 1.1: piyasa katkısının varsayılan kapalı izinle çalıştığı

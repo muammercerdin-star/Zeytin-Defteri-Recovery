@@ -18,7 +18,7 @@ Android'in uygulama yedekleme özelliği açıksa, cihazındaki uygulama veriler
 Uygulama cihazının konum iznini istemez. Bahçenin il/ilçe/mahalle bilgisini ve gerekirse konumunu sen seçersin. Hava durumunu göstermek için bahçenin koordinatları veya yer adı Open-Meteo hizmetine gönderilir; hesap bilgilerin gönderilmez. Bölge listeleri için Türkiye il/ilçe/mahalle veri servislerine yalnızca arama bilgisi gönderilir.
 
 # 4. Meydan (sohbet) ve kullanıcı içerikleri
-Meydan'da paylaştığın gönderiler ve yanıtlar, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisiyle birlikte diğer üyelere gösterilir. Meydan şu anda yalnızca metin içerik destekler; fotoğraf yüklenmez.
+Meydan'da paylaştığın gönderiler ve yanıtlar, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisiyle birlikte diğer üyelere gösterilir. Mesaj yazarken diğer üyelere birkaç saniyeliğine "… yazıyor" bilgisi (görünen adın ve kanal) gösterilir; yazdığın metin bu sırada gönderilmez. Bunu Ayarlar'dan kapatabilirsin. Meydan şu anda yalnızca metin içerik destekler; fotoğraf yüklenmez.
 Bir içeriği veya kullanıcıyı şikâyet edebilir, kullanıcıları engelleyebilirsin. Şikâyetler ve moderasyon işlemleri kayıt altına alınır ve yetkili moderatörler tarafından incelenir.
 
 # 5. Piyasa ve Zeytin Ligi
@@ -34,10 +34,11 @@ Meydan yanıtları gibi bildirimleri gönderebilmek için cihazının Firebase C
 Mikrofon izni yalnızca sesli asistanı kullandığında istenir. Konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür; bu hizmetin işleyişi cihazındaki sağlayıcının (çoğunlukla Google) koşullarına tabidir. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.
 
 # 8. Analitik, reklam ve hata kayıtları
-Uygulamada reklam, reklam kimliği veya üçüncü taraf analitik/hata raporlama kütüphanesi bulunmaz. Hata mesajlarına şifre veya giriş bilgisi yazılmaz.
+Uygulamada reklam, reklam kimliği veya analitik kütüphanesi bulunmaz.
+Uygulama çöktüğünde hatayı bulup düzeltebilmemiz için Google Firebase Crashlytics ile bir çökme raporu gönderilir. Raporda hatanın teknik ayrıntıları (hangi kod satırında oluştuğu), uygulama sürümü, cihaz modeli, Android sürümü ve rastgele oluşturulmuş bir kurulum kimliği bulunur. Rapora adın, e-posta adresin, bahçe, elek, satış ya da Meydan içeriklerin eklenmez; şifre veya giriş bilgisi hiçbir zaman yazılmaz. Çökme raporları Firebase tarafından 90 gün saklanır.
 
 # 9. Üçüncü taraf hizmetler
-- Google Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging)
+- Google Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging, Crashlytics)
 - Google ile giriş (Android Credential Manager)
 - Supabase (anonim piyasa istatistikleri ve moderasyon)
 - Open-Meteo (hava durumu ve konum araması)

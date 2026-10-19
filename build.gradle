@@ -1,4 +1,7 @@
 plugins {
     id 'com.android.application' version '8.10.0' apply false
     id 'com.google.gms.google-services' version '4.4.2' apply false
+    // Çökme raporları (ücretsiz). Derleme kimliğini APK'ya yazar; kod küçültme kapalı olduğu için
+    // eşleme dosyası yüklemez, derleme internet gerektirmez.
+    id 'com.google.firebase.crashlytics' version '3.0.6' apply false
 }
