@@ -160,6 +160,17 @@ public final class ElekSaleBridge {
         }
     }
 
+    /**
+     * Elek kaydını siler; bağlı satış (ve alacağı) da birlikte silinir.
+     * Alıcılarım'daki satış/alacak bilgisi elek kaydına bağlıdır: elek yoksa satışı da kalmaz.
+     * Dönüş: silinen elek sayısı (0 = silinemedi).
+     */
+    public int deleteElekWithSale(long elekId) {
+        long saleId = linkedSaleId(elekId);
+        if (saleId > 0 && !deleteSaleWithReceivables(saleId)) return 0;
+        return new ElekRepository(databaseHelper).deleteElekRecord(elekId);
+    }
+
     /** Sezonun satışa dönüştürülmemiş elek kayıtları (yeniden eskiye). */
     public List<Pending> pending(int year) {
         List<Pending> out = new ArrayList<>();
