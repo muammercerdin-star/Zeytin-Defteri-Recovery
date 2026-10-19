@@ -22,7 +22,7 @@ a{color:var(--accent)}
 .note{background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin:18px 0}
 footer{margin-top:48px;color:var(--muted);font-size:13px}
 </style></head>
-<body><main><div class="top"><a href="index.html">← Zeytin Defteri</a></div><h1>Zeytin Defteri · Gizlilik Politikası</h1><p class="meta">Sürüm 1.2 · 14 Ekim 2026</p><p>Bu politika, Zeytin Defteri&#x27;nin hangi hizmetleri kullandığını, verilerinin nerede tutulduğunu ve nasıl silinebileceğini açıklar. Kişisel verilerin işlenmesine ilişkin yasal bilgilendirme için ayrıca &quot;KVKK Aydınlatma Metni&quot;ni inceleyebilirsin.</p>
+<body><main><div class="top"><a href="index.html">← Zeytin Defteri</a></div><h1>Zeytin Defteri · Gizlilik Politikası</h1><p class="meta">Sürüm 1.3 · 20 Ekim 2026</p><p>Bu politika, Zeytin Defteri&#x27;nin hangi hizmetleri kullandığını, verilerinin nerede tutulduğunu ve nasıl silinebileceğini açıklar. Kişisel verilerin işlenmesine ilişkin yasal bilgilendirme için ayrıca &quot;KVKK Aydınlatma Metni&quot;ni inceleyebilirsin.</p>
 <p>Yayıncı: Muammer Çerdin (bireysel geliştirici)</p>
 <p>İletişim: <a href="mailto:muammercerdin@gmail.com">muammercerdin@gmail.com</a></p>
 <h2>1. Hesap ve giriş</h2>
@@ -34,7 +34,7 @@ footer{margin-top:48px;color:var(--muted);font-size:13px}
 <h2>3. Konum ve hava durumu</h2>
 <p>Uygulama cihazının konum iznini istemez. Bahçenin il/ilçe/mahalle bilgisini ve gerekirse konumunu sen seçersin. Hava durumunu göstermek için bahçenin koordinatları veya yer adı Open-Meteo hizmetine gönderilir; hesap bilgilerin gönderilmez. Bölge listeleri için Türkiye il/ilçe/mahalle veri servislerine yalnızca arama bilgisi gönderilir.</p>
 <h2>4. Meydan (sohbet) ve kullanıcı içerikleri</h2>
-<p>Meydan&#x27;da paylaştığın gönderiler ve yanıtlar, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisiyle birlikte diğer üyelere gösterilir. Meydan şu anda yalnızca metin içerik destekler; fotoğraf yüklenmez.</p>
+<p>Meydan&#x27;da paylaştığın gönderiler ve yanıtlar, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisiyle birlikte diğer üyelere gösterilir. Mesaj yazarken diğer üyelere birkaç saniyeliğine &quot;… yazıyor&quot; bilgisi (görünen adın ve kanal) gösterilir; yazdığın metin bu sırada gönderilmez. Bunu Ayarlar&#x27;dan kapatabilirsin. Meydan şu anda yalnızca metin içerik destekler; fotoğraf yüklenmez.</p>
 <p>Bir içeriği veya kullanıcıyı şikâyet edebilir, kullanıcıları engelleyebilirsin. Şikâyetler ve moderasyon işlemleri kayıt altına alınır ve yetkili moderatörler tarafından incelenir.</p>
 <h2>5. Piyasa ve Zeytin Ligi</h2>
 <p>Bu özellikler iki ayrı tercihle çalışır.</p>
@@ -48,10 +48,11 @@ footer{margin-top:48px;color:var(--muted);font-size:13px}
 <h2>7. Sesli asistan</h2>
 <p>Mikrofon izni yalnızca sesli asistanı kullandığında istenir. Konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür; bu hizmetin işleyişi cihazındaki sağlayıcının (çoğunlukla Google) koşullarına tabidir. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.</p>
 <h2>8. Analitik, reklam ve hata kayıtları</h2>
-<p>Uygulamada reklam, reklam kimliği veya üçüncü taraf analitik/hata raporlama kütüphanesi bulunmaz. Hata mesajlarına şifre veya giriş bilgisi yazılmaz.</p>
+<p>Uygulamada reklam, reklam kimliği veya analitik kütüphanesi bulunmaz.</p>
+<p>Uygulama çöktüğünde hatayı bulup düzeltebilmemiz için Google Firebase Crashlytics ile bir çökme raporu gönderilir. Raporda hatanın teknik ayrıntıları (hangi kod satırında oluştuğu), uygulama sürümü, cihaz modeli, Android sürümü ve rastgele oluşturulmuş bir kurulum kimliği bulunur. Rapora adın, e-posta adresin, bahçe, elek, satış ya da Meydan içeriklerin eklenmez; şifre veya giriş bilgisi hiçbir zaman yazılmaz. Çökme raporları Firebase tarafından 90 gün saklanır.</p>
 <h2>9. Üçüncü taraf hizmetler</h2>
 <ul>
-<li>Google Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging)</li>
+<li>Google Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging, Crashlytics)</li>
 <li>Google ile giriş (Android Credential Manager)</li>
 <li>Supabase (anonim piyasa istatistikleri ve moderasyon)</li>
 <li>Open-Meteo (hava durumu ve konum araması)</li>

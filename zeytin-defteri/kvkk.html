@@ -22,7 +22,7 @@ a{color:var(--accent)}
 .note{background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin:18px 0}
 footer{margin-top:48px;color:var(--muted);font-size:13px}
 </style></head>
-<body><main><div class="top"><a href="index.html">← Zeytin Defteri</a></div><h1>Zeytin Defteri · KVKK Aydınlatma Metni</h1><p class="meta">Sürüm 1.2 · 14 Ekim 2026</p><p>Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu&#x27;nun (&quot;KVKK&quot;) 10. maddesi uyarınca, Zeytin Defteri mobil uygulamasını kullanırken kişisel verilerinin nasıl işlendiği hakkında seni bilgilendirmek için hazırlanmıştır. Bu metin bir sözleşme veya açık rıza beyanı değildir; yalnızca bilgilendirme amaçlıdır.</p>
+<body><main><div class="top"><a href="index.html">← Zeytin Defteri</a></div><h1>Zeytin Defteri · KVKK Aydınlatma Metni</h1><p class="meta">Sürüm 1.3 · 20 Ekim 2026</p><p>Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu&#x27;nun (&quot;KVKK&quot;) 10. maddesi uyarınca, Zeytin Defteri mobil uygulamasını kullanırken kişisel verilerinin nasıl işlendiği hakkında seni bilgilendirmek için hazırlanmıştır. Bu metin bir sözleşme veya açık rıza beyanı değildir; yalnızca bilgilendirme amaçlıdır.</p>
 <h2>1. Veri sorumlusu</h2>
 <p>Zeytin Defteri bireysel bir geliştirici tarafından yayınlanmaktadır.</p>
 <ul>
@@ -37,6 +37,7 @@ footer{margin-top:48px;color:var(--muted);font-size:13px}
 <li>Topluluk (Meydan) içerikleri: paylaştığın gönderi ve yanıt metinleri, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisi.</li>
 <li>Güvenlik ve topluluk kayıtları: oluşturduğun şikâyetler ve engellediğin kullanıcılar; sana yönelik şikâyet ve moderasyon kayıtları.</li>
 <li>Cihaz ve bildirim bilgileri: bildirim gönderebilmek için cihazına ait bildirim anahtarı (FCM token) ve oturum kimliği.</li>
+<li>Çökme raporları: uygulama çöktüğünde hatanın teknik ayrıntıları, uygulama sürümü, cihaz modeli, Android sürümü ve rastgele bir kurulum kimliği (Firebase Crashlytics).</li>
 <li>Piyasa katkısı (&quot;Piyasaya Anonim Katkı&quot; seçeneği açıkken; varsayılan açık, Ayarlar&#x27;dan kapatılabilir): elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi. Bu kayıtlar kullanıcı kimliğin yerine geri döndürülemez şekilde dönüştürülmüş bir üretici koduyla saklanır.</li>
 <li>Zeytin Ligi (yalnızca satış kaydında piyasa paylaşımını işaretlediğin satışlar için): ilgili satış ve elek kaydının miktar, tutar ve sınıf bilgileri; sıralamada adın yerine sıra etiketi gösterilir.</li>
 <li>Sesli asistan: mikrofon iznini verirsen konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.</li>
@@ -48,22 +49,23 @@ footer{margin-top:48px;color:var(--muted);font-size:13px}
 <li>Bahçe konumuna göre hava durumu bilgisi göstermek,</li>
 <li>Meydan topluluk özelliğini sunmak, yanıt bildirimleri göndermek,</li>
 <li>Şikâyetleri incelemek, kötüye kullanımı önlemek ve topluluk kurallarını uygulamak,</li>
+<li>Uygulamanın çökmesine yol açan hataları tespit edip düzeltmek,</li>
 <li>Anonim bölgesel piyasa istatistikleri ve (satışta paylaşımı işaretlediğinde) Zeytin Ligi sıralamaları oluşturmak,</li>
 <li>Taleplerine ve başvurularına yanıt vermek, hukuki yükümlülükleri yerine getirmek.</li>
 </ul>
 <h2>4. Hukuki sebepler</h2>
 <ul>
 <li>Hesap, bahçe kayıtları, eşitleme, bildirimler ve topluluk özelliği: bir sözleşmenin kurulması veya ifasıyla doğrudan ilgili olması (KVKK m. 5/2-c).</li>
-<li>Güvenlik, kötüye kullanımın önlenmesi ve moderasyon: temel hak ve özgürlüklerine zarar vermemek kaydıyla veri sorumlusunun meşru menfaati (KVKK m. 5/2-f) ve bir hakkın tesisi, kullanılması veya korunması (KVKK m. 5/2-e).</li>
+<li>Güvenlik, çökme raporları, kötüye kullanımın önlenmesi ve moderasyon: temel hak ve özgürlüklerine zarar vermemek kaydıyla veri sorumlusunun meşru menfaati (KVKK m. 5/2-f) ve bir hakkın tesisi, kullanılması veya korunması (KVKK m. 5/2-e).</li>
 <li>Kanundan doğan talepler ve yükümlülükler: hukuki yükümlülüğün yerine getirilmesi (KVKK m. 5/2-ç).</li>
 <li>Piyasa katkısı ve Zeytin Ligi: &quot;Piyasaya Anonim Katkı&quot; ayarı varsayılan olarak açıktır ve ilk kullanımda bildirilir; Zeytin Ligi sıralaması ise yalnızca satıştaki piyasa paylaşımı seçeneğini işaretlediğin satışları kapsar. Tercihlerini istediğin zaman kapatabilirsin; kapattığında bu cihazdan gönderilen anonim katkıların geri çekilir. Kapatman uygulamanın diğer özelliklerini kullanmanı engellemez.</li>
 </ul>
 <h2>5. Toplama yöntemi</h2>
-<p>Veriler; uygulamadaki formlara girdiğin bilgilerden, Google ile giriş yaptığında Google hesabından, uygulamanın çalışması sırasında otomatik olarak (bildirim anahtarı, eşitleme bilgileri) ve elektronik ortamda toplanır.</p>
+<p>Veriler; uygulamadaki formlara girdiğin bilgilerden, Google ile giriş yaptığında Google hesabından, uygulamanın çalışması sırasında otomatik olarak (bildirim anahtarı, eşitleme bilgileri, çökme raporları) ve elektronik ortamda toplanır.</p>
 <h2>6. Veri alıcıları ve aktarım amaçları</h2>
 <p>Kişisel verilerin satılmaz. Hizmetin çalışması için yalnızca aşağıdaki hizmet sağlayıcılarla, belirtilen amaçlarla paylaşılır:</p>
 <ul>
-<li>Google LLC / Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging): hesap yönetimi, verilerin saklanması ve eşitlenmesi, bildirim gönderimi.</li>
+<li>Google LLC / Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging, Crashlytics): hesap yönetimi, verilerin saklanması ve eşitlenmesi, bildirim gönderimi, uygulama hatalarının tespiti.</li>
 <li>Google Android konuşma tanıma hizmeti (cihazındaki sağlayıcı): sesli asistan komutlarının metne dönüştürülmesi.</li>
 <li>Supabase: anonim piyasa istatistikleri ve moderasyon işlemleri.</li>
 <li>Open-Meteo: bahçe konumuna ait koordinat veya yer adıyla hava durumu ve konum araması; hesap bilgilerin bu hizmete gönderilmez.</li>
