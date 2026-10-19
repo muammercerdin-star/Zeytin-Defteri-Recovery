@@ -289,7 +289,8 @@ public class ProducerFeedActivity extends Activity {
         socialBlocks.start(fresh -> { if (!isFinishing() && !isDestroyed()) loadFeed(); });
         PushRegistration.requestPermission(this);
 
-        if (cloudRepository != null) {
+        // Maliyet: canlı dinleme yalnız Sohbet sekmesi açıkken (diğer sekmelerde bulut okunmaz).
+        if (cloudRepository != null && "MEYDAN".equals(currentSection)) {
             // Tek seferlik senkron yerine canlı dinleme: ekran açıkken gelen yeni mesajlar, silinen
             // gönderiler ve başka telefondan yapılan değişiklikler yenileme beklemeden görünür.
             liveFeedFirstEvent = true;
@@ -517,6 +518,7 @@ public class ProducerFeedActivity extends Activity {
         if("HOME".equals(currentSection) && "HOME".equals(section) && contentHost!=null
                 && contentHost.getChildCount()>0 && contentHost.getChildAt(0) instanceof ScrollView)
             previousHomeY=contentHost.getChildAt(0).getScrollY();
+        boolean wasChat = "MEYDAN".equals(currentSection);
         currentSection = section;
         setSeasonReportOpen(false);
         stopTypingWatch();
@@ -586,6 +588,15 @@ public class ProducerFeedActivity extends Activity {
 
                 currentSection = "MEYDAN";
                 break;
+        }
+
+        // Sohbet sekmesine girince canlı akış başlar, çıkınca durur (okuma maliyeti).
+        boolean isChat = "MEYDAN".equals(currentSection);
+        if (cloudRepository != null && isChat && !wasChat) {
+            liveFeedFirstEvent = false;
+            cloudRepository.startLiveSync(success -> runOnUiThread(this::onLiveFeedChanged));
+        } else if (cloudRepository != null && !isChat && wasChat) {
+            cloudRepository.stopLiveSync();
         }
 
         if(previousHomeY>=0 && previousWeather==homeWeather && "HOME".equals(section)
