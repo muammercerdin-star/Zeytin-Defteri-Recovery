@@ -19,7 +19,8 @@ public final class BuyerDirectoryTest {
         SQLiteDatabase db = new SQLiteDatabase(file, helper);
         db.execSQL("CREATE TABLE gardens (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, owner_uid TEXT DEFAULT '')");
         db.execSQL("CREATE TABLE buyers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT, region TEXT, note TEXT, created_at INTEGER NOT NULL, owner_uid TEXT DEFAULT '')");
-        db.execSQL("CREATE TABLE sales (id INTEGER PRIMARY KEY AUTOINCREMENT, garden_id INTEGER NOT NULL, buyer_id INTEGER, sale_date TEXT NOT NULL, sale_kind TEXT DEFAULT 'SALE', total_kg REAL DEFAULT 0, gross_total REAL DEFAULT 0, amount_received REAL DEFAULT 0, season_year INTEGER DEFAULT 0, owner_uid TEXT DEFAULT '')");
+        db.execSQL("CREATE TABLE sales (id INTEGER PRIMARY KEY AUTOINCREMENT, garden_id INTEGER NOT NULL, buyer_id INTEGER, sale_date TEXT NOT NULL, sale_kind TEXT DEFAULT 'SALE', total_kg REAL DEFAULT 0, gross_total REAL DEFAULT 0, amount_received REAL DEFAULT 0, season_year INTEGER DEFAULT 0, owner_uid TEXT DEFAULT '', source_elek_id INTEGER DEFAULT 0, source_elek_cloud_id TEXT DEFAULT '')");
+        db.execSQL("CREATE TABLE elek_records (id INTEGER PRIMARY KEY AUTOINCREMENT, cloud_id TEXT DEFAULT '')");
         db.execSQL("CREATE TABLE sale_grades (id INTEGER PRIMARY KEY AUTOINCREMENT, sale_id INTEGER NOT NULL, grade TEXT NOT NULL, kg REAL DEFAULT 0, price_per_kg REAL DEFAULT 0, line_total REAL DEFAULT 0)");
         db.execSQL("CREATE TABLE receivables (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, related_sale_id INTEGER, amount REAL DEFAULT 0, total_received REAL DEFAULT 0, status TEXT DEFAULT 'OPEN', created_at INTEGER NOT NULL, owner_uid TEXT DEFAULT '')");
         db.execSQL("INSERT INTO gardens(name, owner_uid) VALUES('Girelli', 'u1'), ('Edremit', 'u1'), ('Başka', 'u2')");
@@ -101,6 +102,16 @@ public final class BuyerDirectoryTest {
         ok(sales.get(0).date.equals("2026-10-19") && sales.get(2).date.equals("2026-10-05"), "yeniden eskiye");
         ok(near(sales.get(2).open, 4500) && near(sales.get(0).open, 0), "satış bazında kalan");
         ok(sales.get(0).garden.equals("Girelli"), "bahçe adı");
+        ok(!sales.get(0).elekDeleted, "elle girilen satış 'elek silinmiş' sayılmaz");
+        db.execSQL("INSERT INTO elek_records(id, cloud_id) VALUES(70, 'ek-70')");
+        db.execSQL("UPDATE sales SET source_elek_id=70 WHERE id=?", new Object[]{s1});
+        db.execSQL("UPDATE sales SET source_elek_id=71 WHERE id=?", new Object[]{s3});
+        sales = BuyerDirectory.sales(db, "u1", hasan, 2026);
+        ok(!sales.get(0).elekDeleted, "eleği duran satış");
+        ok(sales.get(2).elekDeleted, "eleği silinmiş satış işaretlenir");
+        db.execSQL("UPDATE sales SET source_elek_id=72, source_elek_cloud_id='ek-70' WHERE id=?", new Object[]{s3});
+        ok(!BuyerDirectory.sales(db, "u1", hasan, 2026).get(2).elekDeleted, "buluttan gelen elek bulut id ile bulunur");
+        db.execSQL("UPDATE sales SET source_elek_id=0, source_elek_cloud_id='' WHERE id IN (?, ?)", new Object[]{s1, s3});
         List<BuyerDirectory.PriceRow> prices = BuyerDirectory.priceComparison(db, "u1", hasan, 2026);
         BuyerDirectory.PriceRow dbl = row(prices, "Double"), two = row(prices, "2 Numara"), three = row(prices, "3 Numara");
         ok(near(dbl.buyerAvg, (3 * 130 + 20 * 128) / 23.0) && near(dbl.othersAvg, 120), "Double ağırlıklı ortalama");

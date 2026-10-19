@@ -587,6 +587,42 @@ public class ElekReceiptActivity extends Activity {
     }
 
     private void confirmDelete() {
+        final ElekSaleBridge bridge = new ElekSaleBridge(databaseHelper);
+        final long saleId = bridge.linkedSaleId(recordId);
+        if (saleId > 0) {
+            // Bu eleğe bağlı satış var: satış (ve alacağı) da silinsin mi, yoksa satış kalsın mı?
+            double[] sale = bridge.linkedSaleTotals(recordId);
+            BuyerDirectory.Summary buyer = receiptBuyer();
+            String who = buyer == null ? "Alıcısız satış" : buyer.name;
+            String money = sale == null ? "" : " · " + ElekSaleModel.tl(sale[0]);
+            double rest = sale == null ? 0 : ElekSaleModel.remaining(sale[0], sale[1]);
+            String due = rest > 0 ? "\nAlacak: " + ElekSaleModel.tl(rest) : "";
+            new AlertDialog.Builder(this)
+                    .setTitle("Elek kaydı silinsin mi?")
+                    .setMessage("Bu eleğe bağlı bir satış var:\n" + who + money + due
+                            + "\n\nSatışı da silersen alıcının satış ve alacak bilgisi de silinir. Bu işlem geri alınamaz.")
+                    .setPositiveButton("Eleği ve satışı sil", (d, w) -> {
+                        boolean saleGone = bridge.deleteSaleWithReceivables(saleId);
+                        if (elekRepository.deleteElekRecord(recordId) > 0) {
+                            Toast.makeText(this, saleGone ? "Elek kaydı ve satışı silindi." : "Elek silindi; satış silinemedi.",
+                                    Toast.LENGTH_LONG).show();
+                            finish();
+                        } else {
+                            Toast.makeText(this, "Kayıt silinemedi.", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .setNeutralButton("Yalnız eleği sil", (d, w) -> {
+                        if (elekRepository.deleteElekRecord(recordId) > 0) {
+                            Toast.makeText(this, "Elek kaydı silindi; satış Alıcılarım'da duruyor.", Toast.LENGTH_LONG).show();
+                            finish();
+                        } else {
+                            Toast.makeText(this, "Kayıt silinemedi.", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .setNegativeButton("Vazgeç", null)
+                    .show();
+            return;
+        }
         new AlertDialog.Builder(this)
                 .setTitle("Elek kaydı silinsin mi?")
                 .setMessage(gardenName + " · " + ElekInsights.formatDate(dateIso, false)

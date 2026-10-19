@@ -294,8 +294,15 @@ public final class BuyersActivity extends Activity {
                 copy.addView(text(BuyerDirectory.shortDate(l.date) + " · " + kg(l.kg), 16, GreenTheme.color(R.color.zd_text), true));
                 String sub = l.open > 0.009 ? join(l.garden, ElekSaleModel.tl(l.open) + " kaldı") : join(l.garden, "tamamı alındı");
                 copy.addView(text(sub, 14, l.open > 0.009 ? GreenTheme.color(R.color.zd_warning) : GreenTheme.color(R.color.zd_muted), l.open > 0.009));
+                if (l.elekDeleted) copy.addView(text("Elek kaydı silinmiş", 13, GreenTheme.color(R.color.zd_muted), true));
                 row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
                 row.addView(text(ElekSaleModel.tl(l.gross), 16, GreenTheme.color(R.color.zd_text), true));
+                row.addView(text("  ⋮", 18, GreenTheme.color(R.color.zd_muted), true));
+                row.setClickable(true);
+                row.setFocusable(true);
+                row.setContentDescription(BuyerDirectory.shortDate(l.date) + ", " + kg(l.kg) + ", " + ElekSaleModel.tl(l.gross)
+                        + ", " + sub + (l.elekDeleted ? ", elek kaydı silinmiş" : "") + ". Seçenekler");
+                row.setOnClickListener(v -> askDeleteSale(l));
                 list.addView(row);
                 if (i < sales.size() - 1) {
                     View rule = new View(this);
@@ -311,6 +318,26 @@ public final class BuyersActivity extends Activity {
         TextView edit = pill("Bilgileri düzenle", false);
         edit.setOnClickListener(v -> editBuyer(buyer));
         body.addView(edit, sized(-1, 48, 18));
+    }
+
+    /** Yanlış ya da eleği silinmiş satışı alacağıyla birlikte silme. */
+    private void askDeleteSale(BuyerDirectory.SaleLine l) {
+        String msg = BuyerDirectory.shortDate(l.date) + " · " + kg(l.kg) + " · " + ElekSaleModel.tl(l.gross)
+                + (l.open > 0.009 ? "\nAlacak: " + ElekSaleModel.tl(l.open) : "")
+                + (l.elekDeleted ? "\n\nBu satışın elek kaydı silinmiş." : "")
+                + "\n\nSatış silinirse bu alıcının toplamından ve alacağından da düşer. Bu işlem geri alınamaz.";
+        new AlertDialog.Builder(this)
+                .setTitle("Satış silinsin mi?")
+                .setMessage(msg)
+                .setPositiveButton("Satışı sil", (d, w) -> {
+                    boolean ok;
+                    try { ok = new ElekSaleBridge(databaseHelper).deleteSaleWithReceivables(l.saleId); }
+                    catch (RuntimeException e) { ok = false; }
+                    Toast.makeText(this, ok ? "Satış silindi." : "Satış silinemedi.", Toast.LENGTH_SHORT).show();
+                    render();
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
     }
 
     private java.util.Map<Long, BuyerDirectory.ElekStats> safeElekStats(int season) {

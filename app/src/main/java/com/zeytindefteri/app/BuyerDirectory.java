@@ -36,6 +36,8 @@ public final class BuyerDirectory {
         public long saleId;
         public String date = "", garden = "";
         public double kg, gross, open;
+        /** Elekten oluşmuş ama elek kaydı sonradan silinmiş satış. */
+        public boolean elekDeleted;
     }
 
     /** Karşılaştırma satırı: bu alıcının ve diğer alıcıların kg ağırlıklı ortalama fiyatı (yoksa 0). */
@@ -252,7 +254,9 @@ public final class BuyerDirectory {
     /** Bu alıcının sezon satışları, yeniden eskiye. */
     public static List<SaleLine> sales(SQLiteDatabase db, String owner, long buyerId, int season) {
         List<SaleLine> out = new ArrayList<>();
-        Cursor c = db.rawQuery("SELECT s.id, " + ISO_DATE + ", COALESCE(g.name,''), s.total_kg, s.gross_total, " + OPEN_SUM + " "
+        Cursor c = db.rawQuery("SELECT s.id, " + ISO_DATE + ", COALESCE(g.name,''), s.total_kg, s.gross_total, " + OPEN_SUM + ", "
+                + "(COALESCE(s.source_elek_id,0) > 0 AND NOT EXISTS (SELECT 1 FROM elek_records e WHERE e.id=s.source_elek_id "
+                + "OR (COALESCE(s.source_elek_cloud_id,'')<>'' AND e.cloud_id=s.source_elek_cloud_id))) "
                 + "FROM sales s LEFT JOIN gardens g ON g.id=s.garden_id "
                 + "WHERE s.buyer_id=? AND COALESCE(s.owner_uid,'')=? AND s.season_year=? "
                 + "AND COALESCE(s.sale_kind,'SALE')='SALE' ORDER BY " + ISO_DATE + " DESC, s.id DESC",
@@ -262,6 +266,7 @@ public final class BuyerDirectory {
                 SaleLine l = new SaleLine();
                 l.saleId = c.getLong(0); l.date = c.getString(1); l.garden = c.getString(2);
                 l.kg = c.getDouble(3); l.gross = c.getDouble(4); l.open = c.getDouble(5);
+                l.elekDeleted = c.getInt(6) == 1;
                 out.add(l);
             }
         } finally { c.close(); }

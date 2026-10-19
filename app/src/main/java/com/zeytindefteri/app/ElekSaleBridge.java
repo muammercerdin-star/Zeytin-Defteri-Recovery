@@ -131,6 +131,35 @@ public final class ElekSaleBridge {
         }
     }
 
+    /**
+     * Satışı ve ona bağlı alacak kayıtlarını siler (bulut silme kaydıyla).
+     * Alacak tablosu satış silinince yalnız bağı boşaltır; burada alacak da silinir ki
+     * "Alacaklarım" ve "Alıcılarım"da sahipsiz borç kalmasın.
+     */
+    public boolean deleteSaleWithReceivables(long saleId) {
+        if (saleId <= 0) return false;
+        SQLiteDatabase db = databaseHelper.getWritableDatabase();
+        String owner = owner();
+        List<Long> receivables = new ArrayList<>();
+        Cursor c = db.rawQuery("SELECT id FROM receivables WHERE related_sale_id=? AND COALESCE(owner_uid,'')=?",
+                new String[]{String.valueOf(saleId), owner});
+        try { while (c.moveToNext()) receivables.add(c.getLong(0)); } finally { c.close(); }
+        db.beginTransaction();
+        try {
+            for (long id : receivables) {
+                databaseHelper.recordCloudDeletion("receivables", id);
+                db.delete("receivables", "id=?", new String[]{String.valueOf(id)});
+            }
+            if (!new SaleRepository(databaseHelper).deleteSale(saleId)) return false;
+            db.setTransactionSuccessful();
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        } finally {
+            db.endTransaction();
+        }
+    }
+
     /** Sezonun satışa dönüştürülmemiş elek kayıtları (yeniden eskiye). */
     public List<Pending> pending(int year) {
         List<Pending> out = new ArrayList<>();
