@@ -2451,15 +2451,16 @@ public class ElekActivity extends Activity {
         saleToggle = new android.widget.LinearLayout(this);
         saleToggle.setOrientation(android.widget.LinearLayout.HORIZONTAL);
         saleToggle.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        saleToggle.setPadding(Math.round(16 * d), Math.round(14 * d), Math.round(16 * d), Math.round(14 * d));
+        saleToggle.setPadding(Math.round(14 * d), Math.round(10 * d), Math.round(14 * d), Math.round(10 * d));
         android.widget.LinearLayout copy = new android.widget.LinearLayout(this);
         copy.setOrientation(android.widget.LinearLayout.VERTICAL);
         TextView title = new TextView(this);
         title.setText("Bu zeytini sattım"); title.setTextSize(15); title.setTextColor(text);
         title.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         TextView sub = new TextView(this);
-        sub.setText("Tüccara verildiyse açık bırak; satış kaydı elekten kendiliğinden oluşur.");
+        sub.setText("Açıksa satış kaydı elekten kendiliğinden oluşur.");
         sub.setTextSize(12); sub.setTextColor(soft); sub.setPadding(0, Math.round(2 * d), 0, 0);
+        sub.setSingleLine(true); sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
         copy.addView(title); copy.addView(sub);
         saleToggle.addView(copy, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
         android.widget.FrameLayout switchView = new android.widget.FrameLayout(this);
@@ -2476,7 +2477,7 @@ public class ElekActivity extends Activity {
 
         salePanel = new android.widget.LinearLayout(this);
         salePanel.setOrientation(android.widget.LinearLayout.VERTICAL);
-        salePanel.setPadding(Math.round(16 * d), Math.round(14 * d), Math.round(16 * d), Math.round(14 * d));
+        salePanel.setPadding(Math.round(14 * d), Math.round(10 * d), Math.round(14 * d), Math.round(10 * d));
         salePanel.setBackground(roundRect(getResources().getColor(R.color.zd_surface, null),
                 getResources().getColor(R.color.zd_border, null), 18 * d));
         TextView question = new TextView(this);
@@ -2484,7 +2485,7 @@ public class ElekActivity extends Activity {
         question.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
         salePanel.addView(question);
         android.widget.LinearLayout chips = new android.widget.LinearLayout(this);
-        chips.setPadding(0, Math.round(10 * d), 0, 0);
+        chips.setPadding(0, Math.round(6 * d), 0, 0);
         salePayChips = new TextView[ElekSaleModel.PAY_LABELS.length];
         for (int i = 0; i < salePayChips.length; i++) {
             final int option = i;
@@ -2493,7 +2494,7 @@ public class ElekActivity extends Activity {
             chip.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
             chip.setGravity(android.view.Gravity.CENTER);
             chip.setOnClickListener(v -> { salePay = option; renderSaleOnSave(); });
-            android.widget.LinearLayout.LayoutParams cp = new android.widget.LinearLayout.LayoutParams(0, Math.round(40 * d), 1);
+            android.widget.LinearLayout.LayoutParams cp = new android.widget.LinearLayout.LayoutParams(0, Math.round(36 * d), 1);
             if (i > 0) cp.leftMargin = Math.round(6 * d);
             chips.addView(chip, cp);
             salePayChips[i] = chip;
@@ -2516,15 +2517,16 @@ public class ElekActivity extends Activity {
         fieldRow.addView(etSaleBuyer, new android.widget.LinearLayout.LayoutParams(0, -2, 1.4f));
         salePanel.addView(fieldRow, saleFieldParams(d));
         TextView note = new TextView(this);
-        note.setText("Nakliye, kesinti ve piyasa paylaşımını sonra satış kaydından düzenleyebilirsin. Piyasa paylaşımı kapalı başlar.");
-        note.setTextSize(11); note.setTextColor(muted); note.setPadding(0, Math.round(10 * d), 0, 0);
+        note.setText("Nakliye ve kesinti sonra satış kaydından eklenir.");
+        note.setTextSize(11); note.setTextColor(muted); note.setPadding(0, Math.round(6 * d), 0, 0);
+        note.setSingleLine(true); note.setEllipsize(android.text.TextUtils.TruncateAt.END);
         salePanel.addView(note);
 
         android.widget.LinearLayout.LayoutParams tp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-        tp.topMargin = Math.round(12 * d);
+        tp.topMargin = Math.round(10 * d);
         parent.addView(saleToggle, tp);
         android.widget.LinearLayout.LayoutParams pp = new android.widget.LinearLayout.LayoutParams(-1, -2);
-        pp.topMargin = Math.round(8 * d);
+        pp.topMargin = Math.round(6 * d);
         parent.addView(salePanel, pp);
         renderSaleOnSave();
     }
@@ -2538,7 +2540,7 @@ public class ElekActivity extends Activity {
         field.setBackground(roundRect(getResources().getColor(R.color.zd_bg, null),
                 getResources().getColor(R.color.zd_border, null), 12 * d));
         int pad = Math.round(12 * d);
-        field.setPadding(pad, pad, pad, pad);
+        field.setPadding(pad, Math.round(9 * d), pad, Math.round(9 * d));
         field.setSingleLine(true);
         return field;
     }
