@@ -66,6 +66,32 @@ public final class ElekSaleModel {
         return tl(gross) + " · tahsilat: " + pay;
     }
 
+    /** Makbuzdaki tahsilat durumu: "Tamamı alındı", "Henüz alınmadı" ya da "2.000 TL alındı". */
+    public static String paymentStatus(double gross, double received) {
+        if (received <= 0.009) return "Henüz alınmadı";
+        if (received >= gross - 0.009) return "Tamamı alındı";
+        return tl(received) + " alındı";
+    }
+
+    /** Alıcıda kalan alacak; tamamı alındıysa 0. */
+    public static double remaining(double gross, double received) {
+        double r = gross - Math.max(0, received);
+        return r > 0.009 ? r : 0;
+    }
+
+    /** Paylaşılan makbuz metnine eklenen satış satırları. Alıcı adı boşsa "Belirtilmedi" yazar. */
+    public static String receiptSaleText(String buyer, String region, String phone, double gross, double received) {
+        String name = buyer == null || buyer.trim().isEmpty() ? "Belirtilmedi" : buyer.trim();
+        StringBuilder sb = new StringBuilder("\nSatış kaydı");
+        sb.append("\nAlıcı: ").append(name);
+        if (region != null && !region.trim().isEmpty()) sb.append(" · ").append(region.trim());
+        if (phone != null && !phone.trim().isEmpty()) sb.append("\nTelefon: ").append(phone.trim());
+        sb.append("\nTahsilat: ").append(paymentStatus(gross, received));
+        double rest = remaining(gross, received);
+        if (rest > 0 && received > 0.009) sb.append("\nKalan: ").append(tl(rest));
+        return sb.toString();
+    }
+
     public static String bulkButton(int count) {
         return count <= 0 ? "Elek seç" : count + " eleği satışa dönüştür";
     }

@@ -347,16 +347,6 @@ public class ElekReceiptActivity extends Activity {
         mp.setMargins(0, dp(14), 0, 0);
         paper.addView(rule(PAPER_RULE, 1), new LinearLayout.LayoutParams(-1, dp(1)));
         paper.addView(meta);
-        // Satışa dönüştürülmüş ve alıcısı belli elekte alıcı makbuzda yazar.
-        BuyerDirectory.Summary buyer = receiptBuyer();
-        if (buyer != null) {
-            LinearLayout buyerRow = new LinearLayout(this);
-            buyerRow.setPadding(0, 0, 0, dp(12));
-            String place = buyer.region.isEmpty() ? "" : " · " + buyer.region;
-            buyerRow.addView(labeled("Alıcı", buyer.name + place), new LinearLayout.LayoutParams(0, -2, 1));
-            if (!buyer.phone.isEmpty()) buyerRow.addView(labeled("Telefon", buyer.phone), new LinearLayout.LayoutParams(0, -2, 1));
-            paper.addView(buyerRow);
-        }
         paper.addView(rule(PAPER_RULE, 1), new LinearLayout.LayoutParams(-1, dp(1)));
 
         // Tablo
@@ -411,6 +401,9 @@ public class ElekReceiptActivity extends Activity {
         legend.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         paper.addView(legend);
 
+        // Satış kaydı: elek satışa dönüştürüldüyse alıcı ve tahsilat makbuzun üzerinde yazar.
+        addSaleSection(paper);
+
         // Not
         View dashed = new View(this);
         GradientDrawable d = new GradientDrawable();
@@ -423,6 +416,64 @@ public class ElekReceiptActivity extends Activity {
         paper.addView(dashed, dl);
         paper.addView(labeled("Not", note.trim().isEmpty() ? "Not eklenmemiş" : note.trim()));
         return paper;
+    }
+
+    private void addSaleSection(LinearLayout paper) {
+        double[] sale;
+        try { sale = new ElekSaleBridge(databaseHelper).linkedSaleTotals(recordId); }
+        catch (RuntimeException e) { sale = null; }
+        if (sale == null) return;
+        BuyerDirectory.Summary buyer = receiptBuyer();
+        paper.addView(dashedRule(), dashedParams());
+
+        LinearLayout head = new LinearLayout(this);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        TextView label = text("SATIŞ KAYDI", 11, PAPER_LABEL, true);
+        label.setLetterSpacing(0.1f);
+        head.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView stamp = text("SATILDI", 11, PAPER_ACCENT, true);
+        stamp.setPadding(dp(8), dp(3), dp(8), dp(3));
+        GradientDrawable s = new GradientDrawable();
+        s.setCornerRadius(dp(6));
+        s.setStroke(dp(1), PAPER_ACCENT);
+        stamp.setBackground(s);
+        stamp.setRotation(-3f);
+        stamp.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        head.addView(stamp);
+        paper.addView(head);
+
+        LinearLayout first = new LinearLayout(this);
+        first.setPadding(0, dp(8), 0, 0);
+        String name = buyer == null ? "Belirtilmedi" : buyer.name + (buyer.region.isEmpty() ? "" : " · " + buyer.region);
+        first.addView(labeled("Alıcı", name), new LinearLayout.LayoutParams(0, -2, 1));
+        if (buyer != null && !buyer.phone.isEmpty()) {
+            first.addView(labeled("Telefon", buyer.phone), new LinearLayout.LayoutParams(0, -2, 1));
+        }
+        paper.addView(first);
+
+        LinearLayout second = new LinearLayout(this);
+        second.setPadding(0, dp(10), 0, 0);
+        second.addView(labeled("Tahsilat", ElekSaleModel.paymentStatus(sale[0], sale[1])), new LinearLayout.LayoutParams(0, -2, 1));
+        double rest = ElekSaleModel.remaining(sale[0], sale[1]);
+        if (rest > 0) second.addView(labeled("Kalan alacak", ElekSaleModel.tl(rest)), new LinearLayout.LayoutParams(0, -2, 1));
+        paper.addView(second);
+    }
+
+    private View dashedRule() {
+        View dashed = new View(this);
+        GradientDrawable d = new GradientDrawable();
+        d.setShape(GradientDrawable.LINE);
+        d.setStroke(dp(1), Color.parseColor("#A99A78"), dp(4), dp(3));
+        dashed.setBackground(d);
+        dashed.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        dashed.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        return dashed;
+    }
+
+    private LinearLayout.LayoutParams dashedParams() {
+        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(-1, dp(3));
+        dl.setMargins(0, dp(14), 0, dp(8));
+        return dl;
     }
 
     private LinearLayout tableRow(String a, String b, String c, String d, int color, int sp, boolean bold, int dotColor) {
@@ -491,8 +542,13 @@ public class ElekReceiptActivity extends Activity {
                 numberFormat.format(totalTl) + " TL",
                 ElekInsights.formatPerKg(totalTl, totalKg),
                 note);
-        BuyerDirectory.Summary buyer = receiptBuyer();
-        if (buyer != null) text = text + "\nAlıcı: " + buyer.name + (buyer.region.isEmpty() ? "" : " · " + buyer.region);
+        double[] sale = null;
+        try { sale = new ElekSaleBridge(databaseHelper).linkedSaleTotals(recordId); } catch (RuntimeException ignored) { }
+        if (sale != null) {
+            BuyerDirectory.Summary buyer = receiptBuyer();
+            text = text + "\n" + ElekSaleModel.receiptSaleText(buyer == null ? "" : buyer.name,
+                    buyer == null ? "" : buyer.region, buyer == null ? "" : buyer.phone, sale[0], sale[1]);
+        }
         Intent send = new Intent(Intent.ACTION_SEND)
                 .setType("text/plain")
                 .putExtra(Intent.EXTRA_SUBJECT, "Elek makbuzu · " + gardenName)
