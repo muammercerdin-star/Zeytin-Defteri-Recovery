@@ -112,6 +112,21 @@ public class SaleActivity extends Activity {
         etVariety = findViewById(R.id.etVariety);
         etBuyerName = findViewById(R.id.etBuyerName);
         etBuyerPhone = findViewById(R.id.etBuyerPhone);
+        // Alıcı adı rehberden seçilir (yeni alıcı da seçim penceresinden eklenir); telefon boşsa rehberden dolar.
+        etBuyerName.setFocusable(false);
+        etBuyerName.setLongClickable(false);
+        etBuyerName.setOnClickListener(v -> BuyerPicker.show(this, databaseHelper, text(etBuyerName), "Alıcı belirtme", name -> {
+            etBuyerName.setText(name);
+            etBuyerName.setError(null);
+            if (!name.isEmpty() && text(etBuyerPhone).isEmpty()) {
+                try {
+                    android.database.sqlite.SQLiteDatabase bdb = databaseHelper.getReadableDatabase();
+                    for (BuyerDirectory.Summary s : BuyerDirectory.list(bdb, databaseHelper.getActiveOwnerUid(), databaseHelper.getActiveSeasonYear())) {
+                        if (BuyerDirectory.normalize(s.name).equals(BuyerDirectory.normalize(name))) { etBuyerPhone.setText(s.phone); break; }
+                    }
+                } catch (RuntimeException ignored) { }
+            }
+        }));
         etTransportCost = findViewById(R.id.etTransportCost);
         etDeductions = findViewById(R.id.etDeductions);
         etAmountReceived = findViewById(R.id.etAmountReceived);
@@ -395,8 +410,14 @@ public class SaleActivity extends Activity {
         btnSaveSale.setText("Kaydediliyor…");
 
         Long buyerId = null;
+        boolean buyerExisted = false;
         if (realSale && !text(etBuyerName).isEmpty()) {
-            long createdBuyer = databaseHelper.addBuyer(text(etBuyerName), text(etBuyerPhone), region, "Satış formundan oluşturuldu");
+            // Alıcı rehberinde aynı ad varsa o kullanılır; yeni kopya açılmaz.
+            android.database.sqlite.SQLiteDatabase bdb = databaseHelper.getWritableDatabase();
+            String bOwner = databaseHelper.getActiveOwnerUid();
+            buyerExisted = BuyerDirectory.find(bdb, bOwner, text(etBuyerName)) > 0;
+            long createdBuyer = BuyerDirectory.findOrCreate(bdb, bOwner, text(etBuyerName), text(etBuyerPhone), region,
+                    "Satış formundan oluşturuldu");
             if (createdBuyer <= 0) { failSave("Alıcı kaydı oluşturulamadı."); return; }
             buyerId = createdBuyer;
         }
@@ -406,7 +427,8 @@ public class SaleActivity extends Activity {
                 text(etVariety), "SOFRALIK", transport, deductions, received, dueDate, text(etNote),
                 realSale && checkMarketConsent.isChecked(), GradeFormModel.CODES, kilograms, prices);
         if (saleId <= 0) {
-            if (buyerId != null) databaseHelper.deleteBuyerIfUnused(buyerId);
+            // Rehberde önceden olan alıcı silinmez; yalnız bu kayıt için yeni açılan ve kullanılmayan silinir.
+            if (buyerId != null && !buyerExisted) databaseHelper.deleteBuyerIfUnused(buyerId);
             failSave("Kayıt tamamlanamadı. Bilgileri kontrol edip tekrar deneyin.");
             return;
         }

@@ -83,6 +83,8 @@ final class SettingsView extends ScrollView {
                         () -> open(activity, BlockedUsersActivity.class)));
         addSection(body, activity, "ÜRETİM",
                 row(activity, R.drawable.ic_archive_calendar, "Aktif Sezon", "Üretim sezonunuzu seçin", String.valueOf(season), seasonPicker),
+                row(activity, R.drawable.ic_settings_users, "Alıcılarım", "Kime ne sattın, alacakların ve fiyat karşılaştırması", null,
+                        () -> open(activity, BuyersActivity.class)),
                 row(activity, R.drawable.ic_bell_line, "Bildirimler ve Hatırlatmalar", "Üretim dönemine özel hatırlatmalar", null,
                         () -> open(activity, RemindersActivity.class)),
                 contributionRow(activity));

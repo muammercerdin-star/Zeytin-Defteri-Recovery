@@ -314,6 +314,8 @@
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="meydan_replies" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_bell_line" />
         <activity android:name=".BlockedUsersActivity" android:exported="false" />
+        <activity android:name=".BuyersActivity" android:exported="false" android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ModeratorManagementActivity" android:exported="false" />
         <activity android:name=".ModerationActivity" android:exported="false" />
     </application>

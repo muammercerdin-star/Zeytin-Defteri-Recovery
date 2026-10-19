@@ -999,11 +999,15 @@ public class ProductionCloudRepository {
 
             b.put("owner_uid", uid);
 
+            // Buluttan geri yüklemede de aynı adlı alıcı tek kayıttır (Alıcılarım rehberi).
             long buyerId =
-                    db.insert(
-                            "buyers",
-                            null,
-                            b
+                    BuyerDirectory.findOrCreate(
+                            db,
+                            uid,
+                            b.getAsString("name"),
+                            b.getAsString("phone"),
+                            b.getAsString("region"),
+                            b.getAsString("note")
                     );
 
             if (buyerId > 0) {

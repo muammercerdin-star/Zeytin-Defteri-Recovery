@@ -214,23 +214,46 @@ public class ElekReceiptActivity extends Activity {
         row.addView(check);
         LinearLayout copy = new LinearLayout(this);
         copy.setOrientation(LinearLayout.VERTICAL);
-        copy.addView(text("Satışa dönüştürüldü", 14, GreenTheme.color(R.color.zd_text), true));
+        final BuyerDirectory.Summary buyer = receiptBuyer();
+        String heading = buyer == null ? "Satışa dönüştürüldü" : "Satıldı · " + buyer.name;
+        copy.addView(text(heading, 14, GreenTheme.color(R.color.zd_text), true));
         copy.addView(text(ElekSaleModel.convertedLine(sale[0], sale[1]), 12, GreenTheme.color(R.color.zd_text_soft), false));
         row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
-        row.setContentDescription("Satışa dönüştürüldü. " + ElekSaleModel.convertedLine(sale[0], sale[1]));
+        row.setContentDescription(heading + ". " + ElekSaleModel.convertedLine(sale[0], sale[1])
+                + (buyer == null ? "" : ". Alıcı karnesini aç"));
+        if (buyer != null) {
+            // Alıcı karnesine geçiş: o alıcıya yapılan satışlar, alacak ve fiyat karşılaştırması.
+            row.addView(text("›", 22, GreenTheme.color(R.color.zd_green), true));
+            row.setClickable(true);
+            row.setFocusable(true);
+            row.setOnClickListener(v -> BuyersActivity.open(this, buyer.id));
+        }
         row.setLayoutParams(lp);
         return row;
     }
 
+    /** Satışa dönüştür: önce kime satıldığı (isteğe bağlı), sonra tahsilat sorulur. */
     private void askPaymentAndConvert() {
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("Parayı aldın mı?")
-                .setItems(ElekSaleModel.PAY_LABELS, (d, which) -> {
-                    if (which == ElekSaleModel.PAY_PART) askPartialAmount();
-                    else convertToSale(which, 0);
-                })
-                .setNegativeButton("Vazgeç", null)
-                .show();
+        BuyerPicker.show(this, databaseHelper, "", "Alıcısız devam et", name -> {
+            pendingBuyer = name == null ? "" : name;
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("Parayı aldın mı?")
+                    .setItems(ElekSaleModel.PAY_LABELS, (d, which) -> {
+                        if (which == ElekSaleModel.PAY_PART) askPartialAmount();
+                        else convertToSale(which, 0);
+                    })
+                    .setNegativeButton("Vazgeç", null)
+                    .show();
+        });
+    }
+
+    /** Satışa dönüştürme sırasında seçilen alıcı (boş: alıcısız). */
+    private String pendingBuyer = "";
+
+    /** Bu elek satışa dönüştürülmüş ve alıcısı belliyse alıcı; değilse null. */
+    private BuyerDirectory.Summary receiptBuyer() {
+        try { return new ElekSaleBridge(databaseHelper).linkedBuyer(recordId); }
+        catch (RuntimeException e) { return null; }
     }
 
     private void askPartialAmount() {
@@ -258,7 +281,8 @@ public class ElekReceiptActivity extends Activity {
         for (double v : lineTotal) gross += Math.max(0, v);
         String error = ElekSaleModel.partialError(pay, gross, partial);
         if (!error.isEmpty()) { Toast.makeText(this, error, Toast.LENGTH_LONG).show(); return; }
-        long saleId = new ElekSaleBridge(databaseHelper).createSale(recordId, pay, partial, "");
+        long saleId = new ElekSaleBridge(databaseHelper).createSale(recordId, pay, partial, pendingBuyer);
+        pendingBuyer = "";
         if (saleId == ElekSaleBridge.ALREADY_CONVERTED) {
             Toast.makeText(this, "Bu elek zaten satışa dönüştürülmüş.", Toast.LENGTH_SHORT).show();
         } else if (saleId > 0) {
@@ -323,6 +347,16 @@ public class ElekReceiptActivity extends Activity {
         mp.setMargins(0, dp(14), 0, 0);
         paper.addView(rule(PAPER_RULE, 1), new LinearLayout.LayoutParams(-1, dp(1)));
         paper.addView(meta);
+        // Satışa dönüştürülmüş ve alıcısı belli elekte alıcı makbuzda yazar.
+        BuyerDirectory.Summary buyer = receiptBuyer();
+        if (buyer != null) {
+            LinearLayout buyerRow = new LinearLayout(this);
+            buyerRow.setPadding(0, 0, 0, dp(12));
+            String place = buyer.region.isEmpty() ? "" : " · " + buyer.region;
+            buyerRow.addView(labeled("Alıcı", buyer.name + place), new LinearLayout.LayoutParams(0, -2, 1));
+            if (!buyer.phone.isEmpty()) buyerRow.addView(labeled("Telefon", buyer.phone), new LinearLayout.LayoutParams(0, -2, 1));
+            paper.addView(buyerRow);
+        }
         paper.addView(rule(PAPER_RULE, 1), new LinearLayout.LayoutParams(-1, dp(1)));
 
         // Tablo
@@ -457,6 +491,8 @@ public class ElekReceiptActivity extends Activity {
                 numberFormat.format(totalTl) + " TL",
                 ElekInsights.formatPerKg(totalTl, totalKg),
                 note);
+        BuyerDirectory.Summary buyer = receiptBuyer();
+        if (buyer != null) text = text + "\nAlıcı: " + buyer.name + (buyer.region.isEmpty() ? "" : " · " + buyer.region);
         Intent send = new Intent(Intent.ACTION_SEND)
                 .setType("text/plain")
                 .putExtra(Intent.EXTRA_SUBJECT, "Elek makbuzu · " + gardenName)

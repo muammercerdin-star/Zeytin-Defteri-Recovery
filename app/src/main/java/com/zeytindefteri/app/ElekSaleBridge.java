@@ -44,6 +44,17 @@ public final class ElekSaleBridge {
         try { return c.moveToFirst() ? c.getLong(0) : -1; } finally { c.close(); }
     }
 
+    /** Bu eleğe bağlı satışın id'si; yoksa -1. */
+    public long linkedSaleId(long elekId) {
+        return linkedSaleId(databaseHelper.getReadableDatabase(), elekId);
+    }
+
+    /** Bu eleğe bağlı satışın alıcısı; satış ya da alıcı yoksa null. */
+    public BuyerDirectory.Summary linkedBuyer(long elekId) {
+        long saleId = linkedSaleId(elekId);
+        return saleId > 0 ? BuyerDirectory.buyerForSale(databaseHelper.getReadableDatabase(), saleId) : null;
+    }
+
     /** Bağlı satışın brüt tutarı ve alınan tutarı: {gross, received}; satış yoksa null. */
     public double[] linkedSaleTotals(long elekId) {
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
@@ -93,9 +104,10 @@ public final class ElekSaleBridge {
             String buyer = buyerName == null ? "" : buyerName.trim();
             String region = ElekSaleModel.region(district, province);
             if (!buyer.isEmpty()) {
-                long created = databaseHelper.addBuyer(buyer, "", region, "Elek kaydından oluşturuldu");
-                if (created <= 0) return -1;
-                buyerId = created;
+                // Aynı adlı alıcı rehberde varsa o kullanılır; her satışta yeni kopya açılmaz.
+                long found = BuyerDirectory.findOrCreate(db, owner, buyer, "", region, "Elek kaydından oluşturuldu");
+                if (found <= 0) return -1;
+                buyerId = found;
             }
             String[] gradeArr = grades.toArray(new String[0]);
             double[] kgArr = new double[kgs.size()], priceArr = new double[prices.size()];

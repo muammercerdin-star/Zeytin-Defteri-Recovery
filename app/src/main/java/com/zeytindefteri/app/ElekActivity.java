@@ -2506,7 +2506,13 @@ public class ElekActivity extends Activity {
         android.widget.LinearLayout.LayoutParams partialParams = new android.widget.LinearLayout.LayoutParams(0, -2, 1);
         partialParams.setMarginEnd(Math.round(8 * d));
         fieldRow.addView(etSalePartial, partialParams);
-        etSaleBuyer = saleField("Alıcı (isteğe bağlı)", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        etSaleBuyer = saleField("Kime sattın? ›", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        // Alıcı yazılmaz, rehberden seçilir (yeni alıcı da pencereden eklenir): aynı kişi iki kez oluşmaz.
+        etSaleBuyer.setFocusable(false);
+        etSaleBuyer.setLongClickable(false);
+        etSaleBuyer.setContentDescription("Alıcı seç, isteğe bağlı");
+        etSaleBuyer.setOnClickListener(v -> BuyerPicker.show(this, databaseHelper, etSaleBuyer.getText().toString(),
+                "Alıcı belirtme", name -> etSaleBuyer.setText(name)));
         fieldRow.addView(etSaleBuyer, new android.widget.LinearLayout.LayoutParams(0, -2, 1.4f));
         salePanel.addView(fieldRow, saleFieldParams(d));
         TextView note = new TextView(this);
