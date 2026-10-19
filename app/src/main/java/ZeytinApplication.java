@@ -18,7 +18,11 @@ public final class ZeytinApplication extends Application {
                 long now=android.os.SystemClock.elapsedRealtime();
                 if(last==0 || now-last>60000){last=now;LocalReminderScheduler.requestReschedule(ZeytinApplication.this);}
             }
-            public void onActivityCreated(android.app.Activity a,android.os.Bundle b){}
+            // Ekranlar telefonun boyutuna göre ölçülür (dar/yakınlaştırılmış ekran, çok büyük yazı); setContentView'den önce.
+            @Override public void onActivityPreCreated(android.app.Activity a,android.os.Bundle b){ScreenFit.apply(a);}
+            public void onActivityCreated(android.app.Activity a,android.os.Bundle b){
+                if(android.os.Build.VERSION.SDK_INT<29)ScreenFit.apply(a);
+            }
             // Android 15+ (targetSdk 36): içerik çubukların altına uzanır; ekranlar setContentView'i
             // onCreate içinde çağırdığı için içerik çerçevesi burada hazırdır.
             @Override public void onActivityPostCreated(android.app.Activity a,android.os.Bundle b){SystemBarInsets.install(a);}

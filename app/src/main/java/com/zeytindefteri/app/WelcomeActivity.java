@@ -154,6 +154,8 @@ public class WelcomeActivity extends Activity {
                 findViewById(
                         R.id.imgHeroScene
                 );
+        // Kısa ekranlı telefonlarda karşılama tek sayfaya sığsın: taşan kadar görsel küçülür.
+        ScreenFit.shrinkToFit(findViewById(R.id.welcomeScroll), imgHeroScene, 170);
 
 
         tvAppName =
