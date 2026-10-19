@@ -174,7 +174,7 @@ public final class BuyersActivity extends Activity {
         copy.setPadding(dp(12), 0, dp(8), 0);
         copy.addView(text(s.name, 17, GreenTheme.color(R.color.zd_text), true));
         String sub = s.saleCount > 0
-                ? join(s.region, s.saleCount + " satış · " + kg(s.kg))
+                ? join(s.region, s.saleCount + "\u00A0satış\u00A0· " + kg(s.kg))
                 : join(s.region, s.lastSaleDate.isEmpty() ? "henüz satış yok" : "son satış " + BuyerDirectory.shortDate(s.lastSaleDate));
         copy.addView(text(sub, 14, GreenTheme.color(R.color.zd_muted), false));
         if (s.receivable > 0.009) copy.addView(text(ElekSaleModel.tl(s.receivable) + " alacak", 14, GreenTheme.color(R.color.zd_warning), true));
@@ -493,7 +493,7 @@ public final class BuyersActivity extends Activity {
     static String kg(double v) {
         java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(new Locale("tr", "TR"));
         nf.setMaximumFractionDigits(1);
-        return nf.format(Math.max(0, v)) + " kg";
+        return nf.format(Math.max(0, v)) + "\u00A0kg"; // "340 kg" iki satıra bölünmesin
     }
 
     static String price(double v) {
