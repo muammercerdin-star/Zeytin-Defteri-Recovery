@@ -363,8 +363,8 @@ public final class BuyerDirectory {
         if (buyer == null || others == null || buyer.totalKg < MIN_COMPARE_KG || others.totalKg < MIN_COMPARE_KG) return "";
         double diff = buyer.topShare() - others.topShare();
         long points = Math.round(Math.abs(diff));
-        if (points < 3) return "İri oranı diğer alıcılarınla benzer.";
-        return "İri oranı diğer alıcılarından " + points + " puan " + (diff > 0 ? "yüksek." : "düşük.");
+        if (points < 3) return "Double + 1 Numara oranı diğer alıcılarınla benzer.";
+        return "Double + 1 Numara oranı diğer alıcılarından " + points + " puan " + (diff > 0 ? "yüksek." : "düşük.");
     }
 
     static String pct(double v) { return String.valueOf(Math.round(Math.max(0, v))); }

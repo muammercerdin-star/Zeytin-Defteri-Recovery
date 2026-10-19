@@ -132,7 +132,7 @@ public final class BuyerDirectoryTest {
         ok(BuyerDirectory.elekLine(null).isEmpty(), "satışsız alıcıda satır yok");
         BuyerDirectory.ElekStats othersOfAli = BuyerDirectory.others(st, ali);
         ok(near(othersOfAli.totalKg, 120), "diğerleri toplamı");
-        ok(BuyerDirectory.elekVerdict(sa, othersOfAli).equals("İri oranı diğer alıcılarından 7 puan yüksek."),
+        ok(BuyerDirectory.elekVerdict(sa, othersOfAli).equals("Double + 1 Numara oranı diğer alıcılarından 7 puan yüksek."),
                 "karşılaştırma: " + BuyerDirectory.elekVerdict(sa, othersOfAli));
         ok(BuyerDirectory.elekVerdict(st.get(az), BuyerDirectory.others(st, az)).isEmpty(), "az kiloda hüküm yok");
         ok(BuyerDirectory.elekVerdict(sv, BuyerDirectory.others(st, veli)).contains("düşük"), "düşük iri oranı");

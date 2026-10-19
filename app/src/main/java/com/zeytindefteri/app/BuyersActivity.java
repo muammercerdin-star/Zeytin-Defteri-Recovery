@@ -160,11 +160,14 @@ public final class BuyersActivity extends Activity {
     }
 
     private View listRow(BuyerDirectory.Summary s, BuyerDirectory.ElekStats elek) {
+        // Kart: üstte avatar/ad/tutar, altta (satış varsa) tam genişlik sınıf çubuğu ve yüzdeler.
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(14), dp(12), dp(14), dp(12));
+        card.setMinimumHeight(dp(64));
+        card.setBackground(BuyerPicker.round(this, GreenTheme.color(R.color.zd_card), GreenTheme.color(R.color.zd_border), 18));
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(14), dp(12), dp(14), dp(12));
-        row.setMinimumHeight(dp(64));
-        row.setBackground(BuyerPicker.round(this, GreenTheme.color(R.color.zd_card), GreenTheme.color(R.color.zd_border), 18));
         TextView avatar = text(BuyerPicker.initial(s.name), 17, s.saleCount > 0 ? GreenTheme.color(R.color.zd_green) : GreenTheme.color(R.color.zd_muted), true);
         avatar.setGravity(Gravity.CENTER);
         avatar.setBackground(BuyerPicker.round(this, s.saleCount > 0 ? GreenTheme.color(R.color.zd_green_chip) : GreenTheme.color(R.color.zd_surface), 0, 22));
@@ -178,22 +181,32 @@ public final class BuyersActivity extends Activity {
                 : join(s.region, s.lastSaleDate.isEmpty() ? "henüz satış yok" : "son satış " + BuyerDirectory.shortDate(s.lastSaleDate));
         copy.addView(text(sub, 14, GreenTheme.color(R.color.zd_muted), false));
         if (s.receivable > 0.009) copy.addView(text(ElekSaleModel.tl(s.receivable) + " alacak", 14, GreenTheme.color(R.color.zd_warning), true));
-        String elekLine = BuyerDirectory.elekLine(elek);
-        if (!elekLine.isEmpty()) {
-            // Elek performansı: bu alıcıya verilen zeytinin sınıf dağılımı, tek bakışta.
-            copy.addView(gradeBar(elek, 6), sized(-1, 6, 8));
-            TextView line = text(elekLine, 13, GreenTheme.color(R.color.zd_text_soft), false);
-            line.setPadding(0, dp(4), 0, 0);
-            copy.addView(line);
-        }
         row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
-        if (s.gross > 0) row.addView(text(ElekSaleModel.tl(s.gross), 16, GreenTheme.color(R.color.zd_text), true));
-        row.setClickable(true);
-        row.setFocusable(true);
-        row.setContentDescription(s.name + ", " + sub + (s.receivable > 0.009 ? ", " + ElekSaleModel.tl(s.receivable) + " alacak" : "")
-                + (elekLine.isEmpty() ? "" : ", elek: " + elekLine));
-        row.setOnClickListener(v -> open(this, s.id));
-        return row;
+        boolean hasElek = elek != null && elek.totalKg > 0;
+        if (s.gross > 0) {
+            LinearLayout money = new LinearLayout(this);
+            money.setOrientation(LinearLayout.VERTICAL);
+            money.setGravity(Gravity.END);
+            money.addView(text(ElekSaleModel.tl(s.gross), 16, GreenTheme.color(R.color.zd_text), true));
+            if (hasElek) money.addView(text(BuyerDirectory.oneDecimal(elek.avgPerKg()) + "\u00A0TL/kg", 13, GreenTheme.color(R.color.zd_muted), false));
+            row.addView(money);
+        }
+        card.addView(row);
+        String legend = hasElek ? ElekInsights.legend(elek.kg) : "";
+        if (hasElek) {
+            // Elek performansı: Elek ekranındaki gibi sınıf yüzdeleri.
+            card.addView(gradeBar(elek, 6), sized(-1, 6, 12));
+            TextView line = text(legend, 13, GreenTheme.color(R.color.zd_text_soft), false);
+            line.setPadding(0, dp(6), 0, 0);
+            line.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            card.addView(line);
+        }
+        card.setClickable(true);
+        card.setFocusable(true);
+        card.setContentDescription(s.name + ", " + sub + (s.receivable > 0.009 ? ", " + ElekSaleModel.tl(s.receivable) + " alacak" : "")
+                + (hasElek ? ", " + ElekInsights.accessibleLegend(elek.kg) : ""));
+        card.setOnClickListener(v -> open(this, s.id));
+        return card;
     }
 
     // ------------------------------------------------------------ KARNE
