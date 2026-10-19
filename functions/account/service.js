@@ -73,6 +73,7 @@ function createService({db, recursiveDelete, deleteStoragePrefix, deleteAuthUser
 
     // 3) Engellemeler ve şikayetler.
     await recursiveDelete(db.doc(`user_blocks/${uid}`));
+    await db.doc(`social_typing/${uid}`).delete().catch(() => {});
     counts.blockedBy = await each(db.collectionGroup('items').where('blocked_uid', '==', uid),
       doc => (doc.ref.path.startsWith('user_blocks/') ? doc.ref.delete() : null));
     await recursiveDelete(db.doc(`reports/${uid}`));

@@ -133,6 +133,8 @@ public class ProducerFeedActivity extends Activity {
     private TextView marketStripSubtitle;
     private int marketStripSerial;
     private TextView composerTopic;
+    private TextView typingLine;
+    private ChatTypingRepository chatTyping;
     private TextView seasonButton;
     private TextView chatSectionTitle;
     private EditText messageInput;
@@ -295,6 +297,7 @@ public class ProducerFeedActivity extends Activity {
         }
 
         if (cloudRepository != null) cloudRepository.retryPendingPosts();
+        if ("MEYDAN".equals(currentSection) && typingLine != null) startTypingWatch();
         if (replyOutbox != null) replyOutbox.flushPending();
         syncPrivateCloudData();
         // Paylaş penceresinden dönüşte Ana Sayfa'yı baştan kurmaya gerek yok: veri değişmedi.
@@ -516,6 +519,7 @@ public class ProducerFeedActivity extends Activity {
             previousHomeY=contentHost.getChildAt(0).getScrollY();
         currentSection = section;
         setSeasonReportOpen(false);
+        stopTypingWatch();
 
         if (contentHost == null) {
             return;
@@ -743,6 +747,15 @@ public class ProducerFeedActivity extends Activity {
                 )
         );
 
+        // "… yazıyor" satırı: mesaj kutusunun hemen üstünde, kimse yazmıyorsa gizli.
+        typingLine = text("", 12, MUTED, false);
+        typingLine.setPadding(dp(18), dp(4), dp(18), dp(4));
+        typingLine.setSingleLine(true);
+        typingLine.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        typingLine.setVisibility(View.GONE);
+        typingLine.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        root.addView(typingLine, new LinearLayout.LayoutParams(-1, -2));
+
         root.addView(
                 buildComposer(),
                 new LinearLayout.LayoutParams(
@@ -750,6 +763,7 @@ public class ProducerFeedActivity extends Activity {
                         dp(66)
                 )
         );
+        startTypingWatch();
 
         refreshMarketStrip();
         loadFeed();
@@ -944,6 +958,14 @@ public class ProducerFeedActivity extends Activity {
         messageInput.setHintTextColor(MUTED);
         messageInput.setPadding(dp(16), dp(4), dp(12), dp(4));
         messageInput.setBackground(round(BG, 23, BORDER));
+        messageInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void afterTextChanged(android.text.Editable s) {
+                if (chatTyping == null) return;
+                if (s.toString().trim().isEmpty()) chatTyping.clear(); else chatTyping.typing(activeType);
+            }
+        });
         LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(0, dp(46), 1);
         ip.setMargins(dp(8), 0, dp(8), 0);
         holder.addView(messageInput, ip);
@@ -970,6 +992,45 @@ public class ProducerFeedActivity extends Activity {
         return holder;
     }
 
+    private final Runnable typingDots = new Runnable() {
+        private int step;
+        @Override public void run() {
+            if (typingLine == null || typingLine.getVisibility() != View.VISIBLE) return;
+            String base = String.valueOf(typingLine.getTag() == null ? "" : typingLine.getTag());
+            step = (step + 1) % 4;
+            typingLine.setText(base + " " + "•••".substring(0, Math.max(1, step)));
+            typingLine.postDelayed(this, 450);
+        }
+    };
+
+    /** Sohbet ekranı açıkken başkalarının "yazıyor" bilgisini dinler. */
+    private void startTypingWatch() {
+        if (chatTyping == null) chatTyping = new ChatTypingRepository(this);
+        java.util.Set<String> hidden = socialBlocks == null ? new java.util.HashSet<>() : socialBlocks.blockedIds();
+        chatTyping.start(hidden, typers -> runOnUiThread(() -> {
+            if (typingLine == null) return;
+            String label = ChatTypingRepository.label(typers, activeType);
+            if (label.isEmpty()) {
+                typingLine.setVisibility(View.GONE);
+                typingLine.removeCallbacks(typingDots);
+                return;
+            }
+            boolean wasHidden = typingLine.getVisibility() != View.VISIBLE;
+            typingLine.setTag(label);
+            typingLine.setContentDescription(label);
+            if (wasHidden) {
+                typingLine.setText(label + " •");
+                typingLine.setVisibility(View.VISIBLE);
+                typingLine.postDelayed(typingDots, 450);
+            }
+        }));
+    }
+
+    private void stopTypingWatch() {
+        if (chatTyping != null) { chatTyping.clear(); chatTyping.stop(); }
+        if (typingLine != null) { typingLine.removeCallbacks(typingDots); typingLine.setVisibility(View.GONE); }
+    }
+
     private void sendMeydanText(View send) {
         if (publishingText || messageInput == null) return;
         String text = messageInput.getText().toString().trim();
@@ -980,6 +1041,7 @@ public class ProducerFeedActivity extends Activity {
             Toast.makeText(this, "Paylaşmak için giriş yapmalısın.", Toast.LENGTH_SHORT).show(); return;
         }
         publishingText = true; send.setEnabled(false);
+        if (chatTyping != null) chatTyping.clear();
         long id;
         try {
             id = cloudRepository.createTextPost(text, activeType, sent -> runOnUiThread(() -> {
@@ -6114,6 +6176,7 @@ public class ProducerFeedActivity extends Activity {
         if (settingsContent != null) settingsContent.pause();
         // Arka planda dinleme sürmesin (pil ve okuma maliyeti); onResume yeniden başlatır.
         if (cloudRepository != null) cloudRepository.stopLiveSync();
+        stopTypingWatch();
         if (zeytinAssistant != null) {
             zeytinAssistant.pause();
         }

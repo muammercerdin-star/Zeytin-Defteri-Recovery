@@ -89,7 +89,8 @@ final class SettingsView extends ScrollView {
                         () -> open(activity, RemindersActivity.class)),
                 contributionRow(activity));
         addSection(body, activity, "UYGULAMA",
-                row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant));
+                row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant),
+                typingRow(activity));
         View management = ModerationAccess.settingsSection(activity, access);
         if (management != null) body.addView(management);
         addSection(body, activity, "DİĞER",
@@ -121,6 +122,21 @@ final class SettingsView extends ScrollView {
         footer.setGravity(Gravity.CENTER);
         footer.setPadding(0, dp(activity, 10), 0, 0);
         body.addView(footer);
+    }
+
+    /** Sohbette "yazıyor" bilgimi göster: dokununca açılır/kapanır. Kapatan başkalarınınkini yine görür. */
+    private static View typingRow(Activity activity) {
+        final TextView[] value = new TextView[1];
+        View row = row(activity, R.drawable.ic_settings_shield, "Sohbette \"yazıyor\" bilgim",
+                "Mesaj yazarken başkaları \"… yazıyor\" görsün",
+                ChatTypingRepository.sharing(activity) ? "Açık" : "Kapalı",
+                () -> {
+                    boolean on = !ChatTypingRepository.sharing(activity);
+                    ChatTypingRepository.setSharing(activity, on);
+                    if (value[0] != null) value[0].setText(on ? "Açık" : "Kapalı");
+                });
+        value[0] = (TextView) ((LinearLayout) row).getChildAt(2);
+        return row;
     }
 
     /** Piyasaya anonim katkı izni; değer pencere kapanınca yerinde güncellenir. */

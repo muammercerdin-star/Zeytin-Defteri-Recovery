@@ -115,8 +115,10 @@ public class SocialCloudRepository {
     // LIMIT
     // ============================================================
 
+    // Canlı akış penceresi. Eski mesajlar telefonda kalır; buluttan her açılışta yalnız son 60 gönderi
+    // okunur (250 iken 10 bin kullanıcıda okuma maliyetinin çoğu buradaydı).
     private static final int SYNC_LIMIT =
-            250;
+            60;
 
     /** Bir eşleştirmede sunucudan doğrulanacak en fazla eksik gönderi. */
     private static final int RECONCILE_BATCH =
