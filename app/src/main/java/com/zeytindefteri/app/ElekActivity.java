@@ -2434,10 +2434,15 @@ public class ElekActivity extends Activity {
         }
     }
 
-    /** "Bu zeytini sattım" anahtarı + tahsilat seçimi; kaydet düğmesinin hemen üstüne eklenir. */
+    /**
+     * "Bu zeytini sattım" anahtarı + tahsilat seçimi. Tek ekran düzeninde Kaydet altta sabit şeritte
+     * durduğu için bölüm, formdaki elek kartının altındaki elekSaleSlot alanına eklenir.
+     */
     private void setupSaleOnSave() {
-        if (btnSaveElek == null || !(btnSaveElek.getParent() instanceof android.view.ViewGroup)) return;
-        android.view.ViewGroup parent = (android.view.ViewGroup) btnSaveElek.getParent();
+        if (btnSaveElek == null) return;
+        android.view.View slot = findViewById(R.id.elekSaleSlot);
+        if (!(slot instanceof android.view.ViewGroup)) return;
+        android.view.ViewGroup parent = (android.view.ViewGroup) slot;
         float d = getResources().getDisplayMetrics().density;
         int text = getResources().getColor(R.color.zd_text, null);
         int soft = getResources().getColor(R.color.zd_text_soft, null);
@@ -2494,22 +2499,27 @@ public class ElekActivity extends Activity {
             salePayChips[i] = chip;
         }
         salePanel.addView(chips);
-        etSalePartial = saleField("Alınan tutar (TL)", android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        salePanel.addView(etSalePartial, saleFieldParams(d));
+        // Alınan tutar ve alıcı yan yana: "Bir kısmı" seçili değilse tutar gizlenir, alıcı tüm satırı alır.
+        android.widget.LinearLayout fieldRow = new android.widget.LinearLayout(this);
+        fieldRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        etSalePartial = saleField("Alınan TL", android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        android.widget.LinearLayout.LayoutParams partialParams = new android.widget.LinearLayout.LayoutParams(0, -2, 1);
+        partialParams.setMarginEnd(Math.round(8 * d));
+        fieldRow.addView(etSalePartial, partialParams);
         etSaleBuyer = saleField("Alıcı (isteğe bağlı)", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-        salePanel.addView(etSaleBuyer, saleFieldParams(d));
+        fieldRow.addView(etSaleBuyer, new android.widget.LinearLayout.LayoutParams(0, -2, 1.4f));
+        salePanel.addView(fieldRow, saleFieldParams(d));
         TextView note = new TextView(this);
         note.setText("Nakliye, kesinti ve piyasa paylaşımını sonra satış kaydından düzenleyebilirsin. Piyasa paylaşımı kapalı başlar.");
         note.setTextSize(11); note.setTextColor(muted); note.setPadding(0, Math.round(10 * d), 0, 0);
         salePanel.addView(note);
 
-        int index = parent.indexOfChild(btnSaveElek);
-        android.view.ViewGroup.MarginLayoutParams tp = new android.view.ViewGroup.MarginLayoutParams(-1, -2);
-        tp.topMargin = Math.round(16 * d);
-        parent.addView(saleToggle, index, tp);
-        android.view.ViewGroup.MarginLayoutParams pp = new android.view.ViewGroup.MarginLayoutParams(-1, -2);
+        android.widget.LinearLayout.LayoutParams tp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+        tp.topMargin = Math.round(12 * d);
+        parent.addView(saleToggle, tp);
+        android.widget.LinearLayout.LayoutParams pp = new android.widget.LinearLayout.LayoutParams(-1, -2);
         pp.topMargin = Math.round(8 * d);
-        parent.addView(salePanel, index + 1, pp);
+        parent.addView(salePanel, pp);
         renderSaleOnSave();
     }
 
