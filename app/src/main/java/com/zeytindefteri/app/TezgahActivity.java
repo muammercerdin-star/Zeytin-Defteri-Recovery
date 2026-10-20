@@ -164,6 +164,7 @@ public final class TezgahActivity extends Activity {
         body.addView(entryCard(), margins(-1, -2, 8));
         body.addView(weighingsCard(), margins(-1, -2, 8));
         body.addView(summaryCard(), margins(-1, -2, 8));
+        body.addView(lastSlipCard(), margins(-1, -2, 8));
         setContentView(root);
         refreshTotals();
     }
@@ -418,6 +419,7 @@ public final class TezgahActivity extends Activity {
         }
         kgInput.setText("");
         saveDraft();
+        if (lastSlipBox != null) lastSlipBox.setVisibility(View.GONE);
         renderGradeTabs();
         replaceWeighings();
         replaceSummary();
@@ -557,6 +559,54 @@ public final class TezgahActivity extends Activity {
         foot.addView(totals, new LinearLayout.LayoutParams(0, -2, 1));
         foot.addView(text("Net " + TezgahModel.kg(model.totalNet()), 16, TEXT, true));
         box.addView(foot, margins(-1, -2, 6));
+        return box;
+    }
+
+    private LinearLayout lastSlipBox;
+
+    /**
+     * Tezgah boşken (bir alım bitince) son fişin QR'ı burada büyükçe durur: üretici hemen okutabilir,
+     * dokununca tam ekran açılır. Yeni tartım başlayınca yer açmak için gizlenir.
+     */
+    private View lastSlipCard() {
+        LinearLayout box = card();
+        lastSlipBox = box;
+        box.setVisibility(View.GONE);
+        if (!model.isEmpty()) return box;
+        final List<TezgahPurchases.Purchase> list;
+        try { list = TezgahPurchases.forDay(db.getWritableDatabase(), owner, today()); }
+        catch (RuntimeException e) { return box; }
+        if (list.isEmpty()) return box;
+        final TezgahPurchases.Purchase p = list.get(0);
+        final TezgahModel m = TezgahModel.decode(p.data);
+        if (m.isEmpty()) return box;
+        int size = dp(150);
+        android.graphics.Bitmap bmp = TezgahQrUi.bitmap(TezgahQr.encode(m, p.date, traderName(), p.paid), size);
+        if (bmp == null) return box;
+        box.setVisibility(View.VISIBLE);
+        box.setOrientation(LinearLayout.HORIZONTAL);
+        box.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView img = new ImageView(this);
+        img.setImageBitmap(bmp);
+        img.setBackground(round(Color.WHITE, 0, 10));
+        img.setPadding(dp(4), dp(4), dp(4), dp(4));
+        box.addView(img, new LinearLayout.LayoutParams(size, size));
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setPadding(dp(14), 0, 0, 0);
+        col.addView(text("SON FİŞ · ÜRETİCİ OKUTSUN", 11, MUTED, true));
+        TextView who = text(p.seller.isEmpty() ? "Adsız üretici" : p.seller, 17, TEXT, true);
+        who.setMaxLines(2);
+        col.addView(who, margins(-1, -2, 4));
+        col.addView(text(TezgahModel.kg(p.kg) + " · " + TezgahModel.tl(p.gross), 15, GREEN, true), margins(-1, -2, 2));
+        col.addView(text("Elek kaydı → \"QR okut\"", 13, MUTED, false), margins(-1, -2, 6));
+        TextView big = text("Büyüt ›", 14, GREEN, true);
+        big.setPadding(0, dp(8), 0, 0);
+        col.addView(big);
+        box.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
+        box.setContentDescription("Son fiş QR kodu: " + (p.seller.isEmpty() ? "adsız" : p.seller) + ", büyütmek için dokun");
+        box.setOnClickListener(v -> showQr(m, p.date, p.seller, p.paid,
+                m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid), p.phone));
         return box;
     }
 
