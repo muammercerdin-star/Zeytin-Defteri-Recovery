@@ -23,7 +23,7 @@ public final class TezgahReportImage {
 
     private static final String[] HEAD = {"Saat", "Üretici", "Kasa", "Double", "1 Numara", "2 Numara", "3 Numara",
             "4 Numara", "Yağlık", "Net kg", "Ort. ₺/kg", "Tutar", "Ödenen", "Kalan"};
-    private static final int[] W = {78, 230, 66, 92, 104, 104, 104, 104, 92, 104, 112, 132, 132, 120};
+    private static final int[] W = {78, 230, 66, 96, 122, 122, 122, 122, 96, 104, 116, 132, 132, 120};
 
     private static final int PAD = 40, HEAD_H = 50, ROW_H = 44;
     private static final int GREEN = Color.parseColor("#2E7D32");
@@ -40,8 +40,11 @@ public final class TezgahReportImage {
         for (int w : W) tableW += w;
         int width = PAD * 2 + tableW;
         boolean showClosing = closing != null && !list.isEmpty();
+        // Fire yoksa teslim/fire satırları alınanı tekrar etmesin: yalnız "Teslim · alınanla aynı" satırı.
+        boolean same = true;
+        if (showClosing) for (int g = 0; g < TezgahClosing.N; g++) same &= Math.abs(closing.fire(g)) < 0.05;
         int height = PAD + 44 + 34 + 16 + HEAD_H + ROW_H * (list.size() + 1)
-                + (showClosing ? 30 + 44 + ROW_H * 2 + 18 + ROW_H * 4 : 0) + 70;
+                + (showClosing ? 30 + 44 + (same ? 0 : ROW_H * 2 + 18) + ROW_H * (same ? 5 : 4) : 0) + 70;
         Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bmp);
         c.drawColor(Color.WHITE);
@@ -94,13 +97,17 @@ public final class TezgahReportImage {
         // TOPLAM
         fill.setColor(GREEN_SOFT);
         c.drawRect(PAD, y, PAD + tableW, y + ROW_H, fill);
-        String[] t = {"TOPLAM", list.size() + " alım", String.valueOf(kasa),
+        String[] t = {"", "", String.valueOf(kasa),
                 kgCell(gsum[0]), kgCell(gsum[1]), kgCell(gsum[2]), kgCell(gsum[3]), kgCell(gsum[4]), kgCell(gsum[5]),
                 kgCell(kg), kg > 0 ? priceCell(gross / kg) : "—", moneyCell(gross), moneyCell(paid),
                 gross - paid > 0.5 ? moneyCell(gross - paid) : "—"};
         row(c, t, y, bold, INK);
         y += ROW_H;
         gridLines(c, grid, top - HEAD_H, y, tableW);
+        // TOPLAM etiketi iki sütuna yayılır: aradaki çizgiyi toplam satırında kapat.
+        fill.setColor(GREEN_SOFT);
+        c.drawRect(PAD + W[0] - 2, y - ROW_H + 1, PAD + W[0] + 2, y - 1, fill);
+        text(c, "TOPLAM · " + list.size() + " alım", PAD, y - ROW_H, W[0] + W[1], ROW_H, bold, 0);
 
         if (showClosing) {
             y += 30;
@@ -109,6 +116,7 @@ public final class TezgahReportImage {
             int gx = PAD + W[0] + W[1] + W[2];
             int labelW = W[0] + W[1] + W[2];
             int sTop = y;
+            if (!same) {
             // Teslim satırı
             fill.setColor(GREEN_SOFT);
             c.drawRect(PAD, y, PAD + labelW, y + ROW_H, fill);
@@ -134,14 +142,17 @@ public final class TezgahReportImage {
             int sw = labelW + W[3] + W[4] + W[5] + W[6] + W[7] + W[8] + W[9] + W[10];
             box(c, grid, PAD, sTop, PAD + sw, y, ROW_H);
             y += 18;
+            }
 
-            int vw = 260, lw = 520, kx = PAD;
+            int vw = 330, lw = 520, kx = PAD;
             int kTop = y;
-            String[][] kv = {
+            String[][] kvAll = {
+                    {"Teslim", kgCell(closing.deliveredKg()) + " kg · alınanla aynı"},
                     {"Üreticilere tutar", moneyCell(closing.producerTotal) + " ₺"},
                     {"Komisyon (" + kgCell(closing.deliveredKg()) + " kg × " + priceCell(closing.rate) + " ₺)",
                             moneyCell(closing.commission()) + " ₺"},
                     {"Sabah alınan avans", closing.advance > 0 ? "− " + moneyCell(closing.advance) + " ₺" : "—"}};
+            String[][] kv = same ? kvAll : java.util.Arrays.copyOfRange(kvAll, 1, kvAll.length);
             for (String[] row : kv) {
                 text(c, row[0], kx, y, lw, ROW_H, cell, 0);
                 text(c, row[1], kx + lw, y, vw, ROW_H, bold, 2);
