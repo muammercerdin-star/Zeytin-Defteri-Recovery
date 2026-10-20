@@ -17,6 +17,8 @@ public final class ZeytinApplication extends Application {
             public void onActivityResumed(android.app.Activity activity) {
                 long now=android.os.SystemClock.elapsedRealtime();
                 if(last==0 || now-last>60000){last=now;LocalReminderScheduler.requestReschedule(ZeytinApplication.this);}
+                // Zorunlu/isteğe bağlı güncelleme (GitHub Pages ayarı; Firebase kotası harcamaz).
+                UpdateGate.onResume(activity);
             }
             // Ekranlar telefonun boyutuna göre ölçülür (dar/yakınlaştırılmış ekran, çok büyük yazı); setContentView'den önce.
             @Override public void onActivityPreCreated(android.app.Activity a,android.os.Bundle b){ScreenFit.apply(a);}

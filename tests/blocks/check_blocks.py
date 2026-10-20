@@ -40,5 +40,6 @@ check('socialBlocks.blocked(p.userId)' in ui and 'socialBlocks.blocked(uid)' in 
 check('if(nodes.size()>=visibleLimit)break;' in replies and replies.index('if(socialBlocks.blocked(r.uid))continue;')<replies.index('if(nodes.size()>=visibleLimit)break;'))
 check('SocialReportManager.showReasons' in replies and 'SocialReportManager.showReasons' in ui)
 check('SocialBlockUi.confirm' in replies and 'SocialBlockUi.confirm' in ui)
-check('Engellenen Kullanıcılar' in ui)
+settings=(java/'com/zeytindefteri/app/SettingsView.java').read_text()
+check('Engellenen Kullanıcılar' in settings)
 print(f'PASS {checks} SQLite fixture/source-contract checks (not Android or Firestore execution)')

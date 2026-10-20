@@ -21,5 +21,5 @@ feed=(root/'app/src/main/java/FeedManager.java').read_text()
 for field in ['province','district','neighborhood']:assert 'item.'+field+' =' in feed
 ui=(root/'app/src/main/java/com/zeytindefteri/app/ProducerFeedActivity.java').read_text()
 assert 'return district.isEmpty() ? safe(p.province, "") : district;' in ui
-assert 'if(post&&!place(p).isEmpty())meta+=" • "+place(p);' in ui
+assert 'String meta = place(p).isEmpty() ? when : (when.isEmpty() ? place(p) : place(p) + " · " + when);' in ui
 print('PASS actual owner-filtered garden SQL: active location, other owner denied, missing garden, province-only, NULL fields; upload/import/PostItem/UI mappings present')

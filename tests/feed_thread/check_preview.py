@@ -11,16 +11,19 @@ db.execute('CREATE TABLE post_comments(cloud_id TEXT, post_id INTEGER, is_active
 db.executemany('INSERT INTO post_comments VALUES(?,?,?,?,?,?)',[
  ('root',1,1,10,'Root',''),('child',1,1,20,'Child','root'),('deep',1,1,30,'Nested reply','child'),
  ('deleted',1,0,40,'Deleted','root'),('legacy',2,1,5,'Old comment',None),('other',3,1,50,'Outside visible posts','')])
-rows=list(db.execute(sql,['1','2']));by_post={}
-for row in rows:by_post.setdefault(row['post_id'],row)
-assert len(by_post)==2
-assert by_post[1]['cloud_id']=='deep' and by_post[1]['parent_comment_id']=='child'
-assert by_post[1]['reply_count']==3
-assert by_post[2]['cloud_id']=='legacy' and by_post[2]['reply_count']==1
+# Sorgu artık yalnız etkin yanıtları yeniden eskiye getirir; sayım ve engel süzgeci Java'da yapılır.
+rows=list(db.execute(sql,['1','2']))
+ids=[r['cloud_id'] for r in rows]
+assert 'deleted' not in ids and 'other' not in ids, ids
+assert ids==['deep','child','root','legacy'], ids
+first={}
+for row in rows: first.setdefault(row['post_id'],row)
+assert first[1]['cloud_id']=='deep' and first[1]['parent_comment_id']=='child'
+assert sum(1 for r in rows if r['post_id']==1)==3 and first[2]['cloud_id']=='legacy'
 db.execute("INSERT INTO post_comments VALUES('z-tie',1,1,30,'Same timestamp','root')")
-rows=list(db.execute(sql,['1','2']));by_post={}
-for row in rows:by_post.setdefault(row['post_id'],row)
-assert by_post[1]['cloud_id']=='z-tie' and by_post[1]['reply_count']==4
+rows=list(db.execute(sql,['1','2']))
+assert rows[0]['cloud_id']=='z-tie', [r['cloud_id'] for r in rows]
 assert list(db.execute(sql,['8','9']))==[]
+assert 'previous.cachedCount++' in method and 'socialBlocks.blocked(uid)' in method
 assert not any(x in method for x in ['FirebaseFirestore','addSnapshotListener','.collection('])
-print('PASS actual aggregate SQL: latest nested reply, deleted exclusion, legacy NULL parent, counts, visible-post isolation, stable timestamp tie, empty cache; no Firestore access in preview reader')
+print('PASS reply preview SQL: active-only, newest first, stable tie, visible-post isolation; counting/blocks in Java; no Firestore access')
