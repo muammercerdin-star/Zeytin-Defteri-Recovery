@@ -92,6 +92,15 @@ public class TezgahModelTest {
     av.add(0,1,8); av.add(1,1,20); av.add(5,1,10); av.setPrice(0,130); av.setPrice(1,100); av.setPrice(5,20);
     eq(av.averagePrice(),(6*130+18*100+8*20)/32.0,"ortalama kg fiyatı");
     ok(av.receipt("x","Satan","","",0).contains("Ortalama: 85,63\u00A0₺/kg"),"fişte ortalama\n"+av.receipt("x","Satan","","",0));
+    ok(TezgahModel.suggestedKasa(2,16,2)==1,"2 kasa 16 kg -> 1");
+    ok(TezgahModel.tooManyKasa(2,16,2),"kasa fazla girilmiş");
+    ok(TezgahModel.kasaHint(2,16,2).equals("⚠ 2 kasa için 16\u00A0kg az. 1 kasa mı?"),"kısa uyarı "+TezgahModel.kasaHint(2,16,2));
+    ok(TezgahModel.kasaWarning(2,16,2).contains("Kasa sayısı 1"),"uzun uyarı");
+    ok(TezgahModel.suggestedKasa(10,200,2)==0,"10 kasa 200 kg normal (son kasa yarım)");
+    ok(TezgahModel.suggestedKasa(10,150,2)==6,"10 kasa 150 kg -> 6: "+TezgahModel.suggestedKasa(10,150,2));
+    ok(TezgahModel.suggestedKasa(1,5,2)==0,"1 kasa 5 kg yarım kasa normal");
+    ok(TezgahModel.suggestedKasa(2,24,2)==0,"2 kasa 24 kg sınırda normal");
+    ok(TezgahModel.kasaHint(1,38,2).equals("⚠ 1 kasaya 38\u00A0kg fazla. 2 kasa mı?"),"fazla uyarı korunur");
     System.out.println("PASS: "+n+" tezgah hesabı kontrolü");
   }
 }

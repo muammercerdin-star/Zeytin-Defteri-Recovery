@@ -63,22 +63,55 @@ public final class TezgahModel {
     /** Tipik dolu kasa (kg zeytin); önerilen kasa sayısı hesabında kullanılır. */
     public static final double TYPICAL_NET_PER_KASA = 25;
 
-    /** Kasa sayısı kiloya göre az görünüyorsa önerilen kasa sayısı; sorun yoksa 0 (dökme tartımda da 0). */
+    /** Birden çok kasada, sonuncusu hariç her kasa en az bu kadar dolu sayılır (son kasa yarım olabilir). */
+    public static final double MIN_FULL_NET_PER_KASA = 20;
+
+    /**
+     * Kasa sayısı kiloya uymuyorsa önerilen kasa sayısı; uyuyorsa 0 (dökme tartımda da 0).
+     * Fazla: kasa başına kantar &gt; 30 kg + dara (1 kasa 38 kg → 2).
+     * Az: birden çok kasada kilo, (kasa − 1) dolu kasaya bile yetmiyor (2 kasa 16 kg → 1).
+     */
     public static int suggestedKasa(int kasa, double kg, double tare) {
         if (kasa <= 0 || !(kg > 0)) return 0;
-        double maxGross = MAX_NET_PER_KASA + Math.max(0, tare);
-        if (kg / kasa <= maxGross + 1e-9) return 0;
-        int fit = (int) Math.ceil(kg / maxGross - 1e-9);
-        int typical = (int) Math.round(kg / (TYPICAL_NET_PER_KASA + Math.max(0, tare)));
-        return Math.min(MAX_KASA, Math.max(fit, typical));
+        double t = Math.max(0, tare);
+        double maxGross = MAX_NET_PER_KASA + t;
+        int typical = (int) Math.round(kg / (TYPICAL_NET_PER_KASA + t));
+        if (kg / kasa > maxGross + 1e-9) {
+            int fit = (int) Math.ceil(kg / maxGross - 1e-9);
+            return Math.min(MAX_KASA, Math.max(fit, typical));
+        }
+        if (kasa > 1 && kg < (kasa - 1) * (MIN_FULL_NET_PER_KASA + t) - 1e-9) {
+            int fit = (int) Math.ceil(kg / maxGross - 1e-9);
+            int s = Math.max(1, Math.max(fit, typical));
+            return s < kasa ? s : 0;
+        }
+        return 0;
+    }
+
+    /** Kasa çok mu (kiloya göre az kilo) yoksa az mı? true: kasa sayısı fazla girilmiş. */
+    public static boolean tooManyKasa(int kasa, double kg, double tare) {
+        int s = suggestedKasa(kasa, kg, tare);
+        return s > 0 && s < kasa;
     }
 
     /** Kasa uyarısı metni; sorun yoksa boş. */
     public static String kasaWarning(int kasa, double kg, double tare) {
         int s = suggestedKasa(kasa, kg, tare);
         if (s == 0) return "";
+        if (s < kasa) {
+            return kasa + " kasa için " + kg(kg) + " az: kasa başına " + kg(kg / kasa) + " düşüyor (bir kasa 25–30 kg alır). "
+                    + "Kasa sayısı " + s + " olmasın?";
+        }
         return "Kasa başına " + kg(kg / kasa) + " düşüyor; bir kasaya en fazla " + kg(MAX_NET_PER_KASA)
                 + " sığar. Kasa sayısı " + s + " olmasın?";
+    }
+
+    /** Ekrandaki kısa uyarı: "⚠ 1 kasaya 38 kg fazla. 2 kasa mı?" / "⚠ 2 kasa için 16 kg az. 1 kasa mı?" */
+    public static String kasaHint(int kasa, double kg, double tare) {
+        int s = suggestedKasa(kasa, kg, tare);
+        if (s == 0) return "";
+        return s < kasa ? "⚠ " + kasa + " kasa için " + kg(kg) + " az. " + s + " kasa mı?"
+                : "⚠ " + kasa + " kasaya " + kg(kg) + " fazla. " + s + " kasa mı?";
     }
 
     // ------------------------------------------------------------------ düzenleme

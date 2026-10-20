@@ -387,8 +387,7 @@ public final class TezgahActivity extends Activity {
             netPreview.setText(err);
         } else if (!TezgahModel.kasaWarning(kasa, kg, model.tare()).isEmpty()) {
             netPreview.setTextColor(AMBER);
-            netPreview.setText("⚠ " + kasa + " kasaya " + TezgahModel.kg(kg) + " fazla. "
-                    + TezgahModel.suggestedKasa(kasa, kg, model.tare()) + " kasa mı?");
+            netPreview.setText(TezgahModel.kasaHint(kasa, kg, model.tare()));
         } else {
             netPreview.setVisibility(View.GONE);
         }
@@ -403,7 +402,7 @@ public final class TezgahActivity extends Activity {
         }
         final int suggested = TezgahModel.suggestedKasa(kasa, kg, model.tare());
         if (suggested > 0) {
-            // Bir kasaya en fazla ~30 kg sığar: kasa sayısı muhtemelen yanlış girildi.
+            // Bir kasa 25–30 kg alır: kilo kasa sayısına uymuyor, kasa sayısı muhtemelen yanlış girildi.
             new AlertDialog.Builder(this)
                     .setTitle(kasa + " kasada " + TezgahModel.kg(kg) + " olamaz")
                     .setMessage(TezgahModel.kasaWarning(kasa, kg, model.tare()))
