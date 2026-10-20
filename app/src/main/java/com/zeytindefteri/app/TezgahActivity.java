@@ -87,6 +87,12 @@ public final class TezgahActivity extends Activity {
         build();
     }
 
+    /** Alım defterinden dönünce (silme, borç kapama) gün özeti ve son fiş tazelensin. */
+    @Override protected void onRestart() {
+        super.onRestart();
+        build();
+    }
+
     @Override protected void onPause() {
         saveDraft();
         super.onPause();
@@ -201,12 +207,13 @@ public final class TezgahActivity extends Activity {
         TezgahPurchases.Day d;
         try { d = TezgahPurchases.summary(db.getWritableDatabase(), owner, today()); }
         catch (RuntimeException e) { d = new TezgahPurchases.Day(); }
-        if (d.count > 0) {
-            TextView day = text("Bugün " + d.count + " alım ›", 13, GREEN, true);
+        {
+            // Alım defteri her zaman açılabilir (önceki günler de orada).
+            TextView day = text(d.count > 0 ? "Bugün " + d.count + " alım ›" : "Alım defteri ›", 13, GREEN, true);
             day.setGravity(Gravity.CENTER);
             day.setPadding(dp(12), 0, dp(12), 0);
             day.setBackground(round(CARD, d.remaining() > 0.5 ? AMBER : GREEN_DIM, 18));
-            day.setContentDescription("Bugünkü alımlar: " + TezgahPurchases.dayLine(d));
+            day.setContentDescription("Alım defterini aç. " + TezgahPurchases.dayLine(d));
             day.setOnClickListener(v -> showDayList());
             row.addView(day, new LinearLayout.LayoutParams(-2, dp(38)));
         }
@@ -899,130 +906,16 @@ public final class TezgahActivity extends Activity {
         else shareText(text, phone);
     }
 
-    /** Tüccarın görünen adı (QR'da üreticinin "alıcı" alanına girer). */
-    private String traderName() {
-        try {
-            com.google.firebase.auth.FirebaseUser u = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
-            String n = u == null ? null : u.getDisplayName();
-            return n == null ? "" : n.trim();
-        } catch (RuntimeException e) {
-            return "";
-        }
-    }
+    private String traderName() { return TezgahShare.traderName(); }
 
-    /**
-     * Büyük QR: üretici kendi telefonunda Elek kaydı → "QR okut" ile okutur; kilolar, fiyatlar, tarih,
-     * alıcı (tüccarın adı) ve ödeme durumu forma kendiliğinden dolar. Ekran parlaklığı geçici olarak artar.
-     */
     private void showQr(TezgahModel m, String date, String sellerName, double paid, String text, String phone) {
-        String payload = TezgahQr.encode(m, date, traderName(), paid);
-        int size = Math.min(getResources().getDisplayMetrics().widthPixels - dp(80), dp(320));
-        android.graphics.Bitmap bmp = TezgahQrUi.bitmap(payload, size);
-        if (bmp == null) { toast("QR oluşturulamadı; fişi WhatsApp'tan gönder."); shareText(text, phone); return; }
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER_HORIZONTAL);
-        box.setPadding(dp(16), dp(12), dp(16), dp(4));
-        ImageView img = new ImageView(this);
-        img.setImageBitmap(bmp);
-        img.setBackgroundColor(Color.WHITE);
-        img.setContentDescription("Alım fişi QR kodu");
-        box.addView(img, new LinearLayout.LayoutParams(size, size));
-        TextView info = new TextView(this);
-        info.setText((sellerName.isEmpty() ? "" : sellerName + " · ") + TezgahModel.kg(m.totalNet()) + " · "
-                + TezgahModel.tl(m.total()) + "\nÜretici: Elek kaydı → \"QR okut\"");
-        info.setGravity(Gravity.CENTER);
-        info.setTextSize(15);
-        info.setPadding(0, dp(10), 0, 0);
-        box.addView(info);
-        AlertDialog d = new AlertDialog.Builder(this)
-                .setTitle("Üretici okutsun")
-                .setView(box)
-                .setPositiveButton("Bitti", null)
-                .setNeutralButton("WhatsApp'a da gönder", (x, y) -> shareText(text, phone))
-                .create();
-        d.setOnShowListener(x -> {
-            if (d.getWindow() != null) {
-                WindowManager.LayoutParams lp = d.getWindow().getAttributes();
-                lp.screenBrightness = 1f;
-                d.getWindow().setAttributes(lp);
-            }
-        });
-        d.show();
+        TezgahShare.showQr(this, m, date, sellerName, paid, text, phone);
     }
 
-    private void shareText(String text, String phone) {
-        String wa = TezgahModel.waPhone(phone);
-        if (!wa.isEmpty()) {
-            try {
-                startActivity(new Intent(Intent.ACTION_VIEW,
-                        Uri.parse("https://wa.me/" + wa + "?text=" + Uri.encode(text))));
-                return;
-            } catch (RuntimeException ignored) {
-                // WhatsApp yoksa paylaşım menüsüne düşer.
-            }
-        }
-        try {
-            Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text);
-            startActivity(Intent.createChooser(send, "Fişi gönder"));
-        } catch (RuntimeException e) {
-            toast("Paylaşılacak uygulama bulunamadı.");
-        }
-    }
+    private void shareText(String text, String phone) { TezgahShare.shareText(this, text, phone); }
 
-    private void showDayList() {
-        final List<TezgahPurchases.Purchase> list;
-        try { list = TezgahPurchases.forDay(db.getWritableDatabase(), owner, today()); }
-        catch (RuntimeException e) { toast("Alımlar okunamadı."); return; }
-        if (list.isEmpty()) return;
-        String[] rows = new String[list.size()];
-        SimpleDateFormat hm = new SimpleDateFormat("HH:mm", Locale.US);
-        for (int i = 0; i < rows.length; i++) {
-            TezgahPurchases.Purchase p = list.get(i);
-            rows[i] = hm.format(new Date(p.createdAt)) + " · " + (p.seller.isEmpty() ? "Adsız" : p.seller) + "\n"
-                    + TezgahModel.kg(p.kg) + " · " + TezgahModel.tl(p.gross)
-                    + (p.kg > 0 ? " · ort. " + TezgahModel.money(p.gross / p.kg) : "")
-                    + (p.remaining() > 0.5 ? " · " + TezgahModel.tl(p.remaining()) + " borç" : " · ödendi");
-        }
-        new AlertDialog.Builder(this)
-                .setTitle("Bugün: " + TezgahPurchases.dayLine(TezgahPurchases.summary(db.getWritableDatabase(), owner, today())))
-                .setItems(rows, (d, i) -> purchaseActions(list.get(i)))
-                .setNegativeButton("Kapat", null)
-                .show();
-    }
-
-    private void purchaseActions(final TezgahPurchases.Purchase p) {
-        final TezgahModel m = TezgahModel.decode(p.data);
-        String[] actions = p.remaining() > 0.5
-                ? new String[]{"QR göster", "Fişi gönder", "Kalan borcu ödedim", "Sil"}
-                : new String[]{"QR göster", "Fişi gönder", "Sil"};
-        new AlertDialog.Builder(this)
-                .setTitle((p.seller.isEmpty() ? "Adsız" : p.seller) + " · " + TezgahModel.tl(p.gross))
-                .setItems(actions, (d, i) -> {
-                    String a = actions[i];
-                    if (a.startsWith("QR")) {
-                        showQr(m, p.date, p.seller, p.paid,
-                                m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid), p.phone);
-                    } else if (a.startsWith("Fişi")) {
-                        shareText(m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid), p.phone);
-                    } else if (a.startsWith("Kalan")) {
-                        TezgahPurchases.setPaid(db.getWritableDatabase(), owner, p.id, p.gross);
-                        toast("Borç kapandı ✓");
-                        build();
-                    } else {
-                        new AlertDialog.Builder(this)
-                                .setTitle("Alım silinsin mi?")
-                                .setMessage((p.seller.isEmpty() ? "Adsız" : p.seller) + " · " + TezgahModel.kg(p.kg))
-                                .setPositiveButton("Sil", (x, y) -> {
-                                    TezgahPurchases.delete(db.getWritableDatabase(), owner, p.id);
-                                    build();
-                                })
-                                .setNegativeButton("Vazgeç", null)
-                                .show();
-                    }
-                })
-                .show();
-    }
+    /** Alım defteri: tablo görünümlü ayrı sayfa (gün gün, toplamlar, Excel'e aktarma). */
+    private void showDayList() { startActivity(new Intent(this, TezgahDayActivity.class)); }
 
     // ================================================================== yardımcılar
 

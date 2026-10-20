@@ -31,6 +31,20 @@ public class TezgahPurchasesTest {
     ok(!TezgahPurchases.delete(db,"t1",other),"başkasının kaydı silinmez");
     ok(TezgahPurchases.delete(db,"t1",id2),"silme");
     ok(TezgahPurchases.forDay(db,"t1","2026-10-20").size()==1,"silindi");
+    TezgahPurchases.add(db,"t3","2026-10-21","Ali; \"Usta\"","+905321112233",m,5000,1000);
+    TezgahPurchases.add(db,"t3","2026-10-21","=HYPERLINK(1)","",m,0,2000);
+    String csv=TezgahPurchases.csv(TezgahPurchases.forDay(db,"t3","2026-10-21"));
+    String[] lines=csv.split("\r\n");
+    ok(lines.length==4,"başlık + 2 alım + toplam: "+lines.length);
+    ok(lines[0].startsWith("\uFEFFTarih;Saat;Üretici"),"BOM ve başlık");
+    ok(lines[0].contains("Double kg;1 Numara kg") && lines[0].endsWith("Kalan TL"),"sütunlar "+lines[0]);
+    ok(csv.contains("\"Ali; \"\"Usta\"\"\""),"tırnak ve ayraç kaçışı");
+    ok(csv.contains("'=HYPERLINK(1)"),"formül enjeksiyonu engellenir");
+    ok(csv.contains("'+905321112233"),"+ ile başlayan telefon metin kalır");
+    ok(lines[3].startsWith("TOPLAM;;2 alım;;30;"),"toplam satırı "+lines[3]);
+    ok(lines[3].contains(";716;"),"toplam net kg");
+    ok(lines[2].contains(";238;120;0;0;0;0;358;"),"numara kiloları "+lines[2]);
+    ok(TezgahPurchases.dec(1234.5).equals("1234,5") && TezgahPurchases.dec(12).equals("12"),"sayı biçimi");
     System.out.println("PASS: "+n+" tüccar alım kaydı kontrolü");
   }
 }
