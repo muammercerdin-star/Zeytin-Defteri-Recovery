@@ -24,7 +24,7 @@ public class TezgahPurchasesTest {
     TezgahPurchases.Day d=TezgahPurchases.summary(db,"t1","2026-10-20");
     ok(d.count==2,"gün sayısı"); eq(d.kg,716,"gün kilo"); eq(d.remaining(),m.total()-10000,"gün borç");
     ok(TezgahPurchases.dayLine(d).startsWith("2 alım · 716"),"gün satırı "+TezgahPurchases.dayLine(d));
-    ok(TezgahPurchases.dayLine(new TezgahPurchases.Day()).equals("Bugün henüz alım yok"),"boş gün");
+    ok(TezgahPurchases.dayLine(new TezgahPurchases.Day()).equals("Henüz alım yok"),"boş gün");
     ok(TezgahPurchases.setPaid(db,"t1",id1,m.total()),"sonradan ödeme");
     eq(TezgahPurchases.summary(db,"t1","2026-10-20").remaining(),0,"borç kapandı");
     ok(!TezgahPurchases.setPaid(db,"t1",other,1),"başkasının kaydı değişmez");

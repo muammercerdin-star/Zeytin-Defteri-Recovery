@@ -25,6 +25,8 @@ public final class TezgahPurchases {
         public double kg, gross, paid;
         public int kasa;
         public long createdAt;
+        /** Gün sonu (Z) kaydı; 0 = açık dönem. Z'si olan alım kilitlidir (silinmez). */
+        public long zId;
 
         public double remaining() { return Math.max(0, gross - paid); }
     }
@@ -53,6 +55,18 @@ public final class TezgahPurchases {
                 + "data TEXT DEFAULT '', "
                 + "created_at INTEGER DEFAULT 0)");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_tezgah_owner_date ON " + TABLE + "(owner_uid, record_date)");
+        if (!hasColumn(db, TABLE, "z_id")) db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN z_id INTEGER DEFAULT 0");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_tezgah_owner_z ON " + TABLE + "(owner_uid, z_id)");
+    }
+
+    static boolean hasColumn(SQLiteDatabase db, String table, String column) {
+        Cursor c = db.rawQuery("PRAGMA table_info(" + table + ")", null);
+        try {
+            while (c.moveToNext()) if (column.equals(c.getString(1))) return true;
+            return false;
+        } finally {
+            c.close();
+        }
     }
 
     /** Alımı kaydeder; id ya da hata -1. date: yyyy-MM-dd. */
@@ -75,14 +89,33 @@ public final class TezgahPurchases {
         return db.insert(TABLE, null, v);
     }
 
-    /** Günün alımları (yeniden eskiye). */
+    private static final String COLS = "SELECT id, record_date, seller_name, seller_phone, total_kg, total_kasa, gross_total, "
+            + "amount_paid, data, created_at, COALESCE(z_id,0) FROM " + TABLE;
+
+    /** Günün alımları (yeniden eskiye), açık ya da kapanmış. */
     public static List<Purchase> forDay(SQLiteDatabase db, String owner, String date) {
         ensure(db);
-        List<Purchase> out = new ArrayList<>();
-        Cursor c = db.rawQuery("SELECT id, record_date, seller_name, seller_phone, total_kg, total_kasa, gross_total, "
-                        + "amount_paid, data, created_at FROM " + TABLE
-                        + " WHERE COALESCE(owner_uid,'')=? AND record_date=? ORDER BY created_at DESC, id DESC",
+        return query(db, COLS + " WHERE COALESCE(owner_uid,'')=? AND record_date=? ORDER BY created_at DESC, id DESC",
                 new String[]{owner == null ? "" : owner, date});
+    }
+
+    /** Açık dönemin alımları: henüz gün sonu alınmamış (tarih fark etmez), yeniden eskiye. */
+    public static List<Purchase> open(SQLiteDatabase db, String owner) {
+        ensure(db);
+        return query(db, COLS + " WHERE COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0 ORDER BY created_at DESC, id DESC",
+                new String[]{owner == null ? "" : owner});
+    }
+
+    /** Bir gün sonu (Z) raporunun alımları. */
+    public static List<Purchase> forZ(SQLiteDatabase db, String owner, long zId) {
+        ensure(db);
+        return query(db, COLS + " WHERE COALESCE(owner_uid,'')=? AND z_id=? ORDER BY created_at DESC, id DESC",
+                new String[]{owner == null ? "" : owner, String.valueOf(zId)});
+    }
+
+    private static List<Purchase> query(SQLiteDatabase db, String sql, String[] args) {
+        List<Purchase> out = new ArrayList<>();
+        Cursor c = db.rawQuery(sql, args);
         try {
             while (c.moveToNext()) {
                 Purchase p = new Purchase();
@@ -96,6 +129,7 @@ public final class TezgahPurchases {
                 p.paid = c.getDouble(7);
                 p.data = nz(c.getString(8));
                 p.createdAt = c.getLong(9);
+                p.zId = c.getLong(10);
                 out.add(p);
             }
         } finally {
@@ -104,9 +138,12 @@ public final class TezgahPurchases {
         return out;
     }
 
-    public static Day summary(SQLiteDatabase db, String owner, String date) {
+    /** Açık dönem özeti. */
+    public static Day openSummary(SQLiteDatabase db, String owner) { return sum(open(db, owner)); }
+
+    public static Day sum(List<Purchase> list) {
         Day d = new Day();
-        for (Purchase p : forDay(db, owner, date)) {
+        for (Purchase p : list) {
             d.count++;
             d.kasa += p.kasa;
             d.kg += p.kg;
@@ -114,6 +151,10 @@ public final class TezgahPurchases {
             d.paid += p.paid;
         }
         return d;
+    }
+
+    public static Day summary(SQLiteDatabase db, String owner, String date) {
+        return sum(forDay(db, owner, date));
     }
 
     /** Sonradan yapılan ödeme: ödenen tutar toplamı aşmaz. */
@@ -134,15 +175,16 @@ public final class TezgahPurchases {
                 new String[]{String.valueOf(id), owner == null ? "" : owner}) > 0;
     }
 
+    /** Yalnız açık dönemdeki alım silinir; gün sonu alınmış (Z'li) alım kilitlidir. */
     public static boolean delete(SQLiteDatabase db, String owner, long id) {
         ensure(db);
-        return db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=?",
+        return db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0",
                 new String[]{String.valueOf(id), owner == null ? "" : owner}) > 0;
     }
 
     /** Gün özeti satırı: "3 alım · 1.240 kg · 98.500 ₺ · 12.000 ₺ borç". */
     public static String dayLine(Day d) {
-        if (d == null || d.count == 0) return "Bugün henüz alım yok";
+        if (d == null || d.count == 0) return "Henüz alım yok";
         String s = d.count + " alım · " + TezgahModel.kg(d.kg) + " · " + TezgahModel.tl(d.gross);
         if (d.remaining() > 0.5) s += " · " + TezgahModel.tl(d.remaining()) + " borç";
         return s;

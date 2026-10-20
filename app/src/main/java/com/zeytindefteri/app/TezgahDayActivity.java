@@ -18,20 +18,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Alım defteri: tüccarın günlük alımları tablo görünümünde.
+ * Alım defteri: açık dönemin (gün sonu alınmamış) alımları ya da bir gün sonu (Z) raporu, tablo görünümünde.
  * - Solda sabit "Üretici" sütunu, sağda yana kayan sütunlar (kasa, numara kiloları, net, ortalama, tutar, ödenen, kalan).
- * - En altta TOPLAM satırı; üstte gün özeti; ‹ › ile önceki günler.
+ * - En altta TOPLAM satırı; altta akşam hesabı ve "Gün sonu al (Z)"; en altta önceki gün sonları.
+ * - Z açıldığında (EXTRA_Z_ID) kayıtlar kilitlidir: silinmez, akşam hesabı değişmez; yalnız borç ödemesi işlenir.
  * - Satıra dokununca: QR göster, fişi gönder, kalan borcu ödedim, sil.
  * - "Rapor": alım tablosu + akşam hesabı tek sayfa (TezgahReportActivity), resim olarak gönderilir.
  * - Altta "Akşam hesabı": tüccara teslim, fire, komisyon, avans.
  */
 public final class TezgahDayActivity extends Activity {
+    public static final String EXTRA_Z_ID = "z_id";
     private static final int BG = Color.parseColor("#050F16");
     private static final int CARD = Color.parseColor("#0F2230");
     private static final int ROW_ALT = Color.parseColor("#0B1A24");
@@ -50,7 +51,8 @@ public final class TezgahDayActivity extends Activity {
 
     private DatabaseHelper db;
     private String owner = "";
-    private final Calendar day = Calendar.getInstance();
+    private long zId;
+    private TezgahZ.Record zRecord;
     private LinearLayout body;
 
     @Override protected void onCreate(Bundle state) {
@@ -59,7 +61,11 @@ public final class TezgahDayActivity extends Activity {
         db = new DatabaseHelper(this);
         owner = db.getActiveOwnerUid();
         if (owner == null) owner = "";
-        if (state != null) day.setTimeInMillis(state.getLong("day", day.getTimeInMillis()));
+        zId = getIntent().getLongExtra(EXTRA_Z_ID, 0L);
+        if (zId > 0) {
+            try { zRecord = TezgahZ.get(db.getWritableDatabase(), owner, zId); } catch (RuntimeException ignored) { }
+            if (zRecord == null) { finish(); return; }
+        }
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
         ScrollView scroll = new ScrollView(this);
@@ -73,9 +79,10 @@ public final class TezgahDayActivity extends Activity {
         render();
     }
 
-    @Override protected void onSaveInstanceState(Bundle out) {
-        super.onSaveInstanceState(out);
-        out.putLong("day", day.getTimeInMillis());
+    /** Rapordan/gün sonundan dönünce (borç ödemesi vb.) tazele. */
+    @Override protected void onRestart() {
+        super.onRestart();
+        if (body != null) render();
     }
 
     @Override protected void onDestroy() {
@@ -83,15 +90,14 @@ public final class TezgahDayActivity extends Activity {
         super.onDestroy();
     }
 
-    private String iso() { return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(day.getTime()); }
-
-    private boolean isToday() {
-        Calendar now = Calendar.getInstance();
-        return now.get(Calendar.YEAR) == day.get(Calendar.YEAR) && now.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR);
-    }
+    private static final SimpleDateFormat DM_HM = new SimpleDateFormat("d MMM HH:mm", new Locale("tr", "TR"));
+    private static final SimpleDateFormat HM = new SimpleDateFormat("HH:mm", Locale.US);
 
     private List<TezgahPurchases.Purchase> load() {
-        try { return TezgahPurchases.forDay(db.getWritableDatabase(), owner, iso()); }
+        try {
+            return zId > 0 ? TezgahPurchases.forZ(db.getWritableDatabase(), owner, zId)
+                    : TezgahPurchases.open(db.getWritableDatabase(), owner);
+        }
         catch (RuntimeException e) { return new java.util.ArrayList<>(); }
     }
 
@@ -101,20 +107,109 @@ public final class TezgahDayActivity extends Activity {
         body.removeAllViews();
         final List<TezgahPurchases.Purchase> list = load();
         body.addView(header(list));
-        body.addView(dateBar(), margins(-1, dp(48), 6));
+        body.addView(statusBar(list), margins(-1, -2, 6));
         body.addView(summary(list), margins(-1, -2, 10));
         if (list.isEmpty()) {
-            TextView empty = text(isToday() ? "Bugün henüz alım yok. Tezgahta bir alımı bitirince burada satır olarak görünür."
-                    : "Bu gün alım yok.", 15, MUTED, false);
+            TextView empty = text("Açık dönemde alım yok. Tezgahta bir alımı bitirince burada satır olarak görünür.",
+                    15, MUTED, false);
             empty.setGravity(Gravity.CENTER);
-            empty.setPadding(dp(16), dp(32), dp(16), dp(32));
+            empty.setPadding(dp(16), dp(28), dp(16), dp(28));
             body.addView(empty);
-            return;
+        } else {
+            body.addView(table(list), margins(-1, -2, 12));
+            TextView hint = text(zId > 0 ? "Gün sonu alındı: kayıtlar kilitli. Satıra dokun: QR · fiş · borç ödemesi."
+                    : "Satıra dokun: QR göster · fişi gönder · borcu kapat · sil. Tablo sağa kayar.", 12, MUTED, false);
+            body.addView(hint, margins(-1, -2, 8));
+            body.addView(closingCard(list), margins(-1, -2, 16));
         }
-        body.addView(table(list), margins(-1, -2, 12));
-        TextView hint = text("Satıra dokun: QR göster · fişi gönder · borcu kapat · sil. Tablo sağa kayar.", 12, MUTED, false);
-        body.addView(hint, margins(-1, -2, 8));
-        body.addView(closingCard(list), margins(-1, -2, 16));
+        if (zId <= 0) body.addView(zList(), margins(-1, -2, 18));
+    }
+
+    /** Dönem şeridi: "Açık dönem · 19:37'den beri" ya da "Z-0003 · 20 Eki 21:30 · kilitli". */
+    private View statusBar(List<TezgahPurchases.Purchase> list) {
+        LinearLayout bar = new LinearLayout(this);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setPadding(dp(14), dp(10), dp(14), dp(10));
+        bar.setBackground(round(CARD, zId > 0 ? LINE : GREEN_DIM, 16));
+        TextView dot = text("●", 14, zId > 0 ? MUTED : GREEN, true);
+        bar.addView(dot);
+        String label;
+        if (zId > 0) {
+            label = zRecord.label() + " · " + DM_HM.format(new Date(zRecord.closedAt)) + " · kilitli 🔒";
+        } else if (list.isEmpty()) {
+            label = "Açık dönem · yeni alım bekleniyor";
+        } else {
+            long first = Long.MAX_VALUE;
+            for (TezgahPurchases.Purchase p : list) first = Math.min(first, p.createdAt);
+            label = "Açık dönem · " + DM_HM.format(new Date(first)) + "'den beri";
+        }
+        TextView t = text(label, 15, TEXT, true);
+        t.setPadding(dp(8), 0, 0, 0);
+        bar.addView(t, new LinearLayout.LayoutParams(0, -2, 1));
+        return bar;
+    }
+
+    /** Önceki gün sonları: dokununca o Z'nin defteri (kilitli) açılır. */
+    private View zList() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        List<TezgahZ.Record> list;
+        try { list = TezgahZ.list(db.getWritableDatabase(), owner, 30); }
+        catch (RuntimeException e) { list = new java.util.ArrayList<>(); }
+        TextView head = text("GÜN SONLARI (Z RAPORLARI)", 12, MUTED, true);
+        head.setLetterSpacing(0.08f);
+        box.addView(head);
+        if (list.isEmpty()) {
+            box.addView(text("Henüz gün sonu alınmadı. Akşam hesabının altındaki \"Gün sonu al\" ile alınır.", 13, MUTED, false),
+                    margins(-1, -2, 6));
+            return box;
+        }
+        for (final TezgahZ.Record r : list) {
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(14), dp(10), dp(12), dp(10));
+            row.setBackground(round(CARD, LINE, 14));
+            LinearLayout col = new LinearLayout(this);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.addView(text(r.label() + "  ·  " + DM_HM.format(new Date(r.closedAt)), 15, TEXT, true));
+            col.addView(text(r.count + " alım · " + TezgahModel.kg(r.kg) + " · " + TezgahModel.tl(r.gross), 13, MUTED, false));
+            row.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
+            row.addView(text("›", 22, GREEN, true));
+            row.setContentDescription(r.label() + " gün sonu raporunu aç");
+            row.setOnClickListener(v -> startActivity(new Intent(this, TezgahDayActivity.class).putExtra(EXTRA_Z_ID, r.id)));
+            box.addView(row, margins(-1, -2, 8));
+        }
+        return box;
+    }
+
+    /** Gün sonu önizlemesi ve onay; onaylanınca Z alınır, Z fişi açılır. */
+    private void confirmDayEnd(List<TezgahPurchases.Purchase> list) {
+        if (zId > 0 || list.isEmpty() || closing == null) return;
+        saveClosing();
+        TezgahPurchases.Day d = TezgahPurchases.sum(list);
+        int next;
+        try { next = TezgahZ.nextNumber(db.getWritableDatabase(), owner); } catch (RuntimeException e) { next = 1; }
+        String msg = "Z-" + TezgahZ.pad(next) + " alınacak.\n\n"
+                + d.count + " alım · " + d.kasa + " kasa\n"
+                + "Net: " + TezgahModel.kg(d.kg) + "\n"
+                + "Tutar: " + TezgahModel.tl(d.gross) + (d.remaining() > 0.5 ? "  (üreticilere borç " + TezgahModel.tl(d.remaining()) + ")" : "") + "\n"
+                + "Teslim: " + TezgahModel.kg(closing.deliveredKg()) + " · fire " + TezgahModel.kg(closing.fireKg()) + "\n"
+                + (closing.traderOwes() >= 0 ? "Tüccar ödeyecek: " : "Tezgah iade edecek: ") + TezgahModel.tl(Math.abs(closing.traderOwes()))
+                + "\n\nGün sonundan sonra bu alımlar kilitlenir (silinemez, akşam hesabı değişmez). Tezgah yeni döneme sıfırdan başlar.";
+        new AlertDialog.Builder(this)
+                .setTitle("Gün sonu alınsın mı?")
+                .setMessage(msg)
+                .setPositiveButton("Gün sonunu al", (dlg, w) -> {
+                    long id;
+                    try { id = TezgahZ.close(db.getWritableDatabase(), owner, closing, System.currentTimeMillis()); }
+                    catch (RuntimeException e) { id = -1; }
+                    if (id <= 0) { toast("Gün sonu alınamadı. Tekrar dene."); return; }
+                    toast("Gün sonu alındı ✓ Tezgah yeni döneme hazır.");
+                    render();
+                    startActivity(new Intent(this, TezgahReportActivity.class).putExtra(TezgahReportActivity.EXTRA_Z_ID, id));
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
     }
 
     // ================================================================== akşam hesabı
@@ -125,15 +220,16 @@ public final class TezgahDayActivity extends Activity {
     private TezgahClosing loadClosing(List<TezgahPurchases.Purchase> list) {
         TezgahClosing c = TezgahClosing.fromPurchases(list);
         boolean saved = false;
-        try { saved = TezgahClosing.load(db.getWritableDatabase(), owner, iso(), c); } catch (RuntimeException ignored) { }
+        if (zId > 0 && zRecord != null) return TezgahZ.closingOf(zRecord, list);
+        try { saved = TezgahClosing.load(db.getWritableDatabase(), owner, TezgahZ.OPEN_KEY, c); } catch (RuntimeException ignored) { }
         if (!saved) c.rate = getSharedPreferences("zd_tezgah", MODE_PRIVATE).getFloat("rate_" + owner, 0f);
         return c;
     }
 
     private void saveClosing() {
-        if (closing == null) return;
+        if (closing == null || zId > 0) return;
         try {
-            TezgahClosing.save(db.getWritableDatabase(), owner, iso(), closing, System.currentTimeMillis());
+            TezgahClosing.save(db.getWritableDatabase(), owner, TezgahZ.OPEN_KEY, closing, System.currentTimeMillis());
             getSharedPreferences("zd_tezgah", MODE_PRIVATE).edit().putFloat("rate_" + owner, (float) closing.rate).apply();
         } catch (RuntimeException ignored) {
             // Kaydedilemezse ekrandaki hesap yine doğru; bir sonraki değişiklikte tekrar denenir.
@@ -152,7 +248,8 @@ public final class TezgahDayActivity extends Activity {
         box.setPadding(dp(14), dp(12), dp(14), dp(14));
         box.setBackground(round(CARD, GREEN_DIM, 16));
 
-        TextView head = text("AKŞAM HESABI · TÜCCARA TESLİM", 12, GREEN, true);
+        TextView head = text(zId > 0 ? "AKŞAM HESABI · " + zRecord.label() + " (KİLİTLİ)" : "AKŞAM HESABI · TÜCCARA TESLİM",
+                12, GREEN, true);
         head.setLetterSpacing(0.08f);
         box.addView(head);
         box.addView(text("Teslim kutuları alınan kiloyla dolu gelir. Tüccarın kantarı farklı çıkan numarayı düzelt "
@@ -198,6 +295,7 @@ public final class TezgahDayActivity extends Activity {
             final android.widget.EditText d = field(TezgahQr.field(c.delivered[g]), "0");
             d.setContentDescription(TezgahModel.LABELS[g] + " teslim kilosu");
             inputs[g] = d;
+            if (zId > 0) { d.setEnabled(false); d.setFocusable(false); }
             d.addTextChangedListener(watch(() -> {
                 String typed = d.getText().toString().trim();
                 if (typed.isEmpty()) c.clearDelivered(grade);
@@ -222,6 +320,7 @@ public final class TezgahDayActivity extends Activity {
         rc.addView(text("Komisyon (₺/kg)", 12, MUTED, true));
         final android.widget.EditText rate = field(c.rate > 0 ? TezgahQr.field(c.rate) : "", "0");
         rate.setContentDescription("Kilo başı komisyon, lira");
+        if (zId > 0) { rate.setEnabled(false); rate.setFocusable(false); }
         rate.addTextChangedListener(watch(() -> { c.rate = Math.max(0, TezgahModel.parse(rate.getText().toString())); refresh.run(); saveClosing(); }));
         rc.addView(rate, new LinearLayout.LayoutParams(-1, dp(46)));
         money.addView(rc, new LinearLayout.LayoutParams(0, -2, 1));
@@ -230,6 +329,7 @@ public final class TezgahDayActivity extends Activity {
         ac.addView(text("Sabah alınan avans (₺)", 12, MUTED, true));
         final android.widget.EditText adv = field(c.advance > 0 ? TezgahQr.field(c.advance) : "", "0");
         adv.setContentDescription("Tüccardan alınan avans, lira");
+        if (zId > 0) { adv.setEnabled(false); adv.setFocusable(false); }
         adv.addTextChangedListener(watch(() -> { c.advance = Math.max(0, TezgahModel.parse(adv.getText().toString())); refresh.run(); saveClosing(); }));
         ac.addView(adv, new LinearLayout.LayoutParams(-1, dp(46)));
         LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(0, -2, 1);
@@ -245,10 +345,20 @@ public final class TezgahDayActivity extends Activity {
         send.setBackground(round(GREEN, 0, 16));
         send.setOnClickListener(v -> {
             saveClosing();
-            String label = new SimpleDateFormat("d MMMM yyyy", TR).format(day.getTime());
+            String label = zId > 0 ? zRecord.label() + " · " + DM_HM.format(new Date(zRecord.closedAt))
+                    : new SimpleDateFormat("d MMMM yyyy HH:mm", TR).format(new Date());
             TezgahShare.shareText(this, c.summary(label, TezgahShare.traderName()), "");
         });
         box.addView(send, margins(-1, dp(52), 14));
+        if (zId <= 0) {
+            // POS'taki gibi gün sonu: dönemi kapatır, Z raporu üretir.
+            TextView end = text("Gün sonu al (Z raporu)", 16, GREEN, true);
+            end.setGravity(Gravity.CENTER);
+            end.setBackground(round(Color.TRANSPARENT, GREEN, 16));
+            end.setContentDescription("Gün sonu al: alımları kilitle ve Z raporu oluştur");
+            end.setOnClickListener(v -> confirmDayEnd(list));
+            box.addView(end, margins(-1, dp(52), 10));
+        }
         return box;
     }
 
@@ -325,7 +435,8 @@ public final class TezgahDayActivity extends Activity {
         LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(dp(40), dp(44));
         bp.setMarginStart(-dp(10));
         row.addView(back, bp);
-        row.addView(text("Alım defteri", 21, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(text(zId > 0 ? "Gün sonu " + zRecord.label() : "Alım defteri", 21, TEXT, true),
+                new LinearLayout.LayoutParams(0, -2, 1));
         TextView excel = text("Rapor", 14, list.isEmpty() ? MUTED : GREEN, true);
         excel.setGravity(Gravity.CENTER);
         excel.setPadding(dp(14), 0, dp(14), 0);
@@ -334,33 +445,12 @@ public final class TezgahDayActivity extends Activity {
         excel.setOnClickListener(v -> {
             if (list.isEmpty()) return;
             saveClosing();
-            startActivity(new Intent(this, TezgahReportActivity.class).putExtra(TezgahReportActivity.EXTRA_DATE, iso()));
+            Intent i = new Intent(this, TezgahReportActivity.class);
+            if (zId > 0) i.putExtra(TezgahReportActivity.EXTRA_Z_ID, zId);
+            startActivity(i);
         });
         row.addView(excel, new LinearLayout.LayoutParams(-2, dp(40)));
         return row;
-    }
-
-    private View dateBar() {
-        LinearLayout bar = new LinearLayout(this);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setBackground(round(CARD, LINE, 16));
-        TextView prev = text("‹", 26, GREEN, true);
-        prev.setGravity(Gravity.CENTER);
-        prev.setContentDescription("Önceki gün");
-        prev.setOnClickListener(v -> { day.add(Calendar.DAY_OF_YEAR, -1); render(); });
-        bar.addView(prev, new LinearLayout.LayoutParams(dp(56), -1));
-        String label = new SimpleDateFormat("d MMMM yyyy, EEEE", TR).format(day.getTime());
-        TextView mid = text(isToday() ? "Bugün · " + label : label, 16, TEXT, true);
-        mid.setGravity(Gravity.CENTER);
-        bar.addView(mid, new LinearLayout.LayoutParams(0, -1, 1));
-        boolean today = isToday();
-        TextView next = text("›", 26, today ? LINE : GREEN, true);
-        next.setGravity(Gravity.CENTER);
-        next.setContentDescription("Sonraki gün");
-        next.setEnabled(!today);
-        next.setOnClickListener(v -> { if (!isToday()) { day.add(Calendar.DAY_OF_YEAR, 1); render(); } });
-        bar.addView(next, new LinearLayout.LayoutParams(dp(56), -1));
-        return bar;
     }
 
     private View summary(List<TezgahPurchases.Purchase> list) {
@@ -545,9 +635,12 @@ public final class TezgahDayActivity extends Activity {
         final TezgahModel m = TezgahModel.decode(p.data);
         final String name = p.seller.isEmpty() ? "Adsız" : p.seller;
         final String receipt = m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(p), p.paid);
-        final String[] items = p.remaining() > 0.5
-                ? new String[]{"QR göster", "Fişi gönder (WhatsApp)", "Kalan borcu ödedim (" + TezgahModel.tl(p.remaining()) + ")", "Sil"}
-                : new String[]{"QR göster", "Fişi gönder (WhatsApp)", "Sil"};
+        java.util.List<String> opts = new java.util.ArrayList<>();
+        opts.add("QR göster");
+        opts.add("Fişi gönder (WhatsApp)");
+        if (p.remaining() > 0.5) opts.add("Kalan borcu ödedim (" + TezgahModel.tl(p.remaining()) + ")");
+        if (p.zId <= 0) opts.add("Sil");   // gün sonu alınmış alım kilitli
+        final String[] items = opts.toArray(new String[0]);
         new AlertDialog.Builder(this)
                 .setTitle(name + " · " + TezgahModel.kg(p.kg) + " · " + TezgahModel.tl(p.gross))
                 .setItems(items, (d, i) -> {

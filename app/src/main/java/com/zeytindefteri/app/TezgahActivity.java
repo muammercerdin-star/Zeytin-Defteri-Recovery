@@ -205,11 +205,11 @@ public final class TezgahActivity extends Activity {
 
         // Bugünkü alımlar: sağ üstte küçük düğme (ayrı kart yer kaplamasın).
         TezgahPurchases.Day d;
-        try { d = TezgahPurchases.summary(db.getWritableDatabase(), owner, today()); }
+        try { d = TezgahPurchases.openSummary(db.getWritableDatabase(), owner); }
         catch (RuntimeException e) { d = new TezgahPurchases.Day(); }
         {
             // Alım defteri her zaman açılabilir (önceki günler de orada).
-            TextView day = text(d.count > 0 ? "Bugün " + d.count + " alım ›" : "Alım defteri ›", 13, GREEN, true);
+            TextView day = text(d.count > 0 ? "Defter · " + d.count + " alım ›" : "Alım defteri ›", 13, GREEN, true);
             day.setGravity(Gravity.CENTER);
             day.setPadding(dp(12), 0, dp(12), 0);
             day.setBackground(round(CARD, d.remaining() > 0.5 ? AMBER : GREEN_DIM, 18));
@@ -581,7 +581,7 @@ public final class TezgahActivity extends Activity {
         box.setVisibility(View.GONE);
         if (!model.isEmpty()) return box;
         final List<TezgahPurchases.Purchase> list;
-        try { list = TezgahPurchases.forDay(db.getWritableDatabase(), owner, today()); }
+        try { list = TezgahPurchases.open(db.getWritableDatabase(), owner); }
         catch (RuntimeException e) { return box; }
         if (list.isEmpty()) return box;
         final TezgahPurchases.Purchase p = list.get(0);
