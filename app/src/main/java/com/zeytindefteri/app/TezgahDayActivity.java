@@ -2,15 +2,11 @@ package com.zeytindefteri.app;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -21,8 +17,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -30,11 +24,12 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Alım defteri: tüccarın günlük alımları Excel görünümünde.
+ * Alım defteri: tüccarın günlük alımları tablo görünümünde.
  * - Solda sabit "Üretici" sütunu, sağda yana kayan sütunlar (kasa, numara kiloları, net, ortalama, tutar, ödenen, kalan).
  * - En altta TOPLAM satırı; üstte gün özeti; ‹ › ile önceki günler.
  * - Satıra dokununca: QR göster, fişi gönder, kalan borcu ödedim, sil.
- * - "Excel'e aktar": İndirilenler'e .csv (Excel/Sheets açar) ve paylaş.
+ * - "Rapor": alım tablosu + akşam hesabı tek sayfa (TezgahReportActivity), resim olarak gönderilir.
+ * - Altta "Akşam hesabı": tüccara teslim, fire, komisyon, avans.
  */
 public final class TezgahDayActivity extends Activity {
     private static final int BG = Color.parseColor("#050F16");
@@ -324,12 +319,16 @@ public final class TezgahDayActivity extends Activity {
         bp.setMarginStart(-dp(10));
         row.addView(back, bp);
         row.addView(text("Alım defteri", 21, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1));
-        TextView excel = text("Excel'e aktar", 14, list.isEmpty() ? MUTED : GREEN, true);
+        TextView excel = text("Rapor", 14, list.isEmpty() ? MUTED : GREEN, true);
         excel.setGravity(Gravity.CENTER);
         excel.setPadding(dp(14), 0, dp(14), 0);
         excel.setBackground(round(Color.TRANSPARENT, list.isEmpty() ? LINE : GREEN, 20));
-        excel.setContentDescription("Bu günün alımlarını Excel dosyası olarak kaydet ve paylaş");
-        excel.setOnClickListener(v -> { if (!list.isEmpty()) export(list); });
+        excel.setContentDescription("Gün raporunu aç: alım tablosu ve akşam hesabı, resim olarak gönderilebilir");
+        excel.setOnClickListener(v -> {
+            if (list.isEmpty()) return;
+            saveClosing();
+            startActivity(new Intent(this, TezgahReportActivity.class).putExtra(TezgahReportActivity.EXTRA_DATE, iso()));
+        });
         row.addView(excel, new LinearLayout.LayoutParams(-2, dp(40)));
         return row;
     }
@@ -571,79 +570,6 @@ public final class TezgahDayActivity extends Activity {
 
     private static String displayDate(TezgahPurchases.Purchase p) {
         return new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.US).format(new Date(p.createdAt));
-    }
-
-    // ================================================================== Excel
-
-    private static final String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-
-    /**
-     * İndirilenler'e hazır biçimli Excel (.xlsx) yazar (Android 10+ izin istemez).
-     * Eski Android'de ya da yazılamazsa tablo metin (CSV) olarak paylaşılır.
-     */
-    private void export(List<TezgahPurchases.Purchase> list) {
-        String csv = TezgahPurchases.csv(list);
-        String fileName = "Zeytin-Defteri-Alim-" + iso() + ".xlsx";
-        String title = "Alım defteri · " + new SimpleDateFormat("d MMMM yyyy, EEEE", TR).format(day.getTime());
-        Uri uri = null;
-        if (Build.VERSION.SDK_INT >= 29) {
-            try {
-                byte[] data = TezgahXlsx.build(list, title, closing);
-                ContentValues v = new ContentValues();
-                v.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
-                v.put(MediaStore.MediaColumns.MIME_TYPE, XLSX);
-                v.put(MediaStore.MediaColumns.RELATIVE_PATH, "Download");
-                uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
-                if (uri != null) {
-                    try (OutputStream out = getContentResolver().openOutputStream(uri)) {
-                        if (out == null) throw new java.io.IOException("yazılamadı");
-                        out.write(data);
-                    }
-                }
-            } catch (Exception e) {
-                if (uri != null) {
-                    try { getContentResolver().delete(uri, null, null); } catch (RuntimeException ignored) { }
-                }
-                uri = null;
-            }
-        }
-        final Uri saved = uri;
-        if (saved == null) {
-            // Eski Android ya da yazılamadı: dosyayı paylaşım menüsüyle gönder (metin olarak).
-            try {
-                Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
-                        .putExtra(Intent.EXTRA_SUBJECT, fileName).putExtra(Intent.EXTRA_TEXT, csv);
-                startActivity(Intent.createChooser(send, "Alım defterini gönder"));
-            } catch (RuntimeException e) {
-                toast("Paylaşılacak uygulama bulunamadı.");
-            }
-            return;
-        }
-        new AlertDialog.Builder(this)
-                .setTitle("Excel dosyası hazır ✓")
-                .setMessage("İndirilenler klasörüne kaydedildi:\n" + fileName
-                        + "\n\nBiçimli Excel tablosu: toplamlar formülle, ₺ ve kg hazır. Excel, Google E-Tablolar ya da WPS ile açılır.")
-                .setPositiveButton("Paylaş", (d, w) -> {
-                    try {
-                        Intent send = new Intent(Intent.ACTION_SEND).setType(XLSX)
-                                .putExtra(Intent.EXTRA_STREAM, saved)
-                                .putExtra(Intent.EXTRA_SUBJECT, fileName)
-                                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        startActivity(Intent.createChooser(send, "Alım defterini gönder"));
-                    } catch (RuntimeException e) {
-                        toast("Paylaşılacak uygulama bulunamadı.");
-                    }
-                })
-                .setNeutralButton("Aç", (d, w) -> {
-                    try {
-                        startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(saved, XLSX)
-                                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
-                    } catch (RuntimeException e) {
-                        toast("Açacak uygulama yok; Paylaş ile gönderebilirsin.");
-                    }
-                })
-                .setNegativeButton("Tamam", null)
-                .show();
     }
 
     // ================================================================== yardımcılar

@@ -148,49 +148,5 @@ public final class TezgahPurchases {
         return s;
     }
 
-    /**
-     * Excel'in açtığı CSV (Türkçe Excel için ";" ayraç, virgüllü ondalık, başta UTF-8 BOM).
-     * Satır başına bir alım; numara kiloları ayrı sütunlarda; en altta TOPLAM satırı.
-     */
-    public static String csv(List<Purchase> list) {
-        StringBuilder sb = new StringBuilder("\uFEFF");
-        sb.append("Tarih;Saat;Üretici;Telefon;Kasa;");
-        for (String g : TezgahModel.LABELS) sb.append(g).append(" kg;");
-        sb.append("Net kg;Ort. TL/kg;Tutar TL;Ödenen TL;Kalan TL\r\n");
-        java.text.SimpleDateFormat hm = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US);
-        double[] gradeSum = new double[TezgahModel.GRADES.length];
-        int kasa = 0;
-        double kg = 0, gross = 0, paid = 0;
-        for (Purchase p : list) {
-            double[] g = TezgahModel.decode(p.data).netArray();
-            sb.append(cell(p.date)).append(';').append(hm.format(new java.util.Date(p.createdAt))).append(';')
-                    .append(cell(p.seller)).append(';').append(cell(p.phone)).append(';').append(p.kasa).append(';');
-            for (int i = 0; i < g.length; i++) { sb.append(dec(g[i])).append(';'); gradeSum[i] += g[i]; }
-            sb.append(dec(p.kg)).append(';').append(dec(p.kg > 0 ? p.gross / p.kg : 0)).append(';')
-                    .append(dec(p.gross)).append(';').append(dec(p.paid)).append(';').append(dec(p.remaining())).append("\r\n");
-            kasa += p.kasa; kg += p.kg; gross += p.gross; paid += p.paid;
-        }
-        sb.append("TOPLAM;;").append(list.size()).append(" alım;;").append(kasa).append(';');
-        for (double v : gradeSum) sb.append(dec(v)).append(';');
-        sb.append(dec(kg)).append(';').append(dec(kg > 0 ? gross / kg : 0)).append(';').append(dec(gross)).append(';')
-                .append(dec(paid)).append(';').append(dec(Math.max(0, gross - paid))).append("\r\n");
-        return sb.toString();
-    }
-
-    /** "1234,5" (binlik ayırıcısız, en fazla 2 ondalık; Excel sayı olarak okur). */
-    static String dec(double v) {
-        double r = Math.round(v * 100) / 100.0;
-        if (r == Math.rint(r)) return String.valueOf((long) r);
-        return String.valueOf(r).replace('.', ',');
-    }
-
-    private static String cell(String v) {
-        String s = v == null ? "" : v.replace('\n', ' ').replace('\r', ' ');
-        if (s.indexOf(';') >= 0 || s.indexOf('"') >= 0) s = "\"" + s.replace("\"", "\"\"") + "\"";
-        // Excel formül enjeksiyonu: =, +, -, @ ile başlayan metin formül sayılmasın.
-        if (!s.isEmpty() && "=+-@".indexOf(s.charAt(0)) >= 0) s = "'" + s;
-        return s;
-    }
-
     private static String nz(String s) { return s == null ? "" : s; }
 }

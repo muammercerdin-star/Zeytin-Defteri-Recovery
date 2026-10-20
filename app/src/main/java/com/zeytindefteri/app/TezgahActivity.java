@@ -914,7 +914,7 @@ public final class TezgahActivity extends Activity {
 
     private void shareText(String text, String phone) { TezgahShare.shareText(this, text, phone); }
 
-    /** Alım defteri: tablo görünümlü ayrı sayfa (gün gün, toplamlar, Excel'e aktarma). */
+    /** Alım defteri: tablo görünümlü ayrı sayfa (gün gün, toplamlar, akşam hesabı, rapor). */
     private void showDayList() { startActivity(new Intent(this, TezgahDayActivity.class)); }
 
     // ================================================================== yardımcılar
