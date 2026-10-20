@@ -119,6 +119,195 @@ public final class TezgahDayActivity extends Activity {
         body.addView(table(list), margins(-1, -2, 12));
         TextView hint = text("Satıra dokun: QR göster · fişi gönder · borcu kapat · sil. Tablo sağa kayar.", 12, MUTED, false);
         body.addView(hint, margins(-1, -2, 8));
+        body.addView(closingCard(list), margins(-1, -2, 16));
+    }
+
+    // ================================================================== akşam hesabı
+
+    private TezgahClosing closing;
+
+    /** Günün kapanışı: kayıtlı teslim/komisyon/avans; yoksa teslim = alınan, komisyon son kullanılan. */
+    private TezgahClosing loadClosing(List<TezgahPurchases.Purchase> list) {
+        TezgahClosing c = TezgahClosing.fromPurchases(list);
+        boolean saved = false;
+        try { saved = TezgahClosing.load(db.getWritableDatabase(), owner, iso(), c); } catch (RuntimeException ignored) { }
+        if (!saved) c.rate = getSharedPreferences("zd_tezgah", MODE_PRIVATE).getFloat("rate_" + owner, 0f);
+        return c;
+    }
+
+    private void saveClosing() {
+        if (closing == null) return;
+        try {
+            TezgahClosing.save(db.getWritableDatabase(), owner, iso(), closing, System.currentTimeMillis());
+            getSharedPreferences("zd_tezgah", MODE_PRIVATE).edit().putFloat("rate_" + owner, (float) closing.rate).apply();
+        } catch (RuntimeException ignored) {
+            // Kaydedilemezse ekrandaki hesap yine doğru; bir sonraki değişiklikte tekrar denenir.
+        }
+    }
+
+    /**
+     * Tüccara teslim: numara numara tüccarın kantarındaki kilo (başta alınanla aynı), komisyon ve avans.
+     * Fire, komisyon ve "tüccar ödeyecek" canlı hesaplanır; WhatsApp'tan tüccara gönderilir.
+     */
+    private View closingCard(final List<TezgahPurchases.Purchase> list) {
+        closing = loadClosing(list);
+        final TezgahClosing c = closing;
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(14), dp(12), dp(14), dp(14));
+        box.setBackground(round(CARD, GREEN_DIM, 16));
+
+        TextView head = text("AKŞAM HESABI · TÜCCARA TESLİM", 12, GREEN, true);
+        head.setLetterSpacing(0.08f);
+        box.addView(head);
+        box.addView(text("Tüccarın kantarında çıkan kiloları yaz; fire ve hesap kendiliğinden çıkar.", 13, MUTED, false),
+                margins(-1, -2, 4));
+
+        // Sütun başlıkları
+        LinearLayout hr = new LinearLayout(this);
+        hr.addView(text("Numara", 12, MUTED, true), new LinearLayout.LayoutParams(0, -2, 1.1f));
+        TextView h2 = text("Alınan", 12, MUTED, true); h2.setGravity(Gravity.END);
+        hr.addView(h2, new LinearLayout.LayoutParams(0, -2, 0.9f));
+        TextView h3 = text("Teslim", 12, MUTED, true); h3.setGravity(Gravity.CENTER);
+        hr.addView(h3, new LinearLayout.LayoutParams(0, -2, 1.1f));
+        TextView h4 = text("Fire", 12, MUTED, true); h4.setGravity(Gravity.END);
+        hr.addView(h4, new LinearLayout.LayoutParams(0, -2, 0.8f));
+        box.addView(hr, margins(-1, -2, 12));
+
+        final TextView[] fires = new TextView[TezgahClosing.N];
+        final LinearLayout results = new LinearLayout(this);
+        results.setOrientation(LinearLayout.VERTICAL);
+        final Runnable refresh = () -> {
+            for (int g = 0; g < TezgahClosing.N; g++) {
+                if (fires[g] == null) continue;
+                double f = c.fire(g);
+                fires[g].setText(Math.abs(f) < 0.05 ? "—" : (f > 0 ? "−" : "+") + num(Math.abs(f)));
+                fires[g].setTextColor(Math.abs(f) < 0.05 ? MUTED : (f > 0 ? AMBER : GREEN));
+            }
+            renderClosingResults(results, c);
+        };
+        for (int g = 0; g < TezgahClosing.N; g++) {
+            if (c.bought[g] <= 0 && c.delivered[g] <= 0) continue;
+            final int grade = g;
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setMinimumHeight(dp(48));
+            row.addView(text(TezgahModel.LABELS[g], 15, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1.1f));
+            TextView b = text(num(c.bought[g]), 15, TEXT, false);
+            b.setGravity(Gravity.END);
+            row.addView(b, new LinearLayout.LayoutParams(0, -2, 0.9f));
+            final android.widget.EditText d = field(TezgahQr.field(c.delivered[g]), "0");
+            d.setContentDescription(TezgahModel.LABELS[g] + " teslim kilosu");
+            d.addTextChangedListener(watch(() -> {
+                c.delivered[grade] = Math.max(0, TezgahModel.parse(d.getText().toString()));
+                refresh.run();
+                saveClosing();
+            }));
+            LinearLayout.LayoutParams inputLp = new LinearLayout.LayoutParams(0, dp(42), 1.1f);
+            inputLp.setMargins(dp(8), dp(3), dp(4), dp(3));
+            row.addView(d, inputLp);
+            TextView f = text("", 15, MUTED, true);
+            f.setGravity(Gravity.END);
+            fires[g] = f;
+            row.addView(f, new LinearLayout.LayoutParams(0, -2, 0.8f));
+            box.addView(row);
+        }
+
+        // Komisyon ve avans
+        LinearLayout money = new LinearLayout(this);
+        LinearLayout rc = new LinearLayout(this);
+        rc.setOrientation(LinearLayout.VERTICAL);
+        rc.addView(text("Komisyon (₺/kg)", 12, MUTED, true));
+        final android.widget.EditText rate = field(c.rate > 0 ? TezgahQr.field(c.rate) : "", "0");
+        rate.setContentDescription("Kilo başı komisyon, lira");
+        rate.addTextChangedListener(watch(() -> { c.rate = Math.max(0, TezgahModel.parse(rate.getText().toString())); refresh.run(); saveClosing(); }));
+        rc.addView(rate, new LinearLayout.LayoutParams(-1, dp(46)));
+        money.addView(rc, new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout ac = new LinearLayout(this);
+        ac.setOrientation(LinearLayout.VERTICAL);
+        ac.addView(text("Sabah alınan avans (₺)", 12, MUTED, true));
+        final android.widget.EditText adv = field(c.advance > 0 ? TezgahQr.field(c.advance) : "", "0");
+        adv.setContentDescription("Tüccardan alınan avans, lira");
+        adv.addTextChangedListener(watch(() -> { c.advance = Math.max(0, TezgahModel.parse(adv.getText().toString())); refresh.run(); saveClosing(); }));
+        ac.addView(adv, new LinearLayout.LayoutParams(-1, dp(46)));
+        LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(0, -2, 1);
+        ap.setMarginStart(dp(10));
+        money.addView(ac, ap);
+        box.addView(money, margins(-1, -2, 12));
+
+        box.addView(results, margins(-1, -2, 12));
+        refresh.run();
+
+        TextView send = text("Tüccara gönder (WhatsApp)", 16, BG, true);
+        send.setGravity(Gravity.CENTER);
+        send.setBackground(round(GREEN, 0, 16));
+        send.setOnClickListener(v -> {
+            saveClosing();
+            String label = new SimpleDateFormat("d MMMM yyyy", TR).format(day.getTime());
+            TezgahShare.shareText(this, c.summary(label, TezgahShare.traderName()), "");
+        });
+        box.addView(send, margins(-1, dp(52), 14));
+        return box;
+    }
+
+    private void renderClosingResults(LinearLayout results, TezgahClosing c) {
+        results.removeAllViews();
+        resultRow(results, "Teslim", TezgahModel.kg(c.deliveredKg()), TEXT);
+        String fire = TezgahModel.kg(c.fireKg()) + "  (%" + TezgahClosing.oneDecimal(c.firePercent()) + ")"
+                + (Math.abs(c.fireValue()) >= 1 ? "  ≈ " + TezgahModel.tl(c.fireValue()) : "");
+        resultRow(results, "Fire", fire, Math.abs(c.fireKg()) < 0.05 ? MUTED : (c.fireKg() > 0 ? AMBER : GREEN));
+        resultRow(results, "Üreticilere tutar", TezgahModel.tl(c.producerTotal), TEXT);
+        if (c.producerDue() > 0.5) resultRow(results, "  · üreticilere kalan borç", TezgahModel.tl(c.producerDue()), AMBER);
+        resultRow(results, "Komisyon", c.rate > 0 ? TezgahModel.kg(c.deliveredKg()) + " × " + TezgahModel.money(c.rate)
+                + " = " + TezgahModel.tl(c.commission()) : "—", c.rate > 0 ? GREEN : MUTED);
+        if (c.advance > 0) resultRow(results, "Avans", "− " + TezgahModel.tl(c.advance), TEXT);
+        View line = new View(this);
+        line.setBackgroundColor(LINE);
+        results.addView(line, margins(-1, Math.max(1, dp(1)), 6));
+        double owes = c.traderOwes();
+        LinearLayout total = new LinearLayout(this);
+        total.setGravity(Gravity.CENTER_VERTICAL);
+        total.addView(text(owes >= 0 ? "TÜCCAR ÖDEYECEK" : "TEZGAH İADE EDECEK", 13, MUTED, true),
+                new LinearLayout.LayoutParams(0, -2, 1));
+        total.addView(text(TezgahModel.tl(Math.abs(owes)), 24, owes >= 0 ? GREEN : AMBER, true));
+        results.addView(total, margins(-1, -2, 8));
+    }
+
+    private void resultRow(LinearLayout parent, String label, String value, int color) {
+        LinearLayout r = new LinearLayout(this);
+        r.setGravity(Gravity.CENTER_VERTICAL);
+        r.setMinimumHeight(dp(28));
+        r.addView(text(label, 14, MUTED, false), new LinearLayout.LayoutParams(0, -2, 1));
+        TextView v = text(value, 15, color, true);
+        v.setGravity(Gravity.END);
+        r.addView(v);
+        parent.addView(r);
+    }
+
+    private android.widget.EditText field(String value, String hint) {
+        android.widget.EditText e = new android.widget.EditText(this);
+        e.setText(value);
+        e.setHint(hint);
+        e.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        e.setKeyListener(android.text.method.DigitsKeyListener.getInstance("0123456789.,"));
+        e.setSingleLine(true);
+        e.setSelectAllOnFocus(true);
+        e.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        e.setTextSize(16);
+        e.setTypeface(Typeface.DEFAULT_BOLD);
+        e.setTextColor(TEXT);
+        e.setHintTextColor(MUTED);
+        e.setPadding(dp(10), 0, dp(10), 0);
+        e.setBackground(round(BG, LINE, 10));
+        return e;
+    }
+
+    private android.text.TextWatcher watch(Runnable r) {
+        return new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void afterTextChanged(android.text.Editable s) { r.run(); }
+        };
     }
 
     private View header(List<TezgahPurchases.Purchase> list) {
@@ -399,7 +588,7 @@ public final class TezgahDayActivity extends Activity {
         Uri uri = null;
         if (Build.VERSION.SDK_INT >= 29) {
             try {
-                byte[] data = TezgahXlsx.build(list, title);
+                byte[] data = TezgahXlsx.build(list, title, closing);
                 ContentValues v = new ContentValues();
                 v.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
                 v.put(MediaStore.MediaColumns.MIME_TYPE, XLSX);

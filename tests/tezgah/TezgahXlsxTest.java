@@ -14,7 +14,9 @@ public class TezgahXlsxTest {
       p.kg=m.totalNet(); p.kasa=m.totalKasa(); p.gross=m.total(); p.paid=i==1?1000:m.total(); p.createdAt=1760980000000L+i*600000L;
       list.add(p);
     }
-    java.nio.file.Files.write(java.nio.file.Paths.get(a[0]), TezgahXlsx.build(list,"Alım defteri · 20 Ekim 2026"));
+    TezgahClosing c=TezgahClosing.fromPurchases(list);
+    c.delivered[1]-=2; c.delivered[2]-=1.5; c.rate=1.5; c.advance=20000;
+    java.nio.file.Files.write(java.nio.file.Paths.get(a[0]), TezgahXlsx.build(list,"Alım defteri · 20 Ekim 2026",c));
     java.nio.file.Files.write(java.nio.file.Paths.get(a[1]), TezgahXlsx.build(new ArrayList<>(),"Boş gün"));
     System.out.println("xlsx yazıldı");
   }

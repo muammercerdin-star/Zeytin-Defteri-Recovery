@@ -28,9 +28,14 @@ public final class TezgahXlsx {
 
     // Stil numaraları (styles.xml cellXfs sırası)
     private static final int S_TITLE = 1, S_HEAD = 2, S_TEXT = 3, S_INT = 4, S_KG = 5, S_MONEY = 6, S_PRICE = 7,
-            S_T_TEXT = 8, S_T_INT = 9, S_T_KG = 10, S_T_MONEY = 11, S_T_PRICE = 12, S_SUB = 13;
+            S_T_TEXT = 8, S_T_INT = 9, S_T_KG = 10, S_T_MONEY = 11, S_T_PRICE = 12, S_SUB = 13, S_PCT = 14;
 
     public static byte[] build(List<TezgahPurchases.Purchase> list, String title) throws IOException {
+        return build(list, title, null);
+    }
+
+    /** closing verilirse TOPLAM'ın altına "Akşam hesabı" bölümü eklenir (teslim, fire, komisyon, avans, tüccar ödeyecek). */
+    public static byte[] build(List<TezgahPurchases.Purchase> list, String title, TezgahClosing closing) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
             put(zip, "[Content_Types].xml", CONTENT_TYPES);
@@ -38,12 +43,14 @@ public final class TezgahXlsx {
             put(zip, "xl/workbook.xml", WORKBOOK);
             put(zip, "xl/_rels/workbook.xml.rels", WORKBOOK_RELS);
             put(zip, "xl/styles.xml", STYLES);
-            put(zip, "xl/worksheets/sheet1.xml", sheet(list, title));
+            put(zip, "xl/worksheets/sheet1.xml", sheet(list, title, closing));
         }
         return bytes.toByteArray();
     }
 
-    static String sheet(List<TezgahPurchases.Purchase> list, String title) {
+    static String sheet(List<TezgahPurchases.Purchase> list, String title) { return sheet(list, title, null); }
+
+    static String sheet(List<TezgahPurchases.Purchase> list, String title, TezgahClosing closing) {
         int first = 3, last = first + list.size() - 1, total = last + 1;
         StringBuilder x = new StringBuilder(4096);
         x.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>")
@@ -106,12 +113,43 @@ public final class TezgahXlsx {
                 .append(formula("O" + total, "M" + total + "-N" + total, round2(Math.max(0, gross - paid)), S_T_MONEY))
                 .append("</row>");
         int note = total + 2;
+        java.util.List<String> merges = new java.util.ArrayList<>();
+        merges.add("A1:O1");
+        if (closing != null && !list.isEmpty()) {
+            // Akşam hesabı: numara sütunlarının altında tüccar kantarı ve fire; para hesabı formülle.
+            int h = total + 2, del = h + 1, fire = h + 2, rate = h + 4, com = h + 5, adv = h + 6, owe = h + 7;
+            x.append("<row r=\"").append(h).append("\" ht=\"22\" customHeight=\"1\">")
+                    .append(str("A" + h, "AKŞAM HESABI · TÜCCARA TESLİM", S_TITLE)).append("</row>");
+            x.append("<row r=\"").append(del).append("\">").append(str("A" + del, "Teslim (tüccar kantarı)", S_T_TEXT));
+            merges.add("A" + del + ":D" + del);
+            for (int k = 0; k < TezgahClosing.N; k++) x.append(num(col(4 + k) + del, round1(closing.delivered[k]), S_KG));
+            x.append(formula("K" + del, "SUM(E" + del + ":J" + del + ")", round1(closing.deliveredKg()), S_T_KG)).append("</row>");
+            x.append("<row r=\"").append(fire).append("\">").append(str("A" + fire, "Fire (alınan − teslim)", S_T_TEXT));
+            merges.add("A" + fire + ":D" + fire);
+            for (int k = 0; k <= TezgahClosing.N; k++) {
+                String cc = col(4 + k);
+                double cached = k < TezgahClosing.N ? closing.fire(k) : closing.fireKg();
+                x.append(formula(cc + fire, cc + total + "-" + cc + del, round1(cached), S_KG));
+            }
+            x.append(formula("L" + fire, "IF(K" + total + ">0,K" + fire + "/K" + total + ",0)", closing.firePercent() / 100.0, S_PCT))
+                    .append("</row>");
+            merges.add("A" + h + ":O" + h);
+            for (int kr : new int[]{rate, com, adv}) merges.add("A" + kr + ":L" + kr);
+            merges.add("A" + owe + ":L" + owe);
+            x.append(kv(rate, "Komisyon (₺/kg)", num("M" + rate, round2(closing.rate), S_PRICE)));
+            x.append(kv(com, "Komisyon (teslim kg × oran)", formula("M" + com, "K" + del + "*M" + rate, closing.commission(), S_MONEY)));
+            x.append(kv(adv, "Sabah alınan avans", num("M" + adv, round2(closing.advance), S_MONEY)));
+            x.append("<row r=\"").append(owe).append("\" ht=\"22\" customHeight=\"1\">")
+                    .append(str("A" + owe, "TÜCCAR ÖDEYECEK (eksi: tezgah iade eder)", S_T_TEXT));
+            x.append(formula("M" + owe, "M" + total + "+M" + com + "-M" + adv, closing.traderOwes(), S_T_MONEY)).append("</row>");
+            note = owe + 2;
+        }
         x.append("<row r=\"").append(note).append("\">")
                 .append(str("A" + note, "Zeytin Defteri · Tezgah alım defteri · net kilo = kantar − kasa × dara", S_SUB))
                 .append("</row>");
         x.append("</sheetData>")
                 .append("<autoFilter ref=\"A2:O").append(Math.max(2, last)).append("\"/>")
-                .append("<mergeCells count=\"1\"><mergeCell ref=\"A1:O1\"/></mergeCells>")
+                .append(mergeXml(merges))
                 .append("<pageMargins left=\"0.4\" right=\"0.4\" top=\"0.5\" bottom=\"0.5\" header=\"0.3\" footer=\"0.3\"/>")
                 .append("<pageSetup orientation=\"landscape\" fitToWidth=\"1\" fitToHeight=\"0\"/>")
                 .append("</worksheet>");
@@ -137,7 +175,7 @@ public final class TezgahXlsx {
     }
 
     private static String formula(String ref, String f, double cached, int style) {
-        return "<c r=\"" + ref + "\" s=\"" + style + "\"><f>" + f + "</f><v>" + plain(round2(cached)) + "</v></c>";
+        return "<c r=\"" + ref + "\" s=\"" + style + "\"><f>" + f + "</f><v>" + plain(Math.round(cached * 1e6) / 1e6) + "</v></c>";
     }
 
     private static String sum(String c, int first, int last, int row, double cached, int style) {
@@ -165,6 +203,16 @@ public final class TezgahXlsx {
             }
         }
         return b.toString();
+    }
+
+    private static String mergeXml(java.util.List<String> refs) {
+        StringBuilder b = new StringBuilder("<mergeCells count=\"").append(refs.size()).append("\">");
+        for (String r : refs) b.append("<mergeCell ref=\"").append(r).append("\"/>");
+        return b.append("</mergeCells>").toString();
+    }
+
+    private static String kv(int row, String label, String valueCell) {
+        return "<row r=\"" + row + "\">" + str("A" + row, label, S_TEXT) + valueCell + "</row>";
     }
 
     private static double round1(double v) { return Math.round(v * 10) / 10.0; }
@@ -239,7 +287,7 @@ public final class TezgahXlsx {
             + "</fills>"
             + "<borders count=\"2\"><border><left/><right/><top/><bottom/><diagonal/></border>" + BORDER + "</borders>"
             + "<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>"
-            + "<cellXfs count=\"14\">"
+            + "<cellXfs count=\"15\">"
             + "<xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/>"          // 0
             + xf(0, 1, 0, 0, "horizontal=\"left\"")                                               // 1 başlık
             + xf(0, 2, 2, 1, "horizontal=\"center\" wrapText=\"1\"")                              // 2 sütun başlığı
@@ -254,6 +302,7 @@ public final class TezgahXlsx {
             + xf(164, 3, 3, 1, "horizontal=\"right\"")                                            // 11 toplam para
             + xf(165, 3, 3, 1, "horizontal=\"right\"")                                            // 12 toplam kg fiyatı
             + xf(0, 4, 0, 0, "horizontal=\"left\"")                                               // 13 dipnot
+            + xf(10, 0, 0, 1, "horizontal=\"right\"")                                             // 14 yüzde (0,00%)
             + "</cellXfs>"
             + "<cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles>"
             + "</styleSheet>";
