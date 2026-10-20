@@ -467,6 +467,10 @@ public final class TezgahActivity extends Activity {
         if (!err.isEmpty()) {
             netPreview.setTextColor(RED);
             netPreview.setText(err);
+        } else if (!TezgahModel.kasaWarning(kasa, kg, model.tare()).isEmpty()) {
+            netPreview.setTextColor(AMBER);
+            netPreview.setText("⚠ " + kasa + " kasaya " + TezgahModel.kg(kg) + " fazla. "
+                    + TezgahModel.suggestedKasa(kasa, kg, model.tare()) + " kasa mı?");
         } else {
             netPreview.setTextColor(GREEN);
             netPreview.setText("Net: " + TezgahModel.kg(TezgahModel.net(kasa, kg, model.tare())));
@@ -480,7 +484,29 @@ public final class TezgahActivity extends Activity {
             kgInput.setError(err);
             return;
         }
-        model.add(grade, kasa, kg);
+        final int suggested = TezgahModel.suggestedKasa(kasa, kg, model.tare());
+        if (suggested > 0) {
+            // Bir kasaya en fazla ~30 kg sığar: kasa sayısı muhtemelen yanlış girildi.
+            new AlertDialog.Builder(this)
+                    .setTitle(kasa + " kasada " + TezgahModel.kg(kg) + " olamaz")
+                    .setMessage(TezgahModel.kasaWarning(kasa, kg, model.tare()))
+                    .setPositiveButton(suggested + " kasa yap ve ekle", (d, w) -> {
+                        setKasa(suggested);
+                        commitWeighing(suggested, kg);
+                    })
+                    .setNeutralButton("Yine de ekle", (d, w) -> commitWeighing(kasa, kg))
+                    .setNegativeButton("Düzelteyim", (d, w) -> kasaInput.requestFocus())
+                    .show();
+            return;
+        }
+        commitWeighing(kasa, kg);
+    }
+
+    private void commitWeighing(int kasa, double kg) {
+        if (!model.add(grade, kasa, kg)) {
+            kgInput.setError(TezgahModel.addError(kasa, kg, model.tare()));
+            return;
+        }
         kgInput.setText("");
         saveDraft();
         renderGradeTabs();

@@ -58,6 +58,29 @@ public final class TezgahModel {
         return "";
     }
 
+    /** Bir kasaya sığan en fazla zeytin (kg). Kasa başı kantar kilosu bunu + darayı geçerse uyarılır. */
+    public static final double MAX_NET_PER_KASA = 30;
+    /** Tipik dolu kasa (kg zeytin); önerilen kasa sayısı hesabında kullanılır. */
+    public static final double TYPICAL_NET_PER_KASA = 25;
+
+    /** Kasa sayısı kiloya göre az görünüyorsa önerilen kasa sayısı; sorun yoksa 0 (dökme tartımda da 0). */
+    public static int suggestedKasa(int kasa, double kg, double tare) {
+        if (kasa <= 0 || !(kg > 0)) return 0;
+        double maxGross = MAX_NET_PER_KASA + Math.max(0, tare);
+        if (kg / kasa <= maxGross + 1e-9) return 0;
+        int fit = (int) Math.ceil(kg / maxGross - 1e-9);
+        int typical = (int) Math.round(kg / (TYPICAL_NET_PER_KASA + Math.max(0, tare)));
+        return Math.min(MAX_KASA, Math.max(fit, typical));
+    }
+
+    /** Kasa uyarısı metni; sorun yoksa boş. */
+    public static String kasaWarning(int kasa, double kg, double tare) {
+        int s = suggestedKasa(kasa, kg, tare);
+        if (s == 0) return "";
+        return "Kasa başına " + kg(kg / kasa) + " düşüyor; bir kasaya en fazla " + kg(MAX_NET_PER_KASA)
+                + " sığar. Kasa sayısı " + s + " olmasın?";
+    }
+
     // ------------------------------------------------------------------ düzenleme
 
     public boolean add(int grade, int kasa, double kg) {

@@ -78,6 +78,15 @@ public class TezgahModelTest {
     ok(TezgahModel.waPhone("+49 151 2345678").equals("491512345678"),"wa yurt dışı");
     ok(TezgahModel.waPhone("0266 123 45 67").isEmpty(),"sabit hat yok");
     ok(TezgahModel.waPhone("").isEmpty(),"boş");
+    ok(TezgahModel.suggestedKasa(1,38,2)==2,"1 kasa 38 kg -> 2");
+    ok(TezgahModel.suggestedKasa(1,32,2)==0,"1 kasa 32 kg sığar (30+dara)");
+    ok(TezgahModel.suggestedKasa(1,258,2)==10,"1 kasa 258 kg -> 10");
+    ok(TezgahModel.suggestedKasa(10,258,2)==0,"10 kasa 258 kg normal");
+    ok(TezgahModel.suggestedKasa(8,320,2)==12,"8 kasa 320 kg -> 12");
+    ok(TezgahModel.suggestedKasa(0,500,2)==0,"dökme uyarılmaz");
+    ok(TezgahModel.suggestedKasa(1,90000,2)==TezgahModel.MAX_KASA,"üst sınır");
+    ok(TezgahModel.kasaWarning(1,38,2).contains("Kasa sayısı 2"),"uyarı metni "+TezgahModel.kasaWarning(1,38,2));
+    ok(TezgahModel.kasaWarning(2,38,2).isEmpty(),"uyarı yok");
     System.out.println("PASS: "+n+" tezgah hesabı kontrolü");
   }
 }
