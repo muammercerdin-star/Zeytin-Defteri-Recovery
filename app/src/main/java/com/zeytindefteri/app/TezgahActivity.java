@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -25,8 +24,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -35,23 +32,18 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Tezgah Modu: tüccarın kantarında, elde telefonla.
+ * Tezgah Modu (tüccar): kantarda kasa kasa zeytin alımı.
  *
  * Akış: zeytin elenir → numara seçilir → "kaç kasa + kantar kilosu" girilir → net = kilo − kasa × dara.
  * Canlı toplam büyük yazılır; ekran kararmaz; yarım kalan tezgah telefonda saklanır.
- * - Satıyorum (üretici): Bitir → mevcut Elek kaydı + Satış/Alıcı kaydı oluşur, makbuz açılır.
- * - Alıyorum (tüccar): Bitir → alım fişi bu telefonda saklanır (TezgahPurchases), WhatsApp'tan gönderilir,
- *   ekran bir sonraki üretici için sıfırlanır. Tüccar alımları buluta, Lig'e ve piyasaya karışmaz.
+ * Bitir → alım fişi bu telefonda saklanır (TezgahPurchases), WhatsApp'tan üreticiye gönderilir,
+ * ekran bir sonraki üretici için sıfırlanır. Tüccar alımları buluta, Lig'e ve piyasaya karışmaz.
+ * Üretici kendi satışını Elek kaydından girer; bu ekran onun için değildir.
  */
 public final class TezgahActivity extends Activity {
-    public static final String EXTRA_GARDEN_ID = "garden_id";
-
-    static final int ROLE_SELL = 0, ROLE_BUY = 1;
+    /** Taslak anahtarları eski sürümle uyumlu kalsın diye: önceki "Alıyorum" rolünün numarası. */
+    private static final int ROLE_BUY = 1;
     private static final String PREFS = "zd_tezgah";
-    private static final String ELEK_PREFS = "elek_price_settings";
-    private static final String[] ELEK_PRICE_KEYS = {"price_double", "price_1", "price_2", "price_3", "price_4", "price_oil"};
-    private static final double[] ELEK_PRICE_DEFAULTS = {100, 90, 70, 55, 40, 32};
-
     // Güneşte okunur: koyu zemin, yüksek karşıtlık.
     private static final int BG = Color.parseColor("#050F16");
     private static final int CARD = Color.parseColor("#0F2230");
@@ -66,20 +58,17 @@ public final class TezgahActivity extends Activity {
     private DatabaseHelper db;
     private SharedPreferences prefs;
     private String owner = "";
-    private int role = ROLE_SELL;
+    private final int role = ROLE_BUY;
     private int grade = 0;
     private TezgahModel model = new TezgahModel();
     private int kasa = 10;
 
-    private long gardenId;
-    private String gardenName = "";
     private String seller = "", sellerPhone = "";
 
     private LinearLayout body;
     private TextView totalView, totalSub, finishButton, netPreview;
     private EditText kgInput, kasaInput;
     private final TextView[] gradeTabs = new TextView[TezgahModel.GRADES.length];
-    private final TextView[] roleTabs = new TextView[2];
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -88,14 +77,12 @@ public final class TezgahActivity extends Activity {
         owner = db.getActiveOwnerUid();
         if (owner == null) owner = "";
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        role = prefs.getInt("role", ROLE_SELL) == ROLE_BUY ? ROLE_BUY : ROLE_SELL;
         kasa = Math.max(0, Math.min(TezgahModel.MAX_KASA, prefs.getInt("kasa", 10)));
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
                 | WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-        loadGarden(getIntent().getLongExtra(EXTRA_GARDEN_ID, 0L));
         loadDraft();
         build();
     }
@@ -130,7 +117,6 @@ public final class TezgahActivity extends Activity {
     private void saveDraft() {
         if (prefs == null) return;
         SharedPreferences.Editor e = prefs.edit()
-                .putInt("role", role)
                 .putInt("kasa", kasa)
                 .putInt("grade_" + role, grade)
                 .putFloat("tare", (float) model.tare())
@@ -140,23 +126,11 @@ public final class TezgahActivity extends Activity {
         e.apply();
     }
 
-    /** Üretici: Elek ekranındaki fiyatlar. Tüccar: tezgahta en son kullandığı alım fiyatları. */
+    /** Tezgahta en son kullanılan alım fiyatları (ilk seferde boş: "fiyat?" ile sorulur). */
     private double[] defaultPrices() {
         double[] out = new double[TezgahModel.GRADES.length];
-        if (role == ROLE_BUY) {
-            TezgahModel last = TezgahModel.decode(prefs.getString("buy_prices_" + owner, ""));
-            for (int g = 0; g < out.length; g++) out[g] = last.price(g);
-            return out;
-        }
-        SharedPreferences elek = getSharedPreferences(ELEK_PREFS, MODE_PRIVATE);
-        for (int g = 0; g < out.length; g++) {
-            try {
-                String v = elek.getString(ELEK_PRICE_KEYS[g], "");
-                out[g] = v == null || v.trim().isEmpty() ? ELEK_PRICE_DEFAULTS[g] : Double.parseDouble(v);
-            } catch (RuntimeException ex) {
-                out[g] = ELEK_PRICE_DEFAULTS[g];
-            }
-        }
+        TezgahModel last = TezgahModel.decode(prefs.getString("buy_prices_" + owner, ""));
+        for (int g = 0; g < out.length; g++) out[g] = last.price(g);
         return out;
     }
 
@@ -164,54 +138,6 @@ public final class TezgahActivity extends Activity {
         TezgahModel p = new TezgahModel();
         for (int g = 0; g < TezgahModel.GRADES.length; g++) p.setPrice(g, model.price(g));
         prefs.edit().putString("buy_prices_" + owner, p.encode()).apply();
-    }
-
-    // ================================================================== bahçe
-
-    private void loadGarden(long wanted) {
-        gardenId = 0;
-        gardenName = "";
-        Cursor c = null;
-        try {
-            c = db.getGardens();
-            while (c != null && c.moveToNext()) {
-                long id = c.getLong(c.getColumnIndexOrThrow("id"));
-                String name = c.getString(c.getColumnIndexOrThrow("name"));
-                if (name == null || name.trim().isEmpty()) continue;
-                if (gardenId == 0 || id == wanted) { gardenId = id; gardenName = name.trim(); }
-                if (id == wanted) break;
-            }
-        } catch (RuntimeException ignored) {
-        } finally {
-            if (c != null) c.close();
-        }
-    }
-
-    private void pickGarden() {
-        final List<Long> ids = new ArrayList<>();
-        final List<String> names = new ArrayList<>();
-        Cursor c = null;
-        try {
-            c = db.getGardens();
-            while (c != null && c.moveToNext()) {
-                String name = c.getString(c.getColumnIndexOrThrow("name"));
-                if (name == null || name.trim().isEmpty()) continue;
-                ids.add(c.getLong(c.getColumnIndexOrThrow("id")));
-                names.add(name.trim());
-            }
-        } catch (RuntimeException ignored) {
-        } finally {
-            if (c != null) c.close();
-        }
-        if (ids.isEmpty()) { toast("Önce bir bahçe ekle."); return; }
-        new AlertDialog.Builder(this)
-                .setTitle("Hangi bahçenin zeytini?")
-                .setItems(names.toArray(new String[0]), (d, i) -> {
-                    gardenId = ids.get(i);
-                    gardenName = names.get(i);
-                    build();
-                })
-                .show();
     }
 
     // ================================================================== ekran
@@ -238,7 +164,7 @@ public final class TezgahActivity extends Activity {
         body.addView(entryCard(), margins(-1, -2, 8));
         body.addView(weighingsCard(), margins(-1, -2, 8));
         body.addView(summaryCard(), margins(-1, -2, 8));
-        if (role == ROLE_BUY) body.addView(dayCard(), margins(-1, -2, 8));
+        body.addView(dayCard(), margins(-1, -2, 8));
         setContentView(root);
         refreshTotals();
     }
@@ -260,19 +186,16 @@ public final class TezgahActivity extends Activity {
 
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.addView(text("Tezgah", 20, TEXT, true));
-        String context;
-        if (role == ROLE_SELL) context = gardenName.isEmpty() ? "Bahçe seç" : gardenName;
-        else context = seller.isEmpty() ? "Satan: ad yaz" : seller;
+        col.addView(text("Tezgah · Alım", 20, TEXT, true));
+        String context = seller.isEmpty() ? "Satan üretici: ad yaz" : "Satan: " + seller;
         TextView sub = text(context + " ▾ · " + new SimpleDateFormat("d MMM", new Locale("tr", "TR")).format(new Date()),
                 13, GREEN, true);
         sub.setSingleLine(true);
         sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
         col.addView(sub);
-        col.setContentDescription(role == ROLE_SELL ? "Bahçe: " + context + ", değiştir" : "Satan üretici: " + context + ", değiştir");
-        col.setOnClickListener(v -> { if (role == ROLE_SELL) pickGarden(); else askSeller(null); });
+        col.setContentDescription(context + ", değiştir");
+        col.setOnClickListener(v -> askSeller(null));
         row.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
-        row.addView(roleSwitch(), new LinearLayout.LayoutParams(-2, dp(40)));
         return row;
     }
 
@@ -284,34 +207,6 @@ public final class TezgahActivity extends Activity {
                 .setPositiveButton("Sıfırla", (d, w) -> { model.clear(); saveDraft(); build(); })
                 .setNegativeButton("Vazgeç", null)
                 .show();
-    }
-
-    private View roleSwitch() {
-        LinearLayout box = new LinearLayout(this);
-        box.setPadding(dp(3), dp(3), dp(3), dp(3));
-        box.setBackground(round(CARD, LINE, 20));
-        String[] labels = {"Satıyorum", "Alıyorum"};
-        String[] spoken = {"Satıyorum (üretici)", "Alıyorum (tüccar)"};
-        for (int i = 0; i < 2; i++) {
-            final int r = i;
-            TextView t = text(labels[i], 13, i == role ? BG : TEXT, true);
-            t.setGravity(Gravity.CENTER);
-            t.setPadding(dp(10), 0, dp(10), 0);
-            t.setBackground(i == role ? round(GREEN, 0, 17) : null);
-            t.setContentDescription(spoken[i] + (i == role ? ", seçili" : ""));
-            t.setOnClickListener(v -> switchRole(r));
-            roleTabs[i] = t;
-            box.addView(t, new LinearLayout.LayoutParams(-2, -1));
-        }
-        return box;
-    }
-
-    private void switchRole(int r) {
-        if (r == role) return;
-        saveDraft();
-        role = r;
-        loadDraft();
-        build();
     }
 
     private View gradeRow() {
@@ -691,13 +586,13 @@ public final class TezgahActivity extends Activity {
     private void refreshTotals() {
         if (totalView == null) return;
         boolean empty = model.isEmpty();
-        totalSub.setText(role == ROLE_SELL ? "ELİNE GEÇECEK" : "ÖDEYECEĞİN");
+        totalSub.setText("ÖDEYECEĞİN");
         totalView.setText(TezgahModel.tl(model.total()));
-        totalView.setContentDescription((role == ROLE_SELL ? "Eline geçecek " : "Ödeyeceğin ") + TezgahModel.tl(model.total()));
+        totalView.setContentDescription("Ödeyeceğin " + TezgahModel.tl(model.total()));
         finishButton.setEnabled(!empty);
         finishButton.setBackground(round(empty ? LINE : GREEN, 0, 18));
         finishButton.setTextColor(empty ? MUTED : BG);
-        finishButton.setContentDescription(role == ROLE_SELL ? "Bitir ve satışı kaydet" : "Bitir ve alım fişini kaydet");
+        finishButton.setContentDescription("Bitir ve alım fişini kaydet");
     }
 
     // ================================================================== diyaloglar
@@ -712,7 +607,7 @@ public final class TezgahActivity extends Activity {
                     double v = TezgahModel.parse(input.getText().toString());
                     if (v < 0 || v > 100000) { toast("Fiyatı kontrol et."); return; }
                     model.setPrice(g, v);
-                    if (role == ROLE_BUY) rememberBuyPrices();
+                    rememberBuyPrices();
                     saveDraft();
                     replaceSummary();
                     refreshTotals();
@@ -785,35 +680,19 @@ public final class TezgahActivity extends Activity {
 
     /** Ortak ödeme penceresi: Tamamı / Bir kısmı / Henüz değil. */
     private void askPayment() {
-        if (role == ROLE_SELL && gardenId <= 0) { toast("Önce bahçe seç."); pickGarden(); return; }
         final double total = model.total();
         LinearLayout form = new LinearLayout(this);
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(dp(20), dp(8), dp(20), 0);
 
         final TextView party = new TextView(this);
-        final String[] buyer = {""};
-        if (role == ROLE_SELL) {
-            party.setText("Alıcı: seç ya da yaz ›");
-            party.setTextSize(17);
-            party.setTypeface(Typeface.DEFAULT_BOLD);
-            party.setPadding(0, dp(10), 0, dp(10));
-            party.setOnClickListener(v -> BuyerPicker.show(this, db, buyer[0], "Alıcısız kaydet", name -> {
-                buyer[0] = name == null ? "" : name.trim();
-                party.setText(buyer[0].isEmpty() ? "Alıcı: belirtilmedi ›" : "Alıcı: " + buyer[0] + " ›");
-            }));
-            form.addView(party);
-        } else {
-            party.setText(seller.isEmpty() ? "Satan: belirtilmedi (dokun, yaz) ›" : "Satan: " + seller + " ›");
-            party.setTextSize(17);
-            party.setTypeface(Typeface.DEFAULT_BOLD);
-            party.setPadding(0, dp(10), 0, dp(10));
-            form.addView(party);
-        }
+        party.setText(seller.isEmpty() ? "Satan: belirtilmedi (dokun, yaz) ›" : "Satan: " + seller + " ›");
+        party.setTextSize(17);
+        party.setTypeface(Typeface.DEFAULT_BOLD);
+        party.setPadding(0, dp(10), 0, dp(10));
+        form.addView(party);
 
-        final String[] labels = role == ROLE_SELL
-                ? new String[]{"Tamamını aldım", "Bir kısmını aldım", "Henüz almadım"}
-                : new String[]{"Tamamını ödedim", "Bir kısmını ödedim", "Henüz ödemedim"};
+        final String[] labels = {"Tamamını ödedim", "Bir kısmını ödedim", "Henüz ödemedim"};
         final int[] pay = {ElekSaleModel.PAY_ALL};
         final EditText partial = dialogInput("", "Ödenen tutar (₺)", InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         partial.setVisibility(View.GONE);
@@ -840,13 +719,9 @@ public final class TezgahActivity extends Activity {
         AlertDialog.Builder b = new AlertDialog.Builder(this)
                 .setTitle("Toplam " + TezgahModel.tl(total) + " · " + TezgahModel.kg(model.totalNet()))
                 .setView(form)
-                .setNegativeButton("Vazgeç", null);
-        if (role == ROLE_SELL) {
-            b.setPositiveButton("Kaydet", null);
-        } else {
-            b.setPositiveButton("Kaydet + WhatsApp", null);
-            b.setNeutralButton("Yalnız kaydet", null);
-        }
+                .setNegativeButton("Vazgeç", null)
+                .setPositiveButton("Kaydet + WhatsApp", null)
+                .setNeutralButton("Yalnız kaydet", null);
         final AlertDialog dialog = b.create();
         dialog.setOnShowListener(x -> {
             View.OnClickListener go = v -> {
@@ -856,48 +731,14 @@ public final class TezgahActivity extends Activity {
                 double paid = ElekSaleModel.received(pay[0], total, part);
                 boolean share = v == dialog.getButton(AlertDialog.BUTTON_POSITIVE);
                 dialog.dismiss();
-                if (role == ROLE_SELL) saveSale(pay[0], part, buyer[0]);
-                else savePurchase(paid, share);
+                savePurchase(paid, share);
             };
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(go);
             View neutral = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
             if (neutral != null) neutral.setOnClickListener(go);
-            if (role == ROLE_BUY) party.setOnClickListener(v -> { dialog.dismiss(); askSeller(this::askPayment); });
+            party.setOnClickListener(v -> { dialog.dismiss(); askSeller(this::askPayment); });
         });
         dialog.show();
-    }
-
-    /** Üretici: Elek kaydı + satış (mevcut kurallarla), sonra makbuz. */
-    private void saveSale(int pay, double partial, String buyer) {
-        String note = "Tezgah: " + model.totalKasa() + " kasa, brüt " + TezgahModel.kg(model.totalGross())
-                + ", dara " + TezgahModel.kg(model.tare()) + "/kasa";
-        long elekId;
-        try {
-            elekId = db.addElekRecord(gardenId, today(), TezgahModel.GRADES, model.netArray(), model.priceArray(), note);
-        } catch (RuntimeException e) {
-            elekId = -1;
-        }
-        if (elekId <= 0) { toast("Kaydedilemedi. Tekrar dene."); return; }
-        long saleId = new ElekSaleBridge(db).createSale(elekId, pay, partial, buyer);
-        syncCloud(elekId, saleId);
-        Toast.makeText(this, ElekSaleModel.successToast(saleId > 0, true),
-                saleId > 0 ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG).show();
-        model.clear();
-        saveDraft();
-        startActivity(new Intent(this, ElekReceiptActivity.class).putExtra(ElekReceiptActivity.EXTRA_RECORD_ID, elekId));
-        finish();
-    }
-
-    private void syncCloud(long elekId, long saleId) {
-        try {
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user == null) return;
-            ProductionCloudRepository cloud = new ProductionCloudRepository(db);
-            cloud.syncElekByLocalId(user.getUid(), elekId);
-            if (saleId > 0) cloud.syncSaleByLocalId(user.getUid(), saleId);
-        } catch (RuntimeException ignored) {
-            // Önce telefon: kayıt yerelde tamam; sonraki genel eşitleme yeniden dener.
-        }
     }
 
     /** Tüccar: alım fişini kaydet, istenirse WhatsApp'tan gönder, tezgahı sonraki üretici için sıfırla. */

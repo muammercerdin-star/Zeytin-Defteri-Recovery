@@ -5114,14 +5114,13 @@ public class ProducerFeedActivity extends Activity {
                 new Intent(this, ElekActivity.class).putExtra("garden_id", newRecordGarden)));
         body.addView(create, gardensBlockParams(16));
 
-        // Tezgah Modu: tüccarın kantarında kasa kasa tartım (satış ya da tüccar alımı).
-        TextView tezgah = text("Tezgah Modu  ·  kantarda kasa kasa", 15, GREEN, true);
+        // Tezgah Modu (tüccar): kantarda kasa kasa zeytin alımı, alım fişi WhatsApp'tan.
+        TextView tezgah = text("Tüccar Tezgahı  ·  kasa kasa alım", 15, GREEN, true);
         tezgah.setGravity(Gravity.CENTER);
         tezgah.setMinHeight(dp(50));
         tezgah.setBackground(round(Color.TRANSPARENT, 25, GREEN));
-        tezgah.setContentDescription("Tezgah Modu'nu aç");
-        tezgah.setOnClickListener(v -> startActivity(
-                new Intent(this, TezgahActivity.class).putExtra(TezgahActivity.EXTRA_GARDEN_ID, newRecordGarden)));
+        tezgah.setContentDescription("Tüccar Tezgahı'nı aç: kasa kasa zeytin alımı");
+        tezgah.setOnClickListener(v -> startActivity(new Intent(this, TezgahActivity.class)));
         body.addView(tezgah, gardensBlockParams(10));
 
         // Bahçe filtresi
