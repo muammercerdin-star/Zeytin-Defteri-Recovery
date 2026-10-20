@@ -1638,6 +1638,11 @@ public class ElekActivity extends Activity {
         );
 
 
+        // Tezgah Modu: kantarda kasa kasa tartım (seçili bahçeyle açılır).
+        findViewById(R.id.btnElekTezgah).setOnClickListener(view -> startActivity(
+                new android.content.Intent(ElekActivity.this, TezgahActivity.class)
+                        .putExtra(TezgahActivity.EXTRA_GARDEN_ID, selectedGardenId)));
+
         // ========================================================
         // TÜM ELEK KAYITLARI
         // ========================================================
