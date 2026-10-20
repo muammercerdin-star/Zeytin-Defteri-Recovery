@@ -227,67 +227,81 @@ public final class TezgahActivity extends Activity {
         scroll.setFillViewport(true);
         body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
-        body.setPadding(dp(14), dp(6), dp(14), dp(16));
+        body.setPadding(dp(12), dp(2), dp(12), dp(10));
         scroll.addView(body, new ScrollView.LayoutParams(-1, -2));
         column.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
         column.addView(bottomBar(), new LinearLayout.LayoutParams(-1, -2));
 
+        // Sıkı düzen: her şey tek ekrana sığsın (gerekirse yine kayar).
         body.addView(header());
-        body.addView(roleSwitch(), margins(-1, dp(46), 8));
-        body.addView(contextRow(), margins(-1, -2, 10));
-        body.addView(gradeRow(), margins(-1, -2, 12));
-        body.addView(entryCard(), margins(-1, -2, 10));
-        body.addView(weighingsCard(), margins(-1, -2, 10));
-        body.addView(summaryCard(), margins(-1, -2, 10));
-        if (role == ROLE_BUY) body.addView(dayCard(), margins(-1, -2, 10));
+        body.addView(gradeRow(), margins(-1, -2, 6));
+        body.addView(entryCard(), margins(-1, -2, 8));
+        body.addView(weighingsCard(), margins(-1, -2, 8));
+        body.addView(summaryCard(), margins(-1, -2, 8));
+        if (role == ROLE_BUY) body.addView(dayCard(), margins(-1, -2, 8));
         setContentView(root);
         refreshTotals();
     }
 
+    /** Başlık: geri · "Tezgah" + bağlam (bahçe / satan, tarih) · Satıyorum/Alıyorum anahtarı. */
     private View header() {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setMinimumHeight(dp(48));
+        row.setMinimumHeight(dp(52));
         ImageView back = new ImageView(this);
         back.setImageResource(R.drawable.ic_elek_back_chevron);
         back.setColorFilter(TEXT);
         back.setPadding(dp(11), dp(11), dp(11), dp(11));
         back.setContentDescription("Geri");
         back.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(dp(44), dp(44));
-        bp.setMarginStart(-dp(8));
+        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(dp(40), dp(44));
+        bp.setMarginStart(-dp(10));
         row.addView(back, bp);
-        TextView title = text("Tezgah", 24, TEXT, true);
-        row.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
-        TextView reset = pill("Sıfırla", false);
-        reset.setContentDescription("Tezgahı sıfırla");
-        reset.setOnClickListener(v -> {
-            if (model.isEmpty()) { toast("Tezgah zaten boş."); return; }
-            new AlertDialog.Builder(this)
-                    .setTitle("Tezgah sıfırlansın mı?")
-                    .setMessage(model.items().size() + " tartım silinecek. Kaydedilmemiş bilgiler kaybolur.")
-                    .setPositiveButton("Sıfırla", (d, w) -> { model.clear(); saveDraft(); build(); })
-                    .setNegativeButton("Vazgeç", null)
-                    .show();
-        });
-        row.addView(reset, new LinearLayout.LayoutParams(-2, dp(40)));
+
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.addView(text("Tezgah", 20, TEXT, true));
+        String context;
+        if (role == ROLE_SELL) context = gardenName.isEmpty() ? "Bahçe seç" : gardenName;
+        else context = seller.isEmpty() ? "Satan: ad yaz" : seller;
+        TextView sub = text(context + " ▾ · " + new SimpleDateFormat("d MMM", new Locale("tr", "TR")).format(new Date()),
+                13, GREEN, true);
+        sub.setSingleLine(true);
+        sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        col.addView(sub);
+        col.setContentDescription(role == ROLE_SELL ? "Bahçe: " + context + ", değiştir" : "Satan üretici: " + context + ", değiştir");
+        col.setOnClickListener(v -> { if (role == ROLE_SELL) pickGarden(); else askSeller(null); });
+        row.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(roleSwitch(), new LinearLayout.LayoutParams(-2, dp(40)));
         return row;
+    }
+
+    private void askReset() {
+        if (model.isEmpty()) { toast("Tezgah zaten boş."); return; }
+        new AlertDialog.Builder(this)
+                .setTitle("Tezgah sıfırlansın mı?")
+                .setMessage(model.items().size() + " tartım silinecek. Kaydedilmemiş bilgiler kaybolur.")
+                .setPositiveButton("Sıfırla", (d, w) -> { model.clear(); saveDraft(); build(); })
+                .setNegativeButton("Vazgeç", null)
+                .show();
     }
 
     private View roleSwitch() {
         LinearLayout box = new LinearLayout(this);
-        box.setPadding(dp(4), dp(4), dp(4), dp(4));
-        box.setBackground(round(CARD, LINE, 23));
-        String[] labels = {"Satıyorum", "Alıyorum (tüccar)"};
+        box.setPadding(dp(3), dp(3), dp(3), dp(3));
+        box.setBackground(round(CARD, LINE, 20));
+        String[] labels = {"Satıyorum", "Alıyorum"};
+        String[] spoken = {"Satıyorum (üretici)", "Alıyorum (tüccar)"};
         for (int i = 0; i < 2; i++) {
             final int r = i;
-            TextView t = text(labels[i], 15, i == role ? BG : TEXT, true);
+            TextView t = text(labels[i], 13, i == role ? BG : TEXT, true);
             t.setGravity(Gravity.CENTER);
-            t.setBackground(i == role ? round(GREEN, 0, 19) : null);
-            t.setContentDescription(labels[i] + (i == role ? ", seçili" : ""));
+            t.setPadding(dp(10), 0, dp(10), 0);
+            t.setBackground(i == role ? round(GREEN, 0, 17) : null);
+            t.setContentDescription(spoken[i] + (i == role ? ", seçili" : ""));
             t.setOnClickListener(v -> switchRole(r));
             roleTabs[i] = t;
-            box.addView(t, new LinearLayout.LayoutParams(0, -1, 1));
+            box.addView(t, new LinearLayout.LayoutParams(-2, -1));
         }
         return box;
     }
@@ -300,42 +314,20 @@ public final class TezgahActivity extends Activity {
         build();
     }
 
-    private View contextRow() {
-        LinearLayout box = card();
-        box.setOrientation(LinearLayout.HORIZONTAL);
-        box.setGravity(Gravity.CENTER_VERTICAL);
-        box.setMinimumHeight(dp(56));
-        TextView label = text(role == ROLE_SELL ? "Bahçe" : "Satan üretici", 13, MUTED, true);
-        String valueText;
-        if (role == ROLE_SELL) valueText = gardenName.isEmpty() ? "Bahçe seç" : gardenName;
-        else valueText = seller.isEmpty() ? "Ad yaz (isteğe bağlı)" : seller + (sellerPhone.isEmpty() ? "" : " · " + sellerPhone);
-        TextView value = text(valueText + "  ▾", 17, TEXT, true);
-        value.setSingleLine(true);
-        value.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        LinearLayout col = new LinearLayout(this);
-        col.setOrientation(LinearLayout.VERTICAL);
-        col.addView(label);
-        col.addView(value);
-        box.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
-        TextView date = text(new SimpleDateFormat("d MMM", new Locale("tr", "TR")).format(new Date()), 14, MUTED, true);
-        box.addView(date);
-        box.setOnClickListener(v -> { if (role == ROLE_SELL) pickGarden(); else askSeller(null); });
-        return box;
-    }
-
     private View gradeRow() {
         LinearLayout row = new LinearLayout(this);
         for (int g = 0; g < TezgahModel.GRADES.length; g++) {
             final int index = g;
             TextView t = new TextView(this);
             t.setGravity(Gravity.CENTER);
-            t.setTextSize(14);
+            t.setTextSize(13);
             t.setTypeface(Typeface.DEFAULT_BOLD);
             t.setMaxLines(2);
-            t.setOnClickListener(v -> { grade = index; renderGradeTabs(); replaceWeighings(); updatePreview(); });
+            t.setLineSpacing(0, 0.95f);
+            t.setOnClickListener(v -> { grade = index; showAllWeighings = false; renderGradeTabs(); replaceWeighings(); updatePreview(); });
             gradeTabs[g] = t;
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(58), 1);
-            if (g > 0) lp.setMarginStart(dp(5));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(48), 1);
+            if (g > 0) lp.setMarginStart(dp(4));
             row.addView(t, lp);
         }
         renderGradeTabs();
@@ -360,16 +352,24 @@ public final class TezgahActivity extends Activity {
             String sub = net > 0 ? "\n" + shortKg(net) : "";
             t.setText(TezgahModel.SHORT[g] + sub);
             t.setTextColor(on ? BG : TEXT);
-            t.setBackground(on ? round(GREEN, 0, 14) : round(CARD, net > 0 ? GREEN_DIM : LINE, 14));
+            t.setBackground(on ? round(GREEN, 0, 12) : round(CARD, net > 0 ? GREEN_DIM : LINE, 12));
             t.setContentDescription(TezgahModel.LABELS[g] + (net > 0 ? ", " + TezgahModel.kg(net) : "") + (on ? ", seçili" : ""));
         }
     }
 
     private View entryCard() {
         LinearLayout box = card();
+        LinearLayout headRow = new LinearLayout(this);
+        headRow.setGravity(Gravity.CENTER_VERTICAL);
         entryHead = text("", 12, MUTED, true);
-        entryHead.setLetterSpacing(0.06f);
-        box.addView(entryHead);
+        entryHead.setLetterSpacing(0.05f);
+        headRow.addView(entryHead, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView tare = text("Dara " + TezgahModel.kg(model.tare()) + "/kasa ›", 13, GREEN, true);
+        tare.setPadding(dp(8), dp(6), 0, dp(6));
+        tare.setContentDescription("Kasa darası " + TezgahModel.kg(model.tare()) + ", değiştir");
+        tare.setOnClickListener(v -> askTare());
+        headRow.addView(tare);
+        box.addView(headRow);
         renderEntryHead();
 
         LinearLayout inputs = new LinearLayout(this);
@@ -378,14 +378,14 @@ public final class TezgahActivity extends Activity {
         // Kasa sayısı: − 10 +
         LinearLayout kasaCol = new LinearLayout(this);
         kasaCol.setOrientation(LinearLayout.VERTICAL);
-        kasaCol.addView(text("Kasa", 13, MUTED, true));
+        kasaCol.addView(text("Kasa", 12, MUTED, true));
         LinearLayout stepper = new LinearLayout(this);
         stepper.setGravity(Gravity.CENTER_VERTICAL);
         TextView minus = stepButton("−");
         minus.setContentDescription("Kasa azalt");
         minus.setOnClickListener(v -> setKasa(kasa - 1));
         kasaInput = new EditText(this);
-        styleInput(kasaInput, 26);
+        styleInput(kasaInput, 24);
         kasaInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         kasaInput.setGravity(Gravity.CENTER);
         kasaInput.setText(String.valueOf(kasa));
@@ -398,19 +398,19 @@ public final class TezgahActivity extends Activity {
         TextView plus = stepButton("+");
         plus.setContentDescription("Kasa artır");
         plus.setOnClickListener(v -> setKasa(kasa + 1));
-        stepper.addView(minus, new LinearLayout.LayoutParams(dp(44), dp(60)));
-        LinearLayout.LayoutParams kp = new LinearLayout.LayoutParams(dp(64), dp(60));
+        stepper.addView(minus, new LinearLayout.LayoutParams(dp(42), dp(52)));
+        LinearLayout.LayoutParams kp = new LinearLayout.LayoutParams(dp(60), dp(52));
         kp.setMargins(dp(4), 0, dp(4), 0);
         stepper.addView(kasaInput, kp);
-        stepper.addView(plus, new LinearLayout.LayoutParams(dp(44), dp(60)));
+        stepper.addView(plus, new LinearLayout.LayoutParams(dp(42), dp(52)));
         kasaCol.addView(stepper);
         inputs.addView(kasaCol);
 
         LinearLayout kgCol = new LinearLayout(this);
         kgCol.setOrientation(LinearLayout.VERTICAL);
-        kgCol.addView(text("Kantar (kg)", 13, MUTED, true));
+        kgCol.addView(text("Kantar (kg)", 12, MUTED, true));
         kgInput = new EditText(this);
-        styleInput(kgInput, 30);
+        styleInput(kgInput, 28);
         kgInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         kgInput.setKeyListener(android.text.method.DigitsKeyListener.getInstance("0123456789.,"));
         kgInput.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
@@ -422,29 +422,23 @@ public final class TezgahActivity extends Activity {
             if (action == EditorInfo.IME_ACTION_DONE) { addWeighing(); return true; }
             return false;
         });
-        kgCol.addView(kgInput, new LinearLayout.LayoutParams(-1, dp(60)));
+        kgCol.addView(kgInput, new LinearLayout.LayoutParams(-1, dp(52)));
         LinearLayout.LayoutParams kgp = new LinearLayout.LayoutParams(0, -2, 1);
-        kgp.setMarginStart(dp(12));
+        kgp.setMarginStart(dp(10));
         inputs.addView(kgCol, kgp);
-        box.addView(inputs, margins(-1, -2, 6));
+        box.addView(inputs, margins(-1, -2, 2));
 
-        LinearLayout info = new LinearLayout(this);
-        info.setGravity(Gravity.CENTER_VERTICAL);
-        netPreview = text("", 15, MUTED, true);
-        info.addView(netPreview, new LinearLayout.LayoutParams(0, -2, 1));
-        TextView tare = text("Dara: " + TezgahModel.kg(model.tare()) + "/kasa ›", 14, GREEN, true);
-        tare.setPadding(dp(8), dp(10), 0, dp(10));
-        tare.setContentDescription("Kasa darasını değiştir");
-        tare.setOnClickListener(v -> askTare());
-        info.addView(tare);
-        box.addView(info, margins(-1, -2, 2));
+        netPreview = text("", 14, MUTED, true);
+        netPreview.setSingleLine(true);
+        netPreview.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        box.addView(netPreview, margins(-1, -2, 6));
 
-        TextView add = text("+  Tartımı ekle", 19, BG, true);
+        TextView add = text("+  Tartımı ekle", 18, BG, true);
         add.setGravity(Gravity.CENTER);
-        add.setBackground(round(GREEN, 0, 16));
+        add.setBackground(round(GREEN, 0, 14));
         add.setContentDescription("Tartımı ekle");
         add.setOnClickListener(v -> addWeighing());
-        box.addView(add, margins(-1, dp(58), 6));
+        box.addView(add, margins(-1, dp(50), 6));
         updatePreview();
         return box;
     }
@@ -518,6 +512,7 @@ public final class TezgahActivity extends Activity {
     }
 
     private LinearLayout weighingsBox;
+    private boolean showAllWeighings;
 
     private void replaceWeighings() {
         if (weighingsBox == null) return;
@@ -529,26 +524,37 @@ public final class TezgahActivity extends Activity {
 
     private View weighingsCard() {
         LinearLayout box = card();
+        box.setPadding(dp(12), dp(6), dp(4), dp(6));
         weighingsBox = box;
         List<TezgahModel.Weighing> all = model.items();
         int count = model.gradeCount(grade);
-        TextView head = text(TezgahModel.LABELS[grade] + " tartımları" + (count > 0 ? " · " + count : ""), 15, TEXT, true);
-        box.addView(head);
         if (count == 0) {
-            box.addView(text("Henüz tartım yok. Kasaları kantara koy, kiloyu yaz, \"Tartımı ekle\"ye bas.", 14, MUTED, false),
-                    margins(-1, -2, 4));
+            // Tartım yokken yer kaplamasın.
+            box.setVisibility(View.GONE);
             return box;
         }
-        int n = 0;
+        LinearLayout headRow = new LinearLayout(this);
+        headRow.setGravity(Gravity.CENTER_VERTICAL);
+        headRow.setMinimumHeight(dp(30));
+        headRow.addView(text(TezgahModel.LABELS[grade] + " · " + count + " tartım", 14, TEXT, true),
+                new LinearLayout.LayoutParams(0, -2, 1));
+        TextView sumText = text(model.gradeKasa(grade) + " kasa · net " + TezgahModel.kg(model.gradeNet(grade)), 14, GREEN, true);
+        sumText.setPadding(0, 0, dp(10), 0);
+        headRow.addView(sumText);
+        box.addView(headRow);
+        int n = 0, shown = 0;
+        int limit = showAllWeighings ? Integer.MAX_VALUE : 3;
         for (int i = all.size() - 1; i >= 0; i--) {
             final TezgahModel.Weighing w = all.get(i);
             if (w.grade != grade) continue;
             n++;
+            if (shown >= limit) continue;
+            shown++;
             final int index = i;
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setMinimumHeight(dp(46));
-            TextView t = text(model.line(w), 16, TEXT, false);
+            row.setMinimumHeight(dp(36));
+            TextView t = text(model.line(w), 15, TEXT, false);
             row.addView(t, new LinearLayout.LayoutParams(0, -2, 1));
             TextView del = text("✕", 18, MUTED, true);
             del.setGravity(Gravity.CENTER);
@@ -563,12 +569,16 @@ public final class TezgahActivity extends Activity {
                     })
                     .setNegativeButton("Vazgeç", null)
                     .show());
-            row.addView(del, new LinearLayout.LayoutParams(dp(44), dp(44)));
-            if (n > 1) box.addView(divider());
+            row.addView(del, new LinearLayout.LayoutParams(dp(40), dp(36)));
+            box.addView(divider());
             box.addView(row);
         }
-        View sum = text("Toplam " + model.gradeKasa(grade) + " kasa · net " + TezgahModel.kg(model.gradeNet(grade)), 14, GREEN, true);
-        box.addView(sum, margins(-1, -2, 6));
+        if (n > shown) {
+            TextView more = text("+ " + (n - shown) + " önceki tartımı göster", 13, GREEN, true);
+            more.setPadding(0, dp(8), 0, dp(4));
+            more.setOnClickListener(v -> { showAllWeighings = true; replaceWeighings(); });
+            box.addView(more);
+        }
         return box;
     }
 
@@ -585,24 +595,35 @@ public final class TezgahActivity extends Activity {
     private View summaryCard() {
         LinearLayout box = card();
         summaryBox = box;
+        box.setPadding(dp(12), dp(6), dp(12), dp(8));
+        LinearLayout headRow = new LinearLayout(this);
+        headRow.setGravity(Gravity.CENTER_VERTICAL);
         TextView head = text("ÖZET · fiyata dokun, değiştir", 12, MUTED, true);
-        head.setLetterSpacing(0.06f);
-        box.addView(head);
+        head.setLetterSpacing(0.05f);
+        headRow.addView(head, new LinearLayout.LayoutParams(0, -2, 1));
+        if (!model.isEmpty()) {
+            TextView reset = text("Sıfırla", 13, RED, true);
+            reset.setPadding(dp(10), dp(6), 0, dp(6));
+            reset.setContentDescription("Tezgahı sıfırla");
+            reset.setOnClickListener(v -> askReset());
+            headRow.addView(reset);
+        }
+        box.addView(headRow);
         for (int g = 0; g < TezgahModel.GRADES.length; g++) {
             final int index = g;
             double net = model.gradeNet(g);
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setMinimumHeight(dp(44));
-            TextView name = text(TezgahModel.LABELS[g], 15, net > 0 ? TEXT : MUTED, true);
+            row.setMinimumHeight(dp(34));
+            TextView name = text(TezgahModel.LABELS[g], 14, net > 0 ? TEXT : MUTED, true);
             row.addView(name, new LinearLayout.LayoutParams(0, -2, 1.1f));
             TextView kg = text(net > 0 ? shortKg(net) + "  " + TezgahModel.percent(model.share(g)) : "—", 14, net > 0 ? TEXT : MUTED, false);
             row.addView(kg, new LinearLayout.LayoutParams(0, -2, 1.2f));
             TextView price = text(model.price(g) > 0 ? TezgahModel.money(model.price(g)) : "fiyat?", 14,
                     model.price(g) > 0 ? TEXT : AMBER, true);
             price.setGravity(Gravity.CENTER);
-            price.setPadding(dp(8), dp(6), dp(8), dp(6));
-            price.setBackground(round(BG, LINE, 10));
+            price.setPadding(dp(8), dp(3), dp(8), dp(3));
+            price.setBackground(round(BG, LINE, 9));
             price.setContentDescription(TezgahModel.LABELS[g] + " fiyatını değiştir");
             price.setOnClickListener(v -> askPrice(index));
             row.addView(price, new LinearLayout.LayoutParams(-2, -2));
@@ -611,12 +632,16 @@ public final class TezgahActivity extends Activity {
             row.addView(amount, new LinearLayout.LayoutParams(0, -2, 1.2f));
             box.addView(row);
         }
-        box.addView(divider());
-        TextView totals = text("Kasa " + model.totalKasa() + " · Brüt " + TezgahModel.kg(model.totalGross())
-                + " · Dara " + TezgahModel.kg(model.totalTare()), 14, MUTED, false);
-        box.addView(totals, margins(-1, -2, 6));
-        TextView net = text("Net " + TezgahModel.kg(model.totalNet()), 18, TEXT, true);
-        box.addView(net, margins(-1, -2, 2));
+        box.addView(divider(), margins(-1, Math.max(1, dp(1)), 4));
+        LinearLayout foot = new LinearLayout(this);
+        foot.setGravity(Gravity.CENTER_VERTICAL);
+        TextView totals = text(model.totalKasa() + " kasa · brüt " + TezgahModel.kg(model.totalGross())
+                + " · dara " + TezgahModel.kg(model.totalTare()), 13, MUTED, false);
+        totals.setSingleLine(true);
+        totals.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        foot.addView(totals, new LinearLayout.LayoutParams(0, -2, 1));
+        foot.addView(text("Net " + TezgahModel.kg(model.totalNet()), 16, TEXT, true));
+        box.addView(foot, margins(-1, -2, 6));
         return box;
     }
 
@@ -642,15 +667,15 @@ public final class TezgahActivity extends Activity {
     private View bottomBar() {
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(14), dp(10), dp(14), dp(12));
+        bar.setPadding(dp(14), dp(8), dp(14), dp(8));
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.parseColor("#0A1A24"));
         bg.setStroke(dp(1), LINE);
         bar.setBackground(bg);
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        totalSub = text("", 13, MUTED, true);
-        totalView = text("", 30, GREEN, true);
+        totalSub = text("", 12, MUTED, true);
+        totalView = text("", 28, GREEN, true);
         totalView.setSingleLine(true);
         col.addView(totalSub);
         col.addView(totalView);
@@ -659,7 +684,7 @@ public final class TezgahActivity extends Activity {
         finishButton.setGravity(Gravity.CENTER);
         finishButton.setPadding(dp(22), 0, dp(22), 0);
         finishButton.setOnClickListener(v -> finishTezgah());
-        bar.addView(finishButton, new LinearLayout.LayoutParams(-2, dp(58)));
+        bar.addView(finishButton, new LinearLayout.LayoutParams(-2, dp(52)));
         return bar;
     }
 
@@ -978,8 +1003,8 @@ public final class TezgahActivity extends Activity {
     private LinearLayout card() {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(14), dp(12), dp(14), dp(12));
-        box.setBackground(round(CARD, LINE, 18));
+        box.setPadding(dp(12), dp(10), dp(12), dp(10));
+        box.setBackground(round(CARD, LINE, 16));
         return box;
     }
 
