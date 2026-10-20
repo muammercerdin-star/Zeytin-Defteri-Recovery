@@ -148,6 +148,102 @@ public class AddGardenActivity extends Activity {
         tvSaveSummary.setText(mode == GardenFormModel.Mode.EDIT ? "" : "Bahçe bilgilerin hesabında güvende.");
         tvSaveSummary.setVisibility(mode == GardenFormModel.Mode.EDIT ? View.GONE : View.VISIBLE);
         setSavingState(false);
+        if (mode == GardenFormModel.Mode.EDIT) addDeleteButton();
+    }
+
+    // ------------------------------------------------------------ sil
+
+    /** Düzenleme ekranının en altında, kaydırınca görünen "Bahçeyi sil" (kaydet şeridini kalabalıklaştırmaz). */
+    private void addDeleteButton() {
+        View v = etGardenNotes;
+        while (v != null && !(v.getParent() instanceof android.widget.ScrollView)) {
+            v = v.getParent() instanceof View ? (View) v.getParent() : null;
+        }
+        if (!(v instanceof LinearLayout) || v.findViewWithTag("delete_garden") != null) return;
+        float d = getResources().getDisplayMetrics().density;
+        TextView del = new TextView(this);
+        del.setTag("delete_garden");
+        del.setText("Bahçeyi sil");
+        del.setTextSize(15);
+        del.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        del.setTextColor(getResources().getColor(R.color.zd_danger, null));
+        del.setGravity(android.view.Gravity.CENTER);
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setCornerRadius(16 * d);
+        bg.setStroke(Math.max(1, Math.round(d)), getResources().getColor(R.color.zd_danger, null));
+        del.setBackground(bg);
+        del.setContentDescription("Bahçeyi ve bütün kayıtlarını sil");
+        del.setOnClickListener(x -> { if (!saving) confirmDelete(); });
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, Math.round(50 * d));
+        lp.topMargin = Math.round(28 * d);
+        lp.bottomMargin = Math.round(12 * d);
+        ((LinearLayout) v).addView(del, lp);
+    }
+
+    private void confirmDelete() {
+        final String name;
+        final int[] counts;
+        try (Cursor c = databaseHelper.getGarden(editGardenId)) {
+            if (!c.moveToFirst()) { unavailable(); return; }
+            name = str(c, "name");
+            counts = GardenDeletion.counts(databaseHelper.getReadableDatabase(), editGardenId);
+            if (GardenDeletion.gardenCount(databaseHelper.getReadableDatabase(), databaseHelper.getActiveOwnerUid()) <= 1) {
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("Son bahçe silinemez")
+                        .setMessage("Uygulama en az bir bahçeyle çalışır. Bu bahçeyi silmek istiyorsan önce yeni bir bahçe ekle; "
+                                + "ya da bu bahçenin adını ve bilgilerini değiştir.")
+                        .setPositiveButton("Tamam", null)
+                        .show();
+                return;
+            }
+        } catch (RuntimeException e) {
+            Toast.makeText(this, "Bahçe okunamadı.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        float d = getResources().getDisplayMetrics().density;
+        final EditText confirm = new EditText(this);
+        confirm.setHint(name);
+        confirm.setSingleLine(true);
+        LinearLayout box = new LinearLayout(this);
+        box.setPadding(Math.round(22 * d), Math.round(4 * d), Math.round(22 * d), 0);
+        box.addView(confirm, new LinearLayout.LayoutParams(-1, -2));
+        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("\"" + name + "\" silinsin mi?")
+                .setMessage("Bahçeyle birlikte bütün kayıtları silinecek: " + GardenDeletion.summary(counts)
+                        + ". Satışlara bağlı alacaklar da silinir. Buluttaki yedeği de silinir; bu işlem geri alınamaz."
+                        + "\n\nOnaylamak için bahçenin adını yaz:")
+                .setView(box)
+                .setNegativeButton("Vazgeç", null)
+                .setPositiveButton("Kalıcı olarak sil", null)
+                .create();
+        dialog.setOnShowListener(x -> {
+            final android.widget.Button ok = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+            ok.setTextColor(getResources().getColor(R.color.zd_danger, null));
+            ok.setEnabled(false);
+            confirm.addTextChangedListener(new android.text.TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence a, int b, int c, int e) { }
+                @Override public void onTextChanged(CharSequence a, int b, int c, int e) { }
+                @Override public void afterTextChanged(android.text.Editable a) {
+                    ok.setEnabled(GardenDeletion.nameMatches(a.toString(), name));
+                }
+            });
+            ok.setOnClickListener(y -> {
+                int result = GardenDeletion.delete(databaseHelper, editGardenId);
+                dialog.dismiss();
+                if (result == 1) {
+                    Toast.makeText(this, "\"" + name + "\" silindi.", Toast.LENGTH_SHORT).show();
+                    // Bahçe detay ekranı da kapanır; ana sayfa ilk bahçeye geçer.
+                    Intent home = new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(home);
+                    finish();
+                } else if (result == -2) {
+                    Toast.makeText(this, "Son bahçe silinemez.", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "Bahçe silinemedi. Tekrar dene.", Toast.LENGTH_LONG).show();
+                }
+            });
+        });
+        dialog.show();
     }
 
     private void animateEntrance() {

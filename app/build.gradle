@@ -49,7 +49,7 @@ android {
         // Her Play yüklemesinde versionCode BİR artar (1, 2, 3…). Zorunlu güncelleme bu sayıya bakar:
         // hosting'deki zeytin-defteri/app-config.json -> min_version / latest_version.
         versionCode 2
-        versionName '1.1'
+        versionName '1.0.1'
 
         buildConfigField 'String', 'SUPABASE_URL', zdBuildString('SUPABASE_URL')
         buildConfigField 'String', 'SUPABASE_PUBLISHABLE_KEY', zdBuildString('SUPABASE_PUBLISHABLE_KEY')
