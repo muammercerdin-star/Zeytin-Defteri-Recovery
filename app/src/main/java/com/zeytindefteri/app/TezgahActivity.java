@@ -731,70 +731,149 @@ public final class TezgahActivity extends Activity {
         askPayment();
     }
 
-    /** Ortak ödeme penceresi: Tamamı / Bir kısmı / Henüz değil. */
+    /**
+     * "Alımı bitir" alttan açılan sayfası: büyük toplam, satan üretici (ad + telefon doğrudan burada),
+     * ödeme seçimi (Tamamı / Bir kısmı / Ödenmedi; kısmide kalan canlı) ve iki net düğme.
+     */
     private void askPayment() {
         final double total = model.total();
-        LinearLayout form = new LinearLayout(this);
-        form.setOrientation(LinearLayout.VERTICAL);
-        form.setPadding(dp(20), dp(8), dp(20), 0);
+        final android.app.Dialog sheet = new android.app.Dialog(this);
+        sheet.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
 
-        final TextView party = new TextView(this);
-        party.setText(seller.isEmpty() ? "Satan: belirtilmedi (dokun, yaz) ›" : "Satan: " + seller + " ›");
-        party.setTextSize(17);
-        party.setTypeface(Typeface.DEFAULT_BOLD);
-        party.setPadding(0, dp(10), 0, dp(10));
-        form.addView(party);
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(10), dp(20), dp(18));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#0C1C27"));
+        float r = dp(26);
+        bg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+        bg.setStroke(dp(1), LINE);
+        scroll.setBackground(bg);
+        scroll.addView(box);
 
-        final String[] labels = {"Tamamını ödedim", "Bir kısmını ödedim", "Henüz ödemedim"};
+        View handle = new View(this);
+        handle.setBackground(round(LINE, 0, 3));
+        LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(dp(44), dp(5));
+        hp.gravity = Gravity.CENTER_HORIZONTAL;
+        box.addView(handle, hp);
+
+        // Başlık + büyük toplam
+        TextView kicker = text("ALIMI BİTİR", 12, MUTED, true);
+        kicker.setLetterSpacing(0.1f);
+        box.addView(kicker, margins(-1, -2, 14));
+        TextView big = text(TezgahModel.tl(total), 38, GREEN, true);
+        box.addView(big, margins(-1, -2, 2));
+        TextView facts = text(TezgahModel.kg(model.totalNet()) + "  ·  " + model.totalKasa() + " kasa"
+                + (model.averagePrice() > 0 ? "  ·  ort. " + TezgahModel.money(model.averagePrice()) + "/kg" : ""),
+                15, TEXT, false);
+        box.addView(facts, margins(-1, -2, 2));
+
+        // Satan üretici: doğrudan bu sayfada yazılır
+        box.addView(sectionLabel("SATAN ÜRETİCİ"), margins(-1, -2, 20));
+        final EditText name = sheetField(seller, "Ad soyad (isteğe bağlı)",
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        box.addView(name, margins(-1, dp(54), 8));
+        final EditText phone = sheetField(sellerPhone, "Telefon · fiş WhatsApp'tan gitsin", InputType.TYPE_CLASS_PHONE);
+        box.addView(phone, margins(-1, dp(54), 8));
+
+        // Ödeme
+        box.addView(sectionLabel("ÖDEME"), margins(-1, -2, 20));
+        final String[] labels = {"Tamamı", "Bir kısmı", "Ödenmedi"};
         final int[] pay = {ElekSaleModel.PAY_ALL};
-        final EditText partial = dialogInput("", "Ödenen tutar (₺)", InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        partial.setVisibility(View.GONE);
         final TextView[] chips = new TextView[3];
+        final EditText partial = sheetField("", "Ödenen tutar (₺)",
+                InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        final TextView rest = text("", 14, AMBER, true);
+        LinearLayout seg = new LinearLayout(this);
+        seg.setPadding(dp(4), dp(4), dp(4), dp(4));
+        seg.setBackground(round(CARD, LINE, 16));
+        final Runnable paint = () -> {
+            for (int k = 0; k < 3; k++) {
+                boolean on = k == pay[0];
+                chips[k].setTextColor(on ? BG : TEXT);
+                chips[k].setBackground(on ? round(k == ElekSaleModel.PAY_NONE ? AMBER : GREEN, 0, 12) : null);
+                chips[k].setContentDescription(labels[k] + (on ? ", seçili" : ""));
+            }
+            boolean part = pay[0] == ElekSaleModel.PAY_PART;
+            partial.setVisibility(part ? View.VISIBLE : View.GONE);
+            double paid = ElekSaleModel.received(pay[0], total, TezgahModel.parse(partial.getText().toString()));
+            double left = Math.max(0, total - paid);
+            rest.setVisibility(left > 0.5 ? View.VISIBLE : View.GONE);
+            rest.setText("Üreticiye borç kalacak: " + TezgahModel.tl(left));
+        };
         for (int i = 0; i < 3; i++) {
             final int option = i;
-            TextView c = new TextView(this);
-            c.setText(labels[i]);
-            c.setTextSize(16);
-            c.setPadding(dp(14), dp(12), dp(14), dp(12));
-            c.setOnClickListener(v -> {
-                pay[0] = option;
-                for (int k = 0; k < 3; k++) chips[k].setTypeface(k == option ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
-                for (int k = 0; k < 3; k++) chips[k].setText((k == option ? "● " : "○ ") + labels[k]);
-                partial.setVisibility(option == ElekSaleModel.PAY_PART ? View.VISIBLE : View.GONE);
-            });
+            TextView c = text(labels[i], 16, TEXT, true);
+            c.setGravity(Gravity.CENTER);
+            c.setOnClickListener(v -> { pay[0] = option; paint.run(); if (option == ElekSaleModel.PAY_PART) showKeyboard(partial); });
             chips[i] = c;
-            form.addView(c);
+            seg.addView(c, new LinearLayout.LayoutParams(0, dp(46), 1));
         }
-        for (int k = 0; k < 3; k++) chips[k].setText((k == 0 ? "● " : "○ ") + labels[k]);
-        chips[0].setTypeface(Typeface.DEFAULT_BOLD);
-        form.addView(partial);
+        box.addView(seg, margins(-1, -2, 8));
+        partial.addTextChangedListener(watcher(paint));
+        box.addView(partial, margins(-1, dp(54), 8));
+        box.addView(rest, margins(-1, -2, 8));
+        paint.run();
 
-        AlertDialog.Builder b = new AlertDialog.Builder(this)
-                .setTitle("Toplam " + TezgahModel.tl(total) + " · " + TezgahModel.kg(model.totalNet()))
-                .setView(form)
-                .setNegativeButton("Vazgeç", null)
-                .setPositiveButton("Kaydet + QR", null)
-                .setNeutralButton("Kaydet + WhatsApp", null);
-        final AlertDialog dialog = b.create();
-        dialog.setOnShowListener(x -> {
-            View.OnClickListener go = v -> {
-                double part = TezgahModel.parse(partial.getText().toString());
-                String err = ElekSaleModel.partialError(pay[0], total, part);
-                if (!err.isEmpty()) { partial.setError(err); return; }
-                double paid = ElekSaleModel.received(pay[0], total, part);
-                boolean qr = v == dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                dialog.dismiss();
-                savePurchase(paid, qr);
-            };
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(go);
-            View neutral = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
-            if (neutral != null) neutral.setOnClickListener(go);
-            party.setOnClickListener(v -> { dialog.dismiss(); askSeller(this::askPayment); });
-        });
-        dialog.show();
+        // Düğmeler
+        TextView qr = text("Kaydet  ·  QR göster", 18, BG, true);
+        qr.setGravity(Gravity.CENTER);
+        qr.setBackground(round(GREEN, 0, 18));
+        box.addView(qr, margins(-1, dp(58), 22));
+        TextView wa = text("Kaydet  ·  WhatsApp'a gönder", 16, GREEN, true);
+        wa.setGravity(Gravity.CENTER);
+        wa.setBackground(round(Color.TRANSPARENT, GREEN, 18));
+        box.addView(wa, margins(-1, dp(52), 10));
+        TextView cancel = text("Vazgeç", 15, MUTED, true);
+        cancel.setGravity(Gravity.CENTER);
+        cancel.setOnClickListener(v -> sheet.dismiss());
+        box.addView(cancel, margins(-1, dp(46), 4));
+
+        View.OnClickListener go = v -> {
+            double part = TezgahModel.parse(partial.getText().toString());
+            String err = ElekSaleModel.partialError(pay[0], total, part);
+            if (!err.isEmpty()) { partial.setError(err); partial.requestFocus(); return; }
+            seller = name.getText().toString().trim();
+            sellerPhone = phone.getText().toString().trim();
+            double paid = ElekSaleModel.received(pay[0], total, part);
+            sheet.dismiss();
+            savePurchase(paid, v == qr);
+        };
+        qr.setOnClickListener(go);
+        wa.setOnClickListener(go);
+
+        sheet.setContentView(scroll);
+        android.view.Window w = sheet.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            w.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            w.setGravity(Gravity.BOTTOM);
+            w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+        sheet.show();
     }
 
-    /** Tüccar: alım fişini kaydet, istenirse WhatsApp'tan gönder, tezgahı sonraki üretici için sıfırla. */
+    private TextView sectionLabel(String value) {
+        TextView t = text(value, 12, MUTED, true);
+        t.setLetterSpacing(0.1f);
+        return t;
+    }
+
+    private EditText sheetField(String value, String hint, int type) {
+        EditText e = new EditText(this);
+        e.setText(value);
+        e.setHint(hint);
+        e.setInputType(type);
+        e.setSingleLine(true);
+        e.setTextSize(17);
+        e.setTextColor(TEXT);
+        e.setHintTextColor(MUTED);
+        e.setPadding(dp(16), 0, dp(16), 0);
+        e.setBackground(round(CARD, LINE, 14));
+        return e;
+    }
+
     /** qr=true: kaydettikten sonra QR gösterilir (üretici Elek'te okutur); false: fiş WhatsApp'a gider. */
     private void savePurchase(double paid, boolean qr) {
         String text = model.receipt("Zeytin alım fişi", "Satan", seller, displayDate(), paid);
