@@ -24,6 +24,8 @@ public final class TezgahClosing {
     public final double[] bought = new double[N];     // alınan net kg (alım defterinden)
     public final double[] boughtValue = new double[N]; // numara numara üreticilere tutar
     public final double[] delivered = new double[N];  // tüccarın kantarında çıkan kg
+    /** Teslim kilosu elle girildi mi? Girilmeyen numara her zaman güncel alınan kiloyu izler (yeni alımlar eklense de). */
+    public final boolean[] edited = new boolean[N];
     public double producerTotal, producerPaid;
     public double rate, advance;
     public int purchases;
@@ -46,6 +48,18 @@ public final class TezgahClosing {
             c.delivered[g] = c.bought[g];
         }
         return c;
+    }
+
+    /** Kullanıcının girdiği teslim kilosu; alınanla aynıysa "elle girilmedi" sayılır. */
+    public void setDelivered(int g, double kg) {
+        delivered[g] = Math.max(0, r1(kg));
+        edited[g] = Math.abs(delivered[g] - bought[g]) >= 0.05;
+    }
+
+    /** Kutu boşaltıldı: alınan kiloya dön. */
+    public void clearDelivered(int g) {
+        delivered[g] = bought[g];
+        edited[g] = false;
     }
 
     public double boughtKg() { double s = 0; for (double v : bought) s += v; return r1(s); }
@@ -136,10 +150,16 @@ public final class TezgahClosing {
                 + " WHERE COALESCE(owner_uid,'')=? AND record_date=?", new String[]{owner == null ? "" : owner, date});
         try {
             if (!q.moveToFirst()) return false;
-            String[] d = (q.getString(0) == null ? "" : q.getString(0)).split(";", -1);
-            if (d.length == N) {
-                for (int g = 0; g < N; g++) {
-                    try { c.delivered[g] = Math.max(0, Double.parseDouble(d[g])); } catch (NumberFormatException ignored) { }
+            String raw = q.getString(0) == null ? "" : q.getString(0);
+            // v2: yalnız elle girilen numaralar yazılı, boş = alınanı izle. Eski biçim (her numara dolu, kendiliğinden
+            // kaydedilmiş olabilir) güvenilmez: yok sayılır, teslim = alınan.
+            if (raw.startsWith("v2|")) {
+                String[] d = raw.substring(3).split(";", -1);
+                if (d.length == N) {
+                    for (int g = 0; g < N; g++) {
+                        if (d[g].isEmpty()) continue;
+                        try { c.setDelivered(g, Double.parseDouble(d[g])); } catch (NumberFormatException ignored) { }
+                    }
                 }
             }
             c.rate = Math.max(0, q.getDouble(1));
@@ -152,8 +172,8 @@ public final class TezgahClosing {
 
     public static boolean save(SQLiteDatabase db, String owner, String date, TezgahClosing c, long now) {
         ensure(db);
-        StringBuilder d = new StringBuilder();
-        for (int g = 0; g < N; g++) { if (g > 0) d.append(';'); d.append(c.delivered[g]); }
+        StringBuilder d = new StringBuilder("v2|");
+        for (int g = 0; g < N; g++) { if (g > 0) d.append(';'); if (c.edited[g]) d.append(c.delivered[g]); }
         String o = owner == null ? "" : owner;
         ContentValues v = new ContentValues();
         v.put("delivered", d.toString());

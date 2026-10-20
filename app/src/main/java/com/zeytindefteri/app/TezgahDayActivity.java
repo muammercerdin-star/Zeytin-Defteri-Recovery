@@ -155,7 +155,8 @@ public final class TezgahDayActivity extends Activity {
         TextView head = text("AKŞAM HESABI · TÜCCARA TESLİM", 12, GREEN, true);
         head.setLetterSpacing(0.08f);
         box.addView(head);
-        box.addView(text("Tüccarın kantarında çıkan kiloları yaz; fire ve hesap kendiliğinden çıkar.", 13, MUTED, false),
+        box.addView(text("Teslim kutuları alınan kiloyla dolu gelir. Tüccarın kantarı farklı çıkan numarayı düzelt "
+                        + "(yeşil çerçeve = elle girildi); fire ve hesap kendiliğinden çıkar.", 13, MUTED, false),
                 margins(-1, -2, 4));
 
         // Sütun başlıkları
@@ -170,6 +171,7 @@ public final class TezgahDayActivity extends Activity {
         box.addView(hr, margins(-1, -2, 12));
 
         final TextView[] fires = new TextView[TezgahClosing.N];
+        final android.widget.EditText[] inputs = new android.widget.EditText[TezgahClosing.N];
         final LinearLayout results = new LinearLayout(this);
         results.setOrientation(LinearLayout.VERTICAL);
         final Runnable refresh = () -> {
@@ -178,6 +180,8 @@ public final class TezgahDayActivity extends Activity {
                 double f = c.fire(g);
                 fires[g].setText(Math.abs(f) < 0.05 ? "—" : (f > 0 ? "−" : "+") + num(Math.abs(f)));
                 fires[g].setTextColor(Math.abs(f) < 0.05 ? MUTED : (f > 0 ? AMBER : GREEN));
+                // Elle girilen teslim kilosu yeşil çerçeveli; girilmeyen, alınan kiloyu kendiliğinden izler.
+                if (inputs[g] != null) inputs[g].setBackground(round(BG, c.edited[g] ? GREEN : LINE, 10));
             }
             renderClosingResults(results, c);
         };
@@ -193,8 +197,11 @@ public final class TezgahDayActivity extends Activity {
             row.addView(b, new LinearLayout.LayoutParams(0, -2, 0.9f));
             final android.widget.EditText d = field(TezgahQr.field(c.delivered[g]), "0");
             d.setContentDescription(TezgahModel.LABELS[g] + " teslim kilosu");
+            inputs[g] = d;
             d.addTextChangedListener(watch(() -> {
-                c.delivered[grade] = Math.max(0, TezgahModel.parse(d.getText().toString()));
+                String typed = d.getText().toString().trim();
+                if (typed.isEmpty()) c.clearDelivered(grade);
+                else c.setDelivered(grade, TezgahModel.parse(typed));
                 refresh.run();
                 saveClosing();
             }));

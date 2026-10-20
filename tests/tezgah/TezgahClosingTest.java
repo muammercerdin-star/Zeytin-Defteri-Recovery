@@ -17,7 +17,8 @@ public class TezgahClosingTest {
     eq(c.boughtKg(),180,"toplam alınan"); eq(c.deliveredKg(),180,"teslim başta alınana eşit"); eq(c.fireKg(),0,"fire yok");
     ok(c.purchases==2,"alım sayısı");
     eq(c.producerTotal,10*130+150*100+20*20,"üretici tutarı"); eq(c.producerDue(),5000+400,"üreticiye kalan borç");
-    c.delivered[1]=147; c.delivered[5]=20.5;
+    c.setDelivered(1,147); c.setDelivered(5,20.5);
+    ok(c.edited[1] && c.edited[5] && !c.edited[0],"elle girilenler işaretli");
     eq(c.fire(1),3,"1 numara fire"); eq(c.fire(5),-0.5,"yağlık fazla"); eq(c.fireKg(),2.5,"net fire");
     eq(Math.round(c.firePercent()*100)/100.0,1.39,"fire yüzdesi");
     eq(c.fireValue(),3*100-0.5*20,"fire değeri");
@@ -37,6 +38,20 @@ public class TezgahClosingTest {
     ok(TezgahClosing.load(db,"t","2026-10-20",back),"yükle");
     eq(back.delivered[1],147,"teslim geri gelir"); eq(back.rate,2,"oran güncel"); eq(back.advance,50000,"avans");
     ok(!TezgahClosing.load(db,"baska","2026-10-20",TezgahClosing.fromPurchases(list)),"başka hesap görmez");
+    // Hata senaryosu: kapanış kaydedildikten sonra yeni alım gelir; dokunulmayan numaralar fire göstermemeli.
+    TezgahModel m3=new TezgahModel(); m3.add(0,1,8); m3.add(2,2,64); m3.setPrice(0,130); m3.setPrice(2,70);
+    TezgahPurchases.add(db,"t","2026-10-20","C","",m3,0,3);
+    TezgahClosing later=TezgahClosing.fromPurchases(TezgahPurchases.forDay(db,"t","2026-10-20"));
+    TezgahClosing.load(db,"t","2026-10-20",later);
+    eq(later.bought[0],16,"yeni alımla double arttı"); eq(later.delivered[0],16,"dokunulmayan teslim alınanı izler"); eq(later.fire(0),0,"sahte fire yok");
+    eq(later.delivered[2],60,"2 numara da izler"); eq(later.delivered[1],147,"elle girilen korunur");
+    // Eski biçim (her numara dolu) yok sayılır.
+    db.execSQL("UPDATE tezgah_closings SET delivered='10;107;0;0;0;20' WHERE owner_uid='t'");
+    TezgahClosing old=TezgahClosing.fromPurchases(TezgahPurchases.forDay(db,"t","2026-10-20"));
+    TezgahClosing.load(db,"t","2026-10-20",old);
+    eq(old.fireKg(),0,"eski kendiliğinden kayıt sahte fire üretmez"); eq(old.rate,2,"oran korunur");
+    old.setDelivered(1,150); ok(!old.edited[1],"alınana eşit girilirse elle sayılmaz");
+    old.setDelivered(1,149); old.clearDelivered(1); eq(old.delivered[1],150,"kutu boşalınca alınana döner");
     System.out.println("PASS: "+n+" akşam hesabı kontrolü");
   }
 }
