@@ -17,6 +17,9 @@ public class TezgahClosingTest {
     eq(c.boughtKg(),180,"toplam alınan"); eq(c.deliveredKg(),180,"teslim başta alınana eşit"); eq(c.fireKg(),0,"fire yok");
     ok(c.purchases==2,"alım sayısı");
     eq(c.producerTotal,10*130+150*100+20*20,"üretici tutarı"); eq(c.producerDue(),5000+400,"üreticiye kalan borç");
+    String plain=c.summary("20 Ekim 2026","");
+    ok(plain.contains("Teslim: alınanla aynı, fire yok") && !plain.contains("→"),"fire yokken tekrar yok\n"+plain);
+    ok(plain.contains("1 Numara: 150\u00A0kg\n"),"numara kiloları tek");
     c.setDelivered(1,147); c.setDelivered(5,20.5);
     ok(c.edited[1] && c.edited[5] && !c.edited[0],"elle girilenler işaretli");
     eq(c.fire(1),3,"1 numara fire"); eq(c.fire(5),-0.5,"yağlık fazla"); eq(c.fireKg(),2.5,"net fire");

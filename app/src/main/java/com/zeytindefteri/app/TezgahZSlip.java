@@ -68,7 +68,11 @@ public final class TezgahZSlip {
         lines.add(new L("", "", 4));
         lines.add(new L("TÜCCARA TESLİM", "", 1));
         lines.add(new L("Teslim kilo", kg(c.deliveredKg()), 0));
-        lines.add(new L("Fire", kg(c.fireKg()) + "  (%" + TezgahClosing.oneDecimal(c.firePercent()) + ")", 0));
+        if (Math.abs(c.fireKg()) >= 0.05) {
+            lines.add(new L("Fire", kg(c.fireKg()) + "  (%" + TezgahClosing.oneDecimal(c.firePercent()) + ")", 0));
+        } else {
+            lines.add(new L("Fire", "yok", 0));
+        }
         lines.add(new L("Komisyon", c.rate > 0 ? TezgahModel.money(c.rate) + "/kg = " + TezgahModel.tl(c.commission()) : "—", 0));
         lines.add(new L("Avans", c.advance > 0 ? "− " + TezgahModel.tl(c.advance) : "—", 0));
         double owes = c.traderOwes();

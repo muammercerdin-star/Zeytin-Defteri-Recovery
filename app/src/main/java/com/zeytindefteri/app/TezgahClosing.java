@@ -95,19 +95,33 @@ public final class TezgahClosing {
         StringBuilder sb = new StringBuilder();
         sb.append("🫒 Akşam hesabı · ").append(dateLabel).append('\n');
         if (traderName != null && !traderName.isEmpty()) sb.append("Tezgah: ").append(traderName).append('\n');
-        sb.append('\n').append("Numara: alınan → teslim (fire)\n");
-        for (int g = 0; g < N; g++) {
-            if (bought[g] <= 0 && delivered[g] <= 0) continue;
-            sb.append(TezgahModel.LABELS[g]).append(": ").append(TezgahModel.kg(bought[g])).append(" → ")
-                    .append(TezgahModel.kg(delivered[g]));
-            if (Math.abs(fire(g)) >= 0.05) sb.append(" (").append(sign(fire(g))).append(')');
-            sb.append('\n');
-        }
+        boolean same = true;
+        for (int g = 0; g < N; g++) same &= Math.abs(fire(g)) < 0.05;
         sb.append('\n');
-        sb.append("Alınan: ").append(TezgahModel.kg(boughtKg())).append(" · ").append(purchases).append(" üretici\n");
-        sb.append("Teslim: ").append(TezgahModel.kg(deliveredKg())).append('\n');
-        sb.append("Fire: ").append(TezgahModel.kg(fireKg())).append(" (%").append(oneDecimal(firePercent())).append(")");
-        if (Math.abs(fireValue()) >= 1) sb.append(" ≈ ").append(TezgahModel.tl(fireValue()));
+        if (same) {
+            // Fire yok: numara numara tekrar etmeye gerek yok, yalnız numara kiloları.
+            for (int g = 0; g < N; g++) {
+                if (bought[g] <= 0) continue;
+                sb.append(TezgahModel.LABELS[g]).append(": ").append(TezgahModel.kg(bought[g])).append('\n');
+            }
+            sb.append('\n');
+            sb.append("Net: ").append(TezgahModel.kg(boughtKg())).append(" · ").append(purchases).append(" üretici\n");
+            sb.append("Teslim: alınanla aynı, fire yok");
+        } else {
+            sb.append("Numara: alınan → teslim (fire)\n");
+            for (int g = 0; g < N; g++) {
+                if (bought[g] <= 0 && delivered[g] <= 0) continue;
+                sb.append(TezgahModel.LABELS[g]).append(": ").append(TezgahModel.kg(bought[g])).append(" → ")
+                        .append(TezgahModel.kg(delivered[g]));
+                if (Math.abs(fire(g)) >= 0.05) sb.append(" (").append(sign(fire(g))).append(')');
+                sb.append('\n');
+            }
+            sb.append('\n');
+            sb.append("Alınan: ").append(TezgahModel.kg(boughtKg())).append(" · ").append(purchases).append(" üretici\n");
+            sb.append("Teslim: ").append(TezgahModel.kg(deliveredKg())).append('\n');
+            sb.append("Fire: ").append(TezgahModel.kg(fireKg())).append(" (%").append(oneDecimal(firePercent())).append(")");
+            if (Math.abs(fireValue()) >= 1) sb.append(" ≈ ").append(TezgahModel.tl(fireValue()));
+        }
         sb.append("\n\n");
         sb.append("Üreticilere tutar: ").append(TezgahModel.tl(producerTotal)).append('\n');
         if (rate > 0) {

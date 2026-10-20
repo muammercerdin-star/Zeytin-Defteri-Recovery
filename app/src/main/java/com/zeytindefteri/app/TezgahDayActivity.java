@@ -252,9 +252,27 @@ public final class TezgahDayActivity extends Activity {
                 12, GREEN, true);
         head.setLetterSpacing(0.08f);
         box.addView(head);
-        box.addView(text("Teslim kutuları alınan kiloyla dolu gelir. Tüccarın kantarı farklı çıkan numarayı düzelt "
-                        + "(yeşil çerçeve = elle girildi); fire ve hesap kendiliğinden çıkar.", 13, MUTED, false),
-                margins(-1, -2, 4));
+        // Numara numara teslim tablosu yalnız gerekince: tüccarın kantarı farklı çıktıysa açılır.
+        boolean anyEdited = false;
+        for (boolean e : c.edited) anyEdited |= e;
+        final LinearLayout grades = new LinearLayout(this);
+        grades.setOrientation(LinearLayout.VERTICAL);
+        grades.setVisibility(anyEdited ? View.VISIBLE : View.GONE);
+        if (zId <= 0 || anyEdited) {
+            final TextView toggle = text(anyEdited ? "Tüccarın kantarındaki kilolar ▾" : "Tüccarın kantarı farklı çıktı mı? Kiloları düzelt ›",
+                    14, GREEN, true);
+            toggle.setPadding(0, dp(10), 0, dp(4));
+            toggle.setContentDescription("Numara numara teslim kilolarını göster ya da gizle");
+            toggle.setOnClickListener(v -> {
+                boolean show = grades.getVisibility() != View.VISIBLE;
+                grades.setVisibility(show ? View.VISIBLE : View.GONE);
+                toggle.setText(show ? "Tüccarın kantarındaki kilolar ▾" : "Tüccarın kantarı farklı çıktı mı? Kiloları düzelt ›");
+            });
+            box.addView(toggle, margins(-1, -2, 4));
+        }
+        box.addView(grades);
+        grades.addView(text("Farklı çıkan numarayı düzelt (yeşil çerçeve = elle girildi); fire kendiliğinden çıkar.",
+                12, MUTED, false), margins(-1, -2, 2));
 
         // Sütun başlıkları
         LinearLayout hr = new LinearLayout(this);
@@ -265,7 +283,7 @@ public final class TezgahDayActivity extends Activity {
         hr.addView(h3, new LinearLayout.LayoutParams(0, -2, 1.1f));
         TextView h4 = text("Fire", 12, MUTED, true); h4.setGravity(Gravity.END);
         hr.addView(h4, new LinearLayout.LayoutParams(0, -2, 0.8f));
-        box.addView(hr, margins(-1, -2, 12));
+        grades.addView(hr, margins(-1, -2, 10));
 
         final TextView[] fires = new TextView[TezgahClosing.N];
         final android.widget.EditText[] inputs = new android.widget.EditText[TezgahClosing.N];
@@ -310,7 +328,7 @@ public final class TezgahDayActivity extends Activity {
             f.setGravity(Gravity.END);
             fires[g] = f;
             row.addView(f, new LinearLayout.LayoutParams(0, -2, 0.8f));
-            box.addView(row);
+            grades.addView(row);
         }
 
         // Komisyon ve avans
@@ -364,10 +382,14 @@ public final class TezgahDayActivity extends Activity {
 
     private void renderClosingResults(LinearLayout results, TezgahClosing c) {
         results.removeAllViews();
-        resultRow(results, "Teslim", TezgahModel.kg(c.deliveredKg()), TEXT);
-        String fire = TezgahModel.kg(c.fireKg()) + "  (%" + TezgahClosing.oneDecimal(c.firePercent()) + ")"
-                + (Math.abs(c.fireValue()) >= 1 ? "  ≈ " + TezgahModel.tl(c.fireValue()) : "");
-        resultRow(results, "Fire", fire, Math.abs(c.fireKg()) < 0.05 ? MUTED : (c.fireKg() > 0 ? AMBER : GREEN));
+        boolean same = true;
+        for (int g = 0; g < TezgahClosing.N; g++) same &= Math.abs(c.fire(g)) < 0.05;
+        resultRow(results, "Teslim", TezgahModel.kg(c.deliveredKg()) + (same ? " · alınanla aynı" : ""), TEXT);
+        if (!same) {
+            String fire = TezgahModel.kg(c.fireKg()) + "  (%" + TezgahClosing.oneDecimal(c.firePercent()) + ")"
+                    + (Math.abs(c.fireValue()) >= 1 ? "  ≈ " + TezgahModel.tl(c.fireValue()) : "");
+            resultRow(results, "Fire", fire, c.fireKg() > 0 ? AMBER : GREEN);
+        }
         resultRow(results, "Üreticilere tutar", TezgahModel.tl(c.producerTotal), TEXT);
         if (c.producerDue() > 0.5) resultRow(results, "  · üreticilere kalan borç", TezgahModel.tl(c.producerDue()), AMBER);
         resultRow(results, "Komisyon", c.rate > 0 ? TezgahModel.kg(c.deliveredKg()) + " × " + TezgahModel.money(c.rate)
