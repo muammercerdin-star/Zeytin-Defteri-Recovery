@@ -386,25 +386,35 @@ public final class TezgahDayActivity extends Activity {
 
     // ================================================================== Excel
 
-    /** İndirilenler'e .csv yazar (Android 10+ izin istemez); eski sürümde doğrudan paylaşır. */
+    private static final String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+    /**
+     * İndirilenler'e hazır biçimli Excel (.xlsx) yazar (Android 10+ izin istemez).
+     * Eski Android'de ya da yazılamazsa tablo metin (CSV) olarak paylaşılır.
+     */
     private void export(List<TezgahPurchases.Purchase> list) {
         String csv = TezgahPurchases.csv(list);
-        String fileName = "Zeytin-Defteri-Alim-" + iso() + ".csv";
+        String fileName = "Zeytin-Defteri-Alim-" + iso() + ".xlsx";
+        String title = "Alım defteri · " + new SimpleDateFormat("d MMMM yyyy, EEEE", TR).format(day.getTime());
         Uri uri = null;
         if (Build.VERSION.SDK_INT >= 29) {
             try {
+                byte[] data = TezgahXlsx.build(list, title);
                 ContentValues v = new ContentValues();
                 v.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
-                v.put(MediaStore.MediaColumns.MIME_TYPE, "text/csv");
+                v.put(MediaStore.MediaColumns.MIME_TYPE, XLSX);
                 v.put(MediaStore.MediaColumns.RELATIVE_PATH, "Download");
                 uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
                 if (uri != null) {
                     try (OutputStream out = getContentResolver().openOutputStream(uri)) {
                         if (out == null) throw new java.io.IOException("yazılamadı");
-                        out.write(csv.getBytes(StandardCharsets.UTF_8));
+                        out.write(data);
                     }
                 }
             } catch (Exception e) {
+                if (uri != null) {
+                    try { getContentResolver().delete(uri, null, null); } catch (RuntimeException ignored) { }
+                }
                 uri = null;
             }
         }
@@ -423,10 +433,10 @@ public final class TezgahDayActivity extends Activity {
         new AlertDialog.Builder(this)
                 .setTitle("Excel dosyası hazır ✓")
                 .setMessage("İndirilenler klasörüne kaydedildi:\n" + fileName
-                        + "\n\nExcel, Google E-Tablolar ya da WPS ile açılır.")
+                        + "\n\nBiçimli Excel tablosu: toplamlar formülle, ₺ ve kg hazır. Excel, Google E-Tablolar ya da WPS ile açılır.")
                 .setPositiveButton("Paylaş", (d, w) -> {
                     try {
-                        Intent send = new Intent(Intent.ACTION_SEND).setType("text/csv")
+                        Intent send = new Intent(Intent.ACTION_SEND).setType(XLSX)
                                 .putExtra(Intent.EXTRA_STREAM, saved)
                                 .putExtra(Intent.EXTRA_SUBJECT, fileName)
                                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -437,7 +447,7 @@ public final class TezgahDayActivity extends Activity {
                 })
                 .setNeutralButton("Aç", (d, w) -> {
                     try {
-                        startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(saved, "text/csv")
+                        startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(saved, XLSX)
                                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
                     } catch (RuntimeException e) {
                         toast("Açacak uygulama yok; Paylaş ile gönderebilirsin.");
