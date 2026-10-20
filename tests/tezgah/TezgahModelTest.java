@@ -87,6 +87,11 @@ public class TezgahModelTest {
     ok(TezgahModel.suggestedKasa(1,90000,2)==TezgahModel.MAX_KASA,"üst sınır");
     ok(TezgahModel.kasaWarning(1,38,2).contains("Kasa sayısı 2"),"uyarı metni "+TezgahModel.kasaWarning(1,38,2));
     ok(TezgahModel.kasaWarning(2,38,2).isEmpty(),"uyarı yok");
+    TezgahModel av=new TezgahModel();
+    eq(av.averagePrice(),0,"boşta ortalama 0");
+    av.add(0,1,8); av.add(1,1,20); av.add(5,1,10); av.setPrice(0,130); av.setPrice(1,100); av.setPrice(5,20);
+    eq(av.averagePrice(),(6*130+18*100+8*20)/32.0,"ortalama kg fiyatı");
+    ok(av.receipt("x","Satan","","",0).contains("Ortalama: 85,63\u00A0₺/kg"),"fişte ortalama\n"+av.receipt("x","Satan","","",0));
     System.out.println("PASS: "+n+" tezgah hesabı kontrolü");
   }
 }

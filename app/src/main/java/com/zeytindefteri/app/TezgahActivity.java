@@ -164,7 +164,6 @@ public final class TezgahActivity extends Activity {
         body.addView(entryCard(), margins(-1, -2, 8));
         body.addView(weighingsCard(), margins(-1, -2, 8));
         body.addView(summaryCard(), margins(-1, -2, 8));
-        body.addView(dayCard(), margins(-1, -2, 8));
         setContentView(root);
         refreshTotals();
     }
@@ -196,6 +195,20 @@ public final class TezgahActivity extends Activity {
         col.setContentDescription(context + ", değiştir");
         col.setOnClickListener(v -> askSeller(null));
         row.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
+
+        // Bugünkü alımlar: sağ üstte küçük düğme (ayrı kart yer kaplamasın).
+        TezgahPurchases.Day d;
+        try { d = TezgahPurchases.summary(db.getWritableDatabase(), owner, today()); }
+        catch (RuntimeException e) { d = new TezgahPurchases.Day(); }
+        if (d.count > 0) {
+            TextView day = text("Bugün " + d.count + " alım ›", 13, GREEN, true);
+            day.setGravity(Gravity.CENTER);
+            day.setPadding(dp(12), 0, dp(12), 0);
+            day.setBackground(round(CARD, d.remaining() > 0.5 ? AMBER : GREEN_DIM, 18));
+            day.setContentDescription("Bugünkü alımlar: " + TezgahPurchases.dayLine(d));
+            day.setOnClickListener(v -> showDayList());
+            row.addView(day, new LinearLayout.LayoutParams(-2, dp(38)));
+        }
         return row;
     }
 
@@ -254,13 +267,13 @@ public final class TezgahActivity extends Activity {
 
     private View entryCard() {
         LinearLayout box = card();
+        // Etiket satırı: Kasa · Kantar (kg) · Dara (seçili numara üstteki yeşil sekmede ve düğmede yazar).
         LinearLayout headRow = new LinearLayout(this);
         headRow.setGravity(Gravity.CENTER_VERTICAL);
-        entryHead = text("", 12, MUTED, true);
-        entryHead.setLetterSpacing(0.05f);
-        headRow.addView(entryHead, new LinearLayout.LayoutParams(0, -2, 1));
+        headRow.addView(text("Kasa", 12, MUTED, true), new LinearLayout.LayoutParams(dp(158), -2));
+        headRow.addView(text("Kantar (kg)", 12, MUTED, true), new LinearLayout.LayoutParams(0, -2, 1));
         TextView tare = text("Dara " + TezgahModel.kg(model.tare()) + "/kasa ›", 13, GREEN, true);
-        tare.setPadding(dp(8), dp(6), 0, dp(6));
+        tare.setPadding(dp(8), dp(2), 0, dp(4));
         tare.setContentDescription("Kasa darası " + TezgahModel.kg(model.tare()) + ", değiştir");
         tare.setOnClickListener(v -> askTare());
         headRow.addView(tare);
@@ -273,7 +286,6 @@ public final class TezgahActivity extends Activity {
         // Kasa sayısı: − 10 +
         LinearLayout kasaCol = new LinearLayout(this);
         kasaCol.setOrientation(LinearLayout.VERTICAL);
-        kasaCol.addView(text("Kasa", 12, MUTED, true));
         LinearLayout stepper = new LinearLayout(this);
         stepper.setGravity(Gravity.CENTER_VERTICAL);
         TextView minus = stepButton("−");
@@ -303,7 +315,6 @@ public final class TezgahActivity extends Activity {
 
         LinearLayout kgCol = new LinearLayout(this);
         kgCol.setOrientation(LinearLayout.VERTICAL);
-        kgCol.addView(text("Kantar (kg)", 12, MUTED, true));
         kgInput = new EditText(this);
         styleInput(kgInput, 28);
         kgInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
@@ -323,17 +334,18 @@ public final class TezgahActivity extends Activity {
         inputs.addView(kgCol, kgp);
         box.addView(inputs, margins(-1, -2, 2));
 
+        // Yalnız hata/uyarı varken görünür; net kilo düğmenin üstünde yazar.
         netPreview = text("", 14, MUTED, true);
-        netPreview.setSingleLine(true);
-        netPreview.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        box.addView(netPreview, margins(-1, -2, 6));
+        netPreview.setMaxLines(2);
+        box.addView(netPreview, margins(-1, -2, 4));
 
-        TextView add = text("+  Tartımı ekle", 18, BG, true);
+        TextView add = text("", 18, BG, true);
+        addButton = add;
         add.setGravity(Gravity.CENTER);
         add.setBackground(round(GREEN, 0, 14));
         add.setContentDescription("Tartımı ekle");
         add.setOnClickListener(v -> addWeighing());
-        box.addView(add, margins(-1, dp(50), 6));
+        box.addView(add, margins(-1, dp(50), 4));
         updatePreview();
         return box;
     }
@@ -344,12 +356,21 @@ public final class TezgahActivity extends Activity {
         updatePreview();
     }
 
+    private TextView addButton;
+
     private void updatePreview() {
         if (netPreview == null || kgInput == null) return;
         double kg = TezgahModel.parse(kgInput.getText().toString());
+        String grade = TezgahModel.SHORT[this.grade];
+        if (addButton != null) {
+            String what = kasa > 0 ? kasa + " kasa" : "dökme";
+            addButton.setText(kg > 0 && TezgahModel.addError(kasa, kg, model.tare()).isEmpty()
+                    ? "+  " + grade + " · net " + TezgahModel.kg(TezgahModel.net(kasa, kg, model.tare()))
+                    : "+  " + grade + " tartımı ekle (" + what + ")");
+        }
+        netPreview.setVisibility(View.VISIBLE);
         if (kg <= 0) {
-            netPreview.setTextColor(MUTED);
-            netPreview.setText(kasa > 0 ? kasa + " kasa · dara " + TezgahModel.kg(kasa * model.tare()) : "Dökme (kasasız)");
+            netPreview.setVisibility(View.GONE);
             return;
         }
         String err = TezgahModel.addError(kasa, kg, model.tare());
@@ -361,8 +382,7 @@ public final class TezgahActivity extends Activity {
             netPreview.setText("⚠ " + kasa + " kasaya " + TezgahModel.kg(kg) + " fazla. "
                     + TezgahModel.suggestedKasa(kasa, kg, model.tare()) + " kasa mı?");
         } else {
-            netPreview.setTextColor(GREEN);
-            netPreview.setText("Net: " + TezgahModel.kg(TezgahModel.net(kasa, kg, model.tare())));
+            netPreview.setVisibility(View.GONE);
         }
     }
 
@@ -430,7 +450,7 @@ public final class TezgahActivity extends Activity {
         }
         LinearLayout headRow = new LinearLayout(this);
         headRow.setGravity(Gravity.CENTER_VERTICAL);
-        headRow.setMinimumHeight(dp(30));
+        headRow.setMinimumHeight(dp(26));
         headRow.addView(text(TezgahModel.LABELS[grade] + " · " + count + " tartım", 14, TEXT, true),
                 new LinearLayout.LayoutParams(0, -2, 1));
         TextView sumText = text(model.gradeKasa(grade) + " kasa · net " + TezgahModel.kg(model.gradeNet(grade)), 14, GREEN, true);
@@ -438,7 +458,7 @@ public final class TezgahActivity extends Activity {
         headRow.addView(sumText);
         box.addView(headRow);
         int n = 0, shown = 0;
-        int limit = showAllWeighings ? Integer.MAX_VALUE : 3;
+        int limit = showAllWeighings ? Integer.MAX_VALUE : 2;
         for (int i = all.size() - 1; i >= 0; i--) {
             final TezgahModel.Weighing w = all.get(i);
             if (w.grade != grade) continue;
@@ -448,7 +468,7 @@ public final class TezgahActivity extends Activity {
             final int index = i;
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setMinimumHeight(dp(36));
+            row.setMinimumHeight(dp(32));
             TextView t = text(model.line(w), 15, TEXT, false);
             row.addView(t, new LinearLayout.LayoutParams(0, -2, 1));
             TextView del = text("✕", 18, MUTED, true);
@@ -464,7 +484,7 @@ public final class TezgahActivity extends Activity {
                     })
                     .setNegativeButton("Vazgeç", null)
                     .show());
-            row.addView(del, new LinearLayout.LayoutParams(dp(40), dp(36)));
+            row.addView(del, new LinearLayout.LayoutParams(dp(40), dp(32)));
             box.addView(divider());
             box.addView(row);
         }
@@ -509,7 +529,7 @@ public final class TezgahActivity extends Activity {
             double net = model.gradeNet(g);
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setMinimumHeight(dp(34));
+            row.setMinimumHeight(dp(29));
             TextView name = text(TezgahModel.LABELS[g], 14, net > 0 ? TEXT : MUTED, true);
             row.addView(name, new LinearLayout.LayoutParams(0, -2, 1.1f));
             TextView kg = text(net > 0 ? shortKg(net) + "  " + TezgahModel.percent(model.share(g)) : "—", 14, net > 0 ? TEXT : MUTED, false);
@@ -540,25 +560,6 @@ public final class TezgahActivity extends Activity {
         return box;
     }
 
-    private View dayCard() {
-        LinearLayout box = card();
-        box.setOrientation(LinearLayout.HORIZONTAL);
-        box.setGravity(Gravity.CENTER_VERTICAL);
-        box.setMinimumHeight(dp(56));
-        TezgahPurchases.Day d;
-        try { d = TezgahPurchases.summary(db.getWritableDatabase(), owner, today()); }
-        catch (RuntimeException e) { d = new TezgahPurchases.Day(); }
-        LinearLayout col = new LinearLayout(this);
-        col.setOrientation(LinearLayout.VERTICAL);
-        col.addView(text("BUGÜNKÜ ALIMLAR", 12, MUTED, true));
-        col.addView(text(TezgahPurchases.dayLine(d), 15, TEXT, true));
-        box.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
-        if (d.count > 0) box.addView(text("›", 24, GREEN, true));
-        final int count = d.count;
-        box.setOnClickListener(v -> { if (count > 0) showDayList(); });
-        return box;
-    }
-
     private View bottomBar() {
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
@@ -586,9 +587,11 @@ public final class TezgahActivity extends Activity {
     private void refreshTotals() {
         if (totalView == null) return;
         boolean empty = model.isEmpty();
-        totalSub.setText("ÖDEYECEĞİN");
+        double avg = model.averagePrice();
+        totalSub.setText(avg > 0 ? "ÖDEYECEĞİN · ort. " + TezgahModel.money(avg) + "/kg" : "ÖDEYECEĞİN");
         totalView.setText(TezgahModel.tl(model.total()));
-        totalView.setContentDescription("Ödeyeceğin " + TezgahModel.tl(model.total()));
+        totalView.setContentDescription("Ödeyeceğin " + TezgahModel.tl(model.total())
+                + (avg > 0 ? ", kilo başı ortalama " + TezgahModel.money(avg) : ""));
         finishButton.setEnabled(!empty);
         finishButton.setBackground(round(empty ? LINE : GREEN, 0, 18));
         finishButton.setTextColor(empty ? MUTED : BG);
@@ -793,10 +796,11 @@ public final class TezgahActivity extends Activity {
             TezgahPurchases.Purchase p = list.get(i);
             rows[i] = hm.format(new Date(p.createdAt)) + " · " + (p.seller.isEmpty() ? "Adsız" : p.seller) + "\n"
                     + TezgahModel.kg(p.kg) + " · " + TezgahModel.tl(p.gross)
+                    + (p.kg > 0 ? " · ort. " + TezgahModel.money(p.gross / p.kg) : "")
                     + (p.remaining() > 0.5 ? " · " + TezgahModel.tl(p.remaining()) + " borç" : " · ödendi");
         }
         new AlertDialog.Builder(this)
-                .setTitle("Bugünkü alımlar")
+                .setTitle("Bugün: " + TezgahPurchases.dayLine(TezgahPurchases.summary(db.getWritableDatabase(), owner, today())))
                 .setItems(rows, (d, i) -> purchaseActions(list.get(i)))
                 .setNegativeButton("Kapat", null)
                 .show();

@@ -161,6 +161,12 @@ public final class TezgahModel {
         return Math.round(sum * 100) / 100.0;
     }
 
+    /** Ortalama kilo fiyatı: toplam tutar / net kilo (tartım yoksa 0). */
+    public double averagePrice() {
+        double n = totalNet();
+        return n <= 0 ? 0 : total() / n;
+    }
+
     /** Numara payı (yüzde, 0–100). */
     public double share(int grade) {
         double all = totalNet();
@@ -214,6 +220,7 @@ public final class TezgahModel {
                 .append(" · Dara: ").append(kg(totalTare())).append('\n');
         sb.append("Net: ").append(kg(totalNet())).append('\n');
         sb.append("TOPLAM: ").append(tl(total())).append('\n');
+        if (averagePrice() > 0) sb.append("Ortalama: ").append(money(averagePrice())).append("/kg").append('\n');
         double t = total();
         if (paid > 0.009 && paid < t - 0.009) {
             sb.append("Ödenen: ").append(tl(paid)).append(" · Kalan: ").append(tl(t - paid)).append('\n');
@@ -337,6 +344,7 @@ public final class TezgahModel {
         NumberFormat nf = NumberFormat.getNumberInstance(TR);
         nf.setMaximumFractionDigits(2);
         nf.setMinimumFractionDigits(0);
+        nf.setRoundingMode(java.math.RoundingMode.HALF_UP);
         return nf.format(v) + " ₺";
     }
 
