@@ -1638,6 +1638,10 @@ public class ElekActivity extends Activity {
         );
 
 
+        // Tüccarın tezgah fişi QR'ı: okutunca kilolar, fiyatlar, tarih, alıcı ve ödeme forma dolar.
+        findViewById(R.id.btnElekQr).setOnClickListener(view -> TezgahQrUi.scan(this, this::applyTezgahQr,
+                message -> Toast.makeText(this, message, Toast.LENGTH_LONG).show()));
+
         // ========================================================
         // TÜM ELEK KAYITLARI
         // ========================================================
@@ -2408,6 +2412,13 @@ public class ElekActivity extends Activity {
 
 
             clearKgFields();
+            if (qrPricesActive) {
+                // QR'daki tüccar fiyatları yalnız o kayıt içindi: kendi kayıtlı fiyatlarına dön.
+                qrPricesActive = false;
+                loadSavedPrices();
+                updatePriceLabels();
+                calculateAll();
+            }
 
 
             // Yeni kayıt sonrası arşivi anında yenile
@@ -2906,6 +2917,47 @@ public class ElekActivity extends Activity {
             }
             chips[i].setOnClickListener(view -> openPriceEditor(index));
         }
+    }
+
+    /** QR'dan gelen fiyatlar yalnız bu kayıt için; kaydettikten sonra kendi fiyatların geri gelir. */
+    private boolean qrPricesActive;
+
+    private void applyTezgahQr(String raw) {
+        TezgahQr.Slip slip = TezgahQr.decode(raw);
+        if (slip == null) {
+            Toast.makeText(this, "Bu bir Zeytin Defteri tezgah fişi değil.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        try {
+            java.util.Date date = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(slip.date);
+            if (date != null) {
+                recordDateIso = slip.date;
+                tvElekDate.setText(new SimpleDateFormat("d MMMM yyyy", turkishLocale).format(date));
+            }
+        } catch (Exception ignored) {
+            // Tarih okunamazsa bugünkü tarih kalır.
+        }
+        priceDouble = slip.price[0];
+        price1 = slip.price[1];
+        price2 = slip.price[2];
+        price3 = slip.price[3];
+        price4 = slip.price[4];
+        priceOil = slip.price[5];
+        qrPricesActive = true;
+        updatePriceLabels();
+        EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
+        for (int i = 0; i < kg.length; i++) kg[i].setText(TezgahQr.field(slip.kg[i]));
+        saleOnSave = true;
+        salePay = slip.payChoice();
+        if (etSalePartial != null) {
+            etSalePartial.setText(salePay == ElekSaleModel.PAY_PART ? TezgahQr.field(slip.paid) : "");
+        }
+        if (etSaleBuyer != null) etSaleBuyer.setText(slip.buyer);
+        renderSaleOnSave();
+        calculateAll();
+        refreshElekInsights();
+        Toast.makeText(this, "Tezgah fişi okundu: " + TezgahModel.kg(slip.totalKg()) + " · "
+                + TezgahModel.tl(slip.total()) + ". Bahçeyi kontrol edip Kaydet'e bas.", Toast.LENGTH_LONG).show();
     }
 
     private void openPriceEditor(int index) {

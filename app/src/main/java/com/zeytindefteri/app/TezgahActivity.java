@@ -723,8 +723,8 @@ public final class TezgahActivity extends Activity {
                 .setTitle("Toplam " + TezgahModel.tl(total) + " · " + TezgahModel.kg(model.totalNet()))
                 .setView(form)
                 .setNegativeButton("Vazgeç", null)
-                .setPositiveButton("Kaydet + WhatsApp", null)
-                .setNeutralButton("Yalnız kaydet", null);
+                .setPositiveButton("Kaydet + QR", null)
+                .setNeutralButton("Kaydet + WhatsApp", null);
         final AlertDialog dialog = b.create();
         dialog.setOnShowListener(x -> {
             View.OnClickListener go = v -> {
@@ -732,9 +732,9 @@ public final class TezgahActivity extends Activity {
                 String err = ElekSaleModel.partialError(pay[0], total, part);
                 if (!err.isEmpty()) { partial.setError(err); return; }
                 double paid = ElekSaleModel.received(pay[0], total, part);
-                boolean share = v == dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+                boolean qr = v == dialog.getButton(AlertDialog.BUTTON_POSITIVE);
                 dialog.dismiss();
-                savePurchase(paid, share);
+                savePurchase(paid, qr);
             };
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(go);
             View neutral = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
@@ -745,8 +745,11 @@ public final class TezgahActivity extends Activity {
     }
 
     /** Tüccar: alım fişini kaydet, istenirse WhatsApp'tan gönder, tezgahı sonraki üretici için sıfırla. */
-    private void savePurchase(double paid, boolean share) {
+    /** qr=true: kaydettikten sonra QR gösterilir (üretici Elek'te okutur); false: fiş WhatsApp'a gider. */
+    private void savePurchase(double paid, boolean qr) {
         String text = model.receipt("Zeytin alım fişi", "Satan", seller, displayDate(), paid);
+        final TezgahModel saved = TezgahModel.decode(model.encode());
+        final String savedSeller = seller;
         long id;
         try {
             id = TezgahPurchases.add(db.getWritableDatabase(), owner, today(), seller, sellerPhone, model, paid,
@@ -763,7 +766,60 @@ public final class TezgahActivity extends Activity {
         saveDraft();
         build();
         toast("Alım kaydedildi ✓ Sıradaki üretici için tezgah hazır.");
-        if (share) shareText(text, phone);
+        if (qr) showQr(saved, today(), savedSeller, paid, text, phone);
+        else shareText(text, phone);
+    }
+
+    /** Tüccarın görünen adı (QR'da üreticinin "alıcı" alanına girer). */
+    private String traderName() {
+        try {
+            com.google.firebase.auth.FirebaseUser u = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            String n = u == null ? null : u.getDisplayName();
+            return n == null ? "" : n.trim();
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
+    /**
+     * Büyük QR: üretici kendi telefonunda Elek kaydı → "QR okut" ile okutur; kilolar, fiyatlar, tarih,
+     * alıcı (tüccarın adı) ve ödeme durumu forma kendiliğinden dolar. Ekran parlaklığı geçici olarak artar.
+     */
+    private void showQr(TezgahModel m, String date, String sellerName, double paid, String text, String phone) {
+        String payload = TezgahQr.encode(m, date, traderName(), paid);
+        int size = Math.min(getResources().getDisplayMetrics().widthPixels - dp(80), dp(320));
+        android.graphics.Bitmap bmp = TezgahQrUi.bitmap(payload, size);
+        if (bmp == null) { toast("QR oluşturulamadı; fişi WhatsApp'tan gönder."); shareText(text, phone); return; }
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER_HORIZONTAL);
+        box.setPadding(dp(16), dp(12), dp(16), dp(4));
+        ImageView img = new ImageView(this);
+        img.setImageBitmap(bmp);
+        img.setBackgroundColor(Color.WHITE);
+        img.setContentDescription("Alım fişi QR kodu");
+        box.addView(img, new LinearLayout.LayoutParams(size, size));
+        TextView info = new TextView(this);
+        info.setText((sellerName.isEmpty() ? "" : sellerName + " · ") + TezgahModel.kg(m.totalNet()) + " · "
+                + TezgahModel.tl(m.total()) + "\nÜretici: Elek kaydı → \"QR okut\"");
+        info.setGravity(Gravity.CENTER);
+        info.setTextSize(15);
+        info.setPadding(0, dp(10), 0, 0);
+        box.addView(info);
+        AlertDialog d = new AlertDialog.Builder(this)
+                .setTitle("Üretici okutsun")
+                .setView(box)
+                .setPositiveButton("Bitti", null)
+                .setNeutralButton("WhatsApp'a da gönder", (x, y) -> shareText(text, phone))
+                .create();
+        d.setOnShowListener(x -> {
+            if (d.getWindow() != null) {
+                WindowManager.LayoutParams lp = d.getWindow().getAttributes();
+                lp.screenBrightness = 1f;
+                d.getWindow().setAttributes(lp);
+            }
+        });
+        d.show();
     }
 
     private void shareText(String text, String phone) {
@@ -809,13 +865,16 @@ public final class TezgahActivity extends Activity {
     private void purchaseActions(final TezgahPurchases.Purchase p) {
         final TezgahModel m = TezgahModel.decode(p.data);
         String[] actions = p.remaining() > 0.5
-                ? new String[]{"Fişi gönder", "Kalan borcu ödedim", "Sil"}
-                : new String[]{"Fişi gönder", "Sil"};
+                ? new String[]{"QR göster", "Fişi gönder", "Kalan borcu ödedim", "Sil"}
+                : new String[]{"QR göster", "Fişi gönder", "Sil"};
         new AlertDialog.Builder(this)
                 .setTitle((p.seller.isEmpty() ? "Adsız" : p.seller) + " · " + TezgahModel.tl(p.gross))
                 .setItems(actions, (d, i) -> {
                     String a = actions[i];
-                    if (a.startsWith("Fişi")) {
+                    if (a.startsWith("QR")) {
+                        showQr(m, p.date, p.seller, p.paid,
+                                m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid), p.phone);
+                    } else if (a.startsWith("Fişi")) {
                         shareText(m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid), p.phone);
                     } else if (a.startsWith("Kalan")) {
                         TezgahPurchases.setPaid(db.getWritableDatabase(), owner, p.id, p.gross);
