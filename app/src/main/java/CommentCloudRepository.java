@@ -167,7 +167,7 @@ public final class CommentCloudRepository {
         }
         long id = db.upsertPostCommentFromCloud(post, doc.getId(), value(doc,"user_id"),
                 value(doc,"user_name"), value(doc,"content"),
-                doc.contains("is_active") ? (int) numeric(doc,"is_active") : 1,
+                cloudRemoved(doc) ? 0 : 1,
                 numeric(doc,"created_at"), numeric(doc,"updated_at"),
                 value(doc,"parent_comment_id"), value(doc,"root_comment_id"),
                 value(doc,"reply_to_uid"), value(doc,"reply_to_name"));
@@ -178,8 +178,12 @@ public final class CommentCloudRepository {
                     new String[]{String.valueOf(id)});
         }
     }
+    /** Bulutta kapatılmış (sahibi sildi) ya da moderasyonla gizlenmiş (HIDDEN / 3+ şikâyet) yanıt. */
     private static boolean cloudRemoved(DocumentSnapshot doc) {
-        return doc.contains("is_active") && numeric(doc, "is_active") == 0;
+        if (doc.contains("is_active") && numeric(doc, "is_active") == 0) return true;
+        return !com.zeytindefteri.app.MeydanModeration.commentVisible(
+                com.zeytindefteri.app.MeydanModeration.status(doc.get("status")),
+                com.zeytindefteri.app.MeydanModeration.reports(doc.get("report_count")));
     }
     public void stop() {
         generation++;

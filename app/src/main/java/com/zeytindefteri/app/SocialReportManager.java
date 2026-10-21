@@ -111,6 +111,7 @@ public final class SocialReportManager {
                 if (!task.isSuccessful()) {
                     message(activity, "Şikâyet gönderilemedi. İnternet bağlantınızı kontrol edin; içerik kaldırılmış da olabilir.");
                 } else if (Boolean.TRUE.equals(task.getResult())) {
+                    flagContent(firestore, reporter, target, reason);
                     message(activity, "Şikâyetiniz alındı. İnceleme için teşekkür ederiz.");
                 } else {
                     message(activity, "Bu hedefi daha önce şikâyet ettiniz.");
@@ -120,6 +121,44 @@ public final class SocialReportManager {
             handler.removeCallbacks(timeout); finished[0] = true;
             if (!activity.isDestroyed()) progress.dismiss();
             message(activity, "Şikâyet gönderilemedi. Lütfen tekrar deneyin.");
+        }
+    }
+
+    /**
+     * Moderasyon kuyruğu: içeriğin şikâyet sayacı 1 artar, mod_flags kaydı açılır/güncellenir (kişi başı bir kez;
+     * firestore.rules). 3 farklı şikâyette içerik moderatör bakana kadar herkesten gizlenir. Kullanıcı şikâyeti
+     * (USER) yalnız eski rapor akışına gider. Hata sessizdir: asıl şikâyet kaydı zaten alınmıştır.
+     */
+    private static void flagContent(FirebaseFirestore fs, String reporter, SocialReportTarget target, String reason) {
+        if ("USER".equals(target.type)) return;
+        boolean post = "POST".equals(target.type);
+        String flagId = post ? "P_" + target.postId : "C_" + target.postId + "_" + target.commentId;
+        try {
+            DocumentReference flag = fs.collection("mod_flags").document(flagId);
+            DocumentReference me = flag.collection("reporters").document(reporter);
+            DocumentReference content = post
+                    ? fs.collection("social_posts").document(target.postId)
+                    : fs.collection("social_posts").document(target.postId).collection("comments").document(target.commentId);
+            Map<String, Object> mine = new HashMap<>();
+            mine.put("created_at", FieldValue.serverTimestamp());
+            mine.put("reason", reason);
+            Map<String, Object> f = new HashMap<>();
+            f.put("target_type", post ? "POST" : "COMMENT");
+            f.put("post_cloud_id", target.postId);
+            f.put("comment_cloud_id", target.commentId);
+            f.put("reported_uid", target.ownerUid);
+            f.put("preview", "");
+            f.put("count", FieldValue.increment(1));
+            f.put("status", "OPEN");
+            f.put("updated_at", System.currentTimeMillis());
+            f.put("last_reason", reason);
+            fs.batch()
+                    .set(me, mine)
+                    .set(flag, f, com.google.firebase.firestore.SetOptions.merge())
+                    .update(content, "report_count", FieldValue.increment(1))
+                    .commit();
+        } catch (RuntimeException ignored) {
+            // Kuyruk kaydı yazılamazsa asıl şikâyet yine moderasyona ulaşır.
         }
     }
 

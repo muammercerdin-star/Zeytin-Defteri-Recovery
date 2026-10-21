@@ -305,6 +305,8 @@ public class ProducerFeedActivity extends Activity {
         socialBlocks = new SocialBlockRepository(this);
         socialBlocks.start(fresh -> { if (!isFinishing() && !isDestroyed()) loadFeed(); });
         PushRegistration.requestPermission(this);
+        // Moderatörlük ve susturma bilgisini tazele (Sohbet'te yazmadan önce kullanılır).
+        ChatGuard.refresh(this);
 
         // Maliyet: canlı dinleme yalnız Sohbet sekmesi açıkken (diğer sekmelerde bulut okunmaz).
         if (cloudRepository != null && "MEYDAN".equals(currentSection)) {
@@ -1068,6 +1070,8 @@ public class ProducerFeedActivity extends Activity {
         if (firebaseAuth == null || firebaseAuth.getCurrentUser() == null) {
             Toast.makeText(this, "Paylaşmak için giriş yapmalısın.", Toast.LENGTH_SHORT).show(); return;
         }
+        // Moderasyon: küfür filtresi ve susturma (gönderilmeden, telefonda).
+        if (!ChatGuard.allow(this, messageInput, text)) return;
         publishingText = true; send.setEnabled(false);
         if (chatTyping != null) chatTyping.clear();
         long id;
@@ -1254,6 +1258,20 @@ public class ProducerFeedActivity extends Activity {
 
 
         if (socialBlocks == null || !socialBlocks.isCurrent()) return;
+
+        // Moderatöre: onay ve şikâyet kuyruğu girişi (yetki sunucuda da denetlenir).
+        if (ChatGuard.isModerator(this)) {
+            TextView mod = text("🛡  Moderasyon kuyruğu  ›", 15, GREEN, true);
+            mod.setGravity(Gravity.CENTER_VERTICAL);
+            mod.setPadding(dp(16), 0, dp(16), 0);
+            mod.setMinHeight(dp(48));
+            mod.setBackground(round(CARD, 18, GREEN));
+            mod.setContentDescription("Moderasyon kuyruğunu aç: onay bekleyen ve şikâyet edilen mesajlar");
+            mod.setOnClickListener(v -> startActivity(new Intent(this, MeydanModerationActivity.class)));
+            LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(-1, -2);
+            mp.bottomMargin = dp(10);
+            feedContainer.addView(mod, mp);
+        }
 
         List<FeedManager.PostItem> source =
                 feedManager.getLatestVisiblePosts(100, socialBlocks.blockedIds());
@@ -1477,6 +1495,11 @@ public class ProducerFeedActivity extends Activity {
                 && uid.equals(firebaseAuth.getCurrentUser().getUid());
         // Kendi mesajı buluta henüz ulaşmadıysa (sync_state=1) diğer üreticiler onu görmüyor demektir.
         if (own && p.syncState == MeydanPostSync.PENDING) meta = meta.isEmpty() ? "Gönderiliyor…" : meta + " · Gönderiliyor…";
+        // Yeni üyenin onay bekleyen mesajı: yalnız sahibi görür, etiketle.
+        if (own && p.syncState != MeydanPostSync.PENDING) {
+            String label = MeydanModeration.ownerLabel(ChatGuard.knownStatus(this, p.cloudId));
+            if (!label.isEmpty()) meta = meta.isEmpty() ? "⏳ " + label : meta + " · ⏳ " + label;
+        }
         TextView metadata = text(meta, 12, MUTED, false);
         metadata.setSingleLine(true);
         metadata.setEllipsize(TextUtils.TruncateAt.END);

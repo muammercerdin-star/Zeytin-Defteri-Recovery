@@ -174,6 +174,8 @@ public final class PostRepliesActivity extends Activity {
             if (sending) return;
             String text = input.getText().toString().trim();
             if (text.isEmpty()) { input.setError("Bir yanıt yazmalısın."); return; }
+            // Moderasyon: küfür filtresi ve susturma (gönderilmeden, telefonda).
+            if (!ChatGuard.allow(this, input, text)) return;
             sending = true; send.setEnabled(false);
             long id = comments.add(postId,text,selectedParentCommentId);
             if (id > 0) {

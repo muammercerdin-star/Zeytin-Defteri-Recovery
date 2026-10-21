@@ -33,7 +33,10 @@ Aşağıdakiler yasaktır:
 - Reklam, istenmeyen toplu mesaj, dolandırıcılık ve yanıltıcı içerik paylaşma.
 - Hukuka aykırı ürün veya hizmet teklif etme.
 - Paylaştığın içeriklerin sorumluluğu sana aittir. Uygun olmayan içerikleri ve kullanıcıları şikâyet edebilir veya engelleyebilirsin.
-- Şikâyet edilen içerikler moderatörler tarafından incelenir; kurallara aykırı içerikler kaldırılabilir.
+- Küfür ve hakaret içeren mesajlar gönderilmeden telefonda engellenir.
+- Yeni üyelerin ilk 3 mesajı, moderatör onayından sonra herkese görünür.
+- Şikâyet edilen içerikler moderatörler tarafından incelenir; 3 farklı kullanıcının şikâyet ettiği içerik inceleme bitene kadar gizlenir. Kurallara aykırı içerikler kaldırılabilir.
+- Kuralları tekrar ihlal eden kullanıcılar Meydan'da belirli bir süre ya da süresiz yazamayabilir (susturma).
 
 # 6. Hesabın askıya alınması ve silinmesi
 - Bu koşulları veya topluluk kurallarını ihlal eden hesapların içerikleri kaldırılabilir, topluluk özellikleri kısıtlanabilir veya hesap askıya alınabilir. Ciddi veya tekrarlanan ihlallerde hesap kapatılabilir.

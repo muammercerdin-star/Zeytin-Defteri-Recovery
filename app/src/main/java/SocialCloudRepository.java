@@ -129,6 +129,9 @@ public class SocialCloudRepository {
     // CONSTRUCTOR
     // ============================================================
 
+    /** Moderasyon durumu önbelleği için (ChatGuard); null olabilir. */
+    private final Context appContext;
+
     public SocialCloudRepository(
             Context context,
             DatabaseHelper databaseHelper
@@ -144,6 +147,7 @@ public class SocialCloudRepository {
 
         this.databaseHelper =
                 databaseHelper;
+        this.appContext = context == null ? null : context.getApplicationContext();
 
 
         this.auth =
@@ -376,6 +380,13 @@ public class SocialCloudRepository {
                     "is_real_sale",
                     0
             );
+
+            // Moderasyon: yeni üyenin ilk gönderileri onaya düşer (PENDING). Durum yalnız ilk yazımda gönderilir;
+            // sonra moderatör değiştirir ve kurallar yazarın bu alanı değiştirmesine izin vermez.
+            if (appContext != null) {
+                String status = com.zeytindefteri.app.ChatGuard.firstStatus(appContext, cloudId);
+                if (status != null) data.put("status", status);
+            }
 
 
             data.put(
@@ -659,6 +670,16 @@ public class SocialCloudRepository {
         // olan gönderi (silinmiş ya da gönderilmekte olan) ezilmez: eskiden upsert is_active=1 yazıp
         // silinen gönderiyi diriltiyordu; canlı akış ise gönderilen mesajın onaylanmamış yankısını
         // okuyup updated_at'i değiştiriyor, onay kaydı eşleyemiyor ve mesaj "Gönderiliyor…" kalıyordu.
+        // Moderasyon: gizlenen, 3+ şikâyet alan ya da başkasının onay bekleyen gönderisi telefonda gösterilmez.
+        String modStatus = com.zeytindefteri.app.MeydanModeration.status(document.get("status"));
+        int modReports = com.zeytindefteri.app.MeydanModeration.reports(document.get("report_count"));
+        String me = auth.getCurrentUser() == null ? "" : auth.getCurrentUser().getUid();
+        boolean mine = !me.isEmpty() && me.equals(value(document, "user_id", ""));
+        if (mine && appContext != null) com.zeytindefteri.app.ChatGuard.rememberStatus(appContext, cloudId, modStatus);
+        if (!com.zeytindefteri.app.MeydanModeration.visible(modStatus, modReports, mine)) {
+            databaseHelper.deactivatePostsFromCloud(java.util.Collections.singletonList(cloudId));
+            return;
+        }
         MeydanPostSync.Action action = MeydanPostSync.importAction(
                 MeydanPostSync.cloudActive(document.get("is_active")),
                 databaseHelper.isPostLocalChangePending(cloudId));

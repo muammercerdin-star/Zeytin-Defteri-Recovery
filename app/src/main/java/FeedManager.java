@@ -118,6 +118,8 @@ public class FeedManager {
 
         /** 1: buluta henüz ulaşmadı (yazma/silme bekliyor), 2: senkron. */
         public int syncState = 2;
+        /** Bulut kimliği (moderasyon etiketi için). */
+        public String cloudId = "";
 
         public long createdAt;
         public long updatedAt;
@@ -1551,6 +1553,12 @@ public class FeedManager {
                 getString(
                         cursor,
                         "user_id",
+                        ""
+                );
+        item.cloudId =
+                getString(
+                        cursor,
+                        "cloud_id",
                         ""
                 );
 

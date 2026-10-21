@@ -1,6 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ---- Moderasyon (ücretsiz plan: bulut fonksiyonu yok, yetki kurallarla) ----
+    // Moderatör: eski özel yetki (moderation_admin) ya da Firebase konsolundan açılan zd_moderators/{uid} kaydı.
+    function isMod() {
+      return request.auth != null
+        && (request.auth.token.get('moderation_admin', false) == true
+            || exists(/databases/$(database)/documents/zd_moderators/$(request.auth.uid)));
+    }
+    // Susturulan kullanıcı süresi bitene kadar gönderi/yanıt yazamaz.
+    function notMuted() {
+      let p = /databases/$(database)/documents/social_mutes/$(request.auth.uid);
+      return !exists(p) || get(p).data.until < request.time.toMillis();
+    }
+    function modKeys() { return ['status','report_count','moderated_by','moderated_at']; }
+
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
       match /devices/{deviceId} {
@@ -37,7 +51,7 @@ service cloud.firestore {
       function postFields() {
         return ['cloud_id','user_id','user_name','province','district','neighborhood','garden_name',
                 'variety','post_type','content','is_real_sale','sale_grade','sale_kg','sale_price',
-                'created_at','updated_at','is_active'];
+                'created_at','updated_at','is_active','status','report_count','moderated_by','moderated_at'];
       }
       function postTypes() {
         return ['GENERAL','QUESTION','GARDEN','PEST','IRRIGATION','FERTILIZER','SPRAY','HARVEST','MARKET','SALE'];
@@ -68,8 +82,13 @@ service cloud.firestore {
           && (!('sale_kg' in keys) || (d.sale_kg is number && d.sale_kg >= 0 && d.sale_kg <= 1000000000))
           && (!('sale_price' in keys) || (d.sale_price is number && d.sale_price >= 0 && d.sale_price <= 10000000))
           && (!('updated_at' in keys) || notInFuture(d.updated_at))
-          && (!('is_active' in keys) || d.is_active in [0, 1]);
+          && (!('is_active' in keys) || d.is_active in [0, 1])
+          // Yazar yalnız ilk yazımda durum seçer: yeni üyenin ilk mesajları PENDING (onay bekler).
+          && (!('status' in keys) || d.status in ['PENDING', 'ACTIVE'])
+          && (!('report_count' in keys) || d.report_count == 0)
+          && !('moderated_by' in keys) && !('moderated_at' in keys);
       }
+      function postFlag() { return /databases/$(database)/documents/mod_flags/$('P_' + postId)/reporters/$(request.auth.uid); }
       allow read: if request.auth != null;
       allow create: if request.auth != null
                     && request.resource.data.keys().hasAll(['cloud_id','user_id','user_name','post_type',
@@ -78,12 +97,15 @@ service cloud.firestore {
                     && request.resource.data.user_id == request.auth.uid
                     && request.resource.data.cloud_id == postId
                     && notInFuture(request.resource.data.created_at)
+                    && notMuted()
                     && validPostFields(request.resource.data, request.resource.data.keys());
       allow update: if request.auth != null
                     && resource.data.user_id == request.auth.uid
                     // Moderatörün kaldırdığı gönderiyi sahibi yeniden açamaz ve değiştiremez.
                     && resource.data.get('moderated_by', '') == ''
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(postFields())
+                    // Yazar kendi mesajını onaylayamaz, şikâyet sayacını değiştiremez.
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(modKeys())
                     // Sahip hiçbir zaman değişmez; kimlik ve oluşturma zamanı eski belgede yoksa bir kez eklenebilir.
                     && !('user_id' in request.resource.data.diff(resource.data).affectedKeys())
                     && (!('cloud_id' in request.resource.data.diff(resource.data).affectedKeys())
@@ -91,10 +113,24 @@ service cloud.firestore {
                     && (!('created_at' in request.resource.data.diff(resource.data).affectedKeys())
                         || (!('created_at' in resource.data) && notInFuture(request.resource.data.created_at)))
                     && validPostFields(request.resource.data, request.resource.data.diff(resource.data).affectedKeys());
+      // Moderatör: onaylar (ACTIVE, sayaç sıfır) ya da gizler (HIDDEN + moderated_by).
+      allow update: if isMod()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(modKeys())
+                    && request.resource.data.get('status', 'ACTIVE') in ['ACTIVE', 'HIDDEN']
+                    && request.resource.data.get('report_count', 0) is int
+                    && request.resource.data.get('moderated_by', request.auth.uid) == request.auth.uid;
+      // Şikâyet eden: sayaç tam 1 artar ve aynı toplu yazımda kendi şikâyet kaydı ilk kez oluşur (kişi başı bir kez).
+      allow update: if request.auth != null && resource.data.user_id != request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['report_count'])
+                    && request.resource.data.report_count == resource.data.get('report_count', 0) + 1
+                    && existsAfter(postFlag()) && !exists(postFlag());
       // Delete has no request.resource; checking it used to reject every deletion.
       allow delete: if request.auth != null && resource.data.user_id == request.auth.uid;
 
       match /comments/{commentId} {
+        function commentFlag() {
+          return /databases/$(database)/documents/mod_flags/$('C_' + postId + '_' + commentId)/reporters/$(request.auth.uid);
+        }
         function signedIn() { return request.auth != null; }
         // Optional fields preserve legacy root documents without rewriting them.
         function validThreadFields(d) {
@@ -135,7 +171,8 @@ service cloud.firestore {
                                   'content','is_active','created_at','updated_at'])
             && d.keys().hasOnly(['cloud_id','post_cloud_id','user_id','user_name',
                                 'content','is_active','created_at','updated_at',
-                                'parent_comment_id','root_comment_id','reply_to_uid','reply_to_name'])
+                                'parent_comment_id','root_comment_id','reply_to_uid','reply_to_name',
+                                'status','report_count','moderated_by','moderated_at'])
             && validThreadFields(d)
             && d.cloud_id == commentId
             && d.post_cloud_id == postId
@@ -149,13 +186,25 @@ service cloud.firestore {
         }
         allow read: if signedIn();
         allow create: if signedIn() && validComment() && validParent(request.resource.data)
+          && notMuted()
+          && !request.resource.data.keys().hasAny(modKeys())
           && exists(/databases/$(database)/documents/social_posts/$(postId));
         // Soft deletion is a durable tombstone so offline readers learn about it.
         allow update: if signedIn() && resource.data.user_id == request.auth.uid
           && resource.data.get('moderated_by', '') == ''
           && validComment() && sameThread()
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(modKeys())
           && request.resource.data.user_id == resource.data.user_id
           && request.resource.data.created_at == resource.data.created_at;
+        allow update: if isMod()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(modKeys())
+          && request.resource.data.get('status', 'ACTIVE') in ['ACTIVE', 'HIDDEN']
+          && request.resource.data.get('report_count', 0) is int
+          && request.resource.data.get('moderated_by', request.auth.uid) == request.auth.uid;
+        allow update: if signedIn() && resource.data.user_id != request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['report_count'])
+          && request.resource.data.report_count == resource.data.get('report_count', 0) + 1
+          && existsAfter(commentFlag()) && !exists(commentFlag());
         allow delete: if signedIn() && resource.data.user_id == request.auth.uid;
       }
     }
@@ -284,6 +333,63 @@ service cloud.firestore {
                     && request.resource.data.until is int
                     && request.resource.data.until <= request.time.toMillis() + 60000;
       allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    // Moderatör kaydı: yalnız Firebase konsolundan açılır; kişi kendi kaydını okuyabilir (panel görünürlüğü).
+    match /zd_moderators/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+    // Şikâyet kuyruğu: hedef başına bir belge, şikâyet eden başına bir alt kayıt (sayaç kişi başı bir kez artar).
+    match /mod_flags/{flagId} {
+      function reporterPath() {
+        return /databases/$(database)/documents/mod_flags/$(flagId)/reporters/$(request.auth.uid);
+      }
+      function validFlag(d) {
+        return d.keys().hasOnly(['target_type','post_cloud_id','comment_cloud_id','reported_uid','preview',
+                                  'count','status','updated_at','last_reason'])
+          && d.target_type in ['POST','COMMENT']
+          && d.post_cloud_id is string && d.post_cloud_id.matches('[A-Za-z0-9-]{1,128}')
+          && d.comment_cloud_id is string && d.comment_cloud_id.size() <= 128
+          && flagId == (d.target_type == 'POST' ? 'P_' + d.post_cloud_id
+                                                 : 'C_' + d.post_cloud_id + '_' + d.comment_cloud_id)
+          && d.reported_uid is string && d.reported_uid.size() <= 128 && d.reported_uid != request.auth.uid
+          && d.preview is string && d.preview.size() <= 300
+          && d.updated_at is int
+          && d.last_reason in ['SPAM','ABUSE','MISLEADING','INAPPROPRIATE','FRAUD','OTHER'];
+      }
+      allow read: if isMod();
+      allow create: if request.auth != null && existsAfter(reporterPath()) && !exists(reporterPath())
+        && validFlag(request.resource.data)
+        && request.resource.data.count == 1 && request.resource.data.status == 'OPEN';
+      allow update: if (request.auth != null && existsAfter(reporterPath()) && !exists(reporterPath())
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['count','status','updated_at','last_reason'])
+          && request.resource.data.count == resource.data.count + 1 && request.resource.data.status == 'OPEN'
+          && validFlag(request.resource.data))
+        || (isMod() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updated_at'])
+          && request.resource.data.status in ['OPEN','RESOLVED']);
+      allow delete: if isMod();
+      match /reporters/{reporterUid} {
+        allow get: if request.auth != null && (request.auth.uid == reporterUid || isMod());
+        allow list: if isMod();
+        allow create: if request.auth != null && request.auth.uid == reporterUid
+          && request.auth.token.get('firebase', {}).get('sign_in_provider', '') != 'anonymous'
+          && request.resource.data.keys().hasOnly(['created_at','reason'])
+          && request.resource.data.created_at == request.time
+          && request.resource.data.reason in ['SPAM','ABUSE','MISLEADING','INAPPROPRIATE','FRAUD','OTHER'];
+        allow update, delete: if false;
+      }
+    }
+    // Susturma: moderatör yazar; kişi kendi kaydını okuyup "ne zamana kadar" bilgisini görür.
+    match /social_mutes/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || isMod());
+      allow list, delete: if isMod();
+      allow create, update: if isMod() && uid != request.auth.uid
+        && request.resource.data.keys().hasOnly(['until','reason','by','created_at','name'])
+        && request.resource.data.until is int
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.reason is string && request.resource.data.reason.size() <= 300
+        && request.resource.data.name is string && request.resource.data.name.size() <= 200
+        && request.resource.data.created_at is int;
     }
     match /{document=**} { allow read, write: if false; }
   }
