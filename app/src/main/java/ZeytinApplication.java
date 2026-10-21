@@ -11,6 +11,8 @@ public final class ZeytinApplication extends Application {
         paletteResources = getResources();
         PushRegistration.init(this);
         new LocalReminderScheduler(this).createChannel();
+        // Telefonun ürettiği uyarılar (hava, alacak, gün sonu, takvim): kanal + ~4 saatte bir arka plan taraması.
+        AlertCenter.onAppStart(this);
         // Activity resumes also reconcile locally restored/deleted cloud records; no cloud reads here.
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             private long last;
@@ -19,6 +21,7 @@ public final class ZeytinApplication extends Application {
                 if(last==0 || now-last>60000){last=now;LocalReminderScheduler.requestReschedule(ZeytinApplication.this);}
                 // Zorunlu/isteğe bağlı güncelleme (GitHub Pages ayarı; Firebase kotası harcamaz).
                 UpdateGate.onResume(activity);
+                AlertCenter.onResume(activity);
             }
             // Ekranlar telefonun boyutuna göre ölçülür (dar/yakınlaştırılmış ekran, çok büyük yazı); setContentView'den önce.
             @Override public void onActivityPreCreated(android.app.Activity a,android.os.Bundle b){ScreenFit.apply(a);}

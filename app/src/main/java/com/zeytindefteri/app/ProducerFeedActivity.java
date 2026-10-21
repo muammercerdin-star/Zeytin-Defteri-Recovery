@@ -280,9 +280,26 @@ public class ProducerFeedActivity extends Activity {
         }
     }
 
+    private TextView bellBadge;
+
+    /** Zil rozetinde okunmamış bildirim sayısı (yoksa gizli). Okuma hafiftir: tek COUNT sorgusu. */
+    private void refreshBellBadge() {
+        if (bellBadge == null) return;
+        int n = 0;
+        try {
+            DatabaseHelper h = new DatabaseHelper(this);
+            try { n = NotificationInbox.unread(h.getReadableDatabase(), h.getActiveOwnerUid()); } finally { h.close(); }
+        } catch (RuntimeException ignored) { }
+        bellBadge.setVisibility(n > 0 ? View.VISIBLE : View.GONE);
+        bellBadge.setText(n > 9 ? "9+" : String.valueOf(n));
+        View frame = (View) bellBadge.getParent();
+        if (frame != null) frame.setContentDescription(n > 0 ? n + " okunmamış bildirim" : "Bildirimler");
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
+        refreshBellBadge();
         if (settingsContent != null && "PROFILE".equals(currentSection)) settingsContent.resume();
         if (socialBlocks != null) socialBlocks.stop();
         socialBlocks = new SocialBlockRepository(this);
@@ -1925,13 +1942,25 @@ public class ProducerFeedActivity extends Activity {
         bell.setColorFilter(TEXT);
         bell.setPadding(dp(11),dp(11),dp(11),dp(11));
         bell.setBackground(round(CARD,22,BORDER));
-        bell.setContentDescription("Hatırlatmaları aç");
+        bell.setContentDescription("Bildirimleri aç");
         bell.setClickable(true);
         bell.setFocusable(true);
-        bell.setOnClickListener(v -> startActivity(new Intent(ProducerFeedActivity.this,RemindersActivity.class)));
-        LinearLayout.LayoutParams bellParams=new LinearLayout.LayoutParams(dp(44),dp(44));
+        bell.setOnClickListener(v -> startActivity(new Intent(ProducerFeedActivity.this,NotificationsActivity.class)));
+        // Zil + okunmamış bildirim sayısı (kırmızı rozet).
+        android.widget.FrameLayout bellFrame=new android.widget.FrameLayout(this);
+        bellFrame.addView(bell,new android.widget.FrameLayout.LayoutParams(dp(44),dp(44)));
+        bellBadge=text("",11,Color.WHITE,true);
+        bellBadge.setGravity(Gravity.CENTER);
+        bellBadge.setPadding(dp(4),0,dp(4),0);
+        bellBadge.setMinWidth(dp(18));
+        bellBadge.setBackground(round(GreenTheme.color(R.color.zd_danger),9,Color.TRANSPARENT));
+        android.widget.FrameLayout.LayoutParams badgeParams=new android.widget.FrameLayout.LayoutParams(-2,dp(18));
+        badgeParams.gravity=Gravity.TOP|Gravity.END;
+        bellFrame.addView(bellBadge,badgeParams);
+        refreshBellBadge();
+        LinearLayout.LayoutParams bellParams=new LinearLayout.LayoutParams(dp(46),dp(46));
         bellParams.setMargins(dp(8),0,0,0);
-        top.addView(bell,bellParams);
+        top.addView(bellFrame,bellParams);
 
         TextView avatar=circle(HomeDashboardModel.initials(userName),14,GreenTheme.color(R.color.zd_green_chip),TEXT);
         avatar.setContentDescription("Profil");
