@@ -35,6 +35,11 @@ public class AlertRulesTest {
     ok(AlertRules.receivable(7,"H",4600,10,"2026-10-21")==null,"14 günden yeni alacak sessiz");
     ok(AlertRules.receivable(7,"H",0.5,30,"2026-10-21")==null,"ödenmiş sessiz");
     ok(AlertRules.receivable(7,"H",100,30,"2026-10-22").key.equals(AlertRules.receivable(7,"H",100,31,"2026-10-23").key),"aynı hafta tek anahtar");
+    ok(AlertRules.receivable(7,"H",100,30,"2026-10-25","2026-10-23")==null,"söz günü gelmeden sessiz (14 gün geçse de)");
+    ok(AlertRules.receivable(7,"H",100,0,"2026-10-23","2026-10-23")==null,"söz günü bugün: alarm çalar, uyarı yok");
+    AlertRules.Alert late=AlertRules.receivable(7,"Hasan",6370,3,"2026-10-21","2026-10-23");
+    ok(late!=null&&late.title.contains("gecikti")&&late.body.contains("2 gün"),"söz günü geçince gecikti uyarısı");
+    ok(AlertRules.receivable(7,"H",100,20,"","2026-10-23")!=null,"günsüz alacakta 14 gün kuralı sürer");
     ok(AlertRules.dayEnd(5,529,21,"2026-10-21").key.equals("zgun:2026-10-21"),"gün sonu hatırlatma");
     ok(AlertRules.dayEnd(5,529,18,"2026-10-21")==null,"akşam 20'den önce yok");
     ok(AlertRules.dayEnd(0,0,22,"2026-10-21")==null,"açık alım yoksa yok");

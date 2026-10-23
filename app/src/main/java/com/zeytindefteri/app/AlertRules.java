@@ -142,6 +142,20 @@ public final class AlertRules {
                 who + "'dan " + tl(remaining) + " alacağın " + dayAge + " gündür bekliyor.");
     }
 
+    /**
+     * Söz verilen günü olan alacak: gün gelene kadar sessiz (o gün "Hatırlat" alarmı çalar),
+     * gün geçince haftada bir "gecikti" uyarısı. Gün yoksa eski 14 gün kuralı.
+     */
+    public static Alert receivable(long id, String party, double remaining, int dayAge, String due, String today) {
+        if (!SalePayStatus.valid(SalePayStatus.iso(due))) return receivable(id, party, remaining, dayAge, today);
+        int late = SalePayStatus.overdueDays(due, today);
+        if (remaining < 1 || late <= 0) return null;
+        String who = party == null || party.trim().isEmpty() ? "Bir alıcı" : party.trim();
+        return new Alert(MONEY, "late:" + id + ":" + weekKey(today), 3, "⏰ Ödeme gecikti · " + who,
+                who + "'dan " + tl(remaining) + " alacağın, söz verilen günden (" + SalePayStatus.shortDate(due)
+                        + ") " + late + " gün geçti.");
+    }
+
     /** Tezgah: akşam 20'den sonra gün sonu alınmamış açık alımlar varsa günde bir kez. */
     public static Alert dayEnd(int openCount, double openKg, int nowHour, String today) {
         if (openCount <= 0 || nowHour < 20) return null;

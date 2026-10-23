@@ -119,13 +119,13 @@ public final class AlertCenter {
             if (enabled(app, AlertRules.CALENDAR)) collect(db, owner, AlertRules.calendar(year, month), now, fresh);
             if (enabled(app, AlertRules.MONEY)) {
                 try {
-                    Cursor c = db.rawQuery("SELECT id, COALESCE(party_name,''), amount-COALESCE(total_received,0), created_at "
+                    Cursor c = db.rawQuery("SELECT id, COALESCE(party_name,''), amount-COALESCE(total_received,0), created_at, COALESCE(due_date,'') "
                             + "FROM receivables WHERE COALESCE(owner_uid,'')=? AND COALESCE(status,'OPEN')<>'PAID' "
                             + "AND amount-COALESCE(total_received,0)>=1 ORDER BY created_at LIMIT 20", new String[]{owner});
                     try {
                         while (c.moveToNext()) {
                             int age = (int) Math.max(0, (now - c.getLong(3)) / (24L * 60 * 60 * 1000));
-                            collect(db, owner, AlertRules.receivable(c.getLong(0), c.getString(1), c.getDouble(2), age, today), now, fresh);
+                            collect(db, owner, AlertRules.receivable(c.getLong(0), c.getString(1), c.getDouble(2), age, c.getString(4), today), now, fresh);
                         }
                     } finally {
                         c.close();

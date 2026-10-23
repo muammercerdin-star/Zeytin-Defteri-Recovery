@@ -5263,6 +5263,11 @@ public class ProducerFeedActivity extends Activity {
                 + ElekInsights.accessibleLegend(seasonGrades) + " " + rows.size() + " kayıt.");
         body.addView(card, gardensBlockParams(12));
 
+        // Alacaklarım: açık alacak varsa tek kart (dokununca Alıcılarım).
+        String payToday = SalePayStatus.ymd(java.util.Calendar.getInstance());
+        View receivables = receivablesCard(payToday);
+        if (receivables != null) body.addView(receivables, gardensBlockParams(12));
+
         // Son kayıtlar
         LinearLayout listHeader = row();
         TextView listTitle = text("Son kayıtlar", 18, TEXT, true);
@@ -5278,7 +5283,7 @@ public class ProducerFeedActivity extends Activity {
 
         int shown = Math.min(5, rows.size());
         for (int i = 0; i < shown; i++) {
-            body.addView(elekRecordRow(rows.get(i)), gardensBlockParams(i == 0 ? 4 : 10));
+            body.addView(elekRecordRow(rows.get(i), payToday), gardensBlockParams(i == 0 ? 4 : 10));
         }
         return scroll;
     }
@@ -5310,7 +5315,103 @@ public class ProducerFeedActivity extends Activity {
         return bar;
     }
 
-    private View elekRecordRow(ElekRow r) {
+    /** Açık alacak özeti; alacak yoksa null (kart gösterilmez). */
+    private View receivablesCard(String today) {
+        SalePayments.Outstanding o;
+        try {
+            String owner = db.getActiveOwnerUid();
+            o = SalePayments.outstanding(db.getReadableDatabase(), owner == null ? "" : owner, today);
+        } catch (RuntimeException e) {
+            return null;
+        }
+        if (o.count == 0) return null;
+        int gold = GreenTheme.color(R.color.zd_warning);
+        int danger = GreenTheme.color(R.color.zd_danger);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(14), dp(16), dp(14));
+        card.setBackground(round(CARD, 20, BORDER));
+        LinearLayout head = row();
+        TextView label = text("ALACAKLARIM", 11, MUTED, true);
+        label.setLetterSpacing(0.08f);
+        head.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
+        head.addView(text("Alıcılara göre  ›", 12, GREEN, true));
+        card.addView(head);
+        LinearLayout amountRow = row();
+        amountRow.setGravity(Gravity.BOTTOM);
+        TextView total = text(fmtTl(o.total), 24, gold, true);
+        amountRow.addView(total, new LinearLayout.LayoutParams(0, -2, 1));
+        amountRow.addView(text("bekleyen", 12, MUTED, false));
+        LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(-1, -2);
+        ap.topMargin = dp(4);
+        card.addView(amountRow, ap);
+        LinearLayout chips = row();
+        chips.addView(payPill(o.count + " satış · " + o.buyers + " alıcı", MUTED, GreenTheme.color(R.color.zd_surface)));
+        if (o.overdueCount > 0) {
+            TextView late = payPill("! " + o.overdueCount + " gecikmiş · " + fmtTl(o.overdueTotal), danger, 0x33FF6B63);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
+            lp.leftMargin = dp(8);
+            chips.addView(late, lp);
+        }
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
+        cp.topMargin = dp(10);
+        card.addView(chips, cp);
+        card.setContentDescription("Alacaklarım: " + fmtTl(o.total) + " bekleyen, " + o.count + " satış, " + o.buyers
+                + " alıcı" + (o.overdueCount > 0 ? ", " + o.overdueCount + " gecikmiş " + fmtTl(o.overdueTotal) : "")
+                + ". Alıcılarım'ı açmak için dokun.");
+        card.setOnClickListener(v -> startActivity(new Intent(this, BuyersActivity.class)));
+        return card;
+    }
+
+    private TextView payPill(String value, int color, int fill) {
+        TextView t = text(value, 11, color, true);
+        t.setGravity(Gravity.CENTER);
+        t.setSingleLine(true);
+        t.setPadding(dp(10), dp(4), dp(10), dp(4));
+        t.setBackground(round(fill, 12, Color.TRANSPARENT));
+        return t;
+    }
+
+    /** Kaydın satış/tahsilat satırı: solda alıcı, sağda durum etiketi (dokununca "Ödeme aldım"). */
+    private View elekPayRow(ElekRow r, String today) {
+        String owner = db.getActiveOwnerUid();
+        if (owner == null) owner = "";
+        SalePayments.Info info = null;
+        try {
+            long saleId = new ElekSaleBridge(db).linkedSaleId(r.id);
+            if (saleId > 0) info = SalePayments.sale(db.getReadableDatabase(), owner, saleId);
+        } catch (RuntimeException ignored) { }
+        int kind = info == null ? SalePayStatus.NO_SALE : info.kind(today);
+        String label = info == null ? SalePayStatus.label(kind, 0, 0, "", today) : info.label(today);
+        int color, fill;
+        switch (kind) {
+            case SalePayStatus.PAID: color = GREEN; fill = GREEN_SOFT; label = "✓ " + label; break;
+            case SalePayStatus.OVERDUE: color = GreenTheme.color(R.color.zd_danger); fill = 0x33FF6B63; break;
+            case SalePayStatus.NO_SALE: color = MUTED; fill = GreenTheme.color(R.color.zd_surface); break;
+            default: color = GreenTheme.color(R.color.zd_warning); fill = GreenTheme.color(R.color.zd_warning_soft);
+        }
+        LinearLayout line = row();
+        String who = info == null ? "" : info.buyer;
+        TextView buyer = text(who.isEmpty() ? (info == null ? "" : "Alıcı belirtilmedi") : who, 12,
+                who.isEmpty() ? MUTED : TEXT, !who.isEmpty());
+        buyer.setSingleLine(true);
+        buyer.setEllipsize(TextUtils.TruncateAt.END);
+        line.addView(buyer, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView pill = payPill(label, color, fill);
+        pill.setMinHeight(dp(32));
+        if (info != null) {
+            final long saleId = info.saleId;
+            final String spoken = SalePayStatus.spoken(kind, info.net, info.received, info.due, today);
+            pill.setContentDescription(spoken + ". Ödeme aldım penceresini açmak için dokun.");
+            pill.setOnClickListener(v -> PaymentSheet.show(this, db, saleId, this::refreshGardensKeepingScroll));
+        } else {
+            pill.setContentDescription("Satış işaretlenmedi");
+        }
+        line.addView(pill, new LinearLayout.LayoutParams(-2, -2));
+        return line;
+    }
+
+    private View elekRecordRow(ElekRow r, String today) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(14), dp(12), dp(14), dp(14));
@@ -5337,6 +5438,9 @@ public class ProducerFeedActivity extends Activity {
         right.addView(perKg);
         top.addView(right, new LinearLayout.LayoutParams(-2, -2));
         card.addView(top);
+        LinearLayout.LayoutParams payParams = new LinearLayout.LayoutParams(-1, -2);
+        payParams.setMargins(0, dp(8), 0, 0);
+        card.addView(elekPayRow(r, today), payParams);
         LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(-1, dp(6));
         barParams.setMargins(0, dp(10), 0, 0);
         card.addView(elekDistributionBar(r.grades, 3), barParams);

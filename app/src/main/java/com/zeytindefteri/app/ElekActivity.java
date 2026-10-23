@@ -223,6 +223,13 @@ public class ElekActivity extends Activity {
     private android.view.View saleTrack, saleKnob;
     private TextView[] salePayChips;
     private EditText etSalePartial, etSaleBuyer;
+    // Para alınmadıysa: söz verilen gün (yyyy-MM-dd, boş = yok) ve o gün 09:00 hatırlatma.
+    private String saleDue = "";
+    private boolean saleRemind = true;
+    private android.widget.LinearLayout saleDueBox, saleRemindRow;
+    private TextView[] saleDueChips;
+    private TextView saleDueLine;
+    private android.view.View saleRemindTrack, saleRemindKnob;
 
     private double priceDouble;
     private double price1;
@@ -2329,6 +2336,8 @@ public class ElekActivity extends Activity {
         final int pay = salePay;
         final double partial = etSalePartial == null ? 0 : readDouble(etSalePartial);
         final String buyer = etSaleBuyer == null ? "" : etSaleBuyer.getText().toString();
+        final String due = pay == ElekSaleModel.PAY_ALL ? "" : saleDue;
+        final boolean remind = saleRemind;
         if (wantSale) {
             double gross = 0;
             for (int i = 0; i < kilograms.length; i++) gross += Math.max(0, kilograms[i]) * Math.max(0, prices[i]);
@@ -2406,7 +2415,10 @@ public class ElekActivity extends Activity {
             syncElekCloud(
                     result
             );
+            if (saleId > 0 && SalePayStatus.valid(due)) applySaleDue(saleId, due, remind, buyer);
             if (saleId > 0) syncSaleCloud(saleId);
+            saleDue = "";
+            renderSaleOnSave();
             if (etSalePartial != null) etSalePartial.setText("");
             if (etSaleBuyer != null) etSaleBuyer.setText("");
 
@@ -2513,6 +2525,8 @@ public class ElekActivity extends Activity {
             salePayChips[i] = chip;
         }
         salePanel.addView(chips);
+        buildSaleDueBox(d);
+        salePanel.addView(saleDueBox, saleFieldParams(d));
         // Alınan tutar ve alıcı yan yana: "Bir kısmı" seçili değilse tutar gizlenir, alıcı tüm satırı alır.
         android.widget.LinearLayout fieldRow = new android.widget.LinearLayout(this);
         fieldRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
@@ -2537,6 +2551,138 @@ public class ElekActivity extends Activity {
         pp.topMargin = Math.round(6 * d);
         parent.addView(salePanel, pp);
         renderSaleOnSave();
+    }
+
+    /** "Ne zaman verecek?" bölümü: Yarın / 2 gün / 1 hafta / Tarih + o gün 09:00 hatırlatma. */
+    private void buildSaleDueBox(float d) {
+        int text = getResources().getColor(R.color.zd_text, null);
+        int muted = getResources().getColor(R.color.zd_muted, null);
+        saleDueBox = new android.widget.LinearLayout(this);
+        saleDueBox.setOrientation(android.widget.LinearLayout.VERTICAL);
+        TextView q = new TextView(this);
+        q.setText("Ne zaman verecek?"); q.setTextSize(13); q.setTextColor(text);
+        q.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        saleDueBox.addView(q);
+        android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+        row.setPadding(0, Math.round(6 * d), 0, 0);
+        saleDueChips = new TextView[SalePayStatus.DUE_LABELS.length];
+        for (int i = 0; i < saleDueChips.length; i++) {
+            final int option = i;
+            TextView chip = new TextView(this);
+            chip.setText(SalePayStatus.DUE_LABELS[i]); chip.setTextSize(12);
+            chip.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+            chip.setGravity(android.view.Gravity.CENTER);
+            chip.setOnClickListener(v -> pickSaleDue(option));
+            android.widget.LinearLayout.LayoutParams cp = new android.widget.LinearLayout.LayoutParams(0, Math.round(36 * d), 1);
+            if (i > 0) cp.leftMargin = Math.round(6 * d);
+            row.addView(chip, cp);
+            saleDueChips[i] = chip;
+        }
+        saleDueBox.addView(row);
+        saleDueLine = new TextView(this);
+        saleDueLine.setTextSize(12);
+        saleDueLine.setTextColor(getResources().getColor(R.color.zd_warning, null));
+        saleDueLine.setPadding(0, Math.round(6 * d), 0, 0);
+        saleDueBox.addView(saleDueLine);
+
+        saleRemindRow = new android.widget.LinearLayout(this);
+        saleRemindRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        saleRemindRow.setMinimumHeight(Math.round(44 * d));
+        saleRemindRow.setPadding(Math.round(12 * d), Math.round(4 * d), Math.round(12 * d), Math.round(4 * d));
+        saleRemindRow.setBackground(roundRect(getResources().getColor(R.color.zd_bg, null),
+                getResources().getColor(R.color.zd_border, null), 12 * d));
+        android.widget.LinearLayout copy = new android.widget.LinearLayout(this);
+        copy.setOrientation(android.widget.LinearLayout.VERTICAL);
+        TextView t = new TextView(this);
+        t.setText("Hatırlat"); t.setTextSize(13); t.setTextColor(text);
+        t.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        TextView sub = new TextView(this);
+        sub.setText("O gün sabah 09:00"); sub.setTextSize(11); sub.setTextColor(muted);
+        copy.addView(t); copy.addView(sub);
+        saleRemindRow.addView(copy, new android.widget.LinearLayout.LayoutParams(0, -2, 1));
+        android.widget.FrameLayout sw = new android.widget.FrameLayout(this);
+        saleRemindTrack = new android.view.View(this);
+        saleRemindKnob = new android.view.View(this);
+        sw.addView(saleRemindTrack, new android.widget.FrameLayout.LayoutParams(Math.round(44 * d), Math.round(26 * d)));
+        android.widget.FrameLayout.LayoutParams kp = new android.widget.FrameLayout.LayoutParams(Math.round(20 * d), Math.round(20 * d));
+        kp.topMargin = Math.round(3 * d);
+        sw.addView(saleRemindKnob, kp);
+        saleRemindRow.addView(sw, new android.widget.LinearLayout.LayoutParams(Math.round(44 * d), Math.round(26 * d)));
+        saleRemindRow.setOnClickListener(v -> { saleRemind = !saleRemind; renderSaleDue(); });
+        android.widget.LinearLayout.LayoutParams rp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+        rp.topMargin = Math.round(8 * d);
+        saleDueBox.addView(saleRemindRow, rp);
+    }
+
+    private void pickSaleDue(int option) {
+        String today = SalePayStatus.ymd(java.util.Calendar.getInstance());
+        if (option == SalePayStatus.DUE_PICK) {
+            java.util.Calendar c = java.util.Calendar.getInstance();
+            if (SalePayStatus.valid(saleDue)) {
+                c.set(Integer.parseInt(saleDue.substring(0, 4)), Integer.parseInt(saleDue.substring(5, 7)) - 1,
+                        Integer.parseInt(saleDue.substring(8, 10)));
+            } else {
+                c.add(java.util.Calendar.DAY_OF_MONTH, 3);
+            }
+            android.app.DatePickerDialog dlg = new android.app.DatePickerDialog(this, (view, y, m, dd) -> {
+                java.util.Calendar pick = java.util.Calendar.getInstance();
+                pick.set(y, m, dd);
+                saleDue = SalePayStatus.ymd(pick);
+                renderSaleDue();
+            }, c.get(java.util.Calendar.YEAR), c.get(java.util.Calendar.MONTH), c.get(java.util.Calendar.DAY_OF_MONTH));
+            dlg.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
+            dlg.show();
+            return;
+        }
+        String due = SalePayStatus.dueFor(option, today);
+        // Seçili güne tekrar dokunmak günü kaldırır (söz verilen gün isteğe bağlı).
+        saleDue = due.equals(saleDue) ? "" : due;
+        renderSaleDue();
+    }
+
+    private void renderSaleDue() {
+        if (saleDueBox == null) return;
+        float d = getResources().getDisplayMetrics().density;
+        boolean show = saleOnSave && salePay != ElekSaleModel.PAY_ALL;
+        saleDueBox.setVisibility(show ? android.view.View.VISIBLE : android.view.View.GONE);
+        int warn = getResources().getColor(R.color.zd_warning, null);
+        int border = getResources().getColor(R.color.zd_border, null);
+        int soft = getResources().getColor(R.color.zd_text_soft, null);
+        int green = getResources().getColor(R.color.zd_green, null);
+        String today = SalePayStatus.ymd(java.util.Calendar.getInstance());
+        int selected = SalePayStatus.optionFor(saleDue, today);
+        for (int i = 0; i < saleDueChips.length; i++) {
+            boolean on = i == selected;
+            saleDueChips[i].setTextColor(on ? warn : soft);
+            saleDueChips[i].setBackground(roundRect(on ? getResources().getColor(R.color.zd_warning_soft, null) : 0x00000000,
+                    on ? warn : border, 20 * d));
+            String label = i == SalePayStatus.DUE_PICK && on ? SalePayStatus.shortDate(saleDue) : SalePayStatus.DUE_LABELS[i];
+            saleDueChips[i].setText(label);
+            saleDueChips[i].setContentDescription("Ödeme günü " + SalePayStatus.DUE_LABELS[i] + (on ? ", seçili" : ""));
+        }
+        boolean has = SalePayStatus.valid(saleDue);
+        saleDueLine.setText(has ? "Söz verilen gün: " + SalePayStatus.longDate(saleDue)
+                : "İsteğe bağlı · gün seçersen o sabah hatırlatırım.");
+        saleDueLine.setTextColor(has ? warn : getResources().getColor(R.color.zd_muted, null));
+        saleRemindRow.setVisibility(has ? android.view.View.VISIBLE : android.view.View.GONE);
+        saleRemindTrack.setBackground(roundRect(saleRemind ? green : border, saleRemind ? green : border, 13 * d));
+        int knob = getResources().getColor(R.color.zd_text, null);
+        saleRemindKnob.setBackground(roundRect(knob, knob, 10 * d));
+        ((android.widget.FrameLayout.LayoutParams) saleRemindKnob.getLayoutParams()).leftMargin = Math.round((saleRemind ? 21 : 3) * d);
+        saleRemindKnob.requestLayout();
+        saleRemindRow.setContentDescription("O gün sabah 09:00 hatırlat, " + (saleRemind ? "açık" : "kapalı"));
+    }
+
+    /** Satışa söz verilen günü yazar; istenirse o gün 09:00 için yerel hatırlatma kurar. */
+    private void applySaleDue(long saleId, String due, boolean remind, String buyer) {
+        String owner = databaseHelper.getActiveOwnerUid();
+        if (owner == null) owner = "";
+        android.database.sqlite.SQLiteDatabase db = databaseHelper.getWritableDatabase();
+        if (!SalePayments.setDue(db, owner, saleId, due, System.currentTimeMillis())) return;
+        if (!remind) return;
+        SalePayments.Info info = SalePayments.sale(db, owner, saleId);
+        if (info == null) return;
+        PaymentReminders.schedule(this, owner, info, buyer);
     }
 
     private EditText saleField(String hint, int inputType) {
@@ -2592,6 +2738,7 @@ public class ElekActivity extends Activity {
             salePayChips[i].setContentDescription(ElekSaleModel.PAY_LABELS[i] + (on ? ", seçili" : ""));
         }
         etSalePartial.setVisibility(salePay == ElekSaleModel.PAY_PART ? android.view.View.VISIBLE : android.view.View.GONE);
+        renderSaleDue();
         if (btnSaveElek != null && !saving) btnSaveElek.setText(ElekSaleModel.saveLabel(saleOnSave));
     }
 
