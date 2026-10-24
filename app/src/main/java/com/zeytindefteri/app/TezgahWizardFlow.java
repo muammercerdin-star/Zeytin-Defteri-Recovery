@@ -5,22 +5,21 @@ import java.util.List;
 
 /**
  * "Tartım başlat" sihirbazının sıra kuralları (saf, Android'siz).
- * Adımlar: SELLER (satan üretici) → Double → 1 → 2 → 3 → 4 → Yağlık → DONE (ödeme penceresi).
+ * Adımlar: Double → 1 → 2 → 3 → 4 → Yağlık → SELLER (satan üretici, en son) → DONE (ödeme penceresi).
  */
 public final class TezgahWizardFlow {
-    public static final int SELLER = -1;
-    public static final int DONE = TezgahModel.GRADES.length;
+    public static final int SELLER = TezgahModel.GRADES.length;
+    public static final int DONE = SELLER + 1;
     public static final String WALK_IN = "Münferit satıcı";
 
     private TezgahWizardFlow() {}
 
     public static int next(int step) { return step >= DONE ? DONE : step + 1; }
 
-    public static int back(int step) { return step <= SELLER ? SELLER : step - 1; }
+    public static int back(int step) { return step <= 0 ? 0 : step - 1; }
 
-    /** Başlangıç: satan bilinmiyorsa satan adımı; biliniyorsa tartımı olmayan ilk numara (hepsi doluysa Double). */
-    public static int start(String seller, TezgahModel model) {
-        if (seller == null || seller.trim().isEmpty()) return SELLER;
+    /** Başlangıç: tartımı olmayan ilk numara (boş tezgahta Double; hepsi doluysa yine Double). */
+    public static int start(TezgahModel model) {
         for (int g = 0; g < TezgahModel.GRADES.length; g++) if (model.gradeCount(g) == 0) return g;
         return 0;
     }
@@ -31,9 +30,10 @@ public final class TezgahWizardFlow {
         return n.isEmpty() ? WALK_IN : n;
     }
 
-    /** "1 / 6" gibi adım yazısı (satan adımı sayılmaz). */
+    /** "1 / 7" gibi adım yazısı; satan adımı "Son adım". */
     public static String progress(int step) {
         if (step < 0 || step >= DONE) return "";
+        if (step == SELLER) return "Son adım";
         return (step + 1) + " / " + DONE;
     }
 

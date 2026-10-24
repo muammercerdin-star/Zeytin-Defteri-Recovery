@@ -866,17 +866,17 @@ public final class TezgahActivity extends Activity {
     // ================================================================== tartım sihirbazı
 
     /**
-     * "Tartım başlat": küçük pencere sırayla satan üreticiyi, sonra Double → 1 → 2 → 3 → 4 → Yağlık'ı sorar.
+     * "Tartım başlat": küçük pencere sırayla Double → 1 → 2 → 3 → 4 → Yağlık'ı, en son satan üreticiyi sorar.
      * Her numarada kasa + kantar kilosu; "Ekle ›" sonrakine geçer, "Aynı numaradan bir tartım daha" aynı
      * numarada kalır, "Geç" numarayı atlar. Arka plandaki tezgah (sekmeler, özet, toplam) canlı güncellenir.
-     * Yağlık'tan sonra "Alımı bitir" (ödeme + satan) penceresi açılır.
+     * Satandan sonra "Alımı bitir" (ödeme) penceresi açılır; ad orada da dolu gelir.
      */
     private View startButton() {
         boolean cont = !model.isEmpty();
         TextView b = text(cont ? "▶  Tartıma devam et" : "▶  Tartım başlat", 20, BG, true);
         b.setGravity(Gravity.CENTER);
         b.setBackground(round(GREEN, 0, 18));
-        b.setContentDescription(cont ? "Tartıma devam et: numara numara sorar" : "Tartım başlat: önce satan, sonra numara numara sorar");
+        b.setContentDescription(cont ? "Tartıma devam et: numara numara sorar" : "Tartım başlat: numara numara, en son satanı sorar");
         b.setOnClickListener(v -> openWizard());
         return b;
     }
@@ -886,7 +886,7 @@ public final class TezgahActivity extends Activity {
     private int wizardStep;
 
     private void openWizard() {
-        wizardStep = TezgahWizardFlow.start(seller, model);
+        wizardStep = TezgahWizardFlow.start(model);
         wizard = new android.app.Dialog(this);
         wizard.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
         ScrollView scroll = new ScrollView(this);
@@ -933,7 +933,7 @@ public final class TezgahActivity extends Activity {
         // Üst satır: ‹ Geri · adım · ✕
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        boolean canBack = wizardStep > TezgahWizardFlow.SELLER;
+        boolean canBack = wizardStep > 0;
         TextView back = text("‹ Geri", 15, canBack ? GREEN : LINE, true);
         back.setPadding(0, dp(8), dp(12), dp(8));
         back.setEnabled(canBack);
@@ -949,12 +949,14 @@ public final class TezgahActivity extends Activity {
         close.setOnClickListener(v -> { if (wizard != null) wizard.dismiss(); });
         top.addView(close, new LinearLayout.LayoutParams(dp(44), dp(40)));
         wizardBox.addView(top);
-        if (wizardStep == TezgahWizardFlow.SELLER) renderWizardSeller();
+        if (wizardStep >= TezgahWizardFlow.SELLER) renderWizardSeller();
         else renderWizardGrade(wizardStep);
     }
 
     private void renderWizardSeller() {
-        wizardBox.addView(text("Kimden alıyorsun?", 24, TEXT, true), margins(-1, -2, 6));
+        wizardBox.addView(text("Kimden aldın?", 24, TEXT, true), margins(-1, -2, 6));
+        wizardBox.addView(text(TezgahModel.kg(model.totalNet()) + " · " + model.totalKasa() + " kasa · "
+                + TezgahModel.tl(model.total()), 15, GREEN, true), margins(-1, -2, 2));
         final EditText name = sheetField(seller.equals(TezgahWizardFlow.WALK_IN) ? "" : seller, "Üreticinin adı",
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         wizardBox.addView(name, margins(-1, dp(56), 12));
@@ -985,7 +987,7 @@ public final class TezgahActivity extends Activity {
             }
             wizardBox.addView(chips, margins(-1, -2, 6));
         }
-        TextView go = text("Devam  ›", 19, BG, true);
+        TextView go = text("Devam  ·  ödemeye geç  ›", 18, BG, true);
         go.setGravity(Gravity.CENTER);
         go.setBackground(round(GREEN, 0, 18));
         go.setOnClickListener(v -> {
@@ -994,7 +996,7 @@ public final class TezgahActivity extends Activity {
             seller = n;
             sellerPhone = phone.getText().toString().trim();
             saveDraft();
-            goWizard(0);
+            goWizard(TezgahWizardFlow.DONE);
         });
         wizardBox.addView(go, margins(-1, dp(56), 16));
         TextView skip = text("Geç  ·  münferit satıcı", 16, GREEN, true);
@@ -1005,10 +1007,15 @@ public final class TezgahActivity extends Activity {
             seller = TezgahWizardFlow.WALK_IN;
             sellerPhone = phone.getText().toString().trim();
             saveDraft();
-            goWizard(0);
+            goWizard(TezgahWizardFlow.DONE);
         });
         wizardBox.addView(skip, margins(-1, dp(50), 8));
-        if (seller.isEmpty()) showKeyboard(name);
+        if (model.isEmpty()) {
+            // Hiç tartım yoksa ödemeye geçilmez: geri dönüp tartım eklemesi istenir.
+            go.setText("Önce tartım ekle  ‹");
+            go.setOnClickListener(v -> goWizard(0));
+            skip.setVisibility(View.GONE);
+        } else if (seller.isEmpty()) showKeyboard(name);
     }
 
     private EditText wizardKg, wizardKasaInput;
@@ -1030,6 +1037,7 @@ public final class TezgahActivity extends Activity {
         TextView sofar = text(count > 0 ? "Bu numarada " + count + " tartım · " + model.gradeKasa(g) + " kasa · net "
                 + TezgahModel.kg(model.gradeNet(g)) : "Satan: " + (seller.isEmpty() ? TezgahWizardFlow.WALK_IN : seller),
                 13, count > 0 ? GREEN : MUTED, true);
+        if (count == 0) sofar.setText("Kantara koy, kasa ve kiloyu yaz");
         wizardBox.addView(sofar, margins(-1, -2, 2));
 
         LinearLayout labels = new LinearLayout(this);
@@ -1087,9 +1095,8 @@ public final class TezgahActivity extends Activity {
         again.setContentDescription("Ekle ve " + TezgahModel.LABELS[g] + " numarasında kal");
         again.setOnClickListener(v -> wizardAddWeighing(g, true));
         wizardBox.addView(again, margins(-1, dp(48), 8));
-        boolean last = g == TezgahWizardFlow.DONE - 1;
-        TextView skip = text(count > 0 ? (last ? "Bitti  ·  ödemeye geç ›" : "Bu numara bitti  ·  sonraki ›")
-                : (last ? "Geç  ·  ödemeye geç ›" : "Geç  ·  " + TezgahModel.SHORT[g] + " yok ›"), 15, TEXT, true);
+        TextView skip = text(count > 0 ? "Bu numara bitti  ·  sonraki ›"
+                : "Geç  ·  " + TezgahModel.SHORT[g] + " yok ›", 15, TEXT, true);
         skip.setGravity(Gravity.CENTER);
         skip.setBackground(round(CARD, LINE, 16));
         skip.setOnClickListener(v -> goWizard(TezgahWizardFlow.next(g)));
