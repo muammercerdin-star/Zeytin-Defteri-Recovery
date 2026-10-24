@@ -87,6 +87,9 @@ final class SettingsView extends ScrollView {
                         () -> open(activity, BuyersActivity.class)),
                 row(activity, R.drawable.ic_bell_line, "Bildirimler ve Hatırlatmalar", "Üretim dönemine özel hatırlatmalar", null,
                         () -> open(activity, RemindersActivity.class)),
+                backupRow(activity),
+                row(activity, R.drawable.ic_archive_document, "Fiş Yazıcısı", "Bluetooth fiş yazıcısı: seç, kâğıt, Türkçe, deneme fişi", null,
+                        () -> TezgahPrinter.settings(activity)),
                 contributionRow(activity));
         addSection(body, activity, "UYGULAMA",
                 row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant),
@@ -125,6 +128,22 @@ final class SettingsView extends ScrollView {
     }
 
     /** Sohbette "yazıyor" bilgimi göster: dokununca açılır/kapanır. Kapatan başkalarınınkini yine görür. */
+    /** Yedekle / Geri yükle: son yedek tarihi değer olarak görünür. */
+    private static View backupRow(Activity activity) {
+        String last = "";
+        try {
+            DatabaseHelper h = new DatabaseHelper(activity);
+            try {
+                long t = BackupActivity.lastBackup(activity, h.getActiveOwnerUid());
+                last = t == 0 ? "Hiç" : new java.text.SimpleDateFormat("d MMM", new java.util.Locale("tr", "TR")).format(new java.util.Date(t));
+            } finally {
+                h.close();
+            }
+        } catch (RuntimeException ignored) { }
+        return row(activity, R.drawable.ic_op_cloud, "Yedekle / Geri yükle",
+                "Tezgah, ödeme ve sıkım kayıtlarını dosyaya yedekle", last, () -> open(activity, BackupActivity.class));
+    }
+
     private static View typingRow(Activity activity) {
         final TextView[] value = new TextView[1];
         View row = row(activity, R.drawable.ic_settings_shield, "Sohbette \"yazıyor\" bilgim",
