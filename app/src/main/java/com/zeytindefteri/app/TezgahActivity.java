@@ -167,11 +167,12 @@ public final class TezgahActivity extends Activity {
         // Sıkı düzen: her şey tek ekrana sığsın (gerekirse yine kayar).
         body.addView(header());
         body.addView(startButton(), margins(-1, dp(58), 6));
+        // Tezgah boşken son fiş (numara numara döküm) hemen burada: satıcıyla teyit için.
+        body.addView(lastSlipCard(), margins(-1, -2, 8));
         body.addView(gradeRow(), margins(-1, -2, 8));
         body.addView(entryCard(), margins(-1, -2, 8));
         body.addView(weighingsCard(), margins(-1, -2, 8));
         body.addView(summaryCard(), margins(-1, -2, 8));
-        body.addView(lastSlipCard(), margins(-1, -2, 8));
         setContentView(root);
         refreshTotals();
     }
@@ -518,6 +519,7 @@ public final class TezgahActivity extends Activity {
     }
 
     private View summaryCard() {
+        if (model.isEmpty()) return priceStrip();
         LinearLayout box = card();
         summaryBox = box;
         box.setPadding(dp(12), dp(6), dp(12), dp(8));
@@ -570,11 +572,41 @@ public final class TezgahActivity extends Activity {
         return box;
     }
 
+    /** Tezgah boşken özetin yerine küçük fiyat çubuğu (6 boş satır yer kaplamasın); dokununca fiyat değişir. */
+    private View priceStrip() {
+        LinearLayout box = card();
+        summaryBox = box;
+        box.setPadding(dp(12), dp(8), dp(12), dp(10));
+        TextView head = text("BUGÜNKÜ FİYATLAR · dokun, değiştir", 12, MUTED, true);
+        head.setLetterSpacing(0.05f);
+        box.addView(head);
+        LinearLayout line = null;
+        for (int g = 0; g < TezgahModel.GRADES.length; g++) {
+            if (g % 3 == 0) { line = new LinearLayout(this); box.addView(line, margins(-1, -2, 6)); }
+            final int index = g;
+            boolean has = model.price(g) > 0;
+            TextView c = text(TezgahModel.SHORT[g] + "  " + (has ? TezgahModel.money(model.price(g)) : "fiyat?"), 14,
+                    has ? TEXT : AMBER, true);
+            c.setGravity(Gravity.CENTER);
+            c.setSingleLine(true);
+            c.setBackground(round(BG, LINE, 10));
+            c.setContentDescription(TezgahModel.LABELS[g] + " fiyatı " + (has ? TezgahModel.money(model.price(g)) : "girilmedi") + ", değiştir");
+            c.setOnClickListener(v -> askPrice(index));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(40), 1);
+            if (g % 3 > 0) lp.setMarginStart(dp(6));
+            line.addView(c, lp);
+        }
+        return box;
+    }
+
     private LinearLayout lastSlipBox;
+    /** Son fiş kartında açık olan alım (0 = en son; "Son alımlar"dan seçilince değişir). */
+    private int slipIndex = 0;
 
     /**
-     * Tezgah boşken (bir alım bitince) son fişin QR'ı burada büyükçe durur: üretici hemen okutabilir,
-     * dokununca tam ekran açılır. Yeni tartım başlayınca yer açmak için gizlenir.
+     * Tezgah boşken son fiş ana ekranda açık durur: numara numara kasa / net kilo / fiyat / tutar, toplam,
+     * ödendi ya da borç. Satıcıyla teyit edilir; küçük QR dokununca büyür, WhatsApp'tan fiş gider.
+     * Altında son 3 alım; dokununca o fişin dökümü açılır. Yeni tartım başlayınca kart gizlenir.
      */
     private View lastSlipCard() {
         LinearLayout box = card();
@@ -585,36 +617,118 @@ public final class TezgahActivity extends Activity {
         try { list = TezgahPurchases.open(db.getWritableDatabase(), owner); }
         catch (RuntimeException e) { return box; }
         if (list.isEmpty()) return box;
-        final TezgahPurchases.Purchase p = list.get(0);
+        if (slipIndex < 0 || slipIndex >= list.size()) slipIndex = 0;
+        final TezgahPurchases.Purchase p = list.get(slipIndex);
         final TezgahModel m = TezgahModel.decode(p.data);
         if (m.isEmpty()) return box;
-        int size = dp(150);
-        android.graphics.Bitmap bmp = TezgahQrUi.bitmap(TezgahQr.encode(m, p.date, traderName(), p.paid), size);
-        if (bmp == null) return box;
         box.setVisibility(View.VISIBLE);
-        box.setOrientation(LinearLayout.HORIZONTAL);
-        box.setGravity(Gravity.CENTER_VERTICAL);
-        ImageView img = new ImageView(this);
-        img.setImageBitmap(bmp);
-        img.setBackground(round(Color.WHITE, 0, 10));
-        img.setPadding(dp(4), dp(4), dp(4), dp(4));
-        box.addView(img, new LinearLayout.LayoutParams(size, size));
-        LinearLayout col = new LinearLayout(this);
-        col.setOrientation(LinearLayout.VERTICAL);
-        col.setPadding(dp(14), 0, 0, 0);
-        col.addView(text("SON FİŞ · ÜRETİCİ OKUTSUN", 11, MUTED, true));
-        TextView who = text(p.seller.isEmpty() ? "Adsız üretici" : p.seller, 17, TEXT, true);
-        who.setMaxLines(2);
-        col.addView(who, margins(-1, -2, 4));
-        col.addView(text(TezgahModel.kg(p.kg) + " · " + TezgahModel.tl(p.gross), 15, GREEN, true), margins(-1, -2, 2));
-        col.addView(text("Elek kaydı → \"QR okut\"", 13, MUTED, false), margins(-1, -2, 6));
-        TextView big = text("Büyüt ›", 14, GREEN, true);
-        big.setPadding(0, dp(8), 0, 0);
-        col.addView(big);
-        box.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
-        box.setContentDescription("Son fiş QR kodu: " + (p.seller.isEmpty() ? "adsız" : p.seller) + ", büyütmek için dokun");
-        box.setOnClickListener(v -> showQr(m, p.date, p.seller, p.paid,
-                m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid), p.phone));
+        final String who = p.seller.isEmpty() ? "Adsız üretici" : p.seller;
+        final String receipt = m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid);
+        String time = p.createdAt > 0 ? new SimpleDateFormat("HH:mm", Locale.US).format(new Date(p.createdAt)) : "";
+
+        TextView kicker = text((slipIndex == 0 ? "SON FİŞ" : "FİŞ") + (time.isEmpty() ? "" : " · " + time)
+                + " · SATICIYLA TEYİT ET", 11, MUTED, true);
+        kicker.setLetterSpacing(0.06f);
+        box.addView(kicker);
+
+        LinearLayout top = new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout names = new LinearLayout(this);
+        names.setOrientation(LinearLayout.VERTICAL);
+        TextView name = text(who, 19, TEXT, true);
+        name.setMaxLines(2);
+        names.addView(name);
+        names.addView(text(TezgahModel.tl(p.gross), 22, GREEN, true));
+        top.addView(names, new LinearLayout.LayoutParams(0, -2, 1));
+        int qrSize = dp(76);
+        android.graphics.Bitmap bmp = TezgahQrUi.bitmap(TezgahQr.encode(m, p.date, traderName(), p.paid), qrSize);
+        if (bmp != null) {
+            ImageView img = new ImageView(this);
+            img.setImageBitmap(bmp);
+            img.setBackground(round(Color.WHITE, 0, 8));
+            img.setPadding(dp(3), dp(3), dp(3), dp(3));
+            img.setContentDescription("QR kodu büyüt; üretici Elek kaydında okutur");
+            img.setOnClickListener(v -> showQr(m, p.date, p.seller, p.paid, receipt, p.phone));
+            top.addView(img, new LinearLayout.LayoutParams(qrSize, qrSize));
+        }
+        box.addView(top, margins(-1, -2, 4));
+
+        box.addView(divider(), margins(-1, Math.max(1, dp(1)), 8));
+        StringBuilder spoken = new StringBuilder(who + ", " + TezgahModel.tl(p.gross) + ". ");
+        for (int g = 0; g < TezgahModel.GRADES.length; g++) {
+            if (m.gradeCount(g) == 0) continue;
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setMinimumHeight(dp(28));
+            row.addView(text(TezgahModel.LABELS[g], 14, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1.05f));
+            row.addView(text(m.gradeKasa(g) + " kasa", 13, MUTED, false), new LinearLayout.LayoutParams(0, -2, 0.75f));
+            TextView kg = text(shortKg(m.gradeNet(g)) + " × " + (m.price(g) > 0 ? TezgahModel.money(m.price(g)).replace(" ₺", "") : "0"),
+                    14, TEXT, false);
+            row.addView(kg, new LinearLayout.LayoutParams(0, -2, 1.4f));
+            TextView amount = text(TezgahModel.tl(m.gradeAmount(g)), 14, TEXT, true);
+            amount.setGravity(Gravity.END);
+            row.addView(amount, new LinearLayout.LayoutParams(0, -2, 1.1f));
+            box.addView(row);
+            spoken.append(TezgahModel.LABELS[g]).append(" ").append(m.gradeKasa(g)).append(" kasa ")
+                    .append(TezgahModel.kg(m.gradeNet(g))).append(", ").append(TezgahModel.tl(m.gradeAmount(g))).append(". ");
+        }
+        box.addView(divider(), margins(-1, Math.max(1, dp(1)), 4));
+        String avg = m.averagePrice() > 0 ? " · ort. " + TezgahModel.money(m.averagePrice()) + "/kg" : "";
+        box.addView(text(m.totalKasa() + " kasa · net " + TezgahModel.kg(m.totalNet()) + avg, 13, MUTED, false), margins(-1, -2, 6));
+        double left = Math.max(0, p.gross - p.paid);
+        TextView pay = text(left < 0.5 ? "Ödendi ✓" : "Borç " + TezgahModel.tl(left)
+                + (p.paid > 0.5 ? "  (ödenen " + TezgahModel.tl(p.paid) + ")" : ""), 15, left < 0.5 ? GREEN : AMBER, true);
+        box.addView(pay, margins(-1, -2, 4));
+        spoken.append(left < 0.5 ? "Ödendi." : "Borç " + TezgahModel.tl(left) + ".");
+        box.setContentDescription(spoken.toString());
+
+        LinearLayout actions = new LinearLayout(this);
+        TextView qr = pill("QR göster", false);
+        qr.setOnClickListener(v -> showQr(m, p.date, p.seller, p.paid, receipt, p.phone));
+        actions.addView(qr, new LinearLayout.LayoutParams(0, dp(44), 1));
+        TextView wa = pill("WhatsApp", false);
+        wa.setContentDescription("Fişi WhatsApp'tan gönder");
+        wa.setOnClickListener(v -> shareText(receipt, p.phone));
+        LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(0, dp(44), 1);
+        wp.setMarginStart(dp(8));
+        actions.addView(wa, wp);
+        box.addView(actions, margins(-1, -2, 10));
+
+        // Son alımlar (açık olan hariç, en çok 3)
+        int shown = 0;
+        for (int i = 0; i < list.size() && shown < 3; i++) {
+            if (i == slipIndex) continue;
+            if (shown == 0) {
+                box.addView(divider(), margins(-1, Math.max(1, dp(1)), 10));
+                TextView h = text("SON ALIMLAR · dokun, dökümü aç", 11, MUTED, true);
+                h.setLetterSpacing(0.06f);
+                box.addView(h, margins(-1, -2, 8));
+            }
+            shown++;
+            final int index = i;
+            TezgahPurchases.Purchase o = list.get(i);
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setMinimumHeight(dp(40));
+            TextView n = text((o.seller.isEmpty() ? "Adsız" : o.seller) + " · " + shortKg(o.kg), 14, TEXT, false);
+            n.setSingleLine(true);
+            n.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            row.addView(n, new LinearLayout.LayoutParams(0, -2, 1));
+            row.addView(text(TezgahModel.tl(o.gross), 14, TEXT, true));
+            boolean paid = o.remaining() < 0.5;
+            TextView st = text(paid ? "  ✓" : "  borç", 13, paid ? GREEN : AMBER, true);
+            row.addView(st);
+            row.setContentDescription((o.seller.isEmpty() ? "Adsız" : o.seller) + ", " + TezgahModel.kg(o.kg) + ", "
+                    + TezgahModel.tl(o.gross) + (paid ? ", ödendi" : ", borç var") + ". Dökümü açmak için dokun.");
+            row.setOnClickListener(v -> { slipIndex = index; build(); });
+            box.addView(row);
+        }
+        if (slipIndex != 0) {
+            TextView latest = text("‹ Son fişe dön", 13, GREEN, true);
+            latest.setPadding(0, dp(8), 0, 0);
+            latest.setOnClickListener(v -> { slipIndex = 0; build(); });
+            box.addView(latest);
+        }
         return box;
     }
 
@@ -1211,6 +1325,7 @@ public final class TezgahActivity extends Activity {
         seller = "";
         sellerPhone = "";
         grade = 0; // yeni alım Double sekmesiyle başlar
+        slipIndex = 0; // kaydedilen fiş açık gelsin
         saveDraft();
         build();
         toast("Alım kaydedildi ✓ Sıradaki üretici için tezgah hazır.");
