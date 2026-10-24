@@ -4,9 +4,10 @@ set -e
 cd "$(dirname "$0")/../.."
 export JAVA_TOOL_OPTIONS=
 D=$(mktemp -d)
-java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" app/src/main/java/com/zeytindefteri/app/TezgahModel.java app/src/main/java/com/zeytindefteri/app/TezgahQr.java app/src/main/java/com/zeytindefteri/app/ElekSaleModel.java tests/tezgah/TezgahModelTest.java tests/tezgah/TezgahQrTest.java
+java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" app/src/main/java/com/zeytindefteri/app/TezgahModel.java app/src/main/java/com/zeytindefteri/app/TezgahQr.java app/src/main/java/com/zeytindefteri/app/ElekSaleModel.java app/src/main/java/com/zeytindefteri/app/TezgahWizardFlow.java tests/tezgah/TezgahModelTest.java tests/tezgah/TezgahQrTest.java tests/tezgah/TezgahWizardFlowTest.java
 java -cp "$D" com.zeytindefteri.app.TezgahModelTest
 java -cp "$D" com.zeytindefteri.app.TezgahQrTest
+java -cp "$D" com.zeytindefteri.app.TezgahWizardFlowTest
 # Tüccar alımları: gerçek SQLite dosyasında (alıcı testlerinin Android stub'ları ile).
 python3 - "$D" <<'P'
 import pathlib,subprocess,sys
