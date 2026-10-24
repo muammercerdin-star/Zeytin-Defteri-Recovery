@@ -181,7 +181,15 @@ public final class TezgahDayActivity extends Activity {
         rp.setMarginStart(dp(8));
         row.addView(restore, rp);
         box.addView(row, margins(-1, -2, 12));
+        TextView printer = text("Fiş yazıcısı (Bluetooth) ayarları  ›", 14, GREEN, true);
+        printer.setPadding(0, dp(14), 0, dp(2));
+        printer.setOnClickListener(v -> TezgahPrinter.settings(this));
+        box.addView(printer);
         return box;
+    }
+
+    private void openStatement(String seller) {
+        startActivity(new Intent(this, TezgahStatementActivity.class).putExtra(TezgahStatementActivity.EXTRA_NAME, seller));
     }
 
     private void startBackup() {
@@ -397,8 +405,11 @@ public final class TezgahDayActivity extends Activity {
             return;
         }
         // Aynı üreticinin birden fazla alımı varsa özet
+        // Adla arayınca bulunan üreticilerin ekstre kartı (en çok 3); yalnız "borçlular"da 2+ alımı olanlar.
+        int groupsShown = 0;
         for (TezgahSearch.Group g : TezgahSearch.groups(found)) {
-            if (g.count < 2) break;
+            if (q.trim().isEmpty() && g.count < 2) break;
+            if (groupsShown++ >= 3) break;
             LinearLayout box = new LinearLayout(this);
             box.setOrientation(LinearLayout.VERTICAL);
             box.setPadding(dp(14), dp(10), dp(14), dp(10));
@@ -407,6 +418,10 @@ public final class TezgahDayActivity extends Activity {
             box.addView(text(g.count + " alım · " + TezgahModel.tl(g.gross)
                     + (g.remaining > 0.5 ? " · toplam borç " + TezgahModel.tl(g.remaining) : " · borç yok"), 14,
                     g.remaining > 0.5 ? AMBER : GREEN, true));
+            box.addView(text("Ekstreyi aç ›", 13, GREEN, true), margins(-1, -2, 4));
+            final String gName = g.name;
+            box.setContentDescription(g.name + ", " + g.count + " alım. Üretici ekstresini aç.");
+            box.setOnClickListener(v -> openStatement(gName));
             body.addView(box, margins(-1, -2, 8));
         }
         int shown = 0;
@@ -976,6 +991,8 @@ public final class TezgahDayActivity extends Activity {
         java.util.List<String> opts = new java.util.ArrayList<>();
         opts.add("QR göster");
         opts.add("Fişi gönder (WhatsApp)");
+        opts.add("Fişi yazdır");
+        if (TezgahStatement.hasStatement(p.seller)) opts.add("Üretici ekstresi · " + p.seller.trim());
         if (p.remaining() > 0.5) opts.add("Ödeme yap · kalan " + TezgahModel.tl(p.remaining()));
         else if (p.paid > 0.5) opts.add("Ödeme geçmişi");
         if (p.zId <= 0) opts.add("Sil");   // gün sonu alınmış alım kilitli
@@ -986,8 +1003,13 @@ public final class TezgahDayActivity extends Activity {
                     String a = items[i];
                     if (a.startsWith("QR")) {
                         TezgahShare.showQr(this, m, p.date, p.seller, p.paid, receipt, p.phone);
-                    } else if (a.startsWith("Fişi")) {
+                    } else if (a.startsWith("Fişi gönder")) {
                         TezgahShare.shareText(this, receipt, p.phone);
+                    } else if (a.startsWith("Fişi yazdır")) {
+                        TezgahPrinter.print(this, TezgahPrintFormat.receipt(m, TezgahShare.traderName(), p.seller,
+                                displayDate(p), p.paid, TezgahPrinter.width(this)));
+                    } else if (a.startsWith("Üretici")) {
+                        openStatement(p.seller);
                     } else if (a.startsWith("Ödeme")) {
                         // Bir kısmı ya da tamamı; Z kilitli alımda da yalnız ödeme işlenir.
                         TezgahPaySheet.show(this, db.getWritableDatabase(), owner, p, this::render);

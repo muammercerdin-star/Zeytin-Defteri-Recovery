@@ -692,6 +692,14 @@ public final class TezgahActivity extends Activity {
         LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(0, dp(44), 1);
         wp.setMarginStart(dp(8));
         actions.addView(wa, wp);
+        TextView pr = pill("Yazdır", false);
+        pr.setContentDescription("Fişi Bluetooth yazıcıdan yazdır; ayarlar için basılı tut");
+        pr.setOnClickListener(v -> TezgahPrinter.print(this, TezgahPrintFormat.receipt(m, traderName(), p.seller,
+                displayDate(p.createdAt), p.paid, TezgahPrinter.width(this))));
+        pr.setOnLongClickListener(v -> { TezgahPrinter.settings(this); return true; });
+        LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(0, dp(44), 1);
+        pp.setMarginStart(dp(8));
+        actions.addView(pr, pp);
         box.addView(actions, margins(-1, -2, 10));
 
         // Son alımlar (açık olan hariç, en çok 3)
@@ -1366,6 +1374,10 @@ public final class TezgahActivity extends Activity {
     private static String today() { return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()); }
 
     private static String displayDate() { return new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.US).format(new Date()); }
+
+    private static String displayDate(long at) {
+        return new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.US).format(new Date(at > 0 ? at : System.currentTimeMillis()));
+    }
 
     /** Sekmede kısa kilo: 1.234 kg → "1.234 kg", 12,5 → "12,5 kg". */
     private static String shortKg(double v) { return TezgahModel.kg(v >= 100 ? Math.round(v) : v); }

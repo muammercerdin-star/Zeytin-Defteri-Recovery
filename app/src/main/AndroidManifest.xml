@@ -28,6 +28,10 @@
     </queries>
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Tezgah: Bluetooth termal fiş yazıcısı (yalnız eşleşmiş cihaza bağlanır; tarama/konum yok) -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -332,6 +336,7 @@
         <activity android:name=".TezgahActivity" android:exported="false" android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".TezgahDayActivity" android:exported="false" />
+        <activity android:name=".TezgahStatementActivity" android:exported="false" />
         <activity android:name=".NotificationsActivity" android:exported="false" />
         <activity android:name=".MeydanModerationActivity" android:exported="false" />
         <service android:name=".AlertJobService" android:exported="false"
