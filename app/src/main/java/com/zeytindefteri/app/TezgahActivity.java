@@ -194,13 +194,14 @@ public final class TezgahActivity extends Activity {
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
         col.addView(text("Tezgah · Alım", 20, TEXT, true));
-        String context = seller.isEmpty() ? "Satan üretici: ad yaz" : "Satan: " + seller;
-        TextView sub = text(context + " ▾ · " + new SimpleDateFormat("d MMM", new Locale("tr", "TR")).format(new Date()),
-                13, GREEN, true);
+        // Satanın adı sihirbazın sonunda sorulur: ad yokken başlıkta yalnız tarih durur.
+        String dayText = new SimpleDateFormat("d MMMM", new Locale("tr", "TR")).format(new Date());
+        String context = seller.isEmpty() ? "" : "Satan: " + seller;
+        TextView sub = text(seller.isEmpty() ? dayText : context + " ▾ · " + dayText, 13, seller.isEmpty() ? MUTED : GREEN, true);
         sub.setSingleLine(true);
         sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
         col.addView(sub);
-        col.setContentDescription(context + ", değiştir");
+        col.setContentDescription(seller.isEmpty() ? "Tezgah, " + dayText + ". Satanı yazmak için dokun" : context + ", değiştir");
         col.setOnClickListener(v -> askSeller(null));
         row.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
 
@@ -887,6 +888,7 @@ public final class TezgahActivity extends Activity {
 
     private void openWizard() {
         wizardStep = TezgahWizardFlow.start(model);
+        if (model.isEmpty()) { grade = 0; renderGradeTabs(); replaceWeighings(); updatePreview(); }
         wizard = new android.app.Dialog(this);
         wizard.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
         ScrollView scroll = new ScrollView(this);
@@ -1107,8 +1109,12 @@ public final class TezgahActivity extends Activity {
             double kg = TezgahModel.parse(wizardKg.getText().toString());
             String what = kasa > 0 ? kasa + " kasa" : "dökme";
             boolean ok = kg > 0 && TezgahModel.addError(kasa, kg, model.tare()).isEmpty();
+            // Kilo yazılmadan ana düğme soluk durur: geçmenin tek yolu "Geç" düğmesi.
             wizardAdd.setText(ok ? "+  Ekle · net " + TezgahModel.kg(TezgahModel.net(kasa, kg, model.tare())) + "  ›"
-                    : "+  " + TezgahModel.SHORT[g] + " tartımı ekle (" + what + ")  ›");
+                    : kg > 0 ? "+  " + TezgahModel.SHORT[g] + " tartımı ekle (" + what + ")  ›" : "Kiloyu yaz");
+            wizardAdd.setTextColor(kg > 0 ? BG : MUTED);
+            wizardAdd.setBackground(round(kg > 0 ? GREEN : CARD, kg > 0 ? 0 : LINE, 16));
+            wizardAdd.setContentDescription(kg > 0 ? "Tartımı ekle ve sonraki numaraya geç" : "Önce kantar kilosunu yaz");
             if (kg <= 0) { wizardNote.setVisibility(View.GONE); return; }
             String err = TezgahModel.addError(kasa, kg, model.tare());
             wizardNote.setVisibility(View.VISIBLE);
@@ -1130,8 +1136,9 @@ public final class TezgahActivity extends Activity {
     private void wizardAddWeighing(final int g, final boolean stay) {
         final double kg = TezgahModel.parse(wizardKg.getText().toString());
         if (kg <= 0) {
-            if (stay) { wizardKg.setError("Kiloyu yaz"); return; }
-            goWizard(TezgahWizardFlow.next(g)); // kilo yoksa "ekle" = geç
+            // Kilo yoksa eklenmez ve geçilmez; geçmek için "Geç" düğmesi var.
+            wizardKg.setError("Kiloyu yaz");
+            showKeyboard(wizardKg);
             return;
         }
         String err = TezgahModel.addError(kasa, kg, model.tare());
@@ -1203,6 +1210,7 @@ public final class TezgahActivity extends Activity {
         model.clear();
         seller = "";
         sellerPhone = "";
+        grade = 0; // yeni alım Double sekmesiyle başlar
         saveDraft();
         build();
         toast("Alım kaydedildi ✓ Sıradaki üretici için tezgah hazır.");
