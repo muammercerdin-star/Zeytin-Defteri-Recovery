@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * Yalnız telefonda duran kayıtların yedeği: tezgah alımları, ödemeleri, akşam hesapları, gün sonu (Z) raporları
- * ve Elek satışlarının ödeme geçmişi; ayrıca tezgah fiyatları/darası.
+ * Elek satışlarının ödeme geçmişi ve yağhane sıkımları; ayrıca tezgah fiyatları/darası.
  *
  * Dosya sade metindir (kütüphane gerekmez, sürümden bağımsız):
  *   ZEYTIN-DEFTERI-YEDEK 1
@@ -28,7 +28,7 @@ public final class TezgahBackup {
     public static final String MAGIC = "ZEYTIN-DEFTERI-YEDEK";
     public static final int VERSION = 1;
     /** Sıra önemli: geri yüklemede bağlı tablolar sonra yazılır. */
-    public static final String[] TABLES = {"tezgah_z", "tezgah_purchases", "tezgah_payments", "tezgah_closings", "sale_payments"};
+    public static final String[] TABLES = {"tezgah_z", "tezgah_purchases", "tezgah_payments", "tezgah_closings", "sale_payments", "oil_pressings"};
 
     private TezgahBackup() {}
 
@@ -48,6 +48,7 @@ public final class TezgahBackup {
         TezgahPurchases.ensure(db);
         TezgahPayments.ensure(db);
         SalePayments.ensure(db);
+        OilPressings.ensure(db);
     }
 
     // ------------------------------------------------------------------ dışa aktar
@@ -267,6 +268,7 @@ public final class TezgahBackup {
         if (d.rowCount("tezgah_z") > 0) b.append(" · ").append(d.rowCount("tezgah_z")).append(" gün sonu");
         int pays = d.rowCount("tezgah_payments") + d.rowCount("sale_payments");
         if (pays > 0) b.append(" · ").append(pays).append(" ödeme");
+        if (d.rowCount("oil_pressings") > 0) b.append(" · ").append(d.rowCount("oil_pressings")).append(" sıkım");
         return b.toString();
     }
 }

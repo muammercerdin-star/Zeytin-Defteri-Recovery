@@ -5175,6 +5175,15 @@ public class ProducerFeedActivity extends Activity {
         tezgah.setOnClickListener(v -> startActivity(new Intent(this, TezgahActivity.class)));
         body.addView(tezgah, gardensBlockParams(10));
 
+        // Yağhane: sıkım defteri ("kaç kilodan aldım", yağhaneleri karşılaştır).
+        TextView oil = text("Yağhane  ·  kaç kilodan aldım?", 15, GREEN, true);
+        oil.setGravity(Gravity.CENTER);
+        oil.setMinHeight(dp(50));
+        oil.setBackground(round(Color.TRANSPARENT, 25, GREEN));
+        oil.setContentDescription("Yağhane sıkım defterini aç: hangi yağhane kaç kilodan yağ verdi");
+        oil.setOnClickListener(v -> startActivity(new Intent(this, OilActivity.class)));
+        body.addView(oil, gardensBlockParams(10));
+
         // Bahçe filtresi
         if (gardenIds.size() > 1) {
             HorizontalScrollView scroller = new HorizontalScrollView(this);

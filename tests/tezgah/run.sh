@@ -19,7 +19,7 @@ subprocess.run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','-nowarn','-
   'app/src/main/java/com/zeytindefteri/app/TezgahZ.java',
   'app/src/main/java/com/zeytindefteri/app/TezgahSearch.java','app/src/main/java/com/zeytindefteri/app/TezgahWizardFlow.java','tests/tezgah/TezgahSearchTest.java',
   'app/src/main/java/com/zeytindefteri/app/TezgahPayments.java','app/src/main/java/com/zeytindefteri/app/TezgahBackup.java',
-  'app/src/main/java/com/zeytindefteri/app/SalePayments.java','app/src/main/java/com/zeytindefteri/app/SalePayStatus.java','app/src/main/java/com/zeytindefteri/app/ElekSaleModel.java','tests/tezgah/TezgahBackupTest.java','app/src/main/java/com/zeytindefteri/app/TezgahStatement.java','tests/tezgah/TezgahStatementTest.java',
+  'app/src/main/java/com/zeytindefteri/app/SalePayments.java','app/src/main/java/com/zeytindefteri/app/SalePayStatus.java','app/src/main/java/com/zeytindefteri/app/ElekSaleModel.java','tests/tezgah/TezgahBackupTest.java','app/src/main/java/com/zeytindefteri/app/OilPressings.java','app/src/main/java/com/zeytindefteri/app/TezgahStatement.java','tests/tezgah/TezgahStatementTest.java',
   'tests/tezgah/TezgahPurchasesTest.java','tests/tezgah/TezgahClosingTest.java','tests/tezgah/TezgahZTest.java'],check=True)
 db=pathlib.Path(out)/'t.sqlite'
 subprocess.run(['java','-cp',out,'com.zeytindefteri.app.TezgahPurchasesTest',str(db),'tests/buyers/sql_helper.py'],check=True)

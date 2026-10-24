@@ -27,6 +27,8 @@ public class TezgahBackupTest {
     x=find(TezgahPurchases.all(db,"u1",100),p1); eq(x.paid,gross,"borç kapandı");
     ok(!TezgahPayments.pay(db,"u1",p1,5,"2026-10-27",404),"kapalı borca ödeme yok");
     ok(TezgahPayments.pay(db,"u1",p2,100,"2026-10-27",405),"ikinci alıma ödeme");
+    OilPressings.Pressing op=new OilPressings.Pressing(); op.mill="Edremit Yağhanesi"; op.date="2026-10-24"; op.oliveKg=1000; op.oilLitre=240;
+    ok(OilPressings.save(db,"u1",op,500L)>0,"sıkım kaydı");
     // Yedek
     Map<String,Object> prefs=new LinkedHashMap<>(); prefs.put("tare",2.0); prefs.put("buy_prices",m.encode());
     String text=TezgahBackup.export(db,"u1",prefs,999L);
@@ -37,13 +39,15 @@ public class TezgahBackupTest {
     ok(d.created==999L,"tarih");
     ok(String.valueOf(d.prefs.get("buy_prices")).equals(m.encode()),"fiyatlar yedekte");
     eq((Double)d.prefs.get("tare"),2.0,"dara yedekte");
-    ok(TezgahBackup.describe(d).startsWith("2 alım"),"özet "+TezgahBackup.describe(d));
+    ok(TezgahBackup.describe(d).startsWith("2 alım")&&TezgahBackup.describe(d).contains("1 sıkım"),"özet "+TezgahBackup.describe(d));
     // Telefon "kaybolur": u1 kayıtları silinir, sonra geri yüklenir
     db.execSQL("DELETE FROM tezgah_purchases WHERE owner_uid='u1'");
     db.execSQL("DELETE FROM tezgah_payments WHERE owner_uid='u1'");
+    db.execSQL("DELETE FROM oil_pressings WHERE owner_uid='u1'");
     ok(TezgahPurchases.all(db,"u1",100).isEmpty(),"kayıtlar gitti");
     int w=TezgahBackup.restore(db,"u1",d);
-    ok(w==5,"5 satır geri yazıldı: "+w);
+    ok(w==6,"6 satır geri yazıldı: "+w);
+    ok(OilPressings.list(db,"u1",2026).size()==1,"sıkım da geri geldi");
     List<TezgahPurchases.Purchase> back=TezgahPurchases.all(db,"u1",100);
     ok(back.size()==2,"alımlar geri geldi");
     TezgahPurchases.Purchase y=find(back,p2);
@@ -53,11 +57,12 @@ public class TezgahBackupTest {
     ok(TezgahModel.decode(find(back,p1).data).gradeNet(3)==m.gradeNet(3),"tartım verisi aynen");
     ok(find(TezgahPurchases.all(db,"u2",100),other)!=null,"başka hesabın kaydına dokunulmaz");
     // Tekrar geri yükleme çoğaltmaz (değiştirir)
-    ok(TezgahBackup.restore(db,"u1",d)==5,"ikinci kez"); ok(TezgahPurchases.all(db,"u1",100).size()==2,"çoğalmadı");
+    ok(TezgahBackup.restore(db,"u1",d)==6,"ikinci kez"); ok(TezgahPurchases.all(db,"u1",100).size()==2,"çoğalmadı");
     // Başka hesaba taşıma: owner_uid yeni hesap olur
     db.execSQL("DELETE FROM tezgah_purchases WHERE owner_uid='u1'");
     db.execSQL("DELETE FROM tezgah_payments WHERE owner_uid='u1'");
-    ok(TezgahBackup.restore(db,"u3",d)==5,"yeni hesaba"); ok(TezgahPurchases.all(db,"u3",100).size()==2,"yeni hesapta görünür");
+    db.execSQL("DELETE FROM oil_pressings WHERE owner_uid='u1'");
+    ok(TezgahBackup.restore(db,"u3",d)==6,"yeni hesaba"); ok(TezgahPurchases.all(db,"u3",100).size()==2,"yeni hesapta görünür");
     ok(TezgahBackup.unescape(TezgahBackup.escape("a\nb\tc\\d\r")).equals("a\nb\tc\\d\r"),"kaçış gidip gelir");
     ok(!TezgahBackup.escape("a\nb").contains("\n"),"satır sonu kaçışlanır");
     // Bozuk dosyalar
