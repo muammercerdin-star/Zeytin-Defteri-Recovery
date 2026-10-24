@@ -106,6 +106,13 @@ public final class TezgahPurchases {
                 new String[]{owner == null ? "" : owner});
     }
 
+    /** Bütün alımlar (açık dönem + tüm Z'ler), yeniden eskiye; en çok limit kadar. Arama bunu kullanır. */
+    public static List<Purchase> all(SQLiteDatabase db, String owner, int limit) {
+        ensure(db);
+        return query(db, COLS + " WHERE COALESCE(owner_uid,'')=? ORDER BY created_at DESC, id DESC LIMIT " + Math.max(1, limit),
+                new String[]{owner == null ? "" : owner});
+    }
+
     /** Bir gün sonu (Z) raporunun alımları. */
     public static List<Purchase> forZ(SQLiteDatabase db, String owner, long zId) {
         ensure(db);

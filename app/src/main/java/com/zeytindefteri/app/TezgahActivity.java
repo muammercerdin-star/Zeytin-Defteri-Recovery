@@ -957,12 +957,29 @@ public final class TezgahActivity extends Activity {
             double part = TezgahModel.parse(partial.getText().toString());
             String err = ElekSaleModel.partialError(pay[0], total, part);
             if (!err.isEmpty()) { partial.setError(err); partial.requestFocus(); return; }
-            // Ad yazılmadıysa fişte "Münferit satıcı" yazar.
-            seller = TezgahWizardFlow.sellerOrWalkIn(name.getText().toString());
-            sellerPhone = phone.getText().toString().trim();
-            double paid = ElekSaleModel.received(pay[0], total, part);
-            sheet.dismiss();
-            savePurchase(paid, v == qr);
+            final double paid = ElekSaleModel.received(pay[0], total, part);
+            final boolean toQr = v == qr;
+            Runnable save = () -> {
+                // Ad yazılmadıysa fişte "Münferit satıcı" yazar.
+                seller = TezgahWizardFlow.sellerOrWalkIn(name.getText().toString());
+                sellerPhone = phone.getText().toString().trim();
+                sheet.dismiss();
+                savePurchase(paid, toQr);
+            };
+            String typed = name.getText().toString().trim();
+            boolean noName = typed.isEmpty() || typed.equalsIgnoreCase(TezgahWizardFlow.WALK_IN);
+            if (total - paid > 0.5 && noName) {
+                // Borç kalıyor ama ad yok: sonra Alım defterinde adıyla bulunamaz.
+                new AlertDialog.Builder(this)
+                        .setTitle("Borç kalıyor, ad yazılmadı")
+                        .setMessage("Üreticiye " + TezgahModel.tl(total - paid) + " borç kalacak. Adını yazmazsan geldiğinde "
+                                + "Alım defterinde adıyla bulamazsın (tutar ya da telefonla aranabilir).")
+                        .setPositiveButton("Ad yazayım", (d, w) -> { name.setText(""); showKeyboard(name); })
+                        .setNegativeButton("Münferit kaydet", (d, w) -> save.run())
+                        .show();
+                return;
+            }
+            save.run();
         };
         qr.setOnClickListener(go);
         wa.setOnClickListener(go);

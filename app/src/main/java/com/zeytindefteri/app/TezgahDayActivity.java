@@ -107,6 +107,12 @@ public final class TezgahDayActivity extends Activity {
         body.removeAllViews();
         final List<TezgahPurchases.Purchase> list = load();
         body.addView(header(list));
+        // Arama (yalnız ana defterde): bütün geçmişte ad / telefon / tutar; "sadece borçlular".
+        if (zId <= 0) {
+            body.addView(searchBar(), margins(-1, -2, 4));
+            contentStart = body.getChildCount();
+            if (searching()) { renderResults(); return; }
+        }
         body.addView(statusBar(list), margins(-1, -2, 6));
         body.addView(summary(list), margins(-1, -2, 10));
         if (list.isEmpty()) {
@@ -123,6 +129,155 @@ public final class TezgahDayActivity extends Activity {
             body.addView(closingCard(list), margins(-1, -2, 16));
         }
         if (zId <= 0) body.addView(zList(), margins(-1, -2, 18));
+    }
+
+    // ================================================================== arama
+
+    private LinearLayout searchBox;
+    private android.widget.EditText searchInput;
+    private TextView chipAll, chipDebt;
+    private boolean debtOnly;
+    private int contentStart;
+    private List<TezgahPurchases.Purchase> history;
+    private java.util.Map<Long, String> zLabels;
+
+    private boolean searching() {
+        return debtOnly || (searchInput != null && !searchInput.getText().toString().trim().isEmpty());
+    }
+
+    /** Arama kutusu ve süzgeç bir kez oluşturulur; ekran tazelenince aynı kutu (yazı, imleç) korunur. */
+    private View searchBar() {
+        if (searchBox != null) {
+            if (searchBox.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) searchBox.getParent()).removeView(searchBox);
+            history = null; // borç ödemesi vb. sonrası yeniden okunsun
+            paintChips();
+            return searchBox;
+        }
+        searchBox = new LinearLayout(this);
+        searchBox.setOrientation(LinearLayout.VERTICAL);
+        searchInput = new android.widget.EditText(this);
+        searchInput.setHint("🔍  Üretici ara · ad, telefon ya da tutar");
+        searchInput.setSingleLine(true);
+        searchInput.setTextSize(17);
+        searchInput.setTextColor(TEXT);
+        searchInput.setHintTextColor(MUTED);
+        searchInput.setPadding(dp(16), 0, dp(16), 0);
+        searchInput.setBackground(round(CARD, LINE, 16));
+        searchInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        searchInput.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
+        searchInput.setContentDescription("Üretici ara: ad, telefon ya da tutar");
+        searchInput.addTextChangedListener(watch(this::refreshSearch));
+        searchBox.addView(searchInput, new LinearLayout.LayoutParams(-1, dp(52)));
+        LinearLayout chips = new LinearLayout(this);
+        chipAll = text("Tümü", 14, TEXT, true);
+        chipDebt = text("Sadece borçlular", 14, TEXT, true);
+        for (TextView c : new TextView[]{chipAll, chipDebt}) {
+            c.setGravity(Gravity.CENTER);
+            c.setPadding(dp(16), 0, dp(16), 0);
+        }
+        chipAll.setOnClickListener(v -> { debtOnly = false; refreshSearch(); });
+        chipDebt.setOnClickListener(v -> { debtOnly = true; refreshSearch(); });
+        chips.addView(chipAll, new LinearLayout.LayoutParams(-2, dp(40)));
+        LinearLayout.LayoutParams dp2 = new LinearLayout.LayoutParams(-2, dp(40));
+        dp2.setMarginStart(dp(8));
+        chips.addView(chipDebt, dp2);
+        searchBox.addView(chips, margins(-1, -2, 8));
+        paintChips();
+        return searchBox;
+    }
+
+    private List<TezgahPurchases.Purchase> history() {
+        if (history == null) {
+            try {
+                history = TezgahPurchases.all(db.getWritableDatabase(), owner, 2000);
+                zLabels = new java.util.HashMap<>();
+                for (TezgahZ.Record r : TezgahZ.list(db.getWritableDatabase(), owner, 2000)) zLabels.put(r.id, r.label());
+            } catch (RuntimeException e) {
+                history = new java.util.ArrayList<>();
+                zLabels = new java.util.HashMap<>();
+            }
+        }
+        return history;
+    }
+
+    private void paintChips() {
+        if (chipAll == null) return;
+        int debts = TezgahSearch.filter(history(), "", true).size();
+        chipDebt.setText(debts > 0 ? "Sadece borçlular · " + debts : "Sadece borçlular");
+        chipAll.setTextColor(debtOnly ? TEXT : BG);
+        chipAll.setBackground(debtOnly ? round(CARD, LINE, 20) : round(GREEN, 0, 20));
+        chipDebt.setTextColor(debtOnly ? BG : (debts > 0 ? AMBER : TEXT));
+        chipDebt.setBackground(debtOnly ? round(AMBER, 0, 20) : round(CARD, debts > 0 ? AMBER : LINE, 20));
+        chipAll.setContentDescription("Tüm alımlar" + (debtOnly ? "" : ", seçili"));
+        chipDebt.setContentDescription("Sadece borcu olan alımlar, " + debts + (debtOnly ? ", seçili" : ""));
+    }
+
+    /** Yazdıkça yalnız arama kutusunun altı yenilenir (kutu ve klavye yerinde kalır). */
+    private void refreshSearch() {
+        paintChips();
+        if (!searching()) { render(); return; }
+        while (body.getChildCount() > contentStart) body.removeViewAt(contentStart);
+        renderResults();
+    }
+
+    private void renderResults() {
+        String q = searchInput.getText().toString();
+        List<TezgahPurchases.Purchase> found = TezgahSearch.filter(history(), q, debtOnly);
+        String what = debtOnly ? (q.trim().isEmpty() ? "Borçlular" : "Borçlu · \"" + q.trim() + "\"") : "\"" + q.trim() + "\"";
+        double debt = TezgahSearch.totalRemaining(found);
+        TextView head = text(what + " · " + found.size() + " alım" + (debt > 0.5 ? " · borç " + TezgahModel.tl(debt) : ""),
+                14, debt > 0.5 ? AMBER : MUTED, true);
+        body.addView(head, margins(-1, -2, 12));
+        if (found.isEmpty()) {
+            TextView none = text("Bulunamadı. \"Münferit satıcı\" olarak kaydedilen biri adıyla çıkmaz; tutarı ya da telefonu yazmayı dene.",
+                    14, MUTED, false);
+            none.setPadding(0, dp(12), 0, 0);
+            body.addView(none);
+            return;
+        }
+        // Aynı üreticinin birden fazla alımı varsa özet
+        for (TezgahSearch.Group g : TezgahSearch.groups(found)) {
+            if (g.count < 2) break;
+            LinearLayout box = new LinearLayout(this);
+            box.setOrientation(LinearLayout.VERTICAL);
+            box.setPadding(dp(14), dp(10), dp(14), dp(10));
+            box.setBackground(round(GREEN_DIM, GREEN, 14));
+            box.addView(text(g.name, 16, TEXT, true));
+            box.addView(text(g.count + " alım · " + TezgahModel.tl(g.gross)
+                    + (g.remaining > 0.5 ? " · toplam borç " + TezgahModel.tl(g.remaining) : " · borç yok"), 14,
+                    g.remaining > 0.5 ? AMBER : GREEN, true));
+            body.addView(box, margins(-1, -2, 8));
+        }
+        int shown = 0;
+        for (final TezgahPurchases.Purchase p : found) {
+            if (shown++ >= 100) break;
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setPadding(dp(14), dp(10), dp(14), dp(10));
+            boolean owes = p.remaining() > 0.5;
+            card.setBackground(round(CARD, owes ? AMBER : LINE, 14));
+            LinearLayout top = new LinearLayout(this);
+            top.setGravity(Gravity.CENTER_VERTICAL);
+            TextView n = text(p.seller.isEmpty() ? "Adsız" : p.seller, 16, TEXT, true);
+            n.setSingleLine(true);
+            n.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            top.addView(n, new LinearLayout.LayoutParams(0, -2, 1));
+            top.addView(text(TezgahModel.tl(p.gross), 16, TEXT, true));
+            card.addView(top);
+            String period = p.zId > 0 ? (zLabels != null && zLabels.containsKey(p.zId) ? zLabels.get(p.zId) : "Z") : "Açık dönem";
+            card.addView(text(DM_HM.format(new Date(p.createdAt)) + " · " + period, 13, MUTED, false), margins(-1, -2, 2));
+            LinearLayout bottom = new LinearLayout(this);
+            bottom.setGravity(Gravity.CENTER_VERTICAL);
+            bottom.addView(text(TezgahModel.kg(p.kg) + " · " + p.kasa + " kasa", 14, TEXT, false), new LinearLayout.LayoutParams(0, -2, 1));
+            bottom.addView(text(owes ? "Borç " + TezgahModel.tl(p.remaining()) : "Ödendi ✓", 14, owes ? AMBER : GREEN, true));
+            card.addView(bottom, margins(-1, -2, 4));
+            card.setContentDescription((p.seller.isEmpty() ? "Adsız" : p.seller) + ", " + DM_HM.format(new Date(p.createdAt))
+                    + ", " + period + ", " + TezgahModel.kg(p.kg) + ", " + TezgahModel.tl(p.gross)
+                    + (owes ? ", borç " + TezgahModel.tl(p.remaining()) : ", ödendi") + ". İşlemler için dokun.");
+            card.setOnClickListener(v -> actions(p));
+            body.addView(card, margins(-1, -2, 8));
+        }
+        if (found.size() > 100) body.addView(text("İlk 100 sonuç gösteriliyor; aramayı daralt.", 12, MUTED, false), margins(-1, -2, 8));
     }
 
     /** Dönem şeridi: "Açık dönem · 19:37'den beri" ya da "Z-0003 · 20 Eki 21:30 · kilitli". */
