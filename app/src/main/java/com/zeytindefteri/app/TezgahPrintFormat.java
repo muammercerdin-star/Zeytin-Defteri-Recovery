@@ -52,7 +52,13 @@ public final class TezgahPrintFormat {
     }
 
     /** Yazıcıya gidecek baytlar: başlat, (Türkçe kod sayfası), büyük başlık, metin, kâğıt besle, kes. */
-    public static byte[] escpos(String receipt, boolean turkish) {
+    public static byte[] escpos(String receipt, boolean turkish) { return escpos(receipt, turkish, null, null); }
+
+    /**
+     * qrRaster null değilse metnin altına ortalanmış başlık satırı (caption) ve QR resmi basılır
+     * (üretici fişteki QR'ı Elek kaydında "QR okut" ile okutur).
+     */
+    public static byte[] escpos(String receipt, boolean turkish, byte[] qrRaster, String caption) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         out.write(0x1B); out.write(0x40);                       // ESC @ başlat
         if (turkish) { out.write(0x1B); out.write(0x74); out.write(CODEPAGE_PC857); } // ESC t 13
@@ -65,9 +71,56 @@ public final class TezgahPrintFormat {
             out.write(0x0A);
             if (i == 0) { out.write(0x1B); out.write(0x21); out.write(0x00); }
         }
+        if (qrRaster != null && qrRaster.length > 0) {
+            out.write(0x1B); out.write(0x61); out.write(1);       // ESC a 1: ortala
+            if (caption != null && !caption.isEmpty()) {
+                byte[] c = turkish ? cp857(caption) : ascii(caption);
+                out.write(c, 0, c.length);
+                out.write(0x0A);
+            }
+            out.write(qrRaster, 0, qrRaster.length);
+            out.write(0x0A);
+            out.write(0x1B); out.write(0x61); out.write(0);       // ESC a 0: sola
+        }
         out.write(0x1B); out.write(0x64); out.write(4);          // ESC d 4: 4 satır besle
         out.write(0x1D); out.write(0x56); out.write(0x42); out.write(0); // GS V 66 0: kes (kesicisi yoksa yok sayılır)
         return out.toByteArray();
+    }
+
+    /**
+     * Siyah-beyaz resmi ESC/POS raster komutlarına çevirir (GS v 0), 64 satırlık şeritler halinde
+     * (bazı yazıcıların tamponu küçük). px[y*w+x] true = siyah.
+     */
+    public static byte[] raster(boolean[] px, int w, int h) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int bytesPerRow = (w + 7) / 8;
+        for (int top = 0; top < h; top += 64) {
+            int rows = Math.min(64, h - top);
+            out.write(0x1D); out.write(0x76); out.write(0x30); out.write(0);
+            out.write(bytesPerRow & 0xFF); out.write((bytesPerRow >> 8) & 0xFF);
+            out.write(rows & 0xFF); out.write((rows >> 8) & 0xFF);
+            for (int y = top; y < top + rows; y++) {
+                for (int bx = 0; bx < bytesPerRow; bx++) {
+                    int v = 0;
+                    for (int bit = 0; bit < 8; bit++) {
+                        int x = bx * 8 + bit;
+                        if (x < w && px[y * w + x]) v |= 0x80 >> bit;
+                    }
+                    out.write(v);
+                }
+            }
+        }
+        return out.toByteArray();
+    }
+
+    /** QR modül matrisini (n×n) tam sayı katıyla en çok maxDots genişliğe büyütür; sonuç kare resim. */
+    public static boolean[] scale(boolean[] modules, int n, int maxDots, int[] outSize) {
+        int k = Math.max(1, maxDots / Math.max(1, n));
+        int w = n * k;
+        boolean[] px = new boolean[w * w];
+        for (int y = 0; y < w; y++) for (int x = 0; x < w; x++) px[y * w + x] = modules[(y / k) * n + (x / k)];
+        outSize[0] = w;
+        return px;
     }
 
     /** Türkçe harfleri sadeleştirir; ASCII dışı kalan her şey '?' olur. ₺ → TL. */

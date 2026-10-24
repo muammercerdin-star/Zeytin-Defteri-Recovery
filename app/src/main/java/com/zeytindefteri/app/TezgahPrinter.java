@@ -52,6 +52,40 @@ public final class TezgahPrinter {
         send(a, address, TezgahPrintFormat.escpos(receiptText, turkish(a)));
     }
 
+    public static boolean printQr(Context c) { return prefs(c).getBoolean("qr", true); }
+
+    /** Alım fişi + altında QR (ayardan kapatılabilir). qrPayload: TezgahQr.encode(...). */
+    public static void printReceipt(Activity a, String receiptText, String qrPayload) {
+        if (!permitted(a)) return;
+        String address = prefs(a).getString("address", "");
+        if (address.isEmpty()) {
+            choose(a, () -> printReceipt(a, receiptText, qrPayload));
+            return;
+        }
+        byte[] qr = printQr(a) && qrPayload != null ? qrRaster(qrPayload, width(a) >= TezgahPrintFormat.WIDTH_80 ? 384 : 256) : null;
+        send(a, address, TezgahPrintFormat.escpos(receiptText, turkish(a), qr, "Uretici okutsun: Elek > QR okut"));
+    }
+
+    /** QR kodunu yazıcı raster baytlarına çevirir (keskin olsun diye modüller tam sayı katıyla büyütülür). */
+    static byte[] qrRaster(String payload, int maxDots) {
+        try {
+            java.util.Map<com.google.zxing.EncodeHintType, Object> hints = new java.util.EnumMap<>(com.google.zxing.EncodeHintType.class);
+            hints.put(com.google.zxing.EncodeHintType.CHARACTER_SET, "UTF-8");
+            hints.put(com.google.zxing.EncodeHintType.MARGIN, 1);
+            hints.put(com.google.zxing.EncodeHintType.ERROR_CORRECTION, com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M);
+            com.google.zxing.common.BitMatrix m = new com.google.zxing.qrcode.QRCodeWriter()
+                    .encode(payload, com.google.zxing.BarcodeFormat.QR_CODE, 0, 0, hints);
+            int n = m.getWidth();
+            boolean[] modules = new boolean[n * n];
+            for (int y = 0; y < n; y++) for (int x = 0; x < n; x++) modules[y * n + x] = m.get(x, y);
+            int[] size = new int[1];
+            boolean[] px = TezgahPrintFormat.scale(modules, n, maxDots, size);
+            return TezgahPrintFormat.raster(px, size[0], size[0]);
+        } catch (Exception e) {
+            return null; // QR üretilemezse fiş QR'sız basılır
+        }
+    }
+
     /** Serbest metin (ekstre gibi): ilk satır başlık olarak büyük basılır; emoji atılır. */
     public static void printText(Activity a, String text) {
         String clean = text.replace("🫒 ", "").replace("🫒", "").replace("✓", "");
@@ -119,6 +153,7 @@ public final class TezgahPrinter {
                 "Yazıcı: " + (name.isEmpty() ? "seçilmedi" : name) + "  ›",
                 "Kâğıt: " + (w80 ? "80 mm" : "58 mm") + " (değiştir)",
                 "Türkçe karakter: " + (tr ? "açık (ş, ğ, ı basılır)" : "kapalı (s, g, i basılır)"),
+                "QR kodu: " + (printQr(a) ? "fişin altına basılır" : "basılmaz"),
                 "Deneme fişi yazdır"
         };
         new AlertDialog.Builder(a).setTitle("Fiş yazıcısı")
@@ -126,6 +161,7 @@ public final class TezgahPrinter {
                     if (i == 0) choose(a, () -> settings(a));
                     else if (i == 1) { p.edit().putInt("width", w80 ? TezgahPrintFormat.WIDTH_58 : TezgahPrintFormat.WIDTH_80).apply(); settings(a); }
                     else if (i == 2) { p.edit().putBoolean("turkish", !tr).apply(); settings(a); }
+                    else if (i == 3) { p.edit().putBoolean("qr", !printQr(a)).apply(); settings(a); }
                     else testPrint(a);
                 })
                 .setNegativeButton("Kapat", null).show();
@@ -136,7 +172,7 @@ public final class TezgahPrinter {
         m.add(0, 1, 27); m.setPrice(0, 130);
         m.add(5, 1, 22); m.setPrice(5, 15);
         String text = TezgahPrintFormat.receipt(m, "Deneme", "Şükrü Işık Çağlar", "deneme fişi", m.total(), width(a));
-        print(a, text);
+        printReceipt(a, text, TezgahQr.encode(m, "deneme", "Deneme", m.total()));
     }
 
     private static void openSettings(Activity a) {
@@ -160,7 +196,7 @@ public final class TezgahPrinter {
                 OutputStream out = socket.getOutputStream();
                 out.write(data);
                 out.flush();
-                Thread.sleep(400); // yazıcı tamponu boşalsın
+                Thread.sleep(400 + data.length / 20); // yazıcı tamponu boşalsın (QR resmi uzun sürer)
             } catch (SecurityException e) {
                 error = "Bluetooth izni yok.";
             } catch (IllegalStateException e) {

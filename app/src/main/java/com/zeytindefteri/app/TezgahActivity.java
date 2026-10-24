@@ -694,8 +694,8 @@ public final class TezgahActivity extends Activity {
         actions.addView(wa, wp);
         TextView pr = pill("Yazdır", false);
         pr.setContentDescription("Fişi Bluetooth yazıcıdan yazdır; ayarlar için basılı tut");
-        pr.setOnClickListener(v -> TezgahPrinter.print(this, TezgahPrintFormat.receipt(m, traderName(), p.seller,
-                displayDate(p.createdAt), p.paid, TezgahPrinter.width(this))));
+        pr.setOnClickListener(v -> TezgahPrinter.printReceipt(this, TezgahPrintFormat.receipt(m, traderName(), p.seller,
+                displayDate(p.createdAt), p.paid, TezgahPrinter.width(this)), TezgahQr.encode(m, p.date, traderName(), p.paid)));
         pr.setOnLongClickListener(v -> { TezgahPrinter.settings(this); return true; });
         LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(0, dp(44), 1);
         pp.setMarginStart(dp(8));
