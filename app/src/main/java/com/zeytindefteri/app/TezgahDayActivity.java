@@ -129,6 +129,167 @@ public final class TezgahDayActivity extends Activity {
             body.addView(closingCard(list), margins(-1, -2, 16));
         }
         if (zId <= 0) body.addView(zList(), margins(-1, -2, 18));
+        if (zId <= 0) body.addView(backupCard(), margins(-1, -2, 18));
+    }
+
+    // ================================================================== yedek
+
+    private static final int REQ_BACKUP_SAVE = 61, REQ_BACKUP_OPEN = 62;
+    private static final String BACKUP_PREFS = "zd_backup";
+
+    private long lastBackup() { return getSharedPreferences(BACKUP_PREFS, MODE_PRIVATE).getLong("last_" + owner, 0); }
+
+    /**
+     * Yedek kartı: tezgah kayıtları yalnız bu telefonda; "Yedekle" dosyayı kullanıcının seçtiği yere
+     * (İndirilenler, Google Drive…) yazar, "Geri yükle" seçilen yedek dosyasından geri getirir.
+     * Gün sonundan sonra yedek alınmadıysa kart sarı uyarır.
+     */
+    private View backupCard() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(14), dp(12), dp(14), dp(14));
+        long last = lastBackup();
+        long lastZ = 0;
+        try {
+            List<TezgahZ.Record> zs = TezgahZ.list(db.getWritableDatabase(), owner, 1);
+            if (!zs.isEmpty()) lastZ = zs.get(0).closedAt;
+        } catch (RuntimeException ignored) { }
+        boolean stale = lastZ > last || (last == 0 && !load().isEmpty());
+        box.setBackground(round(CARD, stale ? AMBER : LINE, 16));
+        TextView head = text("YEDEK", 12, stale ? AMBER : MUTED, true);
+        head.setLetterSpacing(0.08f);
+        box.addView(head);
+        String status = last == 0 ? "Henüz yedek alınmadı." : "Son yedek: " + DM_HM.format(new Date(last));
+        if (stale && lastZ > 0) status += "\nGün sonundan sonra yedek alınmadı.";
+        box.addView(text(status, 15, stale ? AMBER : TEXT, true), margins(-1, -2, 4));
+        box.addView(text("Tezgah alımları, borçlar ve gün sonları yalnız bu telefonda durur. Telefon bozulur ya da "
+                + "değişirse yedek dosyasıyla geri gelir. Dosyayı Drive'a ya da WhatsApp'ta kendine gönder.", 13, MUTED, false),
+                margins(-1, -2, 4));
+        LinearLayout row = new LinearLayout(this);
+        TextView save = text("Yedekle", 16, BG, true);
+        save.setGravity(Gravity.CENTER);
+        save.setBackground(round(GREEN, 0, 16));
+        save.setContentDescription("Yedek dosyası oluştur");
+        save.setOnClickListener(v -> startBackup());
+        row.addView(save, new LinearLayout.LayoutParams(0, dp(48), 1));
+        TextView restore = text("Geri yükle", 16, GREEN, true);
+        restore.setGravity(Gravity.CENTER);
+        restore.setBackground(round(Color.TRANSPARENT, GREEN, 16));
+        restore.setContentDescription("Yedek dosyasından geri yükle");
+        restore.setOnClickListener(v -> startRestore());
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, dp(48), 1);
+        rp.setMarginStart(dp(8));
+        row.addView(restore, rp);
+        box.addView(row, margins(-1, -2, 12));
+        return box;
+    }
+
+    private void startBackup() {
+        String name = "zeytin-defteri-yedek-" + new SimpleDateFormat("yyyy-MM-dd-HHmm", Locale.US).format(new Date()) + ".txt";
+        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("text/plain").putExtra(Intent.EXTRA_TITLE, name);
+        try { startActivityForResult(i, REQ_BACKUP_SAVE); }
+        catch (RuntimeException e) { toast("Dosya kaydetme ekranı açılamadı."); }
+    }
+
+    private void startRestore() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*");
+        try { startActivityForResult(i, REQ_BACKUP_OPEN); }
+        catch (RuntimeException e) { toast("Dosya seçme ekranı açılamadı."); }
+    }
+
+    @Override protected void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        if (result != RESULT_OK || data == null || data.getData() == null) return;
+        if (request == REQ_BACKUP_SAVE) writeBackup(data.getData());
+        else if (request == REQ_BACKUP_OPEN) readBackup(data.getData());
+    }
+
+    private java.util.Map<String, Object> tezgahPrefs() {
+        android.content.SharedPreferences tp = getSharedPreferences("zd_tezgah", MODE_PRIVATE);
+        java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+        String prices = tp.getString("buy_prices_" + owner, "");
+        if (!prices.isEmpty()) m.put("buy_prices", prices);
+        if (tp.contains("tare")) m.put("tare", (double) tp.getFloat("tare", (float) TezgahModel.DEFAULT_TARE));
+        return m;
+    }
+
+    private void writeBackup(final android.net.Uri uri) {
+        String text;
+        try { text = TezgahBackup.export(db.getWritableDatabase(), owner, tezgahPrefs(), System.currentTimeMillis()); }
+        catch (RuntimeException e) { toast("Yedek hazırlanamadı."); return; }
+        try (java.io.OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
+            if (out == null) throw new java.io.IOException("açılamadı");
+            out.write(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            toast("Yedek dosyası yazılamadı.");
+            return;
+        }
+        getSharedPreferences(BACKUP_PREFS, MODE_PRIVATE).edit().putLong("last_" + owner, System.currentTimeMillis()).apply();
+        TezgahBackup.Data d = TezgahBackup.parse(text);
+        render();
+        new AlertDialog.Builder(this)
+                .setTitle("Yedek alındı ✓")
+                .setMessage(TezgahBackup.describe(d) + ".\n\nTelefon bozulursa kaybolmasın diye dosyayı Drive'a ya da "
+                        + "WhatsApp'ta kendine de gönder.")
+                .setPositiveButton("Gönder / paylaş", (x, y) -> {
+                    Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
+                            .putExtra(Intent.EXTRA_STREAM, uri)
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    try { startActivity(Intent.createChooser(send, "Yedeği gönder")); }
+                    catch (RuntimeException e) { toast("Paylaşım açılamadı."); }
+                })
+                .setNegativeButton("Tamam", null)
+                .show();
+    }
+
+    private void readBackup(android.net.Uri uri) {
+        final TezgahBackup.Data d;
+        try (java.io.InputStream in = getContentResolver().openInputStream(uri)) {
+            if (in == null) throw new java.io.IOException("açılamadı");
+            java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int n, total = 0;
+            while ((n = in.read(chunk)) > 0) {
+                total += n;
+                if (total > 30 * 1024 * 1024) throw new IllegalArgumentException("Dosya çok büyük; bu bir yedek değil.");
+                buf.write(chunk, 0, n);
+            }
+            d = TezgahBackup.parse(buf.toString("UTF-8"));
+        } catch (IllegalArgumentException e) {
+            new AlertDialog.Builder(this).setTitle("Geri yüklenemedi").setMessage(e.getMessage()).setPositiveButton("Tamam", null).show();
+            return;
+        } catch (Exception e) {
+            toast("Dosya okunamadı.");
+            return;
+        }
+        int here = 0;
+        try { here = TezgahPurchases.all(db.getWritableDatabase(), owner, 100000).size(); } catch (RuntimeException ignored) { }
+        String when = d.created > 0 ? DM_HM.format(new Date(d.created)) : "tarihsiz";
+        new AlertDialog.Builder(this)
+                .setTitle("Yedek geri yüklensin mi?")
+                .setMessage("Yedek: " + when + " · " + TezgahBackup.describe(d) + "\n\n"
+                        + (here > 0 ? "Bu telefondaki " + here + " tezgah alımı ve gün sonları yedektekiyle DEĞİŞTİRİLECEK. "
+                        + "Yedekten sonra girilen alımlar kaybolur." : "Bu telefonda tezgah kaydı yok; yedekteki kayıtlar eklenecek."))
+                .setPositiveButton("Geri yükle", (x, y) -> applyRestore(d))
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
+    private void applyRestore(TezgahBackup.Data d) {
+        int n;
+        try { n = TezgahBackup.restore(db.getWritableDatabase(), owner, d); }
+        catch (RuntimeException e) { n = -1; }
+        if (n < 0) { toast("Geri yükleme başarısız; hiçbir kayıt değişmedi."); return; }
+        android.content.SharedPreferences.Editor e = getSharedPreferences("zd_tezgah", MODE_PRIVATE).edit();
+        Object prices = d.prefs.get("buy_prices");
+        if (prices != null) e.putString("buy_prices_" + owner, String.valueOf(prices));
+        Object tare = d.prefs.get("tare");
+        if (tare instanceof Number) e.putFloat("tare", ((Number) tare).floatValue());
+        e.apply();
+        history = null;
+        render();
+        toast("Geri yüklendi ✓ " + TezgahBackup.describe(d));
     }
 
     // ================================================================== arama
@@ -815,7 +976,8 @@ public final class TezgahDayActivity extends Activity {
         java.util.List<String> opts = new java.util.ArrayList<>();
         opts.add("QR göster");
         opts.add("Fişi gönder (WhatsApp)");
-        if (p.remaining() > 0.5) opts.add("Kalan borcu ödedim (" + TezgahModel.tl(p.remaining()) + ")");
+        if (p.remaining() > 0.5) opts.add("Ödeme yap · kalan " + TezgahModel.tl(p.remaining()));
+        else if (p.paid > 0.5) opts.add("Ödeme geçmişi");
         if (p.zId <= 0) opts.add("Sil");   // gün sonu alınmış alım kilitli
         final String[] items = opts.toArray(new String[0]);
         new AlertDialog.Builder(this)
@@ -826,10 +988,9 @@ public final class TezgahDayActivity extends Activity {
                         TezgahShare.showQr(this, m, p.date, p.seller, p.paid, receipt, p.phone);
                     } else if (a.startsWith("Fişi")) {
                         TezgahShare.shareText(this, receipt, p.phone);
-                    } else if (a.startsWith("Kalan")) {
-                        TezgahPurchases.setPaid(db.getWritableDatabase(), owner, p.id, p.gross);
-                        toast("Borç kapandı ✓");
-                        render();
+                    } else if (a.startsWith("Ödeme")) {
+                        // Bir kısmı ya da tamamı; Z kilitli alımda da yalnız ödeme işlenir.
+                        TezgahPaySheet.show(this, db.getWritableDatabase(), owner, p, this::render);
                     } else {
                         new AlertDialog.Builder(this)
                                 .setTitle("Alım silinsin mi?")
