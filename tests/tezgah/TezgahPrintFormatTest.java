@@ -22,6 +22,9 @@ public class TezgahPrintFormatTest {
     ok(found,"ş ğ ı CP857 baytları");
     ok(TezgahPrintFormat.row("Sol","Sağ",10).equals("Sol    Sağ"),"satır hizası");
     ok(TezgahPrintFormat.row("Çok uzun bir sol metin","123",10).length()==10,"uzun sol kırpılır");
+    String full=TezgahPrintFormat.receipt(m,"A","B","t",0,32);
+    ok(!TezgahPrintFormat.fold(full).contains("?"),"bölünmez boşluk soru işareti olmaz: "+TezgahPrintFormat.fold(full));
+    ok(!new String(TezgahPrintFormat.escpos(full,true),java.nio.charset.StandardCharsets.ISO_8859_1).contains("?"),"CP857'de de soru işareti yok");
     System.out.println("PASS: "+n+" fiş yazıcısı kontrolü");
   }
 }

@@ -86,6 +86,8 @@ public final class TezgahPrintFormat {
                 case '₺': b.append("TL"); break;
                 case '×': b.append('x'); break;
                 case '·': b.append('-'); break;
+                // Sayı biçimlendirmenin bölünmez boşlukları ("44 kg", "5.720 ₺") yazıcıda '?' çıkmasın.
+                case '\u00A0': case '\u202F': case '\u2007': case '\u2009': b.append(' '); break;
                 default: b.append(c < 128 ? c : '?');
             }
         }
