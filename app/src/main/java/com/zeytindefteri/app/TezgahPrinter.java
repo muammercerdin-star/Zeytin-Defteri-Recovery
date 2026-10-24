@@ -37,12 +37,23 @@ public final class TezgahPrinter {
         return c.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
+    static String printerName(Context c) { return prefs(c).getString("name", ""); }
+
+    static void setWidth(Context c, int w) { prefs(c).edit().putInt("width", w).apply(); }
+
+    static void setTurkish(Context c, boolean on) { prefs(c).edit().putBoolean("turkish", on).apply(); }
+
+    static void setPrintQr(Context c, boolean on) { prefs(c).edit().putBoolean("qr", on).apply(); }
+
     public static int width(Context c) { return prefs(c).getInt("width", TezgahPrintFormat.WIDTH_58); }
 
     public static boolean turkish(Context c) { return prefs(c).getBoolean("turkish", false); }
 
-    /** Fişi yazdırır; yazıcı seçilmemişse önce seçtirir. */
-    public static void print(Activity a, String receiptText) {
+    /** Fiş metni kâğıt genişliğine göre üretilir (önizlemede 58/80 mm değişince yeniden çizilsin diye). */
+    public interface Layout { String text(int width); }
+
+    /** Fişi yazdırır; yazıcı seçilmemişse önce seçtirir. (Önizlemesiz; önizleme için printReceipt/printText.) */
+    static void print(Activity a, String receiptText) {
         if (!permitted(a)) return;
         String address = prefs(a).getString("address", "");
         if (address.isEmpty()) {
@@ -54,12 +65,16 @@ public final class TezgahPrinter {
 
     public static boolean printQr(Context c) { return prefs(c).getBoolean("qr", true); }
 
-    /** Alım fişi + altında QR (ayardan kapatılabilir). qrPayload: TezgahQr.encode(...). */
-    public static void printReceipt(Activity a, String receiptText, String qrPayload) {
+    /** Alım fişi: önce baskı önizlemesi, "Yazdır" ile altında QR'la basılır. qrPayload: TezgahQr.encode(...). */
+    public static void printReceipt(Activity a, Layout layout, String qrPayload) {
+        TezgahPrintPreview.show(a, layout, qrPayload, () -> sendReceipt(a, layout.text(width(a)), qrPayload));
+    }
+
+    static void sendReceipt(Activity a, String receiptText, String qrPayload) {
         if (!permitted(a)) return;
         String address = prefs(a).getString("address", "");
         if (address.isEmpty()) {
-            choose(a, () -> printReceipt(a, receiptText, qrPayload));
+            choose(a, () -> sendReceipt(a, receiptText, qrPayload));
             return;
         }
         byte[] qr = printQr(a) && qrPayload != null ? qrRaster(qrPayload, width(a) >= TezgahPrintFormat.WIDTH_80 ? 384 : 256) : null;
@@ -88,8 +103,8 @@ public final class TezgahPrinter {
 
     /** Serbest metin (ekstre gibi): ilk satır başlık olarak büyük basılır; emoji atılır. */
     public static void printText(Activity a, String text) {
-        String clean = text.replace("🫒 ", "").replace("🫒", "").replace("✓", "");
-        print(a, clean);
+        final String clean = text.replace("🫒 ", "").replace("🫒", "").replace("✓", "");
+        TezgahPrintPreview.show(a, w -> clean, null, () -> print(a, clean));
     }
 
     /** Android 12+ "Yakındaki cihazlar" izni; yoksa ister ve false döner (izin verilince tekrar basılır). */
@@ -172,7 +187,7 @@ public final class TezgahPrinter {
         m.add(0, 1, 27); m.setPrice(0, 130);
         m.add(5, 1, 22); m.setPrice(5, 15);
         String text = TezgahPrintFormat.receipt(m, "Deneme", "Şükrü Işık Çağlar", "deneme fişi", m.total(), width(a));
-        printReceipt(a, text, TezgahQr.encode(m, "deneme", "Deneme", m.total()));
+        sendReceipt(a, text, TezgahQr.encode(m, "deneme", "Deneme", m.total()));
     }
 
     private static void openSettings(Activity a) {

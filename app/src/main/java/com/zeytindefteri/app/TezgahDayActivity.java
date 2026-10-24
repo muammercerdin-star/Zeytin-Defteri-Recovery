@@ -1006,8 +1006,8 @@ public final class TezgahDayActivity extends Activity {
                     } else if (a.startsWith("Fişi gönder")) {
                         TezgahShare.shareText(this, receipt, p.phone);
                     } else if (a.startsWith("Fişi yazdır")) {
-                        TezgahPrinter.printReceipt(this, TezgahPrintFormat.receipt(m, TezgahShare.traderName(), p.seller,
-                                displayDate(p), p.paid, TezgahPrinter.width(this)),
+                        TezgahPrinter.printReceipt(this, w -> TezgahPrintFormat.receipt(m, TezgahShare.traderName(), p.seller,
+                                displayDate(p), p.paid, w),
                                 TezgahQr.encode(m, p.date, TezgahShare.traderName(), p.paid));
                     } else if (a.startsWith("Üretici")) {
                         openStatement(p.seller);
