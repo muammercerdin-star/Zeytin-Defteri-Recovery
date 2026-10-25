@@ -53,7 +53,7 @@ public final class TezgahShare {
         box.addView(img, new LinearLayout.LayoutParams(size, size));
         TextView info = new TextView(a);
         info.setText((sellerName == null || sellerName.isEmpty() ? "" : sellerName + " · ") + TezgahModel.kg(m.totalNet())
-                + " · " + TezgahModel.tl(m.total()) + "\nÜretici: Elek kaydı → \"QR okut\"");
+                + " · " + TezgahModel.tl(m.total()) + "\nÜretici: Elek kaydı → \"QR okut\"\nBilgi fişidir; makbuz/fatura yerine geçmez.");
         info.setGravity(Gravity.CENTER);
         info.setTextSize(15);
         info.setPadding(0, Math.round(10 * d), 0, 0);

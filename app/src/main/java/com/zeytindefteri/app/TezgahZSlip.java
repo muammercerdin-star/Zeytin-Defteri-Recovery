@@ -89,6 +89,7 @@ public final class TezgahZSlip {
         if (due > 0.5) lines.add(new L("* ödemesi tamamlanmamış", "", 6));
         lines.add(new L("", "", 4));
         lines.add(new L("Gün sonu alındı. Bu dönemin kayıtları kilitlidir.", "", 6));
+        lines.add(new L("Bilgi fişidir; mali belge yerine geçmez.", "", 6));
         lines.add(new L("Zeytin Defteri ile hazırlandı", "", 6));
 
         int h = PAD + 10;

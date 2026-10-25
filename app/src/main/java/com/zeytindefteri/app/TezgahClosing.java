@@ -131,6 +131,7 @@ public final class TezgahClosing {
         if (advance > 0) sb.append("Alınan avans: −").append(TezgahModel.tl(advance)).append('\n');
         double owes = traderOwes();
         sb.append(owes >= 0 ? "TÜCCAR ÖDEYECEK: " : "TEZGAH İADE EDECEK: ").append(TezgahModel.tl(Math.abs(owes))).append('\n');
+        sb.append("\nBilgi amaçlıdır; mali belge yerine geçmez.");
         sb.append("\nZeytin Defteri ile hazırlandı");
         return sb.toString();
     }

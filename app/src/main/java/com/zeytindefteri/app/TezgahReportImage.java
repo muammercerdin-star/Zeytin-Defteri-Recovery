@@ -43,7 +43,7 @@ public final class TezgahReportImage {
         // Fire yoksa teslim/fire satırları alınanı tekrar etmesin: yalnız "Teslim · alınanla aynı" satırı.
         boolean same = true;
         if (showClosing) for (int g = 0; g < TezgahClosing.N; g++) same &= Math.abs(closing.fire(g)) < 0.05;
-        int height = PAD + 44 + 34 + 16 + HEAD_H + ROW_H * (list.size() + 1)
+        int height = PAD + 44 + 34 + 30 + 16 + HEAD_H + ROW_H * (list.size() + 1)
                 + (showClosing ? 30 + 44 + (same ? 0 : ROW_H * 2 + 18) + ROW_H * (same ? 5 : 4) : 0) + 70;
         Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bmp);
@@ -64,7 +64,9 @@ public final class TezgahReportImage {
         y += 44;
         c.drawText("Zeytin Defteri · Tezgah alım defteri" + (trader == null || trader.isEmpty() ? "" : " · " + trader)
                 + " · net kilo = kantar − kasa × dara", PAD, y + 24, sub);
-        y += 34 + 16;
+        y += 34;
+        c.drawText("Bilgi amaçlıdır; müstahsil makbuzu ya da fatura yerine geçmez.", PAD, y + 24, sub);
+        y += 30 + 16;
 
         // Sütun başlıkları
         fill.setColor(GREEN);

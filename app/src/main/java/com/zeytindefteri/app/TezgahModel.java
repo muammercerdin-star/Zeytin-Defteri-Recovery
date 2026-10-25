@@ -262,6 +262,7 @@ public final class TezgahModel {
         } else {
             sb.append("Ödeme: henüz yapılmadı\n");
         }
+        sb.append("\nBilgi fişidir; müstahsil makbuzu ya da fatura yerine geçmez.");
         sb.append("\nZeytin Defteri ile hazırlandı");
         return sb.toString();
     }

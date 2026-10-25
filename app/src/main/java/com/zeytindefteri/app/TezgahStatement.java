@@ -94,6 +94,7 @@ public final class TezgahStatement {
         b.append("Toplam: ").append(TezgahModel.tl(gross)).append('\n');
         b.append("Ödenen: ").append(TezgahModel.tl(paid)).append('\n');
         b.append(remaining() > 0.5 ? "KALAN BORÇ: " + TezgahModel.tl(remaining()) : "Borç yok ✓").append('\n');
+        b.append("\nBilgi amaçlı ekstredir; müstahsil makbuzu ya da fatura yerine geçmez.");
         b.append("\nZeytin Defteri ile hazırlandı");
         return b.toString();
     }

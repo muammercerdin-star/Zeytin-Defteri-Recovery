@@ -47,6 +47,8 @@ public final class TezgahPrintFormat {
             b.append(row("KALAN", tl(Math.max(0, t - paid)), w)).append('\n');
         }
         b.append(line(w)).append('\n');
+        b.append(center("Bilgi fişidir; mali değeri yok.", w)).append('\n');
+        b.append(center("Makbuz/fatura yerine geçmez.", w)).append('\n');
         b.append(center("Zeytin Defteri", w)).append('\n');
         return b.toString();
     }

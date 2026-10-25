@@ -17,6 +17,7 @@ Zeytin Defteri; zeytin üreticilerinin bahçe, bakım, masraf, hasat, elek, sala
 # 3. Kullanıcı sorumlulukları
 - Uygulamaya girdiğin bahçe, işlem, masraf, hasat, satış ve fiyat bilgilerinin doğruluğundan sen sorumlusun. Hesaplama ve raporlar bu bilgilere dayanır.
 - Uygulamadaki hesaplamalar ve raporlar resmi muhasebe, vergi veya finansal belge niteliği taşımaz.
+- Tezgah alım fişleri, QR fişleri, gün sonu (Z) raporları ve ekstreler yalnızca bilgi ve kayıt amaçlıdır; müstahsil makbuzu, e-müstahsil makbuzu, fatura veya başka bir mali belge yerine geçmez. Çiftçiden yapılan alımlarda müstahsil makbuzu düzenlemek, stopaj ve diğer vergi yükümlülükleri kullanıcıya aittir; bu konularda mali müşavirine danışmalısın.
 - Hava durumu, hatırlatma, asistan cevapları ve tarımsal bilgiler genel bilgilendirme amaçlıdır; ziraat mühendisi veya yetkili uzman görüşünün yerine geçmez. İlaçlama, gübreleme ve benzeri uygulamalarda ürün etiketine ve yürürlükteki mevzuata uymalısın.
 - Piyasa fiyatları ve Zeytin Ligi sıralamaları bilgilendirme amaçlıdır; alım veya satım garantisi ya da teklif değildir.
 
