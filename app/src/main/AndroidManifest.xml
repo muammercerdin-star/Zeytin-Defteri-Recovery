@@ -331,8 +331,12 @@
         <activity android:name=".BlockedUsersActivity" android:exported="false" />
         <activity android:name=".BuyersActivity" android:exported="false" android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
-        <!-- QR okuyucu modülü uygulama kurulurken indirilsin (tezgahta internet olmasa da açılsın). -->
-        <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui" />
+        <!-- QR okuyucu ve defter yazısı okuma (OCR) modülleri uygulama kurulurken indirilsin
+             (tezgahta/bahçede internet olmasa da açılsın). İkisi de telefonda çalışır, görüntü dışarı gitmez. -->
+        <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui,ocr" />
+        <!-- Defterden oku: kamera uygulaması fotoğrafı buraya (uygulamanın önbelleğine) yazar. -->
+        <provider android:name=".NotebookPhotoProvider" android:authorities="${applicationId}.notebookphoto"
+            android:exported="false" android:grantUriPermissions="true" />
         <activity android:name=".TezgahActivity" android:exported="false" android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".TezgahDayActivity" android:exported="false" />

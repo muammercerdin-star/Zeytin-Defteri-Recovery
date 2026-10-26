@@ -1648,6 +1648,9 @@ public class ElekActivity extends Activity {
         // Tüccarın tezgah fişi QR'ı: okutunca kilolar, fiyatlar, tarih, alıcı ve ödeme forma dolar.
         findViewById(R.id.btnElekQr).setOnClickListener(view -> TezgahQrUi.scan(this, this::applyTezgahQr,
                 message -> Toast.makeText(this, message, Toast.LENGTH_LONG).show()));
+        // Defterden oku: elek defteri sayfasının fotoğrafı telefonda okunur, kontrol ekranından sonra forma dolar.
+        android.view.View notebookButton = findViewById(R.id.btnElekNotebook);
+        if (notebookButton != null) notebookButton.setOnClickListener(view -> NotebookScanUi.start(this));
 
         // ========================================================
         // TÜM ELEK KAYITLARI
@@ -3105,6 +3108,45 @@ public class ElekActivity extends Activity {
         refreshElekInsights();
         Toast.makeText(this, "Tezgah fişi okundu: " + TezgahModel.kg(slip.totalKg()) + " · "
                 + TezgahModel.tl(slip.total()) + ". Bahçeyi kontrol edip Kaydet'e bas.", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        if (NotebookScanUi.handle(this, requestCode, resultCode, data, this::applyNotebook)) return;
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    /** Defterden okunup kontrol ekranında onaylanan kilolar ve (varsa) o kaydın fiyatları. */
+    private void applyNotebook(double[] kgValues, double[] prices) {
+        boolean priceChanged = false;
+        double[] current = {priceDouble, price1, price2, price3, price4, priceOil};
+        for (int i = 0; i < current.length && i < prices.length; i++) {
+            if (!Double.isNaN(prices[i]) && prices[i] > 0 && Math.abs(prices[i] - current[i]) > 0.0001) {
+                current[i] = prices[i];
+                priceChanged = true;
+            }
+        }
+        if (priceChanged) {
+            priceDouble = current[0];
+            price1 = current[1];
+            price2 = current[2];
+            price3 = current[3];
+            price4 = current[4];
+            priceOil = current[5];
+            qrPricesActive = true; // yalnız bu kayıt için; kaydedince kendi fiyatların geri gelir
+            updatePriceLabels();
+        }
+        EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
+        double total = 0;
+        for (int i = 0; i < kg.length && i < kgValues.length; i++) {
+            if (kg[i] != null) kg[i].setText(TezgahQr.field(kgValues[i]));
+            total += Math.max(0, kgValues[i]);
+        }
+        calculateAll();
+        refreshElekInsights();
+        Toast.makeText(this, "Defterden aktarıldı: " + TezgahModel.kg(total)
+                + (priceChanged ? " · fiyatlar bu kayıt için defterden alındı" : "")
+                + ". Kontrol edip Kaydet'e bas.", Toast.LENGTH_LONG).show();
     }
 
     private void openPriceEditor(int index) {
