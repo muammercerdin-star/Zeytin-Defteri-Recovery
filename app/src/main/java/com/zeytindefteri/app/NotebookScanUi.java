@@ -151,7 +151,7 @@ public final class NotebookScanUi {
                         }
                     }
                     NotebookOcr.Result res = NotebookOcr.parse(NotebookOcr.lines(pieces));
-                    if (res.filled() == 0) notFound(a, apply);
+                    if (res.filled() == 0) notFound(a, res.lines);
                     else review(a, res, apply);
                 })
                 .addOnFailureListener(e -> {
@@ -172,15 +172,28 @@ public final class NotebookScanUi {
         try { r.close(); } catch (RuntimeException ignored) { }
     }
 
-    private static void notFound(Activity a, Apply apply) {
+    private static void notFound(Activity a, List<String> read) {
         new AlertDialog.Builder(a)
                 .setTitle("Satır bulunamadı")
-                .setMessage("Fotoğrafta \"kilo x fiyat tutar\" satırı okunamadı.\n\n"
+                .setMessage("Fotoğrafta elek satırı okunamadı. Okunan biçimler: \"1 - 43 kg\" ya da \"1 - 43 x 100 4.300\".\n\n"
                         + "• Sayfayı düz tut, gölge düşmesin\n• Yalnız tablo kadrajda olsun\n• Yazı net çıksın, yaklaş\n\n"
-                        + "Olmazsa kiloları elle girebilirsin.")
+                        + "Olmazsa kiloları elle girebilirsin." + readText(read))
                 .setPositiveButton("Tekrar çek", (d, w) -> camera(a))
                 .setNegativeButton("Kapat", null)
                 .show();
+    }
+
+    /** Okunan yazının ilk satırları: neyin yanlış okunduğu görülsün (ekran görüntüsüyle bildirilebilsin). */
+    private static String readText(List<String> read) {
+        if (read == null || read.isEmpty()) return "\n\nFotoğrafta hiç yazı okunamadı.";
+        StringBuilder b = new StringBuilder("\n\nOkunan yazı:");
+        int n = 0;
+        for (String l : read) {
+            if (l == null || l.trim().isEmpty()) continue;
+            b.append("\n").append(l.trim());
+            if (++n >= 12) { b.append("\n…"); break; }
+        }
+        return b.toString();
     }
 
     private static Dialog waitDialog(Activity a) {
@@ -246,8 +259,8 @@ public final class NotebookScanUi {
             TextView title = text("Defterden okunanlar", 20, TEXT, true);
             title.setPadding(0, dp(12), 0, 0);
             box.addView(title);
-            TextView sub = text("Defterle karşılaştır; yanlış okunan rakamı düzelt. Kilo × fiyat defterdeki tutarı "
-                    + "tutuyorsa ✓ çıkar.", 13, MUTED, false);
+            TextView sub = text("Defterle karşılaştır; yanlış okunan rakamı düzelt. Fiyat ve tutar da yazılmışsa "
+                    + "kilo × fiyat defterdeki tutarı tutunca ✓ çıkar. Fiyat boşsa kendi fiyatın kullanılır.", 13, MUTED, false);
             sub.setPadding(0, dp(4), 0, dp(10));
             box.addView(sub);
 
@@ -381,7 +394,7 @@ public final class NotebookScanUi {
                         break;
                     }
                     case NotebookOcr.UNCHECKED:
-                        state[g].setText(k > 0 && p <= 0 ? "Fiyat okunamadı; mevcut fiyatın kullanılır."
+                        state[g].setText(k > 0 && p <= 0 ? "Kilo okundu ✓ Fiyat yazılmamış; kendi fiyatın kullanılır."
                                 : "Defterde tutar yok ya da okunamadı; rakamları kontrol et.");
                         state[g].setTextColor(MUTED);
                         break;
@@ -390,7 +403,7 @@ public final class NotebookScanUi {
                         state[g].setTextColor(MUTED);
                 }
             }
-            String s = "Okunan: " + TezgahModel.kg(sumKg) + " · " + TezgahModel.money(sumTl);
+            String s = "Okunan: " + TezgahModel.kg(sumKg) + (sumTl > 0 ? " · " + TezgahModel.money(sumTl) : "");
             int color = TEXT;
             if (res.hasTotalAmount) {
                 boolean ok = NotebookOcr.close(sumTl, res.totalAmount);

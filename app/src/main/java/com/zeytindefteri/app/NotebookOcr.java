@@ -111,13 +111,16 @@ public final class NotebookOcr {
     // ------------------------------------------------------------------ çözümleme
 
     private static final Pattern LABEL = Pattern.compile(
-            "^\\s*(double|dbl|dub|d|yağlık|yaglik|yağ|yag|y|[0-4])\\s*(?:\\.?\\s*(?:numara|nu|no|n)\\b)?\\.?\\s*[-–—:.)/]\\s*");
+            "^\\s*(double|dbl|dub|d|yağlık|yaglik|yağ|yag|y|[0-4])\\s*(?:\\.?\\s*(?:numara|nu|no|n)\\b)?\\.?\\s*[-–—_:.)/|]+\\s*");
     private static final Pattern LABEL_WORD = Pattern.compile(
             "^\\s*(double|dbl|yağlık|yaglik|[1-4]\\s*(?:numara|no))\\b\\s*");
     private static final String NUM = "(\\d+(?:[.,]\\d+)*)";
     private static final Pattern CORE = Pattern.compile(
             NUM + "\\s*(?:kg)?\\s*x\\s*" + NUM + "(?:\\s*(?:tl|₺))?\\s*(?:[=:]+\\s*)?(?:" + NUM + ")?");
     private static final Pattern ANY_NUM = Pattern.compile(NUM);
+    /** Yalnız kilo yazılan satır: "0 | - 15 kg", "2-25 kp", "y - 5". Birim el yazısında kp/ug/4p diye okunabilir. */
+    private static final Pattern KG_ONLY = Pattern.compile("^[\\s\\-–—_|:]*" + NUM + "\\s*([a-zçğışöü0-9]{0,3})\\.?\\s*$");
+    private static final Pattern UNIT = Pattern.compile("k[gpqy9ğ]?|[u4][gpqy9ğ]|kilo|kğ");
 
     public static Result parse(List<String> rawLines) {
         Result res = new Result();
@@ -133,21 +136,35 @@ public final class NotebookOcr {
             Matcher lm = LABEL.matcher(s);
             Matcher lw = LABEL_WORD.matcher(s);
             String body = s;
-            if (lm.find() && !decimalNotLabel(s, lm) && looksLikeRowAfter(s.substring(lm.end()))) {
+            if (lm.find() && !decimalNotLabel(s, lm) && looksLikeAnyRow(s.substring(lm.end()))) {
                 grade = gradeOf(lm.group(1));
                 body = s.substring(lm.end());
-            } else if (lw.find() && looksLikeRowAfter(s.substring(lw.end()))) {
+            } else if (lw.find() && looksLikeAnyRow(s.substring(lw.end()))) {
                 grade = gradeOf(lw.group(1));
                 body = s.substring(lw.end());
             }
             Matcher cm = CORE.matcher(body);
-            if (!cm.find()) {
-                if (seenRow) rest.add(s);
-                continue;
-            }
             Row row = new Row();
             row.raw = raw.trim();
-            pick(row, cm.group(1), cm.group(2), cm.group(3));
+            if (cm.find()) {
+                pick(row, cm.group(1), cm.group(2), cm.group(3));
+            } else {
+                // Yalnız kilo: sınıf yazılmışsa ya da kilo birimi varsa satır sayılır (tarih/telefon karışmasın).
+                Matcher km = KG_ONLY.matcher(body);
+                boolean unit = km.matches() && UNIT.matcher(km.group(2)).matches();
+                boolean bare = km.matches() && km.group(2).isEmpty();
+                if (!km.matches() || !(unit || (grade >= 0 && (bare || km.group(2).length() <= 3)))) {
+                    if (seenRow) rest.add(s);
+                    continue;
+                }
+                double[] k = candidates(km.group(1));
+                if (k.length == 0 || Double.isNaN(k[0]) || k[0] <= 0 || k[0] > 100000) {
+                    if (seenRow) rest.add(s);
+                    continue;
+                }
+                row.kg = k[0];
+                row.hasKg = true;
+            }
             if (grade < 0 || grade >= GRADES || res.rows[grade] != null) {
                 while (next < GRADES && res.rows[next] != null) next++;
                 if (next >= GRADES) continue;
@@ -162,6 +179,8 @@ public final class NotebookOcr {
     }
 
     private static boolean looksLikeRowAfter(String body) { return CORE.matcher(body).find(); }
+
+    private static boolean looksLikeAnyRow(String body) { return looksLikeRowAfter(body) || KG_ONLY.matcher(body).matches(); }
 
     /** "1.5 x 100": baştaki 1 sınıf değil, 1,5 kilodur (ayıraçtan hemen sonra rakam geliyor). */
     private static boolean decimalNotLabel(String s, Matcher lm) {
@@ -189,9 +208,9 @@ public final class NotebookOcr {
             char c = s.charAt(i);
             boolean prevD = b.length() > 0 && isDigitish(b.charAt(b.length() - 1));
             boolean nextD = i + 1 < s.length() && (isDigitish(s.charAt(i + 1))
-                    || (i + 2 < s.length() && "oölı|i".indexOf(s.charAt(i + 1)) >= 0 && isDigitish(s.charAt(i + 2))));
+                    || (i + 2 < s.length() && "oölıi".indexOf(s.charAt(i + 1)) >= 0 && isDigitish(s.charAt(i + 2))));
             if ((prevD || nextD) && (c == 'o' || c == 'ö')) { b.append('0'); continue; }
-            if ((prevD || nextD) && (c == 'l' || c == 'ı' || c == 'i' || c == '|')) { b.append('1'); continue; }
+            if ((prevD || nextD) && (c == 'l' || c == 'ı' || c == 'i')) { b.append('1'); continue; }
             b.append(c);
         }
         // "5 . 5" gibi boşluklu ayırıcılar
@@ -255,7 +274,7 @@ public final class NotebookOcr {
             // Toplam tutar en az en büyük satır tutarından büyük olmalı; değilse toplam yazılmamış say.
             double biggest = 0;
             for (Row r : res.rows) if (r != null && r.hasAmount) biggest = Math.max(biggest, r.amount);
-            if (max > biggest && max > 0) { res.totalAmount = max; res.hasTotalAmount = true; }
+            if (biggest > 0 && max > biggest) { res.totalAmount = max; res.hasTotalAmount = true; }
         }
     }
 }

@@ -49,6 +49,23 @@ public class NotebookOcrTest {
     ok(NotebookOcr.status(0,100,false,0)==NotebookOcr.EMPTY,"boş");
     ok(NotebookOcr.status(10,100,true,1000)==NotebookOcr.OK,"tutar");
     ok(NotebookOcr.status(10,100,true,1200)==NotebookOcr.MISMATCH,"tutmaz");
+    // Yalnız kilo yazılan sayfa (kullanıcının ikinci fotoğrafı): "0 | - 15 kg" ... "y - 5"
+    r=p("0 |-15 kp","1 - 13 kp","2-25 ug","3 -14 kp","4 -10 4p","y -5");
+    double[] want={15,13,25,14,10,5};
+    for(int g=0;g<6;g++){ ok(r.rows[g]!=null&&r.rows[g].hasKg,"kilo satırı "+g); eq(r.rows[g].kg,want[g],"kilo "+g); ok(!r.rows[g].hasPrice,"fiyat yok "+g); ok(r.rows[g].status()==NotebookOcr.UNCHECKED,"kontrolsüz "+g); }
+    eq(r.sumKg(),82,"toplam 82 kg"); ok(!r.hasTotalAmount,"uydurma toplam yok");
+    // Etiket ve kilo ayrı sütun parçaları olarak gelirse (ML Kit iki blok verir)
+    ps=new ArrayList<>();
+    String[] lab={"0","1","2","3","4","y"}; String[] val={"- 15 kg","- 13 kg","-25 kp","-14 kg","- 10 kg","-5"};
+    for(int i=0;i<6;i++){ float y=100+i*90; ps.add(new NotebookOcr.Piece(lab[i],30,y+8,y+70)); ps.add(new NotebookOcr.Piece(val[i],160,y,y+60)); }
+    r=NotebookOcr.parse(NotebookOcr.lines(ps));
+    for(int g=0;g<6;g++) eq(r.rows[g].kg,want[g],"sütun kilo "+g);
+    // Etiket okunmazsa sırayla
+    r=p("- 15 kg","- 13 kg"); eq(r.rows[0].kg,15,"sıra 0"); eq(r.rows[1].kg,13,"sıra 1");
+    // Sınıfsız ve birimsiz çıplak sayı satır sayılmaz (tarih, sayfa no)
+    r=p("26","2026"); ok(r.filled()==0,"çıplak sayı satır değil");
+    // Ondalık kilo
+    r=p("2 - 12,5 kg"); eq(r.rows[2].kg,12.5,"ondalık");
     System.out.println("NotebookOcrTest: "+n+" kontrol geçti");
   }
 }
