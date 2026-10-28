@@ -249,47 +249,18 @@ public final class TezgahHomeActivity extends Activity {
         return c;
     }
 
-    /** Daha fazla: kullanım şekli en başta; üretici ekranına geçiren "Ayarlar" yok, hesap işleri burada. */
+    /** Daha fazla: yalnız tezgâh işleri (kullanım şekli, yedek, fiş yazıcısı); üretici ekranına geçiren şey yok. */
     private void more() {
-        final String[] items = {"Kullanım şekli · " + UserRole.label(RoleActivity.role(this)), "Bildirimler",
-                "Yedekle / Geri yükle", "Fiş yazıcısı", "Sohbet", "Hesap · profil, gizlilik, çıkış"};
+        final String[] items = {"Kullanım şekli · " + UserRole.label(RoleActivity.role(this)), "Yedekle / Geri yükle", "Fiş yazıcısı"};
         new AlertDialog.Builder(this)
                 .setItems(items, (dlg, which) -> {
                     switch (which) {
                         case 0: RoleActivity.open(this, false); break;
-                        case 1: startActivity(new Intent(this, NotificationsActivity.class)); break;
-                        case 2: startActivity(new Intent(this, BackupActivity.class)); break;
-                        case 3: TezgahPrinter.settings(this); break;
-                        case 4: openFeed("MEYDAN"); break;
-                        default: account(); break;
+                        case 1: startActivity(new Intent(this, BackupActivity.class)); break;
+                        default: TezgahPrinter.settings(this); break;
                     }
                 })
                 .show();
-    }
-
-    /** Hesap işleri (Play: hesap silme uygulama içinden erişilebilir olmalı); tezgâh modundan çıkmadan. */
-    private void account() {
-        final String[] items = {"Profili yönet", "Gizlilik Politikası", "KVKK Aydınlatma Metni", "Kullanım Koşulları",
-                "Hesabımı sil", "Çıkış yap"};
-        new AlertDialog.Builder(this)
-                .setTitle("Hesap")
-                .setItems(items, (dlg, which) -> {
-                    switch (which) {
-                        case 0: startActivity(new Intent(this, ProfileActivity.class)); break;
-                        case 1: startActivity(new Intent(this, PrivacyActivity.class)); break;
-                        case 2: LegalDocumentActivity.open(this, LegalDocuments.KVKK); break;
-                        case 3: startActivity(new Intent(this, TermsActivity.class)); break;
-                        case 4: AccountDeletion.start(this); break;
-                        default: startActivity(new Intent(this, ProfileActivity.class)
-                                .putExtra(ProfileActivity.EXTRA_CONFIRM_LOGOUT, true)); break;
-                    }
-                })
-                .show();
-    }
-
-    /** Üretici/uygulama ekranındaki bir bölümü açar (ayarlar, sohbet); geri gelince Tezgâh'a döner. */
-    private void openFeed(String section) {
-        startActivity(new Intent(this, MainActivity.class).putExtra("open_section", section).putExtra(EXTRA_STAY_FEED, true));
     }
 
     private TextView text(String v, int sp, int color, boolean bold) {
