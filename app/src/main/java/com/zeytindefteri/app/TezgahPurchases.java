@@ -187,7 +187,10 @@ public final class TezgahPurchases {
         ensure(db);
         boolean ok = db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0",
                 new String[]{String.valueOf(id), owner == null ? "" : owner}) > 0;
-        if (ok) TezgahPayments.deleteFor(db, owner, id);
+        if (ok) {
+            TezgahPayments.deleteFor(db, owner, id);
+            TezgahCrates.deleteFor(db, owner, id);
+        }
         return ok;
     }
 

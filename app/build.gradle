@@ -48,8 +48,8 @@ android {
         targetSdk 36
         // Her Play yüklemesinde versionCode BİR artar (1, 2, 3…). Zorunlu güncelleme bu sayıya bakar:
         // hosting'deki zeytin-defteri/app-config.json -> min_version / latest_version.
-        versionCode 7
-        versionName '1.2.1'
+        versionCode 8
+        versionName '1.3.0'
 
         buildConfigField 'String', 'SUPABASE_URL', zdBuildString('SUPABASE_URL')
         buildConfigField 'String', 'SUPABASE_PUBLISHABLE_KEY', zdBuildString('SUPABASE_PUBLISHABLE_KEY')

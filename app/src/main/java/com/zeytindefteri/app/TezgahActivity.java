@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -174,6 +175,7 @@ public final class TezgahActivity extends Activity {
         body.addView(entryCard(), margins(-1, -2, 8));
         body.addView(weighingsCard(), margins(-1, -2, 8));
         body.addView(summaryCard(), margins(-1, -2, 8));
+        body.addView(cratesRow(), margins(-1, -2, 8));
         setContentView(root);
         refreshTotals();
     }
@@ -837,6 +839,25 @@ public final class TezgahActivity extends Activity {
         row.setOnClickListener(v -> { slipManual = true; slipHiddenByUser = false; setSlipOpen(true); });
         return row;
     }
+    /** "📦 Kasa defteri · dışarıda 340 kasa ›": boş kasaların kimde olduğu. */
+    private View cratesRow() {
+        TezgahCrates.Summary sum;
+        try { sum = TezgahCrates.summary(TezgahCrates.moves(db.getWritableDatabase(), owner), today()); }
+        catch (RuntimeException e) { sum = new TezgahCrates.Summary(); }
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(14), 0, dp(12), 0);
+        row.setMinimumHeight(dp(48));
+        row.setBackground(round(CARD, sum.out > 0 ? GREEN_DIM : LINE, 14));
+        TextView t = text("📦  Kasa defteri", 15, TEXT, true);
+        row.addView(t, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView v = text(sum.out > 0 ? "dışarıda " + sum.out + " kasa ›" : "›", 14, sum.out > 0 ? AMBER : GREEN, true);
+        row.addView(v);
+        row.setContentDescription("Kasa defteri" + (sum.out > 0 ? ", dışarıda " + sum.out + " kasa" : "") + ". Açmak için dokun.");
+        row.setOnClickListener(x -> TezgahCratesActivity.open(this, null));
+        return row;
+    }
+
     private View bottomBar() {
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
@@ -1020,6 +1041,37 @@ public final class TezgahActivity extends Activity {
         final EditText phone = sheetField(sellerPhone, "Telefon · fiş WhatsApp'tan gitsin", InputType.TYPE_CLASS_PHONE);
         box.addView(phone, margins(-1, dp(54), 8));
 
+        // Boş kasa: üreticide kasam varsa tartılan kasa kadar "geri geldi" önerilir; yeni verilen kasa da buradan yazılır.
+        box.addView(sectionLabel("BOŞ KASA · kasa defterine işlenir"), margins(-1, -2, 20));
+        final TextView crateNote = text("", 13, MUTED, true);
+        box.addView(crateNote, margins(-1, -2, 6));
+        final int[] crateIn = {0}, crateOut = {0};
+        final boolean[] crateInEdited = {false};
+        final TextView[] crateInView = new TextView[1], crateOutView = new TextView[1];
+        final Runnable crateRefresh = () -> {
+            String n = name.getText().toString();
+            boolean valid = TezgahCrates.validParty(n);
+            int bal = valid ? crateBalance(n) : 0;
+            if (!crateInEdited[0]) crateIn[0] = valid ? TezgahCrates.suggestReturned(bal, model.totalKasa()) : 0;
+            crateInView[0].setText(String.valueOf(crateIn[0]));
+            crateOutView[0].setText(String.valueOf(crateOut[0]));
+            if (!valid) {
+                crateNote.setText("Kasa yazmak için üreticinin adını yaz.");
+                crateNote.setTextColor(MUTED);
+            } else {
+                int after = bal - crateIn[0] + crateOut[0];
+                crateNote.setText((bal > 0 ? "Şu an " + bal + " kasan onda" : bal < 0 ? "Onun " + (-bal) + " kasası sende" : "Kasa hesabı kapalı")
+                        + (crateIn[0] > 0 || crateOut[0] > 0 ? "  →  sonra " + (after > 0 ? after + " kasan onda" : after < 0 ? (-after) + " kasası sende" : "kapalı ✓") : ""));
+                crateNote.setTextColor(after > 0 ? AMBER : MUTED);
+            }
+        };
+        box.addView(crateStepper("Geri gelen", crateInView, v -> {
+            crateInEdited[0] = true; crateIn[0] = Math.max(0, Math.min(TezgahCrates.MAX_COUNT, crateIn[0] + v)); crateRefresh.run(); }), margins(-1, -2, 8));
+        box.addView(crateStepper("Verilen boş", crateOutView, v -> {
+            crateOut[0] = Math.max(0, Math.min(TezgahCrates.MAX_COUNT, crateOut[0] + v)); crateRefresh.run(); }), margins(-1, -2, 6));
+        name.addTextChangedListener(watcher(crateRefresh));
+        crateRefresh.run();
+
         // Ödeme
         box.addView(sectionLabel("ÖDEME"), margins(-1, -2, 20));
         final String[] labels = {"Tamamı", "Bir kısmı", "Ödenmedi"};
@@ -1084,9 +1136,14 @@ public final class TezgahActivity extends Activity {
                 seller = TezgahWizardFlow.sellerOrWalkIn(name.getText().toString());
                 sellerPhone = phone.getText().toString().trim();
                 sheet.dismiss();
-                savePurchase(paid, toQr);
+                savePurchase(paid, toQr, crateIn[0], crateOut[0]);
             };
             String typed = name.getText().toString().trim();
+            if ((crateIn[0] > 0 || crateOut[0] > 0) && !TezgahCrates.validParty(typed)) {
+                name.setError("Kasa yazıldı: üreticinin adını yaz ya da kasaları 0 yap");
+                name.requestFocus();
+                return;
+            }
             boolean noName = typed.isEmpty() || typed.equalsIgnoreCase(TezgahWizardFlow.WALK_IN);
             if (total - paid > 0.5 && noName) {
                 // Borç kalıyor ama ad yok: sonra Alım defterinde adıyla bulunamaz.
@@ -1436,6 +1493,41 @@ public final class TezgahActivity extends Activity {
         goWizard(stay ? g : TezgahWizardFlow.next(g));
     }
 
+    private int crateBalance(String name) {
+        try { return TezgahCrates.balanceOf(db.getWritableDatabase(), owner, name); }
+        catch (RuntimeException e) { return 0; }
+    }
+
+    interface IntStep { void by(int delta); }
+
+    /** "Geri gelen   [−] 12 [+] [+10]" satırı (ödeme sayfasında). */
+    private View crateStepper(String label, TextView[] valueOut, IntStep step) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.addView(text(label, 15, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1));
+        TextView minus = stepButton("−");
+        minus.setContentDescription(label + " azalt");
+        minus.setOnClickListener(v -> step.by(-1));
+        row.addView(minus, new LinearLayout.LayoutParams(dp(46), dp(46)));
+        TextView value = text("0", 20, TEXT, true);
+        value.setGravity(Gravity.CENTER);
+        valueOut[0] = value;
+        row.addView(value, new LinearLayout.LayoutParams(dp(58), dp(46)));
+        TextView plus = stepButton("+");
+        plus.setContentDescription(label + " artır");
+        plus.setOnClickListener(v -> step.by(1));
+        row.addView(plus, new LinearLayout.LayoutParams(dp(46), dp(46)));
+        TextView ten = text("+10", 14, GREEN, true);
+        ten.setGravity(Gravity.CENTER);
+        ten.setBackground(round(Color.TRANSPARENT, GREEN_DIM, 12));
+        ten.setContentDescription(label + " on artır");
+        ten.setOnClickListener(v -> step.by(10));
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(dp(50), dp(46));
+        tp.setMarginStart(dp(6));
+        row.addView(ten, tp);
+        return row;
+    }
+
     private TextView sectionLabel(String value) {
         TextView t = text(value, 12, MUTED, true);
         t.setLetterSpacing(0.1f);
@@ -1457,7 +1549,7 @@ public final class TezgahActivity extends Activity {
     }
 
     /** qr=true: kaydettikten sonra QR gösterilir (üretici Elek'te okutur); false: fiş WhatsApp'a gider. */
-    private void savePurchase(double paid, boolean qr) {
+    private void savePurchase(double paid, boolean qr, int cratesIn, int cratesOut) {
         String text = model.receipt("Zeytin alım fişi", "Satan", seller, displayDate(), paid);
         final TezgahModel saved = TezgahModel.decode(model.encode());
         final String savedSeller = seller;
@@ -1469,6 +1561,18 @@ public final class TezgahActivity extends Activity {
             id = -1;
         }
         if (id <= 0) { toast("Alım kaydedilemedi. Tekrar dene."); return; }
+        String crateLine = "";
+        if (TezgahCrates.validParty(seller) && (cratesIn > 0 || cratesOut > 0)) {
+            try {
+                SQLiteDatabase w = db.getWritableDatabase();
+                long now = System.currentTimeMillis();
+                if (cratesIn > 0) TezgahCrates.add(w, owner, seller, TezgahCrates.RETURNED, cratesIn, today(), id, "", now);
+                if (cratesOut > 0) TezgahCrates.add(w, owner, seller, TezgahCrates.GAVE, cratesOut, today(), id, "", now + 1);
+                crateLine = " · " + TezgahCrates.balanceLine(seller, TezgahCrates.balanceOf(w, owner, seller));
+            } catch (RuntimeException e) {
+                crateLine = " · kasa yazılamadı (Kasa defterinden ekle)";
+            }
+        }
         rememberBuyPrices();
         String phone = sellerPhone;
         model.clear();
@@ -1480,7 +1584,7 @@ public final class TezgahActivity extends Activity {
         slipHiddenByUser = false;
         saveDraft();
         build();
-        toast("Alım kaydedildi ✓ Sıradaki üretici için tezgah hazır.");
+        toast("Alım kaydedildi ✓" + crateLine);
         if (qr) showQr(saved, today(), savedSeller, paid, text, phone);
         else shareText(text, phone);
     }

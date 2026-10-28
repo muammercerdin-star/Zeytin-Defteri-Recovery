@@ -341,6 +341,7 @@
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".TezgahDayActivity" android:exported="false" />
         <activity android:name=".TezgahStatementActivity" android:exported="false" />
+        <activity android:name=".TezgahCratesActivity" android:exported="false" />
         <activity android:name=".OilActivity" android:exported="false" />
         <activity android:name=".BackupActivity" android:exported="false" />
         <activity android:name=".NotificationsActivity" android:exported="false" />

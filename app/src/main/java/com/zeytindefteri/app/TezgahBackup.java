@@ -28,7 +28,7 @@ public final class TezgahBackup {
     public static final String MAGIC = "ZEYTIN-DEFTERI-YEDEK";
     public static final int VERSION = 1;
     /** Sıra önemli: geri yüklemede bağlı tablolar sonra yazılır. */
-    public static final String[] TABLES = {"tezgah_z", "tezgah_purchases", "tezgah_payments", "tezgah_closings", "sale_payments", "oil_pressings"};
+    public static final String[] TABLES = {"tezgah_z", "tezgah_purchases", "tezgah_payments", "tezgah_closings", "sale_payments", "oil_pressings", "tezgah_crates"};
 
     private TezgahBackup() {}
 
@@ -49,6 +49,7 @@ public final class TezgahBackup {
         TezgahPayments.ensure(db);
         SalePayments.ensure(db);
         OilPressings.ensure(db);
+        TezgahCrates.ensure(db);
     }
 
     // ------------------------------------------------------------------ dışa aktar
@@ -269,6 +270,7 @@ public final class TezgahBackup {
         int pays = d.rowCount("tezgah_payments") + d.rowCount("sale_payments");
         if (pays > 0) b.append(" · ").append(pays).append(" ödeme");
         if (d.rowCount("oil_pressings") > 0) b.append(" · ").append(d.rowCount("oil_pressings")).append(" sıkım");
+        if (d.rowCount("tezgah_crates") > 0) b.append(" · ").append(d.rowCount("tezgah_crates")).append(" kasa hareketi");
         return b.toString();
     }
 }

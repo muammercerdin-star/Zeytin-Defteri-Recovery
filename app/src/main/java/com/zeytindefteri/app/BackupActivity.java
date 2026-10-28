@@ -174,6 +174,8 @@ public final class BackupActivity extends Activity {
         String prices = tp.getString("buy_prices_" + owner, "");
         if (!prices.isEmpty()) m.put("buy_prices", prices);
         if (tp.contains("tare")) m.put("tare", (double) tp.getFloat("tare", (float) TezgahModel.DEFAULT_TARE));
+        int crates = tp.getInt(TezgahCratesActivity.TOTAL_KEY + owner, 0);
+        if (crates > 0) m.put("crate_total", (long) crates);
         return m;
     }
 
@@ -250,6 +252,8 @@ public final class BackupActivity extends Activity {
         if (prices != null) e.putString("buy_prices_" + owner, String.valueOf(prices));
         Object tare = d.prefs.get("tare");
         if (tare instanceof Number) e.putFloat("tare", ((Number) tare).floatValue());
+        Object crates = d.prefs.get("crate_total");
+        if (crates instanceof Number) e.putInt(TezgahCratesActivity.TOTAL_KEY + owner, ((Number) crates).intValue());
         e.apply();
         render();
         toast("Geri yüklendi ✓ " + TezgahBackup.describe(d));
