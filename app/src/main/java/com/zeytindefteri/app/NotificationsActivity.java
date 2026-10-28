@@ -148,6 +148,7 @@ public final class NotificationsActivity extends Activity {
         try {
             if (AlertRules.MONEY.equals(kind)) startActivity(new Intent(this, BuyersActivity.class));
             else if (AlertRules.TEZGAH.equals(kind)) startActivity(new Intent(this, TezgahDayActivity.class));
+            else if (AlertRules.ELEK.equals(kind)) startActivity(new Intent(this, ElekActivity.class));
         } catch (RuntimeException ignored) { }
     }
 
@@ -168,6 +169,19 @@ public final class NotificationsActivity extends Activity {
             hint.setTextSize(12);
             hint.setPadding(0, 0, 0, dp(10));
             box.addView(hint);
+            if (AlertRules.ELEK.equals(kind)) {
+                // Elek hatırlatma saati (varsayılan 17:00)
+                final TextView time = new TextView(this);
+                time.setText("Saat: " + AlertRules.clock(ElekReminder.hour(this), ElekReminder.minute(this)) + "  · değiştir ›");
+                time.setTextSize(15);
+                time.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                time.setPadding(0, 0, 0, dp(14));
+                time.setOnClickListener(v -> new android.app.TimePickerDialog(this, (tp, h, m) -> {
+                    ElekReminder.setTime(this, h, m);
+                    time.setText("Saat: " + AlertRules.clock(h, m) + "  · değiştir ›");
+                }, ElekReminder.hour(this), ElekReminder.minute(this), true).show());
+                box.addView(time);
+            }
         }
         new android.app.AlertDialog.Builder(this)
                 .setTitle("Bildirim ayarları")

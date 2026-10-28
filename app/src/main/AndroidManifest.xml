@@ -65,6 +65,7 @@
         <activity android:name=".RemindersActivity" android:exported="false"
             android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <receiver android:name=".ReminderReceiver" android:exported="false" />
+        <receiver android:name=".ElekReminder" android:exported="false" />
         <receiver android:name=".ReminderRestoreReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

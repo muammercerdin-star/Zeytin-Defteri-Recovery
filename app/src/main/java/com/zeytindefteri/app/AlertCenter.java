@@ -42,9 +42,10 @@ public final class AlertCenter {
     private static final int MAX_GARDENS = 3;
     private static volatile long lastRun;
 
-    public static final String[] KINDS = {AlertRules.WEATHER, AlertRules.MONEY, AlertRules.TEZGAH, AlertRules.CALENDAR};
-    public static final String[] KIND_LABELS = {"Hava uyarıları", "Alacak hatırlatmaları", "Tezgah gün sonu", "Zeytin takvimi"};
-    public static final String[] KIND_HINTS = {"Don, hasatta yağmur, kuvvetli rüzgâr, ilaçlama için uygun gün",
+    public static final String[] KINDS = {AlertRules.ELEK, AlertRules.WEATHER, AlertRules.MONEY, AlertRules.TEZGAH, AlertRules.CALENDAR};
+    public static final String[] KIND_LABELS = {"Elek hatırlatması", "Hava uyarıları", "Alacak hatırlatmaları", "Tezgah gün sonu", "Zeytin takvimi"};
+    public static final String[] KIND_HINTS = {"Hasat döneminde, o gün elek yazılmadıysa her gün seçtiğin saatte",
+            "Don, hasatta yağmur, kuvvetli rüzgâr, ilaçlama için uygun gün",
             "14 günü geçen alacak, haftada bir", "Akşam 20'den sonra gün sonu alınmadıysa", "Ayın zeytin işi, ayda bir"};
 
     private AlertCenter() {}
@@ -55,6 +56,7 @@ public final class AlertCenter {
 
     public static void setEnabled(Context c, String kind, boolean on) {
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("on_" + kind, on).apply();
+        if (AlertRules.ELEK.equals(kind)) ElekReminder.schedule(c);
     }
 
     // ------------------------------------------------------------------ zamanlama
@@ -64,6 +66,7 @@ public final class AlertCenter {
         Context app = context.getApplicationContext();
         createChannel(app);
         schedule(app);
+        ElekReminder.schedule(app);
     }
 
     /** Ekran öne geldiğinde: en sık 30 dakikada bir arka planda tarama. */

@@ -43,6 +43,23 @@ public class AlertRulesTest {
     ok(AlertRules.dayEnd(5,529,21,"2026-10-21").key.equals("zgun:2026-10-21"),"gün sonu hatırlatma");
     ok(AlertRules.dayEnd(5,529,18,"2026-10-21")==null,"akşam 20'den önce yok");
     ok(AlertRules.dayEnd(0,0,22,"2026-10-21")==null,"açık alım yoksa yok");
+    // Elek hatırlatması (17:00)
+    ok(AlertRules.elekReminder(10,2,0,"2026-10-28")!=null,"ekimde, bahçe var, elek yok: hatırlat");
+    ok(AlertRules.elekReminder(10,2,0,"2026-10-28").key.equals("elek:2026-10-28"),"günde bir anahtar");
+    ok(AlertRules.elekReminder(10,2,1,"2026-10-28")==null,"bugün elek yazıldıysa gelmez");
+    ok(AlertRules.elekReminder(10,0,0,"2026-10-28")==null,"bahçesi yoksa gelmez");
+    ok(AlertRules.elekReminder(1,1,0,"2027-01-10")!=null,"ocakta da gelir");
+    ok(AlertRules.elekReminder(2,1,0,"2027-02-10")==null&&AlertRules.elekReminder(7,1,0,"2027-07-10")==null,"hasat dışında gelmez");
+    java.util.TimeZone ist=java.util.TimeZone.getTimeZone("Europe/Istanbul");
+    java.util.Calendar c=java.util.Calendar.getInstance(ist); c.clear(); c.set(2026,9,28,16,30,0);
+    long at=AlertRules.nextAt(c.getTimeInMillis(),17,0,ist);
+    ok(at-c.getTimeInMillis()==30*60*1000L,"16:30'da: bugün 17:00");
+    c.set(2026,9,28,17,0,0);
+    ok(AlertRules.nextAt(c.getTimeInMillis(),17,0,ist)-c.getTimeInMillis()==24*3600*1000L,"tam 17:00'de: yarın 17:00");
+    c.set(2026,9,28,19,10,0);
+    java.util.Calendar rc=java.util.Calendar.getInstance(ist); rc.setTimeInMillis(AlertRules.nextAt(c.getTimeInMillis(),17,0,ist));
+    ok(rc.get(java.util.Calendar.DAY_OF_MONTH)==29&&rc.get(java.util.Calendar.HOUR_OF_DAY)==17,"akşam: ertesi gün 17:00");
+    ok(AlertRules.clock(7,5).equals("07:05")&&AlertRules.clock(17,0).equals("17:00"),"saat yazısı");
     System.out.println("PASS: "+n+" bildirim kuralı kontrolü");
   }
 }

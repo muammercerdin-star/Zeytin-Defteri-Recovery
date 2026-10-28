@@ -13,7 +13,10 @@ import java.util.Locale;
 public final class AlertRules {
     private AlertRules() {}
 
-    public static final String WEATHER = "weather", MONEY = "money", CALENDAR = "calendar", TEZGAH = "tezgah";
+    public static final String WEATHER = "weather", MONEY = "money", CALENDAR = "calendar", TEZGAH = "tezgah", ELEK = "elek";
+
+    /** Elek hatırlatmasının varsayılan saati (toplama genelde 17:00'ye kadar sürer). */
+    public static final int ELEK_HOUR = 17, ELEK_MINUTE = 0;
 
     /** Önem: 3 acil (don), 2 önemli (yağmur, fırtına), 1 bilgi (ilaçlama uygun, takvim). */
     public static final class Alert {
@@ -161,6 +164,36 @@ public final class AlertRules {
         if (openCount <= 0 || nowHour < 20) return null;
         return new Alert(TEZGAH, "zgun:" + today, 2, "🧾 Gün sonu alınmadı",
                 openCount + " alım (" + kg(openKg) + ") açıkta. Akşam hesabını yapıp gün sonunu (Z) almayı unutma.");
+    }
+
+    /** Hasat dönemi: Ekim–Ocak (elek hatırlatması yalnız bu aylarda). */
+    public static boolean harvestMonth(int month) { return month >= 10 || month == 1; }
+
+    /**
+     * Elek hatırlatması: hasat döneminde, bahçesi olan kullanıcıya, o gün hiç elek yazılmadıysa günde bir kez.
+     * Saat kontrolü zamanlayıcıdadır (seçilen saatte çalışır); burada yalnız içerik kuralı.
+     */
+    public static Alert elekReminder(int month, int gardens, int elekToday, String today) {
+        if (!harvestMonth(month) || gardens <= 0 || elekToday > 0) return null;
+        return new Alert(ELEK, "elek:" + today, 1, "🫒 Bugünün eleğini yazdın mı?",
+                "Toplama bitti. Kiloları şimdi yaz, unutmadan: Double, 1, 2, 3, 4, Yağlık.");
+    }
+
+    /** Bir sonraki hatırlatma anı: bugün saat hh:mm geçmediyse bugün, geçtiyse yarın (yerel saat). */
+    public static long nextAt(long now, int hour, int minute, java.util.TimeZone tz) {
+        java.util.Calendar c = java.util.Calendar.getInstance(tz);
+        c.setTimeInMillis(now);
+        c.set(java.util.Calendar.HOUR_OF_DAY, Math.max(0, Math.min(23, hour)));
+        c.set(java.util.Calendar.MINUTE, Math.max(0, Math.min(59, minute)));
+        c.set(java.util.Calendar.SECOND, 0);
+        c.set(java.util.Calendar.MILLISECOND, 0);
+        if (c.getTimeInMillis() <= now) c.add(java.util.Calendar.DAY_OF_YEAR, 1);
+        return c.getTimeInMillis();
+    }
+
+    /** "17:00" */
+    public static String clock(int hour, int minute) {
+        return (hour < 10 ? "0" : "") + hour + ":" + (minute < 10 ? "0" : "") + minute;
     }
 
     // ------------------------------------------------------------------ yardımcılar
