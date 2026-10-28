@@ -139,7 +139,9 @@ public final class TezgahHomeActivity extends Activity {
             body.addView(cl, margins(-1, -2, 2));
         }
 
-        TextView start = text(d.count > 0 ? "▶  Tartıma devam et" : "▶  Tartım başlat", 21, BG, true);
+        // "Devam et" yalnız yarım kalmış (bitirilmemiş) bir tartım varsa; bugün alım yapılmış olması yetmez.
+        boolean draft = !getSharedPreferences("zd_tezgah", MODE_PRIVATE).getString("draft_1_" + owner, "").isEmpty();
+        TextView start = text(draft ? "▶  Tartıma devam et" : "▶  Tartım başlat", 21, BG, true);
         start.setGravity(Gravity.CENTER);
         start.setBackground(round(GREEN, 0, 20));
         start.setContentDescription("Tezgâhı aç: kantarda tartım");
