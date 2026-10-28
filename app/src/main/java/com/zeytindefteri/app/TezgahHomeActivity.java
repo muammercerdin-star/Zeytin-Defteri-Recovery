@@ -69,6 +69,28 @@ public final class TezgahHomeActivity extends Activity {
         root.addView(nav(), new LinearLayout.LayoutParams(-1, dp(68)));
         setContentView(root);
         render();
+        offerCloudRestore();
+    }
+
+    /** Yeni telefon: tezgâhta hiç kayıt yoksa ve bulutta yedek varsa bir kez sorulur. */
+    private void offerCloudRestore() {
+        if (!TezgahCloudBackup.shouldOfferRestore(this) || TezgahCloudBackup.hasLocalRows(this)) return;
+        TezgahCloudBackup.fetchMeta((meta, reached) -> {
+            if (isFinishing() || isDestroyed()) return;
+            if (!reached) return;               // internet yok: bir dahaki açılışta tekrar bakılır
+            TezgahCloudBackup.markOffered(this);
+            if (meta == null) return;           // bulutta yedek yok
+            new AlertDialog.Builder(this)
+                    .setTitle("Bulutta yedeğin var")
+                    .setMessage(new SimpleDateFormat("d MMMM yyyy HH:mm", TR).format(new Date(meta.created))
+                            + " tarihli tezgâh yedeği bulundu:\n" + meta.summary + "\n\nBu telefona geri yükleyeyim mi?")
+                    .setPositiveButton("Geri yükle", (d, w) -> TezgahCloudBackup.restore(this, meta, (ok, msg) -> {
+                        android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show();
+                        if (ok && !isFinishing()) render();
+                    }))
+                    .setNegativeButton("Şimdi değil", null)
+                    .show();
+        });
     }
 
     @Override protected void onRestart() {
@@ -106,6 +128,16 @@ public final class TezgahHomeActivity extends Activity {
 
         body.addView(text(new SimpleDateFormat("d MMMM EEEE", TR).format(new Date()), 13, MUTED, false), margins(-1, -2, 14));
         body.addView(text("Tezgâh", 24, TEXT, true));
+        String cloud = TezgahCloudBackup.statusLine(this);
+        if (!cloud.isEmpty()) {
+            TextView cl = text(cloud, 12, cloud.contains("bekliyor") || cloud.contains("büyük") ? AMBER : MUTED, false);
+            cl.setOnClickListener(v -> TezgahCloudBackup.backup(this, true, (ok, msg) -> {
+                if (!msg.isEmpty()) android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show();
+                if (!isFinishing()) render();
+            }));
+            cl.setContentDescription(cloud + ". Şimdi yedeklemek için dokun.");
+            body.addView(cl, margins(-1, -2, 2));
+        }
 
         TextView start = text(d.count > 0 ? "▶  Tartıma devam et" : "▶  Tartım başlat", 21, BG, true);
         start.setGravity(Gravity.CENTER);

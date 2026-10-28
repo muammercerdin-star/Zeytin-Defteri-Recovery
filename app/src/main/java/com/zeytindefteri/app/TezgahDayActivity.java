@@ -462,6 +462,8 @@ public final class TezgahDayActivity extends Activity {
                     catch (RuntimeException e) { id = -1; }
                     if (id <= 0) { toast("Gün sonu alınamadı. Tekrar dene."); return; }
                     toast("Gün sonu alındı ✓ Tezgah yeni döneme hazır.");
+                    // Gün sonunda bulut yedeği (değişiklik varsa; internet yoksa sonra).
+                    TezgahCloudBackup.backup(this, true, null);
                     final long zNew = id;
                     final TezgahClosing done = closing;
                     render();

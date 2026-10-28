@@ -31,9 +31,15 @@ public final class ZeytinApplication extends Application {
             // Android 15+ (targetSdk 36): içerik çubukların altına uzanır; ekranlar setContentView'i
             // onCreate içinde çağırdığı için içerik çerçevesi burada hazırdır.
             @Override public void onActivityPostCreated(android.app.Activity a,android.os.Bundle b){SystemBarInsets.install(a);}
-            public void onActivityStarted(android.app.Activity a){}
+            private int started;
+            public void onActivityStarted(android.app.Activity a){started++;}
             public void onActivityPaused(android.app.Activity a){}
-            public void onActivityStopped(android.app.Activity a){}
+            public void onActivityStopped(android.app.Activity a){
+                started=Math.max(0,started-1);
+                // Uygulama arka plana geçti: tezgah/ödeme/sıkım kayıtları değiştiyse buluta yedek (ücretsiz kota içinde).
+                if(started==0 && new SessionManager(ZeytinApplication.this).hasSession())
+                    TezgahCloudBackup.backup(ZeytinApplication.this,false,null);
+            }
             public void onActivitySaveInstanceState(android.app.Activity a,android.os.Bundle b){}
             public void onActivityDestroyed(android.app.Activity a){}
         });

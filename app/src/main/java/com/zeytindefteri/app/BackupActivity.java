@@ -106,7 +106,8 @@ public final class BackupActivity extends Activity {
         TezgahBackup.Data d = current();
         int records = 0;
         for (String t : TezgahBackup.TABLES) records += d.rowCount(t);
-        boolean stale = records > 0 && (last == 0 || System.currentTimeMillis() - last > 7L * 24 * 60 * 60 * 1000);
+        long newest = Math.max(last, TezgahCloudBackup.lastAt(this)); // bulut yedeği de sayılır
+        boolean stale = records > 0 && (newest == 0 || System.currentTimeMillis() - newest > 7L * 24 * 60 * 60 * 1000);
 
         LinearLayout status = card(stale ? AMBER : BORDER);
         status.addView(label("DURUM"));
@@ -133,6 +134,33 @@ public final class BackupActivity extends Activity {
         rp.topMargin = dp(10);
         body.addView(restore, rp);
 
+        // Bulut yedeği (otomatik): durum, şimdi yedekle, buluttan geri yükle.
+        LinearLayout cloud = card(BORDER);
+        cloud.addView(label("BULUT YEDEĞİ · OTOMATİK"));
+        String cs = TezgahCloudBackup.statusLine(this);
+        cloud.addView(text(cs.isEmpty() ? "Henüz buluta yedeklenmedi. Gün sonunda ve uygulamadan çıkınca kendiliğinden yedeklenir."
+                : cs, 15, cs.contains("bekliyor") || cs.contains("büyük") ? AMBER : TEXT, true), margins(4));
+        cloud.addView(text("Google hesabına bağlı; yeni telefonda aynı hesapla girince geri gelir. Yalnız sen görebilirsin.",
+                13, MUTED, false), margins(4));
+        LinearLayout cb = new LinearLayout(this);
+        TextView now = text("Şimdi yedekle", 15, BG, true);
+        now.setGravity(Gravity.CENTER);
+        now.setBackground(round(GREEN, 0, 14));
+        now.setOnClickListener(v -> TezgahCloudBackup.backup(this, true, (ok, msg) -> {
+            toast(msg.isEmpty() ? "Yedeklenecek kayıt yok." : msg);
+            if (!isFinishing()) render();
+        }));
+        cb.addView(now, new LinearLayout.LayoutParams(0, dp(46), 1));
+        TextView pull = text("Buluttan geri yükle", 15, GREEN, true);
+        pull.setGravity(Gravity.CENTER);
+        pull.setBackground(round(Color.TRANSPARENT, GREEN, 14));
+        pull.setOnClickListener(v -> cloudRestore());
+        LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(0, dp(46), 1);
+        pl.setMarginStart(dp(8));
+        cb.addView(pull, pl);
+        cloud.addView(cb, margins(10));
+        body.addView(cloud, margins(14));
+
         LinearLayout info = card(BORDER);
         info.addView(label("YEDEĞE GİRENLER"));
         info.addView(text("• Tezgah alımları, borç ödemeleri, akşam hesapları ve gün sonları (Z)\n"
@@ -146,6 +174,25 @@ public final class BackupActivity extends Activity {
     }
 
     // ================================================================== işlemler
+
+    /** Buluttaki son yedeği gösterir; onaylanırsa bu telefondaki tezgah kayıtlarının yerine yazar. */
+    private void cloudRestore() {
+        TezgahCloudBackup.fetchMeta((meta, reached) -> {
+            if (isFinishing()) return;
+            if (!reached) { toast("Buluta ulaşılamadı; internetini kontrol et."); return; }
+            if (meta == null) { toast("Bulutta yedek yok."); return; }
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("Buluttan geri yüklensin mi?")
+                    .setMessage(DM_HM.format(new Date(meta.created)) + " tarihli yedek: " + meta.summary
+                            + "\n\nBu telefondaki tezgah, ödeme ve sıkım kayıtlarının yerine geçer.")
+                    .setPositiveButton("Geri yükle", (d, w) -> TezgahCloudBackup.restore(this, meta, (ok, msg) -> {
+                        toast(msg);
+                        if (ok && !isFinishing()) render();
+                    }))
+                    .setNegativeButton("Vazgeç", null)
+                    .show();
+        });
+    }
 
     private void startBackup() {
         String name = "zeytin-defteri-yedek-" + new SimpleDateFormat("yyyy-MM-dd-HHmm", Locale.US).format(new Date()) + ".txt";

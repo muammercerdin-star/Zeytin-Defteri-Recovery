@@ -12,6 +12,7 @@ Zeytin Defteri bireysel bir geliştirici tarafından yayınlanmaktadır.
 Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlenir:
 - Kimlik ve hesap bilgileri: ad soyad veya görünen ad, e-posta adresi, Firebase tarafından atanan kullanıcı kimliği (UID). Google ile giriş yaparsan Google hesabındaki ad, e-posta ve profil fotoğrafı bağlantısı.
 - Bahçe ve üretim kayıtları: bahçe adı, il/ilçe/mahalle bilgisi, haritadan seçtiğin bahçe konumu (koordinat), ağaç bilgileri, bakım işlemleri, masraf, hasat, elek, salamura, stok ve satış kayıtları, hatırlatmalar.
+- Tezgâh kayıtları (Tezgâh özelliğini kullanırsan): alım yaptığın üreticilerin ve alıcıların adı ve telefonu, tartım, fiyat, tutar, ödeme ve borç bilgileri, akşam hesabı, cari hesap ve kasa kayıtları. Telefonda tutulur; telefonun kaybolmasına karşı yalnızca senin hesabının erişebileceği sıkıştırılmış bir bulut yedeği (Cloud Firestore) alınır.
 - Topluluk (Meydan) içerikleri: paylaştığın gönderi ve yanıt metinleri, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisi.
 - Güvenlik ve topluluk kayıtları: oluşturduğun şikâyetler ve engellediğin kullanıcılar; sana yönelik şikâyet ve moderasyon kayıtları.
 - Cihaz ve bildirim bilgileri: bildirim gönderebilmek için cihazına ait bildirim anahtarı (FCM token) ve oturum kimliği.
