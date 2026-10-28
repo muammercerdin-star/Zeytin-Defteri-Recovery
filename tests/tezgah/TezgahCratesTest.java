@@ -13,12 +13,9 @@ public class TezgahCratesTest {
     ok(!TezgahCrates.countError(0).isEmpty(),"0 kasa olmaz");
     ok(!TezgahCrates.countError(TezgahCrates.MAX_COUNT+1).isEmpty(),"üst sınır");
     ok(TezgahCrates.countError(40).isEmpty(),"40 kasa geçerli");
-    ok(TezgahCrates.suggestReturned(20,12)==12,"tartılan kasa kadar geri gelir");
-    ok(TezgahCrates.suggestReturned(5,12)==5,"bakiyeyi aşmaz");
-    ok(TezgahCrates.suggestReturned(0,12)==0,"kasam onda değilse 0");
     ok(TezgahCrates.balanceLine("Veli",3).equals("Veli · 3 kasan onda"),"bakiye satırı");
     ok(TezgahCrates.balanceLine("Veli",-2).equals("Veli · 2 kasası sende"),"eksi bakiye satırı");
-    ok(TezgahCrates.reminder("Veli",3,"Ali Tüccar").contains("3 boş kasamız"),"hatırlatma metni");
+    ok(TezgahCrates.reminder("Veli",3,"Ali Tüccar").contains("sende 3 kasamız"),"hatırlatma metni");
 
     SQLiteDatabase db=new SQLiteDatabase(a[0],a[1]);
     String today="2026-10-28";
@@ -41,8 +38,7 @@ public class TezgahCratesTest {
     List<TezgahCrates.Party> ps=TezgahCrates.parties(all);
     ok(ps.size()==3,"3 kişi");
     ok(ps.get(0).name.equals("volkan  afsar".trim().replaceAll("\\s+"," ")) || ps.get(0).key.equals("volkan afsar"),"en çok kasası dışarıda olan başta");
-    ok(ps.get(0).balance()==20 && ps.get(1).balance()==6,"sıra: çoktan aza");
-    ok(ps.get(2).balance()==-8,"kasası bende olan sonra");
+    ok(ps.get(0).balance()==20 && ps.get(1).balance()==-8 && ps.get(2).balance()==6,"sıra: kasa farkı çoktan aza");
     ok(ps.get(0).lastDate.equals(today),"son hareket günü");
     TezgahCrates.Summary s=TezgahCrates.summary(all,today);
     ok(s.out==26,"dışarıda 26 kasa: "+s.out);
@@ -57,6 +53,23 @@ public class TezgahCratesTest {
     ok(!TezgahCrates.delete(db,"t2",all.get(1).id),"başkasının hareketi silinmez");
     ok(TezgahCrates.delete(db,"t1",all.get(1).id),"hareket silinir");
     ok(TezgahCrates.movesOf(db,"t1","Tüccar Mehmet").isEmpty(),"silindi");
+    // Günlük hesap (aracı): dün 100 boş geldi, 80 dolu gitti → devreden 20; bugün 100 geldi, 110 gitti → sende 10
+    SQLiteDatabase d2=new SQLiteDatabase(a[0]+"2",a[1]);
+    TezgahCrates.add(d2,"t1","Aracı Hüseyin",TezgahCrates.RETURNED,100,"2026-10-27",0,"",10);
+    TezgahCrates.add(d2,"t1","Aracı Hüseyin",TezgahCrates.GAVE,80,"2026-10-27",0,"",20);
+    TezgahCrates.add(d2,"t1","aracı hüseyin",TezgahCrates.RETURNED,100,"2026-10-28",0,"",30);
+    TezgahCrates.add(d2,"t1","Aracı Hüseyin",TezgahCrates.GAVE,110,"2026-10-28",0,"",40);
+    TezgahCrates.add(d2,"t1","Başka Aracı",TezgahCrates.RETURNED,50,"2026-10-28",0,"",50);
+    List<TezgahCrates.Move> mv=TezgahCrates.moves(d2,"t1");
+    TezgahCrates.Day dy=TezgahCrates.day(mv,TezgahCrates.key("ARACI HÜSEYİN"),"2026-10-28");
+    ok(dy.carried==20,"devreden 20: "+dy.carried);
+    ok(dy.in==100&&dy.out==110,"bugün gelen 100, giden 110");
+    ok(dy.held()==10,"sende kalan 10: "+dy.held());
+    ok(TezgahCrates.dayLine(dy).equals("Devreden 20 · gelen 100 · giden 110 · sende kalan 10"),TezgahCrates.dayLine(dy));
+    TezgahCrates.Day all2=TezgahCrates.day(mv,null,"2026-10-28");
+    ok(all2.held()==60&&all2.in==150,"herkes: sende 60");
+    ok(TezgahCrates.day(mv,TezgahCrates.key("Aracı Hüseyin"),"2026-10-29").carried==10,"ertesi gün devreden 10");
+    ok(TezgahCrates.balanceOf(d2,"t1","Aracı Hüseyin")==-10,"bakiye eksi: aracının 10 kasası sende");
     System.out.println("PASS: "+n+" kasa defteri kontrolü");
   }
 }

@@ -66,12 +66,6 @@ public final class TezgahStatementActivity extends Activity {
         render();
     }
 
-    /** Kasa defterinden dönünce kasa satırı tazelensin. */
-    @Override protected void onRestart() {
-        super.onRestart();
-        if (body != null) render();
-    }
-
     @Override protected void onDestroy() {
         if (db != null) db.close();
         super.onDestroy();
@@ -115,21 +109,6 @@ public final class TezgahStatementActivity extends Activity {
         body.addView(r2, margins(8));
         body.addView(text(st.purchases.size() + " alım · " + st.kasa + " kasa"
                 + (st.averagePrice() > 0 ? " · ort. " + TezgahModel.money(st.averagePrice()) + "/kg" : ""), 14, MUTED, false), margins(8));
-
-        // Boş kasa bakiyesi (Kasa defteri): dokununca o üreticinin kasa geçmişi açılır.
-        int crates;
-        try { crates = TezgahCrates.balanceOf(db.getWritableDatabase(), owner, st.name); }
-        catch (RuntimeException e) { crates = 0; }
-        if (TezgahCrates.validParty(st.name)) {
-            TextView cl = text("📦  " + (crates > 0 ? crates + " boş kasan onda" : crates < 0 ? (-crates) + " kasası sende" : "Kasa hesabı kapalı") + "  ›",
-                    14, crates > 0 ? AMBER : MUTED, true);
-            cl.setPadding(dp(12), dp(10), dp(12), dp(10));
-            cl.setBackground(round(CARD, crates > 0 ? AMBER : LINE, 12));
-            cl.setContentDescription("Kasa defteri: " + TezgahCrates.balanceLine(st.name, crates) + ". Açmak için dokun.");
-            final String who = st.name;
-            cl.setOnClickListener(v -> TezgahCratesActivity.open(this, who));
-            body.addView(cl, margins(10));
-        }
 
         // Numara numara kilo
         StringBuilder grades = new StringBuilder();

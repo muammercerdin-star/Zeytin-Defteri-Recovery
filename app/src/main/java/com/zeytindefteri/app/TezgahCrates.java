@@ -11,18 +11,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Kasa defteri: boş zeytin kasalarının kime verildiği, kimden geri geldiği.
+ * Kasa defteri: tezgahçı ile aracı (tüccar) arasındaki kasa hesabı.
  *
- * - Her hareket bir satır: kişi (üretici ya da tüccar/alıcı), yön (VERDİM / GELDİ), adet, gün.
- * - Kişi bakiyesi = verilen − geri gelen. Artıysa kasalarım onda; eksiyse onun kasası bende.
- * - Tezgah alımından işlenen hareket purchase_id taşır; alım silinince onun kasa hareketleri de silinir.
- * - Toplam kasa sayısı (isteğe bağlı) ayarda tutulur: elde = toplam − dışarıda.
+ * Aracı sabah boş kasa getirir (GELEN), akşam dolu kasaları alır (GİDEN). Üreticiyle kasa işi yoktur
+ * (üretici malını sele sepetle getirir).
+ * - Her hareket bir satır: kişi (aracı), yön (GİDEN = GAVE / GELEN = RETURNED), adet, gün.
+ * - Kişi bakiyesi = giden − gelen. Eksiyse aracının kasası bende (çoğu zaman böyle); artıysa benim kasam onda.
+ * - purchase_id: eski sürümde tezgah alımından işlenen satırlar için; alım silinince onlar da silinir.
  * - Yalnız bu telefonda; owner_uid sütunu olduğu için hesap silinince LocalAccountWipe temizler; yedeğe girer.
  */
 public final class TezgahCrates {
     static final String TABLE = "tezgah_crates";
-    public static final int GAVE = 1;      // boş kasa verdim (dışarı çıktı)
-    public static final int RETURNED = 2;  // kasa geri geldi (içeri girdi)
+    public static final int GAVE = 1;      // giden kasa (dolu kasa aracıya gitti / kasa dışarı çıktı)
+    public static final int RETURNED = 2;  // gelen kasa (aracıdan boş kasa geldi / kasa içeri girdi)
     public static final int MAX_COUNT = 5000;
 
     private TezgahCrates() {}
@@ -149,7 +150,7 @@ public final class TezgahCrates {
         return out;
     }
 
-    /** Hareketlerden kişi özetleri: önce kasası dışarıda olanlar (çoktan aza), sonra kasası bende olanlar, sonra kapananlar. */
+    /** Hareketlerden kişi özetleri: önce hesabı açık olanlar (kasa farkı çoktan aza), sonra kapananlar. */
     public static List<Party> parties(List<Move> moves) {
         Map<String, Party> map = new LinkedHashMap<>();
         for (Move m : moves) {
@@ -168,16 +169,13 @@ public final class TezgahCrates {
         }
         List<Party> out = new ArrayList<>(map.values());
         Collections.sort(out, (a, b) -> {
-            int ga = group(a.balance()), gb = group(b.balance());
-            if (ga != gb) return ga - gb;
-            if (ga == 0) return b.balance() - a.balance();
-            if (ga == 1) return a.balance() - b.balance();
-            return Long.compare(b.lastAt, a.lastAt);
+            int aa = Math.abs(a.balance()), ab = Math.abs(b.balance());
+            if ((aa == 0) != (ab == 0)) return aa == 0 ? 1 : -1;   // hesabı açık olanlar önce
+            if (aa != ab) return ab - aa;                            // en çok kasa farkı olan başta
+            return Long.compare(b.lastAt, a.lastAt);                 // sonra en son hareket
         });
         return out;
     }
-
-    private static int group(int balance) { return balance > 0 ? 0 : balance < 0 ? 1 : 2; }
 
     public static Summary summary(List<Move> moves, String today) {
         Summary s = new Summary();
@@ -192,6 +190,38 @@ public final class TezgahCrates {
         return s;
     }
 
+    /** Günlük kasa hesabı: devreden + bugün gelen − bugün giden = sende kalan (aracının kasası). */
+    public static final class Day {
+        public int carried, in, out;
+
+        /** Akşam sende kalan kasa (eksi: senin kasan onda). */
+        public int held() { return carried + in - out; }
+    }
+
+    /**
+     * Bir kişinin (partyKey; null = herkes) günlük kasa hesabı. Devreden: bugünden önceki hareketlerden sende kalan.
+     * Tarihi bugünden sonra olan hareket bugüne sayılır.
+     */
+    public static Day day(List<Move> moves, String partyKey, String today) {
+        Day d = new Day();
+        String t = today == null ? "" : today;
+        for (Move m : moves) {
+            if (partyKey != null && !key(m.party).equals(partyKey)) continue;
+            boolean before = !m.date.isEmpty() && m.date.compareTo(t) < 0;
+            if (before) d.carried -= m.signed();
+            else if (m.kind == RETURNED) d.in += m.count;
+            else if (m.kind == GAVE) d.out += m.count;
+        }
+        return d;
+    }
+
+    /** "Devreden 20 · gelen 100 · giden 110 · sende 10" (WhatsApp ve gün sonu için). */
+    public static String dayLine(Day d) {
+        int h = d.held();
+        return "Devreden " + d.carried + " · gelen " + d.in + " · giden " + d.out + " · "
+                + (h >= 0 ? "sende kalan " + h : "senin " + (-h) + " kasan onda");
+    }
+
     /** Bir kişinin bakiyesi (adı yoksa 0). */
     public static int balanceOf(SQLiteDatabase db, String owner, String party) {
         if (!validParty(party)) return 0;
@@ -200,16 +230,7 @@ public final class TezgahCrates {
         return b;
     }
 
-    /**
-     * Alımda geri gelen kasa önerisi: üreticide kasam varsa tartılan kasa kadar (bakiyeyi aşmadan) geri gelmiş sayılır.
-     * Üreticide kasam yoksa 0 (kendi kasasıyla getirmiştir).
-     */
-    public static int suggestReturned(int balance, int weighedKasa) {
-        if (balance <= 0 || weighedKasa <= 0) return 0;
-        return Math.min(balance, weighedKasa);
-    }
-
-    /** "Volkan Afşar'da 20 kasan var" / "Volkan Afşar'ın 5 kasası sende" / "Kasa hesabı kapalı". */
+    /** "Aracı · 20 kasası sende" / "Aracı · 5 kasan onda" / "kasa hesabı kapalı". */
     public static String balanceLine(String name, int balance) {
         String n = name == null || name.trim().isEmpty() ? "Bu kişi" : name.trim();
         if (balance > 0) return n + " · " + balance + " kasan onda";
@@ -217,15 +238,14 @@ public final class TezgahCrates {
         return n + " · kasa hesabı kapalı";
     }
 
-    /** Üreticiye WhatsApp hatırlatması (bilgi amaçlı). */
+    /** Kasa hesabı mesajı (bilgi amaçlı, WhatsApp). */
     public static String reminder(String name, int balance, String trader) {
         String n = name == null ? "" : name.trim();
         String t = trader == null ? "" : trader.trim();
         StringBuilder b = new StringBuilder();
         b.append("Merhaba").append(n.isEmpty() ? "" : " " + n).append(",\n");
-        if (balance > 0) b.append("Kayıtlarımıza göre sende ").append(balance).append(" boş kasamız görünüyor. ")
-                .append("Müsait olunca getirebilir misin?");
-        else if (balance < 0) b.append("Kayıtlarımıza göre bizde senin ").append(-balance).append(" kasan var.");
+        if (balance > 0) b.append("Kayıtlarımıza göre sende ").append(balance).append(" kasamız görünüyor.");
+        else if (balance < 0) b.append("Kayıtlarımıza göre bende senin ").append(-balance).append(" kasan var.");
         else b.append("Kasa hesabımız kapalı görünüyor, teşekkürler.");
         b.append("\n").append(t.isEmpty() ? "" : t + " · ").append("Zeytin Defteri kasa defteri");
         return b.toString();

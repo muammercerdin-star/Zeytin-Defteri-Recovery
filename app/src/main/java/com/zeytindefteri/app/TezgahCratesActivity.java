@@ -33,15 +33,19 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Kasa defteri: boş zeytin kasaları kimde?
+ * Kasa defteri: tezgahçı ile aracı arasındaki günlük kasa hesabı.
  *
- * Üstte dışarıdaki kasa, elde kalan (toplam kasa yazıldıysa), bugünkü hareket. "Kasa verdim" / "Kasa geldi"
- * düğmeleri; altta kişi kişi bakiye (kasası dışarıda olanlar başta). Kişiye dokununca geçmişi, hızlı
- * verdim/geldi ve WhatsApp hatırlatması açılır. Tezgah alımında işlenen kasalar da burada görünür.
+ * Aracı sabah boş kasa getirir ("Gelen kasa"), akşam dolu kasaları alır ("Giden kasa").
+ * Üstte bugün gelen/giden ve sende kalan (devreden + gelen − giden); altta aracı aracı bakiye.
+ * Aracıya dokununca günlük hesap, geçmiş ve WhatsApp'tan kasa hesabı açılır. Akşam hesabından da açılır.
  */
 public final class TezgahCratesActivity extends Activity {
     public static final String EXTRA_NAME = "name";
-    /** zd_tezgah ayarında toplam kasa: TOTAL_KEY + owner. */
+    /** Açılınca doğrudan bu yönde kayıt penceresi (TezgahCrates.GAVE / RETURNED). */
+    public static final String EXTRA_KIND = "kind";
+    /** Son yazılan aracının adı: PARTY_KEY + owner. */
+    public static final String PARTY_KEY = "crate_party_";
+    /** Eski sürümden: toplam kasa (yalnız yedekte taşınır). */
     public static final String TOTAL_KEY = "crate_total_";
     private static final String PREFS = "zd_tezgah";
 
@@ -68,6 +72,11 @@ public final class TezgahCratesActivity extends Activity {
         c.startActivity(i);
     }
 
+    /** Doğrudan "Gelen kasa" / "Giden kasa" penceresiyle açar (akşam hesabından). */
+    public static void openMove(Context c, int kind) {
+        c.startActivity(new Intent(c, TezgahCratesActivity.class).putExtra(EXTRA_KIND, kind));
+    }
+
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         if (!new SessionManager(this).hasSession()) { finish(); return; }
@@ -89,7 +98,9 @@ public final class TezgahCratesActivity extends Activity {
         setContentView(scroll);
         render();
         String name = getIntent().getStringExtra(EXTRA_NAME);
-        if (name != null && TezgahCrates.validParty(name)) showParty(name);
+        int kind = getIntent().getIntExtra(EXTRA_KIND, 0);
+        if (kind == TezgahCrates.GAVE || kind == TezgahCrates.RETURNED) { quickEntry = true; askMove(kind, ""); }
+        else if (name != null && TezgahCrates.validParty(name)) showParty(name);
     }
 
     @Override protected void onDestroy() {
@@ -97,7 +108,10 @@ public final class TezgahCratesActivity extends Activity {
         super.onDestroy();
     }
 
-    private int total() { return Math.max(0, prefs.getInt(TOTAL_KEY + owner, 0)); }
+    /** Akşam hesabından doğrudan kayıt için açıldı: kaydedince ya da vazgeçince geri döner. */
+    private boolean quickEntry;
+
+    private String lastParty() { return prefs.getString(PARTY_KEY + owner, ""); }
 
     private static String today() { return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()); }
 
@@ -125,44 +139,40 @@ public final class TezgahCratesActivity extends Activity {
         head.addView(back, bp);
         head.addView(text("Kasa defteri", 21, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1));
         body.addView(head);
-        body.addView(text("Boş kasalar kimde? Verdiğin ve geri gelen kasaları yaz; bakiye kendiliğinden çıkar.", 13, MUTED, false));
+        body.addView(text("Aracıyla kasa hesabı: sabah gelen boş kasa, akşam giden dolu kasa. Sende kalan kendiliğinden çıkar.",
+                13, MUTED, false));
 
-        TezgahCrates.Summary s = TezgahCrates.summary(moves, today());
+        TezgahCrates.Day d = TezgahCrates.day(moves, null, today());
+        int h = d.held();
         LinearLayout tiles = new LinearLayout(this);
-        tiles.addView(tile("DIŞARIDA", s.out + " kasa", s.out > 0 ? AMBER : GREEN,
-                s.people > 0 ? s.people + " kişide" : "Hepsi geldi ✓", null), new LinearLayout.LayoutParams(0, -2, 1));
-        int inHand = s.inHand(total());
-        tiles.addView(tile("ELDE", inHand >= 0 ? inHand + " kasa" : "—", TEXT,
-                total() > 0 ? "Toplam " + total() + " · değiştir" : "Toplam kasanı yaz ›", v -> askTotal()), weighted(8));
+        tiles.addView(tile("BUGÜN", "↙" + d.in + "  ↗" + d.out, TEXT, "gelen · giden", null),
+                new LinearLayout.LayoutParams(0, -2, 1));
+        tiles.addView(tile(h >= 0 ? "SENDE KALAN" : "ONDA KALAN", Math.abs(h) + " kasa", h != 0 ? AMBER : GREEN,
+                "devreden " + d.carried, null), weighted(8));
         body.addView(tiles, margins(12));
 
-        StringBuilder line = new StringBuilder("Bugün: ");
-        line.append(s.todayGave).append(" verildi · ").append(s.todayReturned).append(" geldi");
-        if (s.held > 0) line.append("\nBaşkalarının ").append(s.held).append(" kasası sende");
-        body.addView(text(line.toString(), 14, MUTED, false), margins(8));
-
         LinearLayout actions = new LinearLayout(this);
-        TextView gave = button("↗  Kasa verdim", true);
-        gave.setContentDescription("Boş kasa verdim");
-        gave.setOnClickListener(v -> askMove(TezgahCrates.GAVE, ""));
-        actions.addView(gave, new LinearLayout.LayoutParams(0, dp(54), 1));
-        TextView ret = button("↙  Kasa geldi", false);
-        ret.setContentDescription("Kasa geri geldi");
-        ret.setOnClickListener(v -> askMove(TezgahCrates.RETURNED, ""));
-        actions.addView(ret, weightedH(8, 54));
+        TextView in = button("↙  Gelen kasa", true);
+        in.setContentDescription("Gelen kasa: aracıdan boş kasa geldi");
+        in.setOnClickListener(v -> askMove(TezgahCrates.RETURNED, ""));
+        actions.addView(in, new LinearLayout.LayoutParams(0, dp(54), 1));
+        TextView out = button("↗  Giden kasa", false);
+        out.setContentDescription("Giden kasa: dolu kasa aracıya gitti");
+        out.setOnClickListener(v -> askMove(TezgahCrates.GAVE, ""));
+        actions.addView(out, weightedH(8, 54));
         body.addView(actions, margins(14));
 
         List<TezgahCrates.Party> parties = TezgahCrates.parties(moves);
         if (parties.isEmpty()) {
-            TextView empty = text("Henüz kasa hareketi yok.\n\nÜreticiye boş kasa verince \"Kasa verdim\", geri getirince "
-                    + "\"Kasa geldi\" de. Tezgahta alımı bitirirken geri gelen kasalar da buraya işlenir.", 14, MUTED, false);
+            TextView empty = text("Henüz kasa yazılmadı.\n\nAracı sabah boş kasa getirince \"Gelen kasa\", akşam dolu kasaları "
+                    + "alınca \"Giden kasa\" de. Ertesi gün kalan kasa devreden olarak görünür.", 14, MUTED, false);
             empty.setPadding(dp(14), dp(14), dp(14), dp(14));
             empty.setBackground(round(CARD, LINE, 14));
             body.addView(empty, margins(16));
             return;
         }
         if (parties.size() > 5) {
-            EditText search = input(query, "Kişi ara (ad)", InputType.TYPE_CLASS_TEXT);
+            EditText search = input(query, "Aracı ara (ad)", InputType.TYPE_CLASS_TEXT);
             search.addTextChangedListener(new TextWatcher() {
                 @Override public void beforeTextChanged(CharSequence c, int a, int b, int d) {}
                 @Override public void onTextChanged(CharSequence c, int a, int b, int d) {}
@@ -170,7 +180,7 @@ public final class TezgahCratesActivity extends Activity {
             });
             body.addView(search, margins(-1, dp(48), 16));
         }
-        TextView lh = text("KİŞİLER · dokun, geçmiş ve hızlı işlem", 12, MUTED, true);
+        TextView lh = text("ARACILAR · dokun, günlük hesap ve geçmiş", 12, MUTED, true);
         lh.setLetterSpacing(0.06f);
         body.addView(lh, margins(16));
         listBox = new LinearLayout(this);
@@ -190,19 +200,19 @@ public final class TezgahCratesActivity extends Activity {
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
             row.setPadding(dp(14), dp(10), dp(12), dp(10));
-            row.setBackground(round(CARD, p.balance() > 0 ? AMBER : LINE, 14));
+            row.setBackground(round(CARD, p.balance() != 0 ? AMBER : LINE, 14));
             LinearLayout col = new LinearLayout(this);
             col.setOrientation(LinearLayout.VERTICAL);
             TextView n = text(p.name, 16, TEXT, true);
             n.setSingleLine(true);
             n.setEllipsize(android.text.TextUtils.TruncateAt.END);
             col.addView(n);
-            col.addView(text("verilen " + p.gave + " · gelen " + p.returned + (p.lastDate.isEmpty() ? "" : " · son " + shortDate(p.lastDate)),
+            col.addView(text("gelen " + p.returned + " · giden " + p.gave + (p.lastDate.isEmpty() ? "" : " · son " + shortDate(p.lastDate)),
                     12, MUTED, false));
             row.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
             int b = p.balance();
-            TextView chip = text(b > 0 ? b + " kasa onda" : b < 0 ? (-b) + " kasası sende" : "Kapalı ✓", 14,
-                    b > 0 ? AMBER : b < 0 ? MUTED : GREEN, true);
+            TextView chip = text(b < 0 ? (-b) + " kasası sende" : b > 0 ? b + " kasan onda" : "Kapalı ✓", 14,
+                    b != 0 ? AMBER : GREEN, true);
             chip.setPadding(dp(10), dp(4), 0, dp(4));
             row.addView(chip);
             row.setContentDescription(TezgahCrates.balanceLine(p.name, b) + ". Geçmiş için dokun.");
@@ -210,7 +220,7 @@ public final class TezgahCratesActivity extends Activity {
             row.setOnClickListener(v -> showParty(name));
             listBox.addView(row, margins(6));
         }
-        if (shown == 0) listBox.addView(text("Bu adla kimse yok.", 14, MUTED, false), margins(8));
+        if (shown == 0) listBox.addView(text("Bu adla aracı yok.", 14, MUTED, false), margins(8));
     }
 
     // ================================================================== kişi
@@ -228,22 +238,24 @@ public final class TezgahCratesActivity extends Activity {
         final Dialog sheet = sheet();
         LinearLayout box = sheetBox(sheet);
         box.addView(text(shown, 24, TEXT, true), margins(14));
-        box.addView(text(bal > 0 ? bal + " kasan onda" : bal < 0 ? (-bal) + " kasası sende" : "Kasa hesabı kapalı ✓", 20,
-                bal > 0 ? AMBER : bal < 0 ? MUTED : GREEN, true), margins(2));
+        box.addView(text(bal < 0 ? (-bal) + " kasası sende" : bal > 0 ? bal + " kasan onda" : "Kasa hesabı kapalı ✓", 20,
+                bal != 0 ? AMBER : GREEN, true), margins(2));
+        final TezgahCrates.Day day = TezgahCrates.day(list, TezgahCrates.key(shown), today());
+        box.addView(text("Bugün: " + TezgahCrates.dayLine(day), 14, MUTED, false), margins(6));
 
         LinearLayout actions = new LinearLayout(this);
-        TextView gave = button("↗  Verdim", true);
-        gave.setOnClickListener(v -> { sheet.dismiss(); askMove(TezgahCrates.GAVE, shown); });
-        actions.addView(gave, new LinearLayout.LayoutParams(0, dp(52), 1));
-        TextView ret = button("↙  Geldi", false);
+        TextView ret = button("↙  Gelen", true);
         ret.setOnClickListener(v -> { sheet.dismiss(); askMove(TezgahCrates.RETURNED, shown); });
-        actions.addView(ret, weightedH(8, 52));
+        actions.addView(ret, new LinearLayout.LayoutParams(0, dp(52), 1));
+        TextView gave = button("↗  Giden", false);
+        gave.setOnClickListener(v -> { sheet.dismiss(); askMove(TezgahCrates.GAVE, shown); });
+        actions.addView(gave, weightedH(8, 52));
         box.addView(actions, margins(16));
         if (bal != 0) {
-            TextView wa = button("WhatsApp'tan hatırlat", false);
+            TextView wa = button("Kasa hesabını gönder (WhatsApp)", false);
             wa.setTextColor(GREEN);
             wa.setOnClickListener(v -> TezgahShare.shareText(this,
-                    TezgahCrates.reminder(shown, bal, TezgahShare.traderName()), phoneOf(shown)));
+                    TezgahCrates.reminder(shown, bal, TezgahShare.traderName()) + "\nBugün: " + TezgahCrates.dayLine(day), ""));
             box.addView(wa, margins(-1, dp(48), 8));
         }
 
@@ -258,17 +270,17 @@ public final class TezgahCratesActivity extends Activity {
             row.setMinimumHeight(dp(42));
             LinearLayout col = new LinearLayout(this);
             col.setOrientation(LinearLayout.VERTICAL);
-            col.addView(text((m.kind == TezgahCrates.GAVE ? "↗ Verdim " : "↙ Geldi ") + m.count + " kasa", 15,
+            col.addView(text((m.kind == TezgahCrates.GAVE ? "↗ Giden " : "↙ Gelen ") + m.count + " kasa", 15,
                     m.kind == TezgahCrates.GAVE ? AMBER : GREEN, true));
             String sub = shortDate(m.date) + (m.purchaseId > 0 ? " · tezgah alımından" : "") + (m.note.isEmpty() ? "" : " · " + m.note);
             col.addView(text(sub, 12, MUTED, false));
             row.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
-            row.addView(text("bakiye " + running, 13, MUTED, false));
+            row.addView(text(running <= 0 ? "sende " + (-running) : "onda " + running, 13, MUTED, false));
             running -= m.signed();
             row.setOnLongClickListener(v -> {
                 new AlertDialog.Builder(this)
                         .setTitle("Hareket silinsin mi?")
-                        .setMessage((m.kind == TezgahCrates.GAVE ? "Verdim " : "Geldi ") + m.count + " kasa · " + shortDate(m.date)
+                        .setMessage((m.kind == TezgahCrates.GAVE ? "Giden " : "Gelen ") + m.count + " kasa · " + shortDate(m.date)
                                 + (m.purchaseId > 0 ? "\nTezgah alımı silinmez, yalnız bu kasa satırı silinir." : ""))
                         .setPositiveButton("Sil", (d, w) -> {
                             boolean ok;
@@ -293,17 +305,6 @@ public final class TezgahCratesActivity extends Activity {
         sheet.show();
     }
 
-    /** Üreticinin telefonu: tezgah alımlarındaki en son kayıttan (yoksa boş). */
-    private String phoneOf(String name) {
-        String k = TezgahCrates.key(name);
-        try {
-            for (TezgahPurchases.Purchase p : TezgahPurchases.all(db.getWritableDatabase(), owner, 2000)) {
-                if (TezgahCrates.key(p.seller).equals(k) && p.phone != null && !p.phone.trim().isEmpty()) return p.phone.trim();
-            }
-        } catch (RuntimeException ignored) { }
-        return "";
-    }
-
     // ================================================================== hareket
 
     private void askMove(int kind, String presetName) {
@@ -314,25 +315,26 @@ public final class TezgahCratesActivity extends Activity {
         LinearLayout seg = new LinearLayout(this);
         seg.setPadding(dp(4), dp(4), dp(4), dp(4));
         seg.setBackground(round(CARD, LINE, 16));
-        final TextView a = text("↗  Verdim", 16, TEXT, true);
-        final TextView b = text("↙  Geldi", 16, TEXT, true);
+        final TextView a = text("↗  Giden", 16, TEXT, true);
+        final TextView b = text("↙  Gelen", 16, TEXT, true);
         a.setGravity(Gravity.CENTER);
         b.setGravity(Gravity.CENTER);
-        seg.addView(a, new LinearLayout.LayoutParams(0, dp(46), 1));
         seg.addView(b, new LinearLayout.LayoutParams(0, dp(46), 1));
+        seg.addView(a, new LinearLayout.LayoutParams(0, dp(46), 1));
         box.addView(seg, margins(14));
 
         final TextView who = text("", 12, MUTED, true);
         who.setLetterSpacing(0.08f);
         box.addView(who, margins(16));
-        final EditText name = input(presetName, "Üreticinin ya da tüccarın adı",
+        final String startName = presetName.isEmpty() ? lastParty() : presetName;
+        final EditText name = input(startName, "Aracının adı",
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         box.addView(name, margins(-1, dp(54), 6));
         final TextView balanceNote = text("", 13, MUTED, true);
         box.addView(balanceNote, margins(4));
 
         List<String> recent = recentNames();
-        if (!recent.isEmpty() && presetName.isEmpty()) {
+        if (recent.size() > 1 && presetName.isEmpty()) {
             LinearLayout chips = new LinearLayout(this);
             chips.setOrientation(LinearLayout.VERTICAL);
             LinearLayout line = null;
@@ -393,6 +395,8 @@ public final class TezgahCratesActivity extends Activity {
         cancel.setGravity(Gravity.CENTER);
         cancel.setOnClickListener(v -> sheet.dismiss());
         box.addView(cancel, margins(-1, dp(46), 4));
+        // Akşam hesabından açıldıysa pencere kapanınca (kayıt ya da vazgeç) oraya dönülür.
+        sheet.setOnDismissListener(x -> { if (quickEntry && !isFinishing()) finish(); });
 
         final Runnable paint = () -> {
             boolean g = dir[0] == TezgahCrates.GAVE;
@@ -400,21 +404,21 @@ public final class TezgahCratesActivity extends Activity {
             a.setBackground(g ? round(AMBER, 0, 12) : null);
             b.setTextColor(!g ? BG : TEXT);
             b.setBackground(!g ? round(GREEN, 0, 12) : null);
-            who.setText(g ? "KİME VERDİN?" : "KİMDEN GELDİ?");
+            who.setText(g ? "DOLU KASA KİME GİTTİ?" : "BOŞ KASA KİMDEN GELDİ?");
             int bal = TezgahCrates.validParty(name.getText().toString())
                     ? safeBalance(name.getText().toString()) : 0;
             balanceNote.setVisibility(TezgahCrates.validParty(name.getText().toString()) ? View.VISIBLE : View.GONE);
-            balanceNote.setText(bal > 0 ? "Şu an " + bal + " kasan onda" : bal < 0 ? "Şu an onun " + (-bal) + " kasası sende" : "Kasa hesabı kapalı");
-            balanceNote.setTextColor(bal > 0 ? AMBER : MUTED);
-            // Geldi + kişide kasam varsa: "hepsi geldi" kısayolu
-            boolean showAll = !g && bal > 0;
+            balanceNote.setText(bal < 0 ? "Şu an onun " + (-bal) + " kasası sende" : bal > 0 ? "Şu an " + bal + " kasan onda" : "Kasa hesabı kapalı");
+            balanceNote.setTextColor(bal != 0 ? AMBER : MUTED);
+            // Giden + aracının kasası bendeyse: "hepsi gitti" kısayolu
+            boolean showAll = g && bal < 0;
             all.setVisibility(showAll ? View.VISIBLE : View.GONE);
             if (showAll) {
-                all.setText("Hepsi geldi (" + bal + " kasa)");
-                all.setOnClickListener(v -> count.setText(String.valueOf(bal)));
+                all.setText("Hepsi gitti (" + (-bal) + " kasa)");
+                all.setOnClickListener(v -> count.setText(String.valueOf(-bal)));
             }
             int n = parse(count);
-            save.setText(n > 0 ? (g ? "Kaydet · " + n + " kasa verdim" : "Kaydet · " + n + " kasa geldi") : "Kasa adedini yaz");
+            save.setText(n > 0 ? (g ? "Kaydet · " + n + " kasa gitti" : "Kaydet · " + n + " kasa geldi") : "Kasa adedini yaz");
             save.setTextColor(n > 0 ? BG : MUTED);
             save.setBackground(round(n > 0 ? (g ? AMBER : GREEN) : CARD, n > 0 ? 0 : LINE, 18));
         };
@@ -432,7 +436,7 @@ public final class TezgahCratesActivity extends Activity {
         save.setOnClickListener(v -> {
             String n = name.getText().toString().trim();
             int c = parse(count);
-            if (!TezgahCrates.validParty(n)) { name.setError("Ad yaz (münferit satıcıya kasa yazılmaz)"); name.requestFocus(); return; }
+            if (!TezgahCrates.validParty(n)) { name.setError("Aracının adını yaz"); name.requestFocus(); return; }
             String err = TezgahCrates.countError(c);
             if (!err.isEmpty()) { count.setError(err); count.requestFocus(); return; }
             long id;
@@ -441,12 +445,18 @@ public final class TezgahCratesActivity extends Activity {
                         note.getText().toString(), System.currentTimeMillis());
             } catch (RuntimeException e) { id = -1; }
             if (id <= 0) { toast("Kaydedilemedi. Tekrar dene."); return; }
+            prefs.edit().putString(PARTY_KEY + owner, n).apply();
             sheet.dismiss();
+            if (quickEntry) {
+                toast(TezgahCrates.balanceLine(n, safeBalance(n)));
+                finish();
+                return;
+            }
             render();
             toast(TezgahCrates.balanceLine(n, safeBalance(n)));
         });
         sheet.show();
-        if (presetName.isEmpty()) showKeyboard(name); else showKeyboard(count);
+        if (startName.isEmpty()) showKeyboard(name); else showKeyboard(count);
     }
 
     private int safeBalance(String name) {
@@ -454,12 +464,10 @@ public final class TezgahCratesActivity extends Activity {
         catch (RuntimeException e) { return 0; }
     }
 
-    /** Son kişiler: kasa hareketi olanlar ve son tezgah satıcıları (tekrarsız, en çok 6). */
+    /** Son aracılar: kasa hareketi olanlar (tekrarsız, en çok 6). */
     private List<String> recentNames() {
         List<String> names = new ArrayList<>();
         for (TezgahCrates.Move m : moves) names.add(m.party);
-        try { for (TezgahPurchases.Purchase p : TezgahPurchases.all(db.getWritableDatabase(), owner, 60)) names.add(p.seller); }
-        catch (RuntimeException ignored) { }
         List<String> out = new ArrayList<>();
         List<String> keys = new ArrayList<>();
         for (String n : names) {
@@ -471,25 +479,6 @@ public final class TezgahCratesActivity extends Activity {
             if (out.size() >= 6) break;
         }
         return out;
-    }
-
-    private void askTotal() {
-        final EditText e = input(total() > 0 ? String.valueOf(total()) : "", "Toplam kasa sayın", InputType.TYPE_CLASS_NUMBER);
-        LinearLayout wrap = new LinearLayout(this);
-        wrap.setPadding(dp(20), dp(8), dp(20), 0);
-        wrap.addView(e, new LinearLayout.LayoutParams(-1, dp(54)));
-        new AlertDialog.Builder(this)
-                .setTitle("Toplam kaç kasan var?")
-                .setMessage("Elde kalan = toplam − dışarıdaki. Boş bırakırsan elde kalan gösterilmez.")
-                .setView(wrap)
-                .setPositiveButton("Kaydet", (d, w) -> {
-                    int v = Math.max(0, Math.min(1_000_000, parse(e)));
-                    prefs.edit().putInt(TOTAL_KEY + owner, v).apply();
-                    render();
-                })
-                .setNegativeButton("Vazgeç", null)
-                .show();
-        showKeyboard(e);
     }
 
     // ================================================================== yardımcılar
