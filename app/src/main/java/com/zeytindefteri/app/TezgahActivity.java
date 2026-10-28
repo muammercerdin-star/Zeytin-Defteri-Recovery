@@ -167,6 +167,7 @@ public final class TezgahActivity extends Activity {
         root.addView(column, new FrameLayout.LayoutParams(-1, -1));
 
         ScrollView scroll = new ScrollView(this);
+        mainScroll = scroll;
         scroll.setFillViewport(true);
         body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
@@ -185,8 +186,8 @@ public final class TezgahActivity extends Activity {
         // Özetteki numaraya dokununca o numaranın tartımları (silme ✕) aşağıda açılır.
         body.addView(weighingsCard(), margins(-1, -2, 8));
         body.addView(summaryCard(), margins(-1, -2, 8));
-        body.addView(ledgerRow(), margins(-1, -2, 8));
-        body.addView(cratesRow(), margins(-1, -2, 8));
+        // Cari hesap ve kasa Tezgâh ana ekranında; burada bugünkü alımlar (en yeni üstte).
+        body.addView(purchasesCard(), margins(-1, -2, 8));
         setContentView(root);
         refreshTotals();
     }
@@ -788,35 +789,6 @@ public final class TezgahActivity extends Activity {
         actions.addView(pr, pp);
         full.addView(actions, margins(-1, -2, 10));
 
-        // Son alımlar (açık olan hariç, en çok 3)
-        int shown = 0;
-        for (int i = 0; i < list.size() && shown < 3; i++) {
-            if (i == slipIndex) continue;
-            if (shown == 0) {
-                full.addView(divider(), margins(-1, Math.max(1, dp(1)), 10));
-                TextView h = text("SON ALIMLAR · dokun, dökümü aç", 11, MUTED, true);
-                h.setLetterSpacing(0.06f);
-                full.addView(h, margins(-1, -2, 8));
-            }
-            shown++;
-            final int index = i;
-            TezgahPurchases.Purchase o = list.get(i);
-            LinearLayout row = new LinearLayout(this);
-            row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setMinimumHeight(dp(40));
-            TextView n = text((o.seller.isEmpty() ? "Adsız" : o.seller) + " · " + shortKg(o.kg), 14, TEXT, false);
-            n.setSingleLine(true);
-            n.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            row.addView(n, new LinearLayout.LayoutParams(0, -2, 1));
-            row.addView(text(TezgahModel.tl(o.gross), 14, TEXT, true));
-            boolean paid = o.remaining() < 0.5;
-            TextView st = text(paid ? "  ✓" : "  borç", 13, paid ? GREEN : AMBER, true);
-            row.addView(st);
-            row.setContentDescription((o.seller.isEmpty() ? "Adsız" : o.seller) + ", " + TezgahModel.kg(o.kg) + ", "
-                    + TezgahModel.tl(o.gross) + (paid ? ", ödendi" : ", borç var") + ". Dökümü açmak için dokun.");
-            row.setOnClickListener(v -> { slipIndex = index; build(); });
-            full.addView(row);
-        }
         if (slipIndex != 0) {
             TextView latest = text("‹ Son fişe dön", 13, GREEN, true);
             latest.setPadding(0, dp(8), 0, 0);
@@ -865,48 +837,70 @@ public final class TezgahActivity extends Activity {
         return row;
     }
 
-    /** "💼 Cari hesap · alacağın 400.000 ₺ ›": aracı / tüccar / alıcılarla para hesabı. */
-    private View ledgerRow() {
-        double[] t;
-        try { t = TezgahLedger.totals(TezgahLedger.entries(db.getWritableDatabase(), owner)); }
-        catch (RuntimeException e) { t = new double[]{0, 0}; }
-        LinearLayout row = new LinearLayout(this);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(14), dp(8), dp(12), dp(8));
-        row.setMinimumHeight(dp(48));
-        row.setBackground(round(CARD, t[0] > 0.5 ? GREEN_DIM : LINE, 14));
-        row.addView(text("💼  Cari hesap · tüccar", 15, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1));
-        TextView v = text(t[0] > 0.5 ? "alacak " + TezgahModel.tl(t[0]) + " ›" : t[1] > 0.5 ? "borç " + TezgahModel.tl(t[1]) + " ›" : "›",
-                14, t[0] > 0.5 || t[1] > 0.5 ? AMBER : GREEN, true);
-        row.addView(v);
-        row.setContentDescription("Cari hesap" + (t[0] > 0.5 ? ", alacağın " + TezgahModel.tl(t[0]) : "") + ". Açmak için dokun.");
-        row.setOnClickListener(x -> TezgahLedgerActivity.open(this, null));
-        return row;
-    }
+    private ScrollView mainScroll;
 
-    /** "📦 Kasa · bugün gelen 100 · giden 60 · sende 40 ›": aracıyla günlük kasa hesabı. */
-    private View cratesRow() {
-        TezgahCrates.Day d;
-        try { d = TezgahCrates.day(TezgahCrates.moves(db.getWritableDatabase(), owner), null, today()); }
-        catch (RuntimeException e) { d = new TezgahCrates.Day(); }
-        boolean any = d.carried != 0 || d.in > 0 || d.out > 0;
-        LinearLayout row = new LinearLayout(this);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(14), dp(8), dp(12), dp(8));
-        row.setMinimumHeight(dp(48));
-        row.setBackground(round(CARD, any ? GREEN_DIM : LINE, 14));
-        LinearLayout col = new LinearLayout(this);
-        col.setOrientation(LinearLayout.VERTICAL);
-        col.addView(text("📦  Kasa · aracıyla", 15, TEXT, true));
-        if (any) col.addView(text("bugün gelen " + d.in + " · giden " + d.out, 12, MUTED, false));
-        row.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
-        int h = d.held();
-        TextView v = text(!any ? "Gelen / giden yaz ›" : h >= 0 ? "sende " + h + " ›" : "onda " + (-h) + " ›", 14,
-                !any ? GREEN : AMBER, true);
-        row.addView(v);
-        row.setContentDescription("Kasa defteri. " + (any ? TezgahCrates.dayLine(d) : "Henüz kasa yazılmadı") + ". Açmak için dokun.");
-        row.setOnClickListener(x -> TezgahCratesActivity.open(this, null));
-        return row;
+    /**
+     * Bugünkü (açık dönem) alımlar, en yeni üstte: saat, üretici, kilo, tutar, ödendi/borç.
+     * Dokununca o fişin dökümü üstte açılır (tezgâh boşken); tartım sürerken Alım defteri açılır.
+     */
+    private View purchasesCard() {
+        List<TezgahPurchases.Purchase> list;
+        try { list = TezgahPurchases.open(db.getWritableDatabase(), owner); }
+        catch (RuntimeException e) { list = new ArrayList<>(); }
+        LinearLayout box = card();
+        if (list.isEmpty()) { box.setVisibility(View.GONE); return box; }
+        TezgahPurchases.Day d = TezgahPurchases.sum(list);
+        LinearLayout head = new LinearLayout(this);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        TextView h = text("BUGÜNKÜ ALIMLAR · " + list.size(), 12, MUTED, true);
+        h.setLetterSpacing(0.05f);
+        head.addView(h, new LinearLayout.LayoutParams(0, -2, 1));
+        head.addView(text(TezgahModel.kg(d.kg) + " · " + TezgahModel.tl(d.gross), 13, TEXT, true));
+        box.addView(head);
+        int max = Math.min(list.size(), 30);
+        for (int i = 0; i < max; i++) {
+            final int index = i;
+            TezgahPurchases.Purchase o = list.get(i);
+            box.addView(divider(), margins(-1, Math.max(1, dp(1)), 6));
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setMinimumHeight(dp(48));
+            LinearLayout col = new LinearLayout(this);
+            col.setOrientation(LinearLayout.VERTICAL);
+            String who = o.seller.isEmpty() ? "Adsız" : o.seller;
+            TextView n = text(who, 15, TEXT, true);
+            n.setSingleLine(true);
+            n.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            col.addView(n);
+            String time = o.createdAt > 0 ? new SimpleDateFormat("HH:mm", Locale.US).format(new Date(o.createdAt)) : "";
+            col.addView(text((time.isEmpty() ? "" : time + " · ") + shortKg(o.kg) + " · " + o.kasa + " kasa", 12, MUTED, false));
+            row.addView(col, new LinearLayout.LayoutParams(0, -2, 1));
+            LinearLayout right = new LinearLayout(this);
+            right.setOrientation(LinearLayout.VERTICAL);
+            right.setGravity(Gravity.END);
+            right.addView(text(TezgahModel.tl(o.gross), 15, TEXT, true));
+            boolean paid = o.remaining() < 0.5;
+            right.addView(text(paid ? "Ödendi ✓" : "Borç " + TezgahModel.tl(o.remaining()), 12, paid ? GREEN : AMBER, true));
+            row.addView(right);
+            row.setContentDescription(who + ", " + time + ", " + TezgahModel.kg(o.kg) + ", " + TezgahModel.tl(o.gross)
+                    + (paid ? ", ödendi" : ", borç var") + ". Fişi açmak için dokun.");
+            row.setOnClickListener(v -> {
+                if (!model.isEmpty()) { showDayList(); return; }
+                slipIndex = index;
+                slipManual = true;
+                slipHiddenByUser = false;
+                build();
+                if (mainScroll != null) mainScroll.post(() -> mainScroll.smoothScrollTo(0, 0));
+            });
+            box.addView(row);
+        }
+        if (list.size() > max) {
+            TextView more = text("+ " + (list.size() - max) + " alım daha · Alım defteri ›", 13, GREEN, true);
+            more.setPadding(0, dp(10), 0, dp(2));
+            more.setOnClickListener(v -> showDayList());
+            box.addView(more);
+        }
+        return box;
     }
 
     private View bottomBar() {
