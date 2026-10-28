@@ -41,7 +41,7 @@ public final class LegalDocumentsTest {
             check(filled.contains("Muammer Çerdin") && !filled.contains(LegalDocuments.CONTROLLER_PENDING), file + " controller name filled");
             check(LegalDocuments.fill(raw(file), "").contains(LegalDocuments.CONTROLLER_PENDING), file + " empty name is marked pending");
             check(filled.contains("Sürüm " + LegalDocuments.VERSION), file + " shows current version");
-            check("1.4".equals(LegalDocuments.VERSION), "version 1.4");
+            check("1.6".equals(LegalDocuments.VERSION), "version 1.6");
             String named = LegalDocuments.fill(raw(file), "Ad Soyad");
             check(named.contains("Ad Soyad") && !named.contains(LegalDocuments.CONTROLLER_PENDING), file + " name substitution");
             // No fabricated contact data or absolute guarantees.

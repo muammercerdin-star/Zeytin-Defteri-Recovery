@@ -2270,7 +2270,71 @@ public class LoginActivity extends Activity {
                                 return;
                             }
 
+                            // "Giriş Yap" sekmesinden Google ile ilk kez gelen kişi aslında yeni hesap açıyor:
+                            // Kullanım Koşulları onayı alınmadan hesap oluşturulmaz.
+                            boolean isNew = task.getResult() != null
+                                    && task.getResult().getAdditionalUserInfo() != null
+                                    && task.getResult().getAdditionalUserInfo().isNewUser();
+                            boolean accepted = registerMode && legalAcceptance != null && legalAcceptance.isChecked();
+                            if (isNew && !accepted) {
+                                askLegalForNewGoogleUser(user);
+                                return;
+                            }
 
+                            continueGoogleSession(user);
+                        }
+                );
+    }
+
+    /** Yeni Google hesabı, koşullar onaylanmadan: onay ister; reddedilirse az önce açılan hesap silinir. */
+    private void askLegalForNewGoogleUser(final FirebaseUser user) {
+        if (!AuthRegistrationPolicy.documentsReady()) {
+            cancelNewGoogleUser(user, LegalDocuments.registrationBlockReason());
+            return;
+        }
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dpx(22), dpx(6), dpx(22), 0);
+        TextView msg = new TextView(this);
+        msg.setText("Bu Google hesabıyla ilk kez giriyorsun; yeni bir Zeytin Defteri hesabı açılacak. "
+                + "Devam etmek için Kullanım Koşulları'nı kabul etmen gerekiyor.");
+        msg.setTextSize(15);
+        box.addView(msg);
+        TextView terms = new TextView(this);
+        terms.setText("Kullanım Koşulları'nı oku ›");
+        terms.setTextSize(15);
+        terms.setPadding(0, dpx(14), 0, dpx(6));
+        terms.setPaintFlags(terms.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+        terms.setOnClickListener(v -> LegalDocumentActivity.open(this, LegalDocuments.TERMS));
+        box.addView(terms);
+        TextView kvkk = new TextView(this);
+        kvkk.setText("KVKK Aydınlatma Metni'ni oku ›");
+        kvkk.setTextSize(15);
+        kvkk.setPadding(0, dpx(6), 0, dpx(6));
+        kvkk.setPaintFlags(kvkk.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+        kvkk.setOnClickListener(v -> LegalDocumentActivity.open(this, LegalDocuments.KVKK));
+        box.addView(kvkk);
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Yeni hesap")
+                .setView(box)
+                .setCancelable(false)
+                .setPositiveButton("Kabul ediyorum, devam et", (d, w) -> continueGoogleSession(user))
+                .setNegativeButton("Vazgeç", (d, w) -> cancelNewGoogleUser(user, "Hesap oluşturulmadı."))
+                .show();
+    }
+
+    /** Onaysız açılan yeni Google hesabını geri alır (Firebase'den siler, oturumu kapatır). */
+    private void cancelNewGoogleUser(FirebaseUser user, String message) {
+        user.delete().addOnCompleteListener(this, t -> {
+            try { firebaseAuth.signOut(); } catch (RuntimeException ignored) { }
+            setActionRunning(false, null);
+            showMessage(message);
+        });
+    }
+
+    private int dpx(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }
+
+    private void continueGoogleSession(FirebaseUser user) {
                             String userName =
                                     user.getDisplayName();
 
@@ -2304,8 +2368,6 @@ public class LoginActivity extends Activity {
                             showSuccessAndContinue(
                                     "✓   Hesabın hazır"
                             );
-                        }
-                );
     }
 
 

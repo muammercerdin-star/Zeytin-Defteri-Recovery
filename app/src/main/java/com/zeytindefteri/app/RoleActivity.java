@@ -165,8 +165,26 @@ public final class RoleActivity extends Activity {
             next = new Intent(this, MainActivity.class).putExtra(TezgahHomeActivity.EXTRA_STAY_FEED, true);
         }
         next.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(next);
+        if (UserRole.needsFirstGarden(picked) && gardenCount() == 0) {
+            // Tezgâhçıyken bahçe eklemeden üretici moduna geçen: üretici ekranının üstünde önce bahçe ekleme açılır.
+            android.widget.Toast.makeText(this, "Üretici ekranları için önce bahçeni ekle.", android.widget.Toast.LENGTH_LONG).show();
+            startActivities(new Intent[]{next, new Intent(this, AddGardenActivity.class).putExtra("first_garden", false)});
+        } else {
+            startActivity(next);
+        }
         finish();
+    }
+
+    private int gardenCount() {
+        DatabaseHelper h = new DatabaseHelper(this);
+        try {
+            String u = h.getActiveOwnerUid();
+            return h.getGardenCountForOwner(u == null ? "" : u);
+        } catch (RuntimeException e) {
+            return 1; // emin değilsek zorlamayalım
+        } finally {
+            h.close();
+        }
     }
 
     private TextView text(String v, int sp, int color, boolean bold) {
