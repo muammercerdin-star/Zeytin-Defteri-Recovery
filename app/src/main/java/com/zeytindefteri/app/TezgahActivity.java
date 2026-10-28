@@ -61,7 +61,7 @@ public final class TezgahActivity extends Activity {
     private final int role = ROLE_BUY;
     private int grade = 0;
     private TezgahModel model = new TezgahModel();
-    private int kasa = 10;
+    private int kasa = 1;
 
     private String seller = "", sellerPhone = "";
 
@@ -77,13 +77,15 @@ public final class TezgahActivity extends Activity {
         owner = db.getActiveOwnerUid();
         if (owner == null) owner = "";
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        kasa = Math.max(0, Math.min(TezgahModel.MAX_KASA, prefs.getInt("kasa", 10)));
+        kasa = Math.max(0, Math.min(TezgahModel.MAX_KASA, prefs.getInt("kasa", 1)));
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
                 | WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         loadDraft();
+        // Yeni alım 1 kasadan başlar; yarım kalan alıma devam ederken son yazılan kasa kalır.
+        if (model.isEmpty()) kasa = 1;
         build();
     }
 
@@ -134,10 +136,13 @@ public final class TezgahActivity extends Activity {
     }
 
     /** Tezgahta en son kullanılan alım fiyatları (ilk seferde boş: "fiyat?" ile sorulur). */
+    /** İlk kullanımda hazır gelen alım fiyatları (₺/kg): Double, 1, 2, 3, 4, Yağlık. Değiştirilince son fiyat hatırlanır. */
+    private static final double[] STARTER_PRICES = {130, 100, 70, 40, 30, 20};
+
     private double[] defaultPrices() {
         double[] out = new double[TezgahModel.GRADES.length];
         TezgahModel last = TezgahModel.decode(prefs.getString("buy_prices_" + owner, ""));
-        for (int g = 0; g < out.length; g++) out[g] = last.price(g);
+        for (int g = 0; g < out.length; g++) out[g] = last.price(g) > 0 ? last.price(g) : STARTER_PRICES[g];
         return out;
     }
 
@@ -1522,6 +1527,7 @@ public final class TezgahActivity extends Activity {
         seller = "";
         sellerPhone = "";
         grade = 0; // yeni alım Double sekmesiyle başlar
+        kasa = 1;  // ve 1 kasadan
         slipIndex = 0; // kaydedilen fiş açık gelsin (3 dk; sonra tek satıra iner)
         slipManual = false;
         slipHiddenByUser = false;
