@@ -181,8 +181,8 @@ public final class TezgahActivity extends Activity {
         body.addView(startButton(), margins(-1, dp(58), 6));
         // Tezgah boşken son fiş (numara numara döküm) hemen burada: satıcıyla teyit için.
         body.addView(lastSlipCard(), margins(-1, -2, 8));
-        body.addView(gradeRow(), margins(-1, -2, 8));
-        body.addView(entryCard(), margins(-1, -2, 8));
+        // Elle tartım kutusu (numara sekmeleri + kasa/kantar) kaldırıldı: tartım yalnız sihirbazla.
+        // Özetteki numaraya dokununca o numaranın tartımları (silme ✕) aşağıda açılır.
         body.addView(weighingsCard(), margins(-1, -2, 8));
         body.addView(summaryCard(), margins(-1, -2, 8));
         body.addView(ledgerRow(), margins(-1, -2, 8));
@@ -565,6 +565,7 @@ public final class TezgahActivity extends Activity {
         TextView head = text("ÖZET · fiyata dokun, değiştir", 12, MUTED, true);
         head.setLetterSpacing(0.05f);
         headRow.addView(head, new LinearLayout.LayoutParams(0, -2, 1));
+        headRow.addView(tareLink());
         if (!model.isEmpty()) {
             TextView reset = text("Sıfırla", 13, RED, true);
             reset.setPadding(dp(10), dp(6), 0, dp(6));
@@ -621,6 +622,15 @@ public final class TezgahActivity extends Activity {
         return box;
     }
 
+    /** "Dara 2 kg ›": kasa darası (elle tartım kutusu kalktığı için fiyat/özet başlığında). */
+    private TextView tareLink() {
+        TextView t = text("Dara " + TezgahModel.kg(model.tare()) + " ›", 13, GREEN, true);
+        t.setPadding(dp(10), dp(6), dp(4), dp(6));
+        t.setContentDescription("Kasa darası " + TezgahModel.kg(model.tare()) + ", değiştir");
+        t.setOnClickListener(v -> askTare());
+        return t;
+    }
+
     /** Tezgah boşken özetin yerine küçük fiyat çubuğu (6 boş satır yer kaplamasın); dokununca fiyat değişir. */
     private View priceStrip() {
         LinearLayout box = card();
@@ -628,7 +638,11 @@ public final class TezgahActivity extends Activity {
         box.setPadding(dp(12), dp(8), dp(12), dp(10));
         TextView head = text("BUGÜNKÜ FİYATLAR · dokun, değiştir", 12, MUTED, true);
         head.setLetterSpacing(0.05f);
-        box.addView(head);
+        LinearLayout headRow = new LinearLayout(this);
+        headRow.setGravity(Gravity.CENTER_VERTICAL);
+        headRow.addView(head, new LinearLayout.LayoutParams(0, -2, 1));
+        headRow.addView(tareLink());
+        box.addView(headRow);
         LinearLayout line = null;
         for (int g = 0; g < TezgahModel.GRADES.length; g++) {
             if (g % 3 == 0) { line = new LinearLayout(this); box.addView(line, margins(-1, -2, 6)); }
