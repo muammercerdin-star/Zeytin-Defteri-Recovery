@@ -111,7 +111,9 @@ public final class TezgahHomeActivity extends Activity {
         start.setGravity(Gravity.CENTER);
         start.setBackground(round(GREEN, 0, 20));
         start.setContentDescription("Tezgâhı aç: kantarda tartım");
-        start.setOnClickListener(v -> startActivity(new Intent(this, TezgahActivity.class)));
+        // Doğrudan tartım sihirbazı açılır (Double → … → Yağlık → satan → ödeme).
+        start.setOnClickListener(v -> startActivity(new Intent(this, TezgahActivity.class)
+                .putExtra(TezgahActivity.EXTRA_WIZARD, true)));
         body.addView(start, margins(-1, dp(64), 14));
 
         // Bugün (açık dönem)

@@ -44,6 +44,9 @@ public final class TezgahActivity extends Activity {
     /** Taslak anahtarları eski sürümle uyumlu kalsın diye: önceki "Alıyorum" rolünün numarası. */
     private static final int ROLE_BUY = 1;
     private static final String PREFS = "zd_tezgah";
+    /** Tezgâh ana ekranından "Tartım başlat": sihirbaz hemen açılır; ekrandaki ikinci "Tartım başlat" gösterilmez. */
+    public static final String EXTRA_WIZARD = "open_wizard";
+    private boolean fromHome;
     // Güneşte okunur: koyu zemin, yüksek karşıtlık.
     private static final int BG = Color.parseColor("#050F16");
     private static final int CARD = Color.parseColor("#0F2230");
@@ -83,10 +86,12 @@ public final class TezgahActivity extends Activity {
         getWindow().setNavigationBarColor(BG);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
                 | WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+        fromHome = getIntent() != null && getIntent().getBooleanExtra(EXTRA_WIZARD, false);
         loadDraft();
         // Yeni alım 1 kasadan başlar; yarım kalan alıma devam ederken son yazılan kasa kalır.
         if (model.isEmpty()) kasa = 1;
         build();
+        if (fromHome && state == null) body.post(() -> { if (!isFinishing() && wizard == null) openWizard(); });
     }
 
     /** Alım defterinden dönünce (silme, borç kapama) gün özeti ve son fiş tazelensin. */
@@ -172,7 +177,8 @@ public final class TezgahActivity extends Activity {
 
         // Sıkı düzen: her şey tek ekrana sığsın (gerekirse yine kayar).
         body.addView(header());
-        body.addView(startButton(), margins(-1, dp(58), 6));
+        // Ana ekrandan gelindiyse boş tezgâhta ikinci "Tartım başlat" yok; yarım alımda "Tartıma devam et" kalır.
+        if (!fromHome || !model.isEmpty()) body.addView(startButton(), margins(-1, dp(58), 6));
         // Tezgah boşken son fiş (numara numara döküm) hemen burada: satıcıyla teyit için.
         body.addView(lastSlipCard(), margins(-1, -2, 8));
         body.addView(gradeRow(), margins(-1, -2, 8));
