@@ -697,7 +697,9 @@ public final class TezgahActivity extends Activity {
         box.addView(compact);
         box.addView(full);
         final String who = p.seller.isEmpty() ? "Adsız üretici" : p.seller;
-        final String receipt = m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid);
+        // Aynı üreticinin bu fişten önceki alımlarından kalan borç: fişte "Önceki borç" + "GÜNCEL BORÇ".
+        final double prevDebt = previousDebt(p.seller, p.createdAt, p.id);
+        final String receipt = m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid, prevDebt);
         String time = p.createdAt > 0 ? new SimpleDateFormat("HH:mm", Locale.US).format(new Date(p.createdAt)) : "";
 
         TextView kicker = text((slipIndex == 0 ? "SON FİŞ" : "FİŞ") + (time.isEmpty() ? "" : " · " + time)
@@ -766,6 +768,10 @@ public final class TezgahActivity extends Activity {
         TextView pay = text(left < 0.5 ? "Ödendi ✓" : "Borç " + TezgahModel.tl(left)
                 + (p.paid > 0.5 ? "  (ödenen " + TezgahModel.tl(p.paid) + ")" : ""), 15, left < 0.5 ? GREEN : AMBER, true);
         full.addView(pay, margins(-1, -2, 4));
+        if (prevDebt > 0.5) {
+            full.addView(text("Önceki borç " + TezgahModel.tl(prevDebt) + "  ·  Güncel borç " + TezgahModel.tl(prevDebt + left),
+                    14, AMBER, true), margins(-1, -2, 2));
+        }
         spoken.append(left < 0.5 ? "Ödendi." : "Borç " + TezgahModel.tl(left) + ".");
         full.setContentDescription(spoken.toString());
 
@@ -782,7 +788,7 @@ public final class TezgahActivity extends Activity {
         TextView pr = pill("Yazdır", false);
         pr.setContentDescription("Fişi Bluetooth yazıcıdan yazdır; ayarlar için basılı tut");
         pr.setOnClickListener(v -> TezgahPrinter.printReceipt(this, w -> TezgahPrintFormat.receipt(m, traderName(), p.seller,
-                displayDate(p.createdAt), p.paid, w), TezgahQr.encode(m, p.date, traderName(), p.paid)));
+                displayDate(p.createdAt), p.paid, prevDebt, w), TezgahQr.encode(m, p.date, traderName(), p.paid)));
         pr.setOnLongClickListener(v -> { TezgahPrinter.settings(this); return true; });
         LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(0, dp(44), 1);
         pp.setMarginStart(dp(8));
@@ -1523,8 +1529,16 @@ public final class TezgahActivity extends Activity {
     }
 
     /** qr=true: kaydettikten sonra QR gösterilir (üretici Elek'te okutur); false: fiş WhatsApp'a gider. */
+    /** Bu üreticinin (createdAt, id) alımından önceki alımlarından kalan borç (bütün dönemler). */
+    private double previousDebt(String who, long createdAt, long id) {
+        try { return TezgahSearch.previousDebt(TezgahPurchases.all(db.getWritableDatabase(), owner, 100000), who, createdAt, id); }
+        catch (RuntimeException e) { return 0; }
+    }
+
     private void savePurchase(double paid, boolean qr) {
-        String text = model.receipt("Zeytin alım fişi", "Satan", seller, displayDate(), paid);
+        // Kayıttan önce: bu üreticinin şimdiye kadarki bütün borcu "önceki borç" olur.
+        double prev = previousDebt(TezgahWizardFlow.sellerOrWalkIn(seller), Long.MAX_VALUE, -1);
+        String text = model.receipt("Zeytin alım fişi", "Satan", seller, displayDate(), paid, prev);
         final TezgahModel saved = TezgahModel.decode(model.encode());
         final String savedSeller = seller;
         long id;

@@ -7,7 +7,7 @@ public class TezgahPrintFormatTest {
     for(int w: new int[]{32,48}){
       String r=TezgahPrintFormat.receipt(m,"Tezgah Şükrü","Ali Özdemir","24.10.2026 20:01",1000,w);
       for(String line: r.split("\n")) ok(TezgahPrintFormat.fold(line).length()<=w,"satır genişliği "+w+": '"+line+"'");
-      ok(r.contains("TOPLAM")&&r.contains("KALAN")&&!r.contains("₺"),"toplam/kalan, ₺ yok");
+      ok(r.contains("TOPLAM")&&r.contains("BORÇ")&&!r.contains("₺"),"toplam/borç, ₺ yok");
     }
     String paid=TezgahPrintFormat.receipt(m,"","", "",m.total(),32);
     ok(paid.contains("tamami odendi")&&paid.contains("Satan: Münferit satıcı"),"ödendi ve münferit");

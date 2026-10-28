@@ -236,6 +236,14 @@ public final class TezgahModel {
      * @param partyLabel "Satan" / "Alıcı"
      */
     public String receipt(String title, String partyLabel, String party, String date, double paid) {
+        return receipt(title, partyLabel, party, date, paid, 0);
+    }
+
+    /**
+     * previousDebt: aynı üreticinin bu fişten önceki alımlarından kalan borç. Varsa fişin sonunda
+     * "Önceki borç" ve bu fişle birlikte "GÜNCEL BORÇ" yazılır.
+     */
+    public String receipt(String title, String partyLabel, String party, String date, double paid, double previousDebt) {
         StringBuilder sb = new StringBuilder();
         sb.append("🫒 ").append(title).append('\n');
         if (date != null && !date.isEmpty()) sb.append("Tarih: ").append(date).append('\n');
@@ -255,12 +263,17 @@ public final class TezgahModel {
         sb.append("TOPLAM: ").append(tl(total())).append('\n');
         if (averagePrice() > 0) sb.append("Ortalama: ").append(money(averagePrice())).append("/kg").append('\n');
         double t = total();
+        double debt = Math.max(0, t - Math.max(0, paid));
         if (paid > 0.009 && paid < t - 0.009) {
-            sb.append("Ödenen: ").append(tl(paid)).append(" · Kalan: ").append(tl(t - paid)).append('\n');
+            sb.append("Ödenen: ").append(tl(paid)).append(" · Borç: ").append(tl(debt)).append('\n');
         } else if (paid >= t - 0.009 && t > 0) {
             sb.append("Ödeme: tamamı ödendi\n");
         } else {
-            sb.append("Ödeme: henüz yapılmadı\n");
+            sb.append("Ödeme yapılmadı · Borç: ").append(tl(debt)).append('\n');
+        }
+        if (previousDebt > 0.5) {
+            sb.append("Önceki borç: ").append(tl(previousDebt)).append('\n');
+            sb.append("GÜNCEL BORÇ: ").append(tl(previousDebt + debt)).append('\n');
         }
         sb.append("\nBilgi fişidir; müstahsil makbuzu ya da fatura yerine geçmez.");
         sb.append("\nZeytin Defteri ile hazırlandı");

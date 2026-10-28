@@ -19,6 +19,11 @@ public final class TezgahPrintFormat {
 
     /** Alım fişi metni (satır sonlu, genişliğe göre hizalı). İlk satır başlıktır (yazıcıda büyük basılır). */
     public static String receipt(TezgahModel m, String trader, String seller, String date, double paid, int width) {
+        return receipt(m, trader, seller, date, paid, 0, width);
+    }
+
+    /** previousDebt: aynı üreticinin önceki alımlarından kalan borç; varsa "Onceki borc" ve "GUNCEL BORC" basılır. */
+    public static String receipt(TezgahModel m, String trader, String seller, String date, double paid, double previousDebt, int width) {
         int w = width >= WIDTH_80 ? WIDTH_80 : WIDTH_58;
         StringBuilder b = new StringBuilder();
         b.append(center("ZEYTIN ALIM FISI", w / 2)).append('\n'); // büyük harf: çift genişlik yarı yer kaplar
@@ -44,7 +49,12 @@ public final class TezgahPrintFormat {
             b.append(row("Odeme", "tamami odendi", w)).append('\n');
         } else {
             b.append(row("Odenen", tl(Math.max(0, paid)), w)).append('\n');
-            b.append(row("KALAN", tl(Math.max(0, t - paid)), w)).append('\n');
+            b.append(row("BORÇ", tl(Math.max(0, t - paid)), w)).append('\n');
+        }
+        if (previousDebt > 0.5) {
+            double debt = Math.max(0, t - Math.max(0, paid));
+            b.append(row("Önceki borç", tl(previousDebt), w)).append('\n');
+            b.append(row("GÜNCEL BORÇ", tl(previousDebt + debt), w)).append('\n');
         }
         b.append(line(w)).append('\n');
         b.append(center("Bilgi fişidir; mali değeri yok.", w)).append('\n');

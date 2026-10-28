@@ -43,6 +43,23 @@ public class TezgahSearchTest {
     ok(bd.get(0).name.equals("ŞÜKRÜ IŞIK")&&bd.get(1).key.equals("ali ozdemir"),"borçlularda en çok borç önce");
     int walk=0; for(TezgahSearch.Group x:bp) if(x.name.equals("Münferit satıcı")) { walk++; ok(x.count==1&&x.key.isEmpty(),"münferit tek fiş"); }
     ok(walk==2,"iki münferit ayrı kalır");
+    // Önceki borç (fişte güncel borç)
+    java.util.List<TezgahPurchases.Purchase> h=new java.util.ArrayList<>();
+    TezgahPurchases.Purchase a1=p("Mehmet Afşar","",61,3960,0); a1.id=1; a1.createdAt=100; h.add(a1);
+    TezgahPurchases.Purchase a2=p("mehmet afsar","",30,2000,500); a2.id=2; a2.createdAt=200; h.add(a2);
+    TezgahPurchases.Purchase a3=p("Mehmet Afşar","",10,1000,0); a3.id=3; a3.createdAt=300; h.add(a3);
+    TezgahPurchases.Purchase b1=p("Ali","",10,999,0); b1.id=4; b1.createdAt=150; h.add(b1);
+    ok(Math.abs(TezgahSearch.previousDebt(h,"Mehmet Afşar",200,2)-3960)<0.01,"2. fişte önceki borç yalnız 1. fiş");
+    ok(Math.abs(TezgahSearch.previousDebt(h,"Mehmet Afşar",300,3)-5460)<0.01,"3. fişte önceki borç 3960+1500");
+    ok(TezgahSearch.previousDebt(h,"Mehmet Afşar",100,1)==0,"ilk fişte önceki borç yok");
+    ok(Math.abs(TezgahSearch.previousDebt(h,"MEHMET AFŞAR",Long.MAX_VALUE,-1)-6460)<0.01,"kayıttan önce: bütün borç");
+    ok(TezgahSearch.previousDebt(h,"Münferit satıcı",Long.MAX_VALUE,-1)==0&&TezgahSearch.previousDebt(h,"",999,9)==0,"münferit/adsız 0");
+    TezgahModel fm=new TezgahModel(); fm.add(0,1,22); fm.setPrice(0,100);
+    String f2=fm.receipt("Zeytin alım fişi","Satan","Mehmet Afşar","28.10.2026",0,5000);
+    ok(f2.contains("Önceki borç: 5.000")&&f2.contains("GÜNCEL BORÇ: 7.000"),"fişte güncel borç: "+f2);
+    ok(!fm.receipt("Zeytin alım fişi","Satan","X","",0,0).contains("Önceki"),"önceki borç yoksa yazılmaz");
+    String pr=TezgahPrintFormat.receipt(fm,"T","Mehmet","d",0,5000,32);
+    ok(pr.contains("GÜNCEL BORÇ")&&pr.contains("7.000"),"basılı fişte güncel borç");
     System.out.println("PASS: "+n+" alım defteri arama kontrolü");
   }
 }

@@ -68,9 +68,9 @@ public class TezgahModelTest {
     String fis=r.receipt("Zeytin alım fişi","Satan","Ahmet Yılmaz","20.10.2026",10000);
     ok(fis.contains("Satan: Ahmet Yılmaz"),"fiş: taraf");
     ok(fis.contains("Double: 238 kg × 100 ₺ = 23.800 ₺"),"fiş: satır\n"+fis);
-    ok(fis.contains("Kalan: 13.800"),"fiş: kalan");
+    ok(fis.contains("Borç: 13.800"),"fiş: borç");
     ok(r.receipt("x","Alıcı","","",23800).contains("tamamı ödendi"),"fiş: tamamı");
-    ok(r.receipt("x","Alıcı","","",0).contains("henüz yapılmadı"),"fiş: ödenmedi");
+    ok(r.receipt("x","Alıcı","","",0).contains("Ödeme yapılmadı · Borç: "),"fiş: ödenmedi, borç");
     ok(r.line(r.items().get(0)).equals("10 kasa · 258 kg  →  net 238 kg"),"satır metni");
     ok(TezgahModel.waPhone("0532 123 45 67").equals("905321234567"),"wa 0'lı");
     ok(TezgahModel.waPhone("532-123-4567").equals("905321234567"),"wa 10 hane");

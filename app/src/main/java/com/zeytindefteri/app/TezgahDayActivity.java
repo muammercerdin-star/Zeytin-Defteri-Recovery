@@ -1121,7 +1121,8 @@ public final class TezgahDayActivity extends Activity {
     private void actions(final TezgahPurchases.Purchase p) {
         final TezgahModel m = TezgahModel.decode(p.data);
         final String name = p.seller.isEmpty() ? "Adsız" : p.seller;
-        final String receipt = m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(p), p.paid);
+        final double prevDebt = TezgahSearch.previousDebt(history(), p.seller, p.createdAt, p.id);
+        final String receipt = m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(p), p.paid, prevDebt);
         java.util.List<String> opts = new java.util.ArrayList<>();
         opts.add("QR göster");
         opts.add("Fişi gönder (WhatsApp)");
@@ -1141,7 +1142,7 @@ public final class TezgahDayActivity extends Activity {
                         TezgahShare.shareText(this, receipt, p.phone);
                     } else if (a.startsWith("Fişi yazdır")) {
                         TezgahPrinter.printReceipt(this, w -> TezgahPrintFormat.receipt(m, TezgahShare.traderName(), p.seller,
-                                displayDate(p), p.paid, w),
+                                displayDate(p), p.paid, prevDebt, w),
                                 TezgahQr.encode(m, p.date, TezgahShare.traderName(), p.paid));
                     } else if (a.startsWith("Üretici")) {
                         openStatement(p.seller);

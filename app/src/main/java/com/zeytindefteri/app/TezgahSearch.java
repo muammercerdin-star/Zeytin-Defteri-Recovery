@@ -130,6 +130,22 @@ public final class TezgahSearch {
         return out;
     }
 
+    /**
+     * Aynı üreticinin bu alımdan ÖNCEKİ alımlarından kalan borç (fişte "Önceki borç"). Adsız ya da münferit
+     * satıcıda 0. Sonraki alımlar sayılmaz: eski bir fiş yeniden basılınca o günkü borç görünür.
+     */
+    public static double previousDebt(List<TezgahPurchases.Purchase> all, String seller, long createdAt, long id) {
+        String key = fold(seller);
+        if (key.isEmpty() || key.equals(fold(TezgahWizardFlow.WALK_IN)) || all == null) return 0;
+        double t = 0;
+        for (TezgahPurchases.Purchase p : all) {
+            if (p.id == id || !fold(p.seller).equals(key)) continue;
+            boolean before = p.createdAt < createdAt || (p.createdAt == createdAt && p.id < id);
+            if (before) t += Math.max(0, p.remaining());
+        }
+        return Math.round(t * 100) / 100.0;
+    }
+
     public static double totalRemaining(List<TezgahPurchases.Purchase> list) {
         double t = 0;
         for (TezgahPurchases.Purchase p : list) t += p.remaining();

@@ -17,7 +17,7 @@ subprocess.run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','-nowarn','-
   'app/src/main/java/com/zeytindefteri/app/TezgahModel.java','app/src/main/java/com/zeytindefteri/app/TezgahPurchases.java',
   'app/src/main/java/com/zeytindefteri/app/TezgahClosing.java',
   'app/src/main/java/com/zeytindefteri/app/TezgahZ.java',
-  'app/src/main/java/com/zeytindefteri/app/TezgahSearch.java','app/src/main/java/com/zeytindefteri/app/TezgahWizardFlow.java','tests/tezgah/TezgahSearchTest.java',
+  'app/src/main/java/com/zeytindefteri/app/TezgahSearch.java','app/src/main/java/com/zeytindefteri/app/TezgahWizardFlow.java','app/src/main/java/com/zeytindefteri/app/TezgahPrintFormat.java','tests/tezgah/TezgahSearchTest.java',
   'app/src/main/java/com/zeytindefteri/app/TezgahPayments.java','app/src/main/java/com/zeytindefteri/app/TezgahBackup.java','app/src/main/java/com/zeytindefteri/app/TezgahCrates.java','tests/tezgah/TezgahCratesTest.java','app/src/main/java/com/zeytindefteri/app/TezgahLedger.java','tests/tezgah/TezgahLedgerTest.java',
   'app/src/main/java/com/zeytindefteri/app/SalePayments.java','app/src/main/java/com/zeytindefteri/app/SalePayStatus.java','app/src/main/java/com/zeytindefteri/app/ElekSaleModel.java','tests/tezgah/TezgahBackupTest.java','app/src/main/java/com/zeytindefteri/app/OilPressings.java','app/src/main/java/com/zeytindefteri/app/TezgahStatement.java','tests/tezgah/TezgahStatementTest.java',
   'tests/tezgah/TezgahPurchasesTest.java','tests/tezgah/TezgahClosingTest.java','tests/tezgah/TezgahZTest.java'],check=True)
