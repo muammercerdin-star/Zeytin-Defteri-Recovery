@@ -289,57 +289,96 @@ public final class TezgahDayActivity extends Activity {
             body.addView(none);
             return;
         }
-        // Aynı üreticinin birden fazla alımı varsa özet
-        // Adla arayınca bulunan üreticilerin ekstre kartı (en çok 3); yalnız "borçlular"da 2+ alımı olanlar.
-        int groupsShown = 0;
-        for (TezgahSearch.Group g : TezgahSearch.groups(found)) {
-            if (q.trim().isEmpty() && g.count < 2) break;
-            if (groupsShown++ >= 3) break;
+        // Üretici başına tek kart: birden fazla fişi olan üretici dokununca açılır, fişleri altında listelenir.
+        int shown = 0;
+        for (final TezgahSearch.Group g : TezgahSearch.byProducer(found, debtOnly)) {
+            if (shown >= 100) break;
+            if (g.count == 1) {
+                body.addView(purchaseCard(g.items.get(0), true), margins(-1, -2, 8));
+                shown++;
+                continue;
+            }
+            final boolean open = expanded.contains(g.key);
+            boolean owes = g.remaining > 0.5;
             LinearLayout box = new LinearLayout(this);
             box.setOrientation(LinearLayout.VERTICAL);
             box.setPadding(dp(14), dp(10), dp(14), dp(10));
-            box.setBackground(round(GREEN_DIM, GREEN, 14));
-            box.addView(text(g.name, 16, TEXT, true));
-            box.addView(text(g.count + " alım · " + TezgahModel.tl(g.gross)
-                    + (g.remaining > 0.5 ? " · toplam borç " + TezgahModel.tl(g.remaining) : " · borç yok"), 14,
-                    g.remaining > 0.5 ? AMBER : GREEN, true));
-            box.addView(text("Ekstreyi aç ›", 13, GREEN, true), margins(-1, -2, 4));
-            final String gName = g.name;
-            box.setContentDescription(g.name + ", " + g.count + " alım. Üretici ekstresini aç.");
-            box.setOnClickListener(v -> openStatement(gName));
-            body.addView(box, margins(-1, -2, 8));
-        }
-        int shown = 0;
-        for (final TezgahPurchases.Purchase p : found) {
-            if (shown++ >= 100) break;
-            LinearLayout card = new LinearLayout(this);
-            card.setOrientation(LinearLayout.VERTICAL);
-            card.setPadding(dp(14), dp(10), dp(14), dp(10));
-            boolean owes = p.remaining() > 0.5;
-            card.setBackground(round(CARD, owes ? AMBER : LINE, 14));
+            box.setBackground(round(open ? GREEN_DIM : CARD, owes ? AMBER : GREEN, 14));
             LinearLayout top = new LinearLayout(this);
             top.setGravity(Gravity.CENTER_VERTICAL);
-            TextView n = text(p.seller.isEmpty() ? "Adsız" : p.seller, 16, TEXT, true);
+            TextView n = text(g.name, 16, TEXT, true);
             n.setSingleLine(true);
             n.setEllipsize(android.text.TextUtils.TruncateAt.END);
             top.addView(n, new LinearLayout.LayoutParams(0, -2, 1));
-            top.addView(text(TezgahModel.tl(p.gross), 16, TEXT, true));
-            card.addView(top);
-            String period = p.zId > 0 ? (zLabels != null && zLabels.containsKey(p.zId) ? zLabels.get(p.zId) : "Z") : "Açık dönem";
-            card.addView(text(DM_HM.format(new Date(p.createdAt)) + " · " + period, 13, MUTED, false), margins(-1, -2, 2));
-            LinearLayout bottom = new LinearLayout(this);
-            bottom.setGravity(Gravity.CENTER_VERTICAL);
-            bottom.addView(text(TezgahModel.kg(p.kg) + " · " + p.kasa + " kasa", 14, TEXT, false), new LinearLayout.LayoutParams(0, -2, 1));
-            bottom.addView(text(owes ? "Borç " + TezgahModel.tl(p.remaining()) : "Ödendi ✓", 14, owes ? AMBER : GREEN, true));
-            card.addView(bottom, margins(-1, -2, 4));
-            card.setContentDescription((p.seller.isEmpty() ? "Adsız" : p.seller) + ", " + DM_HM.format(new Date(p.createdAt))
-                    + ", " + period + ", " + TezgahModel.kg(p.kg) + ", " + TezgahModel.tl(p.gross)
-                    + (owes ? ", borç " + TezgahModel.tl(p.remaining()) : ", ödendi") + ". İşlemler için dokun.");
-            card.setOnClickListener(v -> actions(p));
-            body.addView(card, margins(-1, -2, 8));
+            top.addView(text(TezgahModel.tl(g.gross), 16, TEXT, true));
+            box.addView(top);
+            LinearLayout mid = new LinearLayout(this);
+            mid.setGravity(Gravity.CENTER_VERTICAL);
+            mid.addView(text(g.count + " fiş · son " + DM_HM.format(new Date(g.lastAt)), 13, MUTED, false),
+                    new LinearLayout.LayoutParams(0, -2, 1));
+            mid.addView(text(owes ? "Borç " + TezgahModel.tl(g.remaining) : "Ödendi ✓", 14, owes ? AMBER : GREEN, true));
+            box.addView(mid, margins(-1, -2, 2));
+            TextView toggle = text(open ? "Fişleri gizle ▴" : "Fişleri göster (" + g.count + ") ▾", 13, GREEN, true);
+            toggle.setPadding(0, dp(6), 0, 0);
+            box.addView(toggle);
+            box.setContentDescription(g.name + ", " + g.count + " fiş, toplam " + TezgahModel.tl(g.gross)
+                    + (owes ? ", borç " + TezgahModel.tl(g.remaining) : ", ödendi") + (open ? ". Fişleri gizlemek için dokun." : ". Fişleri açmak için dokun."));
+            box.setOnClickListener(v -> {
+                if (open) expanded.remove(g.key); else expanded.add(g.key);
+                refreshSearch();
+            });
+            if (open) {
+                for (TezgahPurchases.Purchase p : g.items) {
+                    box.addView(purchaseCard(p, false), margins(-1, -2, 8));
+                    shown++;
+                }
+                TextView st = text("Ekstreyi aç · toplu ödeme ›", 14, GREEN, true);
+                st.setGravity(Gravity.CENTER);
+                st.setBackground(round(Color.TRANSPARENT, GREEN, 12));
+                st.setContentDescription(g.name + " üretici ekstresini aç");
+                final String gName = g.name;
+                st.setOnClickListener(v -> openStatement(gName));
+                box.addView(st, margins(-1, dp(44), 10));
+            } else {
+                shown++;
+            }
+            body.addView(box, margins(-1, -2, 8));
         }
         if (found.size() > 100) body.addView(text("İlk 100 sonuç gösteriliyor; aramayı daralt.", 12, MUTED, false), margins(-1, -2, 8));
     }
+
+    /** Tek alım kartı (arama sonucunda); withName=false: üretici kartının içinde, ad yazmaz. Dokununca işlemler. */
+    private View purchaseCard(final TezgahPurchases.Purchase p, boolean withName) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(14), dp(10), dp(14), dp(10));
+        boolean owes = p.remaining() > 0.5;
+        card.setBackground(round(withName ? CARD : BG, owes ? AMBER : LINE, 14));
+        String period = p.zId > 0 ? (zLabels != null && zLabels.containsKey(p.zId) ? zLabels.get(p.zId) : "Z") : "Açık dönem";
+        LinearLayout top = new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        TextView n = text(withName ? (p.seller.isEmpty() ? "Adsız" : p.seller) : DM_HM.format(new Date(p.createdAt)) + " · " + period,
+                withName ? 16 : 14, TEXT, true);
+        n.setSingleLine(true);
+        n.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        top.addView(n, new LinearLayout.LayoutParams(0, -2, 1));
+        top.addView(text(TezgahModel.tl(p.gross), withName ? 16 : 15, TEXT, true));
+        card.addView(top);
+        if (withName) card.addView(text(DM_HM.format(new Date(p.createdAt)) + " · " + period, 13, MUTED, false), margins(-1, -2, 2));
+        LinearLayout bottom = new LinearLayout(this);
+        bottom.setGravity(Gravity.CENTER_VERTICAL);
+        bottom.addView(text(TezgahModel.kg(p.kg) + " · " + p.kasa + " kasa", 14, withName ? TEXT : MUTED, false), new LinearLayout.LayoutParams(0, -2, 1));
+        bottom.addView(text(owes ? "Borç " + TezgahModel.tl(p.remaining()) : "Ödendi ✓", 14, owes ? AMBER : GREEN, true));
+        card.addView(bottom, margins(-1, -2, 4));
+        card.setContentDescription((p.seller.isEmpty() ? "Adsız" : p.seller) + ", " + DM_HM.format(new Date(p.createdAt))
+                + ", " + period + ", " + TezgahModel.kg(p.kg) + ", " + TezgahModel.tl(p.gross)
+                + (owes ? ", borç " + TezgahModel.tl(p.remaining()) : ", ödendi") + ". İşlemler için dokun.");
+        card.setOnClickListener(v -> actions(p));
+        return card;
+    }
+
+    /** Arama sonucunda açık olan üretici kartları (katlanmış ad anahtarı). */
+    private final java.util.Set<String> expanded = new java.util.HashSet<>();
 
     /** Dönem şeridi: "Açık dönem · 19:37'den beri" ya da "Z-0003 · 20 Eki 21:30 · kilitli". */
     private View statusBar(List<TezgahPurchases.Purchase> list) {

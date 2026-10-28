@@ -17,6 +17,43 @@ public final class TezgahSearch {
         public String name = "";
         public int count;
         public double gross, remaining;
+        /** byProducer: anahtar ("" = adsız/münferit, tek fiş) ve fişler (yeniden eskiye). */
+        public String key = "";
+        public long lastAt;
+        public final List<TezgahPurchases.Purchase> items = new ArrayList<>();
+    }
+
+    /**
+     * Arama sonucunu üreticiye göre tek karta indirir: aynı adın fişleri bir grupta (yeniden eskiye).
+     * Adsız ya da münferit satıcı fişleri birleştirilmez (her biri ayrı). Sıra: borçlular süzgecinde
+     * en çok borcu olan önce; aksi halde en son alım yapan önce.
+     */
+    public static List<Group> byProducer(List<TezgahPurchases.Purchase> list, boolean debtFirst) {
+        Map<String, Group> map = new LinkedHashMap<>();
+        List<Group> out = new ArrayList<>();
+        for (TezgahPurchases.Purchase p : list) {
+            String key = fold(p.seller);
+            boolean single = key.isEmpty() || key.equals(fold(TezgahWizardFlow.WALK_IN));
+            Group g = single ? null : map.get(key);
+            if (g == null) {
+                g = new Group();
+                g.name = p.seller == null ? "" : p.seller.trim();
+                g.key = single ? "" : key;
+                if (!single) map.put(key, g);
+                out.add(g);
+            }
+            g.count++;
+            g.gross += p.gross;
+            g.remaining += p.remaining();
+            g.lastAt = Math.max(g.lastAt, p.createdAt);
+            g.items.add(p);
+        }
+        for (Group g : out) g.items.sort((a, b) -> Long.compare(b.createdAt, a.createdAt));
+        out.sort((a, b) -> {
+            if (debtFirst && Math.abs(b.remaining - a.remaining) > 0.005) return Double.compare(b.remaining, a.remaining);
+            return Long.compare(b.lastAt, a.lastAt);
+        });
+        return out;
     }
 
     /** Türkçe harfleri ve büyük/küçük farkını kaldırır. */
