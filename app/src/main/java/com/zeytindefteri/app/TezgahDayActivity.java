@@ -444,6 +444,7 @@ public final class TezgahDayActivity extends Activity {
         TezgahPurchases.Day d = TezgahPurchases.sum(list);
         int next;
         try { next = TezgahZ.nextNumber(db.getWritableDatabase(), owner); } catch (RuntimeException e) { next = 1; }
+        final int zNo = next;
         String msg = "Z-" + TezgahZ.pad(next) + " alınacak.\n\n"
                 + d.count + " alım · " + d.kasa + " kasa\n"
                 + "Net: " + TezgahModel.kg(d.kg) + "\n"
@@ -463,7 +464,6 @@ public final class TezgahDayActivity extends Activity {
                     toast("Gün sonu alındı ✓ Tezgah yeni döneme hazır.");
                     final long zNew = id;
                     final TezgahClosing done = closing;
-                    final int zNo = next;
                     render();
                     Runnable report = () -> startActivity(new Intent(this, TezgahReportActivity.class)
                             .putExtra(TezgahReportActivity.EXTRA_Z_ID, zNew));
