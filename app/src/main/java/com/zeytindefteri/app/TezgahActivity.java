@@ -248,7 +248,7 @@ public final class TezgahActivity extends Activity {
             t.setTypeface(Typeface.DEFAULT_BOLD);
             t.setMaxLines(2);
             t.setLineSpacing(0, 0.95f);
-            t.setOnClickListener(v -> { grade = index; showAllWeighings = false; renderGradeTabs(); replaceWeighings(); updatePreview(); });
+            t.setOnClickListener(v -> selectGrade(index));
             gradeTabs[g] = t;
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(48), 1);
             if (g > 0) lp.setMarginStart(dp(4));
@@ -259,6 +259,16 @@ public final class TezgahActivity extends Activity {
     }
 
     private TextView entryHead;
+
+    /** Numara seçimi (sekme ya da özetteki satır): sekmeler, tartım listesi, özetteki vurgu ve düğme tazelenir. */
+    private void selectGrade(int g) {
+        grade = g;
+        showAllWeighings = false;
+        renderGradeTabs();
+        replaceWeighings();
+        if (!model.isEmpty()) replaceSummary();
+        updatePreview();
+    }
 
     private void renderEntryHead() {
         if (entryHead != null) {
@@ -273,11 +283,15 @@ public final class TezgahActivity extends Activity {
             if (t == null) continue;
             boolean on = g == grade;
             double net = model.gradeNet(g);
-            String sub = net > 0 ? "\n" + shortKg(net) : "";
+            boolean noPrice = net > 0 && model.price(g) <= 0;
+            // Tartılan numara: altında kilo, yeşil yazı; fiyatı yoksa sarı çerçeve ve "fiyat?" (Bitir'den önce görülsün).
+            String sub = net > 0 ? "\n" + (noPrice ? "fiyat?" : shortKg(net)) : "";
             t.setText(TezgahModel.SHORT[g] + sub);
-            t.setTextColor(on ? BG : TEXT);
-            t.setBackground(on ? round(GREEN, 0, 12) : round(CARD, net > 0 ? GREEN_DIM : LINE, 12));
-            t.setContentDescription(TezgahModel.LABELS[g] + (net > 0 ? ", " + TezgahModel.kg(net) : "") + (on ? ", seçili" : ""));
+            t.setTextColor(on ? BG : noPrice ? AMBER : net > 0 ? GREEN : TEXT);
+            t.setBackground(on ? round(noPrice ? AMBER : GREEN, 0, 12)
+                    : round(net > 0 ? GREEN_DIM : CARD, noPrice ? AMBER : net > 0 ? GREEN : LINE, 12));
+            t.setContentDescription(TezgahModel.LABELS[g] + (net > 0 ? ", " + TezgahModel.kg(net) : ", tartılmadı")
+                    + (noPrice ? ", fiyatı girilmedi" : "") + (on ? ", seçili" : ""));
         }
     }
 
@@ -549,13 +563,22 @@ public final class TezgahActivity extends Activity {
         for (int g = 0; g < TezgahModel.GRADES.length; g++) {
             final int index = g;
             double net = model.gradeNet(g);
+            boolean on = g == grade;
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setMinimumHeight(dp(29));
-            TextView name = text(TezgahModel.LABELS[g], 14, net > 0 ? TEXT : MUTED, true);
+            row.setMinimumHeight(dp(34));
+            row.setPadding(dp(6), 0, dp(6), 0);
+            // Seçili numaranın satırı vurgulu; satıra dokununca o numara seçilir (kilo kutusu ona yazar).
+            if (on) row.setBackground(round(GREEN_DIM, GREEN, 10));
+            row.setOnClickListener(v -> selectGrade(index));
+            TextView name = text((on ? "▸ " : "") + TezgahModel.LABELS[g], 14, net > 0 || on ? TEXT : MUTED, true);
             row.addView(name, new LinearLayout.LayoutParams(0, -2, 1.1f));
-            TextView kg = text(net > 0 ? shortKg(net) + "  " + TezgahModel.percent(model.share(g)) : "—", 14, net > 0 ? TEXT : MUTED, false);
-            row.addView(kg, new LinearLayout.LayoutParams(0, -2, 1.2f));
+            // "48 kg ×" · [110 ₺] · "= 5.280 ₺": üretici hesabı satırdan okur; pay yüzdesi kilonun altında.
+            LinearLayout kgCol = new LinearLayout(this);
+            kgCol.setOrientation(LinearLayout.VERTICAL);
+            kgCol.addView(text(net > 0 ? shortKg(net) + "  ×" : "—", 14, net > 0 ? TEXT : MUTED, net > 0));
+            if (net > 0) kgCol.addView(text(TezgahModel.percent(model.share(g)) + " · " + model.gradeKasa(g) + " kasa", 11, MUTED, false));
+            row.addView(kgCol, new LinearLayout.LayoutParams(0, -2, 1.2f));
             TextView price = text(model.price(g) > 0 ? TezgahModel.money(model.price(g)) : "fiyat?", 14,
                     model.price(g) > 0 ? TEXT : AMBER, true);
             price.setGravity(Gravity.CENTER);
@@ -564,10 +587,13 @@ public final class TezgahActivity extends Activity {
             price.setContentDescription(TezgahModel.LABELS[g] + " fiyatını değiştir");
             price.setOnClickListener(v -> askPrice(index));
             row.addView(price, new LinearLayout.LayoutParams(-2, -2));
-            TextView amount = text(net > 0 ? TezgahModel.tl(model.gradeAmount(g)) : "", 15, TEXT, true);
+            TextView amount = text(net > 0 ? "= " + TezgahModel.tl(model.gradeAmount(g)) : "", 15, TEXT, true);
             amount.setGravity(Gravity.END);
             row.addView(amount, new LinearLayout.LayoutParams(0, -2, 1.2f));
-            box.addView(row);
+            row.setContentDescription(TezgahModel.LABELS[g] + (net > 0 ? ", " + TezgahModel.kg(net) + " çarpı "
+                    + (model.price(g) > 0 ? TezgahModel.money(model.price(g)) : "fiyat girilmedi") + ", "
+                    + TezgahModel.tl(model.gradeAmount(g)) : ", tartılmadı") + (on ? ", seçili" : ", seçmek için dokun"));
+            box.addView(row, margins(-1, -2, 2));
         }
         box.addView(divider(), margins(-1, Math.max(1, dp(1)), 4));
         LinearLayout foot = new LinearLayout(this);
@@ -839,14 +865,16 @@ public final class TezgahActivity extends Activity {
         if (totalView == null) return;
         boolean empty = model.isEmpty();
         double avg = model.averagePrice();
-        totalSub.setText(avg > 0 ? "ÖDEYECEĞİN · ort. " + TezgahModel.money(avg) + "/kg" : "ÖDEYECEĞİN");
+        totalSub.setText(empty ? "ÖDEYECEĞİN · önce bir tartım ekle"
+                : avg > 0 ? "ÖDEYECEĞİN · ort. " + TezgahModel.money(avg) + "/kg" : "ÖDEYECEĞİN");
         totalView.setText(TezgahModel.tl(model.total()));
         totalView.setContentDescription("Ödeyeceğin " + TezgahModel.tl(model.total())
                 + (avg > 0 ? ", kilo başı ortalama " + TezgahModel.money(avg) : ""));
-        finishButton.setEnabled(!empty);
+        // Boşken de dokunulur: neden geçmediğini söyler (finishTezgah "Önce en az bir tartım ekle").
+        finishButton.setEnabled(true);
         finishButton.setBackground(round(empty ? LINE : GREEN, 0, 18));
         finishButton.setTextColor(empty ? MUTED : BG);
-        finishButton.setContentDescription("Bitir ve alım fişini kaydet");
+        finishButton.setContentDescription(empty ? "Bitir; önce bir tartım eklemelisin" : "Bitir ve alım fişini kaydet");
     }
 
     // ================================================================== diyaloglar
