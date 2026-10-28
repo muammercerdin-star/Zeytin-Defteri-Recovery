@@ -20,6 +20,13 @@ public class TezgahWizardFlowTest {
     ok(TezgahWizardFlow.sellerOrWalkIn(" Veli ").equals("Veli"),"ad kırpılır");
     List<String> r=TezgahWizardFlow.recent(Arrays.asList("Veli","","veli","Münferit satıcı","Ali","Hasan","Ayşe","Can"),4);
     ok(r.equals(Arrays.asList("Veli","Ali","Hasan","Ayşe")),"son satıcılar tekrarsız, münferitsiz: "+r);
+    long now=10_000_000L;
+    ok(TezgahWizardFlow.slipOpenLeft(now,now)==TezgahWizardFlow.SLIP_OPEN_MS,"yeni fiş açık");
+    ok(TezgahWizardFlow.slipOpenLeft(now-60_000,now)==TezgahWizardFlow.SLIP_OPEN_MS-60_000,"1 dk sonra kalan süre");
+    ok(TezgahWizardFlow.slipOpenLeft(now-TezgahWizardFlow.SLIP_OPEN_MS,now)==0,"3 dk dolunca kapanır");
+    ok(TezgahWizardFlow.slipOpenLeft(now-3_600_000,now)==0,"eski fiş kapalı");
+    ok(TezgahWizardFlow.slipOpenLeft(0,now)==0,"zamanı bilinmeyen fiş kapalı");
+    ok(TezgahWizardFlow.slipOpenLeft(now+5_000,now)==TezgahWizardFlow.SLIP_OPEN_MS,"ileri tarihli kayıt yeni sayılır");
     System.out.println("PASS: "+n+" tartım sihirbazı kontrolü");
   }
 }

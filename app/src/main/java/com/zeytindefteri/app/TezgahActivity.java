@@ -99,6 +99,7 @@ public final class TezgahActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        if (lastSlipBox != null && slipCollapse != null) lastSlipBox.removeCallbacks(slipCollapse);
         if (db != null) db.close();
         super.onDestroy();
     }
@@ -198,7 +199,11 @@ public final class TezgahActivity extends Activity {
         // Satanın adı sihirbazın sonunda sorulur: ad yokken başlıkta yalnız tarih durur.
         String dayText = new SimpleDateFormat("d MMMM", new Locale("tr", "TR")).format(new Date());
         String context = seller.isEmpty() ? "" : "Satan: " + seller;
-        TextView sub = text(seller.isEmpty() ? dayText : context + " ▾ · " + dayText, 13, seller.isEmpty() ? MUTED : GREEN, true);
+        // Tartım başladıysa ve satan yazılmadıysa belirgin sarı uyarı: unutulmasın (boş tezgahta yalnız tarih).
+        boolean askName = seller.isEmpty() && !model.isEmpty();
+        TextView sub = text(askName ? "👤 Satan yazılmadı ▾ · " + dayText
+                        : seller.isEmpty() ? dayText : context + " ▾ · " + dayText, 13,
+                askName ? AMBER : seller.isEmpty() ? MUTED : GREEN, true);
         sub.setSingleLine(true);
         sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
         col.addView(sub);
@@ -331,7 +336,7 @@ public final class TezgahActivity extends Activity {
         kgInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         kgInput.setKeyListener(android.text.method.DigitsKeyListener.getInstance("0123456789.,"));
         kgInput.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
-        kgInput.setHint("0");
+        kgInput.setHint("kg yaz");
         kgInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
         kgInput.setContentDescription("Kantarda okunan kilo");
         kgInput.addTextChangedListener(watcher(this::updatePreview));
@@ -429,6 +434,11 @@ public final class TezgahActivity extends Activity {
         kgInput.setText("");
         saveDraft();
         if (lastSlipBox != null) lastSlipBox.setVisibility(View.GONE);
+        if (seller.isEmpty() && body != null && body.getChildCount() > 0) {
+            // İlk tartımla başlıkta "Satan yazılmadı" uyarısı belirsin.
+            body.removeViewAt(0);
+            body.addView(header(), 0);
+        }
         renderGradeTabs();
         replaceWeighings();
         replaceSummary();
@@ -604,11 +614,16 @@ public final class TezgahActivity extends Activity {
     private int slipIndex = 0;
 
     /**
-     * Tezgah boşken son fiş ana ekranda açık durur: numara numara kasa / net kilo / fiyat / tutar, toplam,
+     * Tezgah boşken son fiş, kaydedildikten sonra 3 dakika açık durur (sonra "Son fiş · saat · Göster" satırına
+     * iner; ad ve para yazmaz, sıradaki üretici görmesin): numara numara kasa / net kilo / fiyat / tutar, toplam,
      * ödendi ya da borç. Satıcıyla teyit edilir; küçük QR dokununca büyür, WhatsApp'tan fiş gider.
      * Altında son 3 alım; dokununca o fişin dökümü açılır. Yeni tartım başlayınca kart gizlenir.
      */
     private View lastSlipCard() {
+        if (lastSlipBox != null && slipCollapse != null) lastSlipBox.removeCallbacks(slipCollapse);
+        slipCollapse = null;
+        slipFull = null;
+        slipCompact = null;
         LinearLayout box = card();
         lastSlipBox = box;
         box.setVisibility(View.GONE);
@@ -622,6 +637,11 @@ public final class TezgahActivity extends Activity {
         final TezgahModel m = TezgahModel.decode(p.data);
         if (m.isEmpty()) return box;
         box.setVisibility(View.VISIBLE);
+        final LinearLayout full = new LinearLayout(this);
+        full.setOrientation(LinearLayout.VERTICAL);
+        final View compact = compactSlipRow(p, list.size());
+        box.addView(compact);
+        box.addView(full);
         final String who = p.seller.isEmpty() ? "Adsız üretici" : p.seller;
         final String receipt = m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid);
         String time = p.createdAt > 0 ? new SimpleDateFormat("HH:mm", Locale.US).format(new Date(p.createdAt)) : "";
@@ -629,7 +649,20 @@ public final class TezgahActivity extends Activity {
         TextView kicker = text((slipIndex == 0 ? "SON FİŞ" : "FİŞ") + (time.isEmpty() ? "" : " · " + time)
                 + " · SATICIYLA TEYİT ET", 11, MUTED, true);
         kicker.setLetterSpacing(0.06f);
-        box.addView(kicker);
+        LinearLayout kickRow = new LinearLayout(this);
+        kickRow.setGravity(Gravity.CENTER_VERTICAL);
+        kickRow.addView(kicker, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView hide = text("Gizle", 13, GREEN, true);
+        hide.setPadding(dp(12), dp(4), 0, dp(4));
+        hide.setContentDescription("Son fişi gizle; sıradaki üretici görmesin");
+        hide.setOnClickListener(v -> {
+            slipManual = false;
+            slipHiddenByUser = true;
+            if (slipIndex != 0) { slipIndex = 0; build(); return; }
+            setSlipOpen(false);
+        });
+        kickRow.addView(hide);
+        full.addView(kickRow);
 
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
@@ -651,9 +684,9 @@ public final class TezgahActivity extends Activity {
             img.setOnClickListener(v -> showQr(m, p.date, p.seller, p.paid, receipt, p.phone));
             top.addView(img, new LinearLayout.LayoutParams(qrSize, qrSize));
         }
-        box.addView(top, margins(-1, -2, 4));
+        full.addView(top, margins(-1, -2, 4));
 
-        box.addView(divider(), margins(-1, Math.max(1, dp(1)), 8));
+        full.addView(divider(), margins(-1, Math.max(1, dp(1)), 8));
         StringBuilder spoken = new StringBuilder(who + ", " + TezgahModel.tl(p.gross) + ". ");
         for (int g = 0; g < TezgahModel.GRADES.length; g++) {
             if (m.gradeCount(g) == 0) continue;
@@ -668,19 +701,19 @@ public final class TezgahActivity extends Activity {
             TextView amount = text(TezgahModel.tl(m.gradeAmount(g)), 14, TEXT, true);
             amount.setGravity(Gravity.END);
             row.addView(amount, new LinearLayout.LayoutParams(0, -2, 1.1f));
-            box.addView(row);
+            full.addView(row);
             spoken.append(TezgahModel.LABELS[g]).append(" ").append(m.gradeKasa(g)).append(" kasa ")
                     .append(TezgahModel.kg(m.gradeNet(g))).append(", ").append(TezgahModel.tl(m.gradeAmount(g))).append(". ");
         }
-        box.addView(divider(), margins(-1, Math.max(1, dp(1)), 4));
+        full.addView(divider(), margins(-1, Math.max(1, dp(1)), 4));
         String avg = m.averagePrice() > 0 ? " · ort. " + TezgahModel.money(m.averagePrice()) + "/kg" : "";
-        box.addView(text(m.totalKasa() + " kasa · net " + TezgahModel.kg(m.totalNet()) + avg, 13, MUTED, false), margins(-1, -2, 6));
+        full.addView(text(m.totalKasa() + " kasa · net " + TezgahModel.kg(m.totalNet()) + avg, 13, MUTED, false), margins(-1, -2, 6));
         double left = Math.max(0, p.gross - p.paid);
         TextView pay = text(left < 0.5 ? "Ödendi ✓" : "Borç " + TezgahModel.tl(left)
                 + (p.paid > 0.5 ? "  (ödenen " + TezgahModel.tl(p.paid) + ")" : ""), 15, left < 0.5 ? GREEN : AMBER, true);
-        box.addView(pay, margins(-1, -2, 4));
+        full.addView(pay, margins(-1, -2, 4));
         spoken.append(left < 0.5 ? "Ödendi." : "Borç " + TezgahModel.tl(left) + ".");
-        box.setContentDescription(spoken.toString());
+        full.setContentDescription(spoken.toString());
 
         LinearLayout actions = new LinearLayout(this);
         TextView qr = pill("QR göster", false);
@@ -700,17 +733,17 @@ public final class TezgahActivity extends Activity {
         LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(0, dp(44), 1);
         pp.setMarginStart(dp(8));
         actions.addView(pr, pp);
-        box.addView(actions, margins(-1, -2, 10));
+        full.addView(actions, margins(-1, -2, 10));
 
         // Son alımlar (açık olan hariç, en çok 3)
         int shown = 0;
         for (int i = 0; i < list.size() && shown < 3; i++) {
             if (i == slipIndex) continue;
             if (shown == 0) {
-                box.addView(divider(), margins(-1, Math.max(1, dp(1)), 10));
+                full.addView(divider(), margins(-1, Math.max(1, dp(1)), 10));
                 TextView h = text("SON ALIMLAR · dokun, dökümü aç", 11, MUTED, true);
                 h.setLetterSpacing(0.06f);
-                box.addView(h, margins(-1, -2, 8));
+                full.addView(h, margins(-1, -2, 8));
             }
             shown++;
             final int index = i;
@@ -729,17 +762,55 @@ public final class TezgahActivity extends Activity {
             row.setContentDescription((o.seller.isEmpty() ? "Adsız" : o.seller) + ", " + TezgahModel.kg(o.kg) + ", "
                     + TezgahModel.tl(o.gross) + (paid ? ", ödendi" : ", borç var") + ". Dökümü açmak için dokun.");
             row.setOnClickListener(v -> { slipIndex = index; build(); });
-            box.addView(row);
+            full.addView(row);
         }
         if (slipIndex != 0) {
             TextView latest = text("‹ Son fişe dön", 13, GREEN, true);
             latest.setPadding(0, dp(8), 0, 0);
             latest.setOnClickListener(v -> { slipIndex = 0; build(); });
-            box.addView(latest);
+            full.addView(latest);
+        }
+        slipFull = full;
+        slipCompact = compact;
+        long openLeft = TezgahWizardFlow.slipOpenLeft(p.createdAt, System.currentTimeMillis());
+        boolean open = slipIndex != 0 || slipManual || (slipIndex == 0 && openLeft > 0 && !slipHiddenByUser);
+        setSlipOpen(open);
+        if (open && slipIndex == 0 && !slipManual) {
+            // Süre dolunca kendiliğinden tek satıra iner (ekran yeniden kurulmaz, yazılan kilo kaybolmaz).
+            slipCollapse = () -> { if (!slipManual && slipIndex == 0) setSlipOpen(false); };
+            box.postDelayed(slipCollapse, openLeft);
         }
         return box;
     }
 
+    private View slipFull, slipCompact;
+    private Runnable slipCollapse;
+    /** Kullanıcı "Göster" dedi: süre dolsa da açık kalır. */
+    private boolean slipManual;
+    /** Kullanıcı "Gizle" dedi: yeni fiş kaydedilene kadar kapalı kalır. */
+    private boolean slipHiddenByUser;
+
+    private void setSlipOpen(boolean open) {
+        if (slipFull != null) slipFull.setVisibility(open ? View.VISIBLE : View.GONE);
+        if (slipCompact != null) slipCompact.setVisibility(open ? View.GONE : View.VISIBLE);
+    }
+
+    /** Kapalı son fiş: ad ve tutar yazmaz, yalnız saat; dokununca döküm açılır. */
+    private View compactSlipRow(TezgahPurchases.Purchase p, int count) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(dp(40));
+        String time = p.createdAt > 0 ? new SimpleDateFormat("HH:mm", Locale.US).format(new Date(p.createdAt)) : "";
+        TextView t = text("🧾  Son fiş" + (time.isEmpty() ? "" : " · " + time)
+                + (count > 1 ? " · " + count + " alım" : ""), 14, MUTED, true);
+        t.setSingleLine(true);
+        t.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        row.addView(t, new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(text("Göster ›", 14, GREEN, true));
+        row.setContentDescription("Son fiş" + (time.isEmpty() ? "" : ", saat " + time) + ". Dökümü göstermek için dokun.");
+        row.setOnClickListener(v -> { slipManual = true; slipHiddenByUser = false; setSlipOpen(true); });
+        return row;
+    }
     private View bottomBar() {
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
@@ -854,13 +925,26 @@ public final class TezgahActivity extends Activity {
                     .setTitle("Fiyatı girilmemiş numara var")
                     .setMessage(android.text.TextUtils.join(", ", missing)
                             + " için fiyat yok; tutara 0 ₺ olarak girer. Yine de devam edilsin mi?")
-                    .setPositiveButton("Devam et", (d, w) -> askPayment())
+                    .setPositiveButton("Devam et", (d, w) -> askSellerThenPay())
                     .setNegativeButton("Fiyat gir", null)
                     .show();
             return;
         }
-        askPayment();
+        askSellerThenPay();
     }
+
+    /**
+     * Satan hiç sorulmadıysa (ad boş) önce sihirbazın "Kimden aldın?" adımı açılır: son gelenler, ad, telefon,
+     * "Geç · münferit". Sonra ödeme penceresi. Ad yazılmış ya da münferit seçilmişse doğrudan ödemeye geçer.
+     */
+    private void askSellerThenPay() {
+        if (!seller.isEmpty()) { askPayment(); return; }
+        wizardPayAfter = true;
+        openWizard(TezgahWizardFlow.SELLER);
+    }
+
+    /** Sihirbaz Bitir'den satanı sormak için açıldıysa: satan adımından sonra fiyat kontrolü tekrarlanmaz. */
+    private boolean wizardPayAfter;
 
     /**
      * "Alımı bitir" alttan açılan sayfası: büyük toplam, satan üretici (ad + telefon doğrudan burada),
@@ -1026,7 +1110,12 @@ public final class TezgahActivity extends Activity {
     private int wizardStep;
 
     private void openWizard() {
-        wizardStep = TezgahWizardFlow.start(model);
+        wizardPayAfter = false;
+        openWizard(TezgahWizardFlow.start(model));
+    }
+
+    private void openWizard(int firstStep) {
+        wizardStep = firstStep;
         if (model.isEmpty()) { grade = 0; renderGradeTabs(); replaceWeighings(); updatePreview(); }
         wizard = new android.app.Dialog(this);
         wizard.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
@@ -1050,7 +1139,7 @@ public final class TezgahActivity extends Activity {
             w.setDimAmount(0.55f);
             w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
-        wizard.setOnDismissListener(d -> { wizard = null; saveDraft(); build(); });
+        wizard.setOnDismissListener(d -> { wizard = null; wizardPayAfter = false; saveDraft(); build(); });
         renderWizard();
         wizard.show();
     }
@@ -1058,7 +1147,10 @@ public final class TezgahActivity extends Activity {
     private void goWizard(int step) {
         if (step >= TezgahWizardFlow.DONE) {
             Runnable done = () -> {
+                boolean payNow = wizardPayAfter;
+                wizardPayAfter = false;
                 if (model.isEmpty()) toast("Tartım eklenmedi.");
+                else if (payNow) askPayment();
                 else finishTezgah();
             };
             if (wizard != null) { android.app.Dialog d = wizard; d.setOnDismissListener(x -> { wizard = null; saveDraft(); build(); done.run(); }); d.dismiss(); }
@@ -1210,7 +1302,7 @@ public final class TezgahActivity extends Activity {
         wizardKg.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         wizardKg.setKeyListener(android.text.method.DigitsKeyListener.getInstance("0123456789.,"));
         wizardKg.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
-        wizardKg.setHint("0");
+        wizardKg.setHint("kg yaz");
         wizardKg.setImeOptions(EditorInfo.IME_ACTION_DONE);
         wizardKg.setContentDescription(TezgahModel.LABELS[g] + " kantar kilosu");
         wizardKg.setOnEditorActionListener((v, action, ev) -> {
@@ -1303,6 +1395,11 @@ public final class TezgahActivity extends Activity {
         // Arka plandaki tezgah canlı: sekmeler, tartımlar, özet, toplam.
         grade = g;
         if (lastSlipBox != null) lastSlipBox.setVisibility(View.GONE);
+        if (seller.isEmpty() && body != null && body.getChildCount() > 0) {
+            // İlk tartımla başlıkta "Satan yazılmadı" uyarısı belirsin.
+            body.removeViewAt(0);
+            body.addView(header(), 0);
+        }
         renderGradeTabs();
         replaceWeighings();
         replaceSummary();
@@ -1350,7 +1447,9 @@ public final class TezgahActivity extends Activity {
         seller = "";
         sellerPhone = "";
         grade = 0; // yeni alım Double sekmesiyle başlar
-        slipIndex = 0; // kaydedilen fiş açık gelsin
+        slipIndex = 0; // kaydedilen fiş açık gelsin (3 dk; sonra tek satıra iner)
+        slipManual = false;
+        slipHiddenByUser = false;
         saveDraft();
         build();
         toast("Alım kaydedildi ✓ Sıradaki üretici için tezgah hazır.");

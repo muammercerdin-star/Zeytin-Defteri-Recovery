@@ -51,4 +51,18 @@ public final class TezgahWizardFlow {
         }
         return out;
     }
+
+    /**
+     * Son fiş, kaydedildikten sonra bu kadar süre açık döküm olarak durur (satıcıyla teyit için);
+     * sonra tek satıra iner. Sıradaki üretici öncekinin adını, kilosunu ve parasını görmesin.
+     */
+    public static final long SLIP_OPEN_MS = 3L * 60L * 1000L;
+
+    /** Son fişin açık kalacağı kalan süre (ms); 0 = kapalı (tek satır) gösterilir. */
+    public static long slipOpenLeft(long createdAt, long now) {
+        if (createdAt <= 0) return 0;
+        long age = now - createdAt;
+        if (age < 0) age = 0; // saat geri alınmışsa yeni kayıt sayılır
+        return age < SLIP_OPEN_MS ? SLIP_OPEN_MS - age : 0;
+    }
 }
