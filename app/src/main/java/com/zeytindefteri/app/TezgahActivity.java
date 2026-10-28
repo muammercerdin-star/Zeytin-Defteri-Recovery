@@ -174,6 +174,7 @@ public final class TezgahActivity extends Activity {
         body.addView(entryCard(), margins(-1, -2, 8));
         body.addView(weighingsCard(), margins(-1, -2, 8));
         body.addView(summaryCard(), margins(-1, -2, 8));
+        body.addView(ledgerRow(), margins(-1, -2, 8));
         body.addView(cratesRow(), margins(-1, -2, 8));
         setContentView(root);
         refreshTotals();
@@ -836,6 +837,25 @@ public final class TezgahActivity extends Activity {
         row.addView(text("Göster ›", 14, GREEN, true));
         row.setContentDescription("Son fiş" + (time.isEmpty() ? "" : ", saat " + time) + ". Dökümü göstermek için dokun.");
         row.setOnClickListener(v -> { slipManual = true; slipHiddenByUser = false; setSlipOpen(true); });
+        return row;
+    }
+
+    /** "💼 Cari hesap · alacağın 400.000 ₺ ›": aracı / tüccar / alıcılarla para hesabı. */
+    private View ledgerRow() {
+        double[] t;
+        try { t = TezgahLedger.totals(TezgahLedger.entries(db.getWritableDatabase(), owner)); }
+        catch (RuntimeException e) { t = new double[]{0, 0}; }
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(14), dp(8), dp(12), dp(8));
+        row.setMinimumHeight(dp(48));
+        row.setBackground(round(CARD, t[0] > 0.5 ? GREEN_DIM : LINE, 14));
+        row.addView(text("💼  Cari hesap · tüccar", 15, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1));
+        TextView v = text(t[0] > 0.5 ? "alacak " + TezgahModel.tl(t[0]) + " ›" : t[1] > 0.5 ? "borç " + TezgahModel.tl(t[1]) + " ›" : "›",
+                14, t[0] > 0.5 || t[1] > 0.5 ? AMBER : GREEN, true);
+        row.addView(v);
+        row.setContentDescription("Cari hesap" + (t[0] > 0.5 ? ", alacağın " + TezgahModel.tl(t[0]) : "") + ". Açmak için dokun.");
+        row.setOnClickListener(x -> TezgahLedgerActivity.open(this, null));
         return row;
     }
 

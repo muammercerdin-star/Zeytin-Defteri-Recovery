@@ -461,8 +461,15 @@ public final class TezgahDayActivity extends Activity {
                     catch (RuntimeException e) { id = -1; }
                     if (id <= 0) { toast("Gün sonu alınamadı. Tekrar dene."); return; }
                     toast("Gün sonu alındı ✓ Tezgah yeni döneme hazır.");
+                    final long zNew = id;
+                    final TezgahClosing done = closing;
+                    final int zNo = next;
                     render();
-                    startActivity(new Intent(this, TezgahReportActivity.class).putExtra(TezgahReportActivity.EXTRA_Z_ID, id));
+                    Runnable report = () -> startActivity(new Intent(this, TezgahReportActivity.class)
+                            .putExtra(TezgahReportActivity.EXTRA_Z_ID, zNew));
+                    // Tüccarın ödeyeceği cari hesaba işlensin (ad + şimdi ödenen); sonra Z raporu açılır.
+                    if (Math.abs(done.traderOwes()) >= 0.5) traderSheet(zNew, "Z-" + TezgahZ.pad(zNo), done, report);
+                    else report.run();
                 })
                 .setNegativeButton("Vazgeç", null)
                 .show();
@@ -615,6 +622,8 @@ public final class TezgahDayActivity extends Activity {
         refresh.run();
         if (zId <= 0) box.addView(cratesBlock(), margins(-1, -2, 14));
 
+        if (zId > 0 && Math.abs(c.traderOwes()) >= 0.5) box.addView(ledgerStatus(c), margins(-1, -2, 14));
+
         TextView send = text("Tüccara gönder (WhatsApp)", 16, BG, true);
         send.setGravity(Gravity.CENTER);
         send.setBackground(round(GREEN, 0, 16));
@@ -638,6 +647,156 @@ public final class TezgahDayActivity extends Activity {
             box.addView(end, margins(-1, dp(52), 10));
         }
         return box;
+    }
+
+    /** Kilitli Z'de: tüccar alacağı cari hesaba işlendi mi; işlenmediyse işleme düğmesi. */
+    private View ledgerStatus(final TezgahClosing c) {
+        boolean done;
+        try { done = TezgahLedger.hasZ(db.getWritableDatabase(), owner, zId); } catch (RuntimeException e) { done = false; }
+        TextView t;
+        if (done) {
+            t = text("✓ Cari hesaba işlendi · Cari hesabı aç ›", 14, GREEN, true);
+            t.setOnClickListener(v -> TezgahLedgerActivity.open(this, null));
+        } else {
+            t = text("💼 Tüccarın ödeyeceği cari hesaba işlenmedi · İşle ›", 14, AMBER, true);
+            t.setOnClickListener(v -> traderSheet(zId, zRecord.label(), c, this::render));
+        }
+        t.setPadding(dp(12), dp(10), dp(12), dp(10));
+        t.setBackground(round(BG, done ? GREEN_DIM : AMBER, 12));
+        return t;
+    }
+
+    /**
+     * Gün sonu tüccar hesabı: "tüccar ödeyecek" (ya da tezgah iade edecek) tutarı tüccarın adıyla cari hesaba işlenir;
+     * şimdi ödenen (tamamı / bir kısmı / ödenmedi) tahsilat olarak yazılır. Kapanınca after çalışır.
+     */
+    private void traderSheet(final long z, final String zLabel, final TezgahClosing c, final Runnable after) {
+        final double owes = Math.round(c.traderOwes() * 100) / 100.0;
+        final boolean refund = owes < 0;
+        final android.content.SharedPreferences tp = getSharedPreferences("zd_tezgah", MODE_PRIVATE);
+        String last = tp.getString("ledger_trader_" + owner, "");
+        if (last.isEmpty()) last = tp.getString(TezgahCratesActivity.PARTY_KEY + owner, "");
+
+        final android.app.Dialog sheet = new android.app.Dialog(this);
+        sheet.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(16), dp(20), dp(18));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#0C1C27"));
+        float r = dp(26);
+        bg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+        bg.setStroke(dp(1), LINE);
+        scroll.setBackground(bg);
+        scroll.addView(box);
+        TextView k = text("TÜCCAR HESABI · " + zLabel, 12, MUTED, true);
+        k.setLetterSpacing(0.1f);
+        box.addView(k);
+        box.addView(text(TezgahModel.tl(Math.abs(owes)), 34, refund ? AMBER : GREEN, true), margins(-1, -2, 8));
+        box.addView(text(refund ? "Tezgah iade edecek (avans fazla)" : "Tüccar ödeyecek · teslim " + TezgahModel.kg(c.deliveredKg()),
+                14, TEXT, false));
+        TextView nl = text("TÜCCARIN / ARACININ ADI", 12, MUTED, true);
+        nl.setLetterSpacing(0.1f);
+        box.addView(nl, margins(-1, -2, 18));
+        final android.widget.EditText name = new android.widget.EditText(this);
+        name.setText(last);
+        name.setHint("Ad (cari hesapta bu adla birikir)");
+        name.setSingleLine(true);
+        name.setTextSize(17);
+        name.setTextColor(TEXT);
+        name.setHintTextColor(MUTED);
+        name.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        name.setPadding(dp(14), 0, dp(14), 0);
+        name.setBackground(round(CARD, LINE, 14));
+        box.addView(name, margins(-1, dp(54), 6));
+        final TextView balNote = text("", 13, MUTED, true);
+        box.addView(balNote, margins(-1, -2, 6));
+
+        TextView pl = text(refund ? "İADEYİ ŞİMDİ ÖDEDİN Mİ?" : "TÜCCAR ŞİMDİ ÖDEDİ Mİ?", 12, MUTED, true);
+        pl.setLetterSpacing(0.1f);
+        box.addView(pl, margins(-1, -2, 18));
+        final String[] labels = {"Tamamı", "Bir kısmı", "Ödenmedi"};
+        final int[] pay = {2};
+        final TextView[] chips = new TextView[3];
+        LinearLayout seg = new LinearLayout(this);
+        seg.setPadding(dp(4), dp(4), dp(4), dp(4));
+        seg.setBackground(round(CARD, LINE, 16));
+        for (int i = 0; i < 3; i++) {
+            TextView ch = text(labels[i], 15, TEXT, true);
+            ch.setGravity(Gravity.CENTER);
+            chips[i] = ch;
+            seg.addView(ch, new LinearLayout.LayoutParams(0, dp(46), 1));
+        }
+        box.addView(seg, margins(-1, -2, 6));
+        final android.widget.EditText part = field("", "Ödenen tutar (₺)");
+        part.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        box.addView(part, margins(-1, dp(52), 8));
+        final Runnable paint = () -> {
+            for (int i = 0; i < 3; i++) {
+                boolean on = i == pay[0];
+                chips[i].setTextColor(on ? BG : TEXT);
+                chips[i].setBackground(on ? round(i == 2 ? AMBER : GREEN, 0, 12) : null);
+            }
+            part.setVisibility(pay[0] == 1 ? View.VISIBLE : View.GONE);
+            String n = name.getText().toString();
+            double bal = 0;
+            if (TezgahLedger.validParty(n)) {
+                try { bal = TezgahLedger.balanceOf(db.getWritableDatabase(), owner, n); } catch (RuntimeException ignored) { }
+            }
+            balNote.setText(!TezgahLedger.validParty(n) ? "Adı yazınca önceki günlerden kalan görünür."
+                    : bal > 0.5 ? "Önceden kalan alacağın " + TezgahModel.tl(bal) + " · bugünle " + TezgahModel.tl(bal + owes)
+                    : bal < -0.5 ? "Önceden ona borcun " + TezgahModel.tl(-bal)
+                    : "Önceden kalan yok");
+        };
+        for (int i = 0; i < 3; i++) { final int x = i; chips[i].setOnClickListener(v -> { pay[0] = x; paint.run(); }); }
+        name.addTextChangedListener(watch(paint));
+        paint.run();
+
+        TextView save = text("Cari hesaba işle", 18, BG, true);
+        save.setGravity(Gravity.CENTER);
+        save.setBackground(round(GREEN, 0, 18));
+        box.addView(save, margins(-1, dp(56), 20));
+        TextView skip = text("Şimdi değil", 15, MUTED, true);
+        skip.setGravity(Gravity.CENTER);
+        skip.setOnClickListener(v -> sheet.dismiss());
+        box.addView(skip, margins(-1, dp(46), 6));
+        save.setOnClickListener(v -> {
+            String n = name.getText().toString().trim();
+            if (!TezgahLedger.validParty(n)) { name.setError("Tüccarın adını yaz"); name.requestFocus(); return; }
+            double abs = Math.abs(owes);
+            double paid = pay[0] == 0 ? abs : pay[0] == 1 ? TezgahModel.parse(part.getText().toString()) : 0;
+            if (pay[0] == 1 && (paid <= 0 || paid > abs + 0.005)) { part.setError("0 ile " + TezgahModel.tl(abs) + " arası"); part.requestFocus(); return; }
+            boolean ok;
+            try {
+                android.database.sqlite.SQLiteDatabase w = db.getWritableDatabase();
+                long now = System.currentTimeMillis();
+                String detail = zLabel + " · teslim " + TezgahModel.kg(c.deliveredKg())
+                        + (c.advance > 0 ? " · avans " + TezgahModel.tl(c.advance) + " düşüldü" : "");
+                ok = TezgahLedger.add(w, owner, n, TezgahLedger.SALE, owes, c.deliveredKg(), TezgahLedger.METHOD_DAY,
+                        detail, "", today(), z, now) > 0;
+                if (ok && paid >= 0.01) {
+                    ok = TezgahLedger.add(w, owner, n, refund ? TezgahLedger.PAID : TezgahLedger.RECEIVED, paid, 0, 0,
+                            zLabel, "", today(), 0, now + 1) > 0;
+                }
+            } catch (RuntimeException x) { ok = false; }
+            if (!ok) { toast("Cari hesaba işlenemedi. Tekrar dene."); return; }
+            tp.edit().putString("ledger_trader_" + owner, n).apply();
+            sheet.dismiss();
+            double bal;
+            try { bal = TezgahLedger.balanceOf(db.getWritableDatabase(), owner, n); } catch (RuntimeException x) { bal = 0; }
+            toast("Cari hesaba işlendi ✓ " + TezgahLedger.balanceLine(n, bal));
+        });
+        sheet.setOnDismissListener(d -> { if (after != null) after.run(); });
+        sheet.setContentView(scroll);
+        android.view.Window w = sheet.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            w.setLayout(android.view.WindowManager.LayoutParams.MATCH_PARENT, android.view.WindowManager.LayoutParams.WRAP_CONTENT);
+            w.setGravity(Gravity.BOTTOM);
+            w.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+        sheet.show();
     }
 
     /** Bugünkü kasa hesabı (bütün aracılar); hiç kasa yazılmadıysa boş. */
