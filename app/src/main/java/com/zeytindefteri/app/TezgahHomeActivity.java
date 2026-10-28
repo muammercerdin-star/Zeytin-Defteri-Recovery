@@ -249,18 +249,39 @@ public final class TezgahHomeActivity extends Activity {
         return c;
     }
 
+    /** Daha fazla: kullanım şekli en başta; üretici ekranına geçiren "Ayarlar" yok, hesap işleri burada. */
     private void more() {
-        final String[] items = {"Ayarlar", "Bildirimler", "Yedekle / Geri yükle", "Sohbet", "Fiş yazıcısı",
-                "Kullanım şekli · " + UserRole.label(RoleActivity.role(this))};
+        final String[] items = {"Kullanım şekli · " + UserRole.label(RoleActivity.role(this)), "Bildirimler",
+                "Yedekle / Geri yükle", "Fiş yazıcısı", "Sohbet", "Hesap · profil, gizlilik, çıkış"};
         new AlertDialog.Builder(this)
                 .setItems(items, (dlg, which) -> {
                     switch (which) {
-                        case 0: openFeed("PROFILE"); break;
+                        case 0: RoleActivity.open(this, false); break;
                         case 1: startActivity(new Intent(this, NotificationsActivity.class)); break;
                         case 2: startActivity(new Intent(this, BackupActivity.class)); break;
-                        case 3: openFeed("MEYDAN"); break;
-                        case 4: TezgahPrinter.settings(this); break;
-                        default: RoleActivity.open(this, false); break;
+                        case 3: TezgahPrinter.settings(this); break;
+                        case 4: openFeed("MEYDAN"); break;
+                        default: account(); break;
+                    }
+                })
+                .show();
+    }
+
+    /** Hesap işleri (Play: hesap silme uygulama içinden erişilebilir olmalı); tezgâh modundan çıkmadan. */
+    private void account() {
+        final String[] items = {"Profili yönet", "Gizlilik Politikası", "KVKK Aydınlatma Metni", "Kullanım Koşulları",
+                "Hesabımı sil", "Çıkış yap"};
+        new AlertDialog.Builder(this)
+                .setTitle("Hesap")
+                .setItems(items, (dlg, which) -> {
+                    switch (which) {
+                        case 0: startActivity(new Intent(this, ProfileActivity.class)); break;
+                        case 1: startActivity(new Intent(this, PrivacyActivity.class)); break;
+                        case 2: LegalDocumentActivity.open(this, LegalDocuments.KVKK); break;
+                        case 3: startActivity(new Intent(this, TermsActivity.class)); break;
+                        case 4: AccountDeletion.start(this); break;
+                        default: startActivity(new Intent(this, ProfileActivity.class)
+                                .putExtra(ProfileActivity.EXTRA_CONFIRM_LOGOUT, true)); break;
                     }
                 })
                 .show();
