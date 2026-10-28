@@ -18,8 +18,11 @@ import java.util.zip.GZIPOutputStream;
 public final class TezgahCloudPack {
     /** Bir parçanın en büyük boyu (bayt). Belge sınırı 1 MiB; alan adları ve meta için pay bırakılır. */
     public static final int PART_BYTES = 700 * 1024;
-    /** Sıkıştırılmış yedeğin üst sınırı (≈ 40 parça). Aşarsa bulut yedeği yapılmaz, dosya yedeği önerilir. */
-    public static final int MAX_BYTES = 28 * 1024 * 1024;
+    /**
+     * Sıkıştırılmış yedeğin üst sınırı. Bütün parçalar tek toplu yazmada gider; Firestore toplu yazma isteği
+     * 10 MiB ile sınırlı. Aşarsa bulut yedeği yapılmaz, dosya yedeği önerilir (yıllarca kayıt demektir).
+     */
+    public static final int MAX_BYTES = 9 * 1024 * 1024;
 
     private TezgahCloudPack() {}
 

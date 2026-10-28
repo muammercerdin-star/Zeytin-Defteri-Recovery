@@ -209,7 +209,7 @@ public final class TezgahActivity extends Activity {
 
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.addView(text("Tezgah · Alım", 20, TEXT, true));
+        col.addView(text("Tezgâh · Alım", 20, TEXT, true));
         // Satanın adı sihirbazın sonunda sorulur: ad yokken başlıkta yalnız tarih durur.
         String dayText = new SimpleDateFormat("d MMMM", new Locale("tr", "TR")).format(new Date());
         String context = seller.isEmpty() ? "" : "Satan: " + seller;

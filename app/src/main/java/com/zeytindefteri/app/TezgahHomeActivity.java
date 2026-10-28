@@ -93,6 +93,12 @@ public final class TezgahHomeActivity extends Activity {
         });
     }
 
+    /** Tezgâhçı üretici ekranını hiç açmayabilir: bildirim izni (gün sonu, elek hatırlatması) burada da sorulur. */
+    @Override protected void onResume() {
+        super.onResume();
+        try { PushRegistration.requestPermission(this); } catch (RuntimeException ignored) { }
+    }
+
     @Override protected void onRestart() {
         super.onRestart();
         if (body != null) render();

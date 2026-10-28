@@ -164,6 +164,7 @@ public final class BackupActivity extends Activity {
         LinearLayout info = card(BORDER);
         info.addView(label("YEDEĞE GİRENLER"));
         info.addView(text("• Tezgah alımları, borç ödemeleri, akşam hesapları ve gün sonları (Z)\n"
+                + "• Cari hesap (tüccar/alıcı) ve kasa defteri\n"
                 + "• Elek satışlarının ödeme geçmişi\n• Yağhane sıkımları\n• Tezgah fiyatları ve kasa darası", 14, TEXT, false), margins(6));
         info.addView(label("NASIL?"), margins(14));
         info.addView(text("1. Yedekle'ye bas, dosyayı İndirilenler'e ya da Google Drive'a kaydet.\n"
