@@ -170,6 +170,19 @@ public class ProducerFeedActivity extends Activity {
         getWindow().setNavigationBarColor(BG);
         getWindow().getDecorView().setSystemUiVisibility(0);
 
+        // Kullanım şekli: tezgâhçı (ya da en son Tezgâh'ta kalan "ikisi de") uygulamayı Tezgâh ana ekranıyla açar.
+        // Ayarlar, sohbet, asistan gibi özel bir bölüm istendiyse yönlendirilmez.
+        Intent opened = getIntent();
+        boolean explicit = opened != null && (opened.getBooleanExtra(TezgahHomeActivity.EXTRA_STAY_FEED, false)
+                || opened.hasExtra("open_section") || opened.getBooleanExtra("open_assistant", false)
+                || opened.hasExtra("open_category"));
+        if (new SessionManager(this).hasSession()
+                && UserRole.opensTezgah(RoleActivity.role(this), RoleActivity.lastView(this), explicit)) {
+            startActivity(new Intent(this, TezgahHomeActivity.class));
+            finish();
+            return;
+        }
+
         db = new DatabaseHelper(this);
         gardenRepository = new GardenRepository(db);
 
@@ -224,6 +237,12 @@ public class ProducerFeedActivity extends Activity {
 
         applyRequestedCategory(getIntent());
         setContentView(buildAppShell());
+        // Kullanım şekli henüz seçilmediyse bir kez sorulur (eski kullanıcılar dahil).
+        if (new SessionManager(this).hasSession() && !UserRole.chosen(RoleActivity.role(this))) {
+            contentHost.post(() -> { if (!isFinishing()) RoleActivity.open(this, false, true); });
+        } else if (UserRole.BOTH.equals(RoleActivity.role(this))) {
+            RoleActivity.setLastView(this, UserRole.VIEW_GARDEN);
+        }
 
         String requested =
                 getIntent() == null
@@ -1750,7 +1769,22 @@ public class ProducerFeedActivity extends Activity {
                         today
                 );
 
+        // İkisi de (üretici + tezgâhçı): üstte Bahçe / Tezgâh geçişi.
+        if (UserRole.BOTH.equals(RoleActivity.role(this))) {
+            LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
+            sp.setMargins(dp(16), dp(10), dp(16), 0);
+            body.addView(homeRoleSwitch(), sp);
+        }
+
         body.addView(hero);
+
+        // Hasat döneminde en çok iş: bugünün eleği (yaz / defterden oku) ve son kayıtlar, en üstte.
+        View todayElek = buildHomeTodayElek(garden);
+        if (todayElek != null) {
+            LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-1, -2);
+            tp.setMargins(dp(16), dp(12), dp(16), 0);
+            body.addView(todayElek, tp);
+        }
 
         View leagueCard = buildHomeLeagueCard();
         LinearLayout.LayoutParams lcp = new LinearLayout.LayoutParams(-1, -2);
@@ -1920,6 +1954,155 @@ public class ProducerFeedActivity extends Activity {
     // Selamlama, bahçe seçici, zeytin takvimi ve hava kartı.
     // Hava önbelleği/yenileme mantığı önceki hero ile aynıdır.
     // =========================================================
+
+    /** Bahçe | Tezgâh geçişi (yalnız "ikisi de" kullanım şeklinde). */
+    private View homeRoleSwitch() {
+        LinearLayout seg = new LinearLayout(this);
+        seg.setPadding(dp(4), dp(4), dp(4), dp(4));
+        seg.setBackground(round(CARD, 16, BORDER));
+        TextView garden = text("Bahçe", 15, BG, true);
+        garden.setGravity(Gravity.CENTER);
+        garden.setBackground(round(GREEN, 12, Color.TRANSPARENT));
+        garden.setContentDescription("Bahçe, seçili");
+        seg.addView(garden, new LinearLayout.LayoutParams(0, dp(40), 1));
+        TextView tez = text("Tezgâh", 15, MUTED, true);
+        tez.setGravity(Gravity.CENTER);
+        tez.setContentDescription("Tezgâh ekranına geç");
+        tez.setOnClickListener(v -> {
+            RoleActivity.setLastView(this, UserRole.VIEW_TEZGAH);
+            startActivity(new Intent(this, TezgahHomeActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+            finish();
+        });
+        seg.addView(tez, new LinearLayout.LayoutParams(0, dp(40), 1));
+        return seg;
+    }
+
+    /**
+     * "Bugünün eleği" kartı: bugün yazıldıysa kilo ve tutar, yazılmadıysa "Eleği yaz" ve "Defterden oku";
+     * altında son 3 elek kaydı. Hasat döneminde (Ekim–Ocak) ya da bugün kayıt varsa görünür.
+     */
+    private View buildHomeTodayElek(HomeGardenSnapshot garden) {
+        Calendar cal = Calendar.getInstance();
+        String todayIso = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new java.util.Date());
+        String todayTr = new java.text.SimpleDateFormat("dd.MM.yyyy", Locale.US).format(new java.util.Date());
+        List<ElekRow> rows = new ArrayList<>();
+        Cursor rc = null;
+        try {
+            rc = new ElekRepository(db).getArchiveRecords(db.getActiveSeasonYear(), -1, db.getActiveOwnerUid());
+            while (rc != null && rc.moveToNext() && rows.size() < 40) {
+                ElekRow r = new ElekRow();
+                r.id = getLong(rc, "record_id");
+                r.date = getString(rc, "record_date", "");
+                r.garden = getString(rc, "garden_name", "-");
+                r.kg = getDouble(rc, "total_kg");
+                r.revenue = getDouble(rc, "total_revenue");
+                rows.add(r);
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (rc != null) rc.close();
+        }
+        double todayKg = 0, todayTl = 0;
+        int todayCount = 0;
+        for (ElekRow r : rows) {
+            String d = r.date.trim();
+            if (d.startsWith(todayIso) || d.equals(todayTr)) { todayKg += r.kg; todayTl += r.revenue; todayCount++; }
+        }
+        if (!AlertRules.harvestMonth(cal.get(Calendar.MONTH) + 1) && todayCount == 0) return null;
+        final int gold = GreenTheme.color(R.color.zd_warning);
+        final long gardenId = garden != null && garden.id > 0 ? garden.id : 0;
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(14), dp(16), dp(16));
+        card.setBackground(round(CARD, 22, todayCount > 0 ? GREEN : gold));
+        LinearLayout head = row();
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        TextView k = text("BUGÜNÜN ELEĞİ", 12, MUTED, true);
+        k.setLetterSpacing(0.08f);
+        head.addView(k, new LinearLayout.LayoutParams(0, -2, 1));
+        head.addView(text(todayCount > 0 ? "Yazıldı ✓" : "Henüz yazılmadı", 13, todayCount > 0 ? GREEN : gold, true));
+        card.addView(head);
+        if (todayCount > 0) {
+            card.addView(text(TezgahModel.kg(todayKg) + "  ·  " + TezgahModel.tl(todayTl), 22, TEXT, true), blockTop(8));
+            if (todayKg > 0 && todayTl > 0) {
+                card.addView(text("ort. " + TezgahModel.money(todayTl / todayKg) + "/kg" + (todayCount > 1 ? " · " + todayCount + " kayıt" : ""),
+                        13, MUTED, false), blockTop(2));
+            }
+        } else {
+            TextView info = text("Toplama bitince kiloları yaz; tutar, ortalama ve sezon toplamı kendiliğinden çıksın.", 14, MUTED, false);
+            info.setLineSpacing(0, 1.1f);
+            card.addView(info, blockTop(8));
+        }
+        TextView write = text(todayCount > 0 ? "+  Bir elek daha yaz" : "Eleği yaz", 18, BG, true);
+        write.setGravity(Gravity.CENTER);
+        write.setBackground(round(GREEN, 16, Color.TRANSPARENT));
+        write.setContentDescription("Elek kaydı yaz");
+        write.setOnClickListener(v -> startActivity(new Intent(this, ElekActivity.class).putExtra("garden_id", gardenId)));
+        LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(-1, dp(54));
+        wp.topMargin = dp(12);
+        card.addView(write, wp);
+        TextView scan = text("📷  Defterden oku · fotoğraftan doldur", 15, GREEN, true);
+        scan.setGravity(Gravity.CENTER);
+        scan.setBackground(round(Color.TRANSPARENT, 14, GREEN));
+        scan.setContentDescription("Defter sayfasının fotoğrafından elek kaydı doldur");
+        scan.setOnClickListener(v -> startActivity(new Intent(this, ElekActivity.class).putExtra("garden_id", gardenId)
+                .putExtra("open_notebook", true)));
+        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, dp(46));
+        sp.topMargin = dp(8);
+        card.addView(scan, sp);
+
+        // Son kayıtlar (bugün hariç en çok 3)
+        int shown = 0;
+        for (final ElekRow r : rows) {
+            String d = r.date.trim();
+            if (d.startsWith(todayIso) || d.equals(todayTr)) continue;
+            if (shown == 0) {
+                LinearLayout lh = row();
+                lh.setGravity(Gravity.CENTER_VERTICAL);
+                lh.setPadding(0, dp(14), 0, dp(2));
+                TextView l = text("SON KAYITLAR", 12, MUTED, true);
+                l.setLetterSpacing(0.08f);
+                lh.addView(l, new LinearLayout.LayoutParams(0, -2, 1));
+                TextView all = text("Tümü ›", 13, GREEN, true);
+                all.setPadding(dp(10), dp(6), 0, dp(6));
+                all.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)
+                        .putExtra(ElekArchiveActivity.EXTRA_GARDEN_ID, -1L)));
+                lh.addView(all);
+                card.addView(lh);
+            }
+            if (shown++ >= 3) break;
+            LinearLayout line = row();
+            line.setGravity(Gravity.CENTER_VERTICAL);
+            line.setMinimumHeight(dp(40));
+            line.addView(text(shortElekDate(d) + "  ·  " + TezgahModel.kg(r.kg), 15, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1));
+            line.addView(text(TezgahModel.tl(r.revenue), 15, TEXT, true));
+            line.setContentDescription(shortElekDate(d) + ", " + TezgahModel.kg(r.kg) + ", " + TezgahModel.tl(r.revenue) + ". Geçmişi aç.");
+            line.setOnClickListener(v -> startActivity(new Intent(this, ElekArchiveActivity.class)
+                    .putExtra(ElekArchiveActivity.EXTRA_GARDEN_ID, -1L)));
+            card.addView(line);
+        }
+        return card;
+    }
+
+    private LinearLayout.LayoutParams blockTop(int top) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.topMargin = dp(top);
+        return lp;
+    }
+
+    /** "2026-10-27" ya da "27.10.2026" → "27 Eki". */
+    private static String shortElekDate(String d) {
+        try {
+            java.util.Date x = d.matches("\\d{4}-\\d{2}-\\d{2}.*")
+                    ? new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(d.substring(0, 10))
+                    : new java.text.SimpleDateFormat("dd.MM.yyyy", Locale.US).parse(d);
+            return x == null ? d : new java.text.SimpleDateFormat("d MMM", new Locale("tr", "TR")).format(x);
+        } catch (java.text.ParseException | RuntimeException e) {
+            return d;
+        }
+    }
 
     private View buildHomeHero(
             final HomeGardenSnapshot garden,

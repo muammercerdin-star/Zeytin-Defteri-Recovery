@@ -1651,6 +1651,11 @@ public class ElekActivity extends Activity {
         // Defterden oku: elek defteri sayfasının fotoğrafı telefonda okunur, kontrol ekranından sonra forma dolar.
         android.view.View notebookButton = findViewById(R.id.btnElekNotebook);
         if (notebookButton != null) notebookButton.setOnClickListener(view -> NotebookScanUi.start(this));
+        // Ana sayfadaki "Defterden oku" ile açıldıysa kamera/galeri seçimi hemen gelsin.
+        if (notebookButton != null && getIntent() != null && getIntent().getBooleanExtra("open_notebook", false)) {
+            getIntent().removeExtra("open_notebook");
+            notebookButton.post(() -> NotebookScanUi.start(this));
+        }
 
         // ========================================================
         // TÜM ELEK KAYITLARI

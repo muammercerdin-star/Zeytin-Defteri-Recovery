@@ -2548,6 +2548,18 @@ public class LoginActivity extends Activity {
     }
 
     private void openFirstGarden() {
+        // Kullanım şekli: önce sorulur; tezgâhçı bahçe eklemeden Tezgâh'a geçer.
+        String role = RoleActivity.role(this);
+        if (!UserRole.chosen(role)) {
+            startActivity(new Intent(this, RoleActivity.class).putExtra(RoleActivity.EXTRA_FIRST_RUN, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
+            finish();
+            return;
+        }
+        if (!UserRole.needsFirstGarden(role)) {
+            openMainForUser(true);
+            return;
+        }
 
         Intent intent =
                 new Intent(

@@ -105,7 +105,8 @@ public final class ElekReminder extends BroadcastReceiver {
             SQLiteDatabase db = helper.getWritableDatabase();
             int gardens = count(db, "SELECT COUNT(*) FROM gardens WHERE COALESCE(owner_uid,'')=?", owner);
             int elekToday = count(db, "SELECT COUNT(*) FROM elek_records er INNER JOIN gardens g ON g.id=er.garden_id "
-                    + "WHERE COALESCE(g.owner_uid,'')=? AND substr(TRIM(er.record_date),1,10)='" + today + "'", owner);
+                    + "WHERE COALESCE(g.owner_uid,'')=? AND (substr(TRIM(er.record_date),1,10)='" + today + "' "
+                    + "OR TRIM(er.record_date)='" + new SimpleDateFormat("dd.MM.yyyy", Locale.US).format(new Date()) + "')", owner);
             AlertRules.Alert a = AlertRules.elekReminder(cal.get(Calendar.MONTH) + 1, gardens, elekToday, today);
             if (a == null) return;
             if (NotificationInbox.add(db, owner, a, System.currentTimeMillis()) <= 0) return; // bugün zaten gitti
