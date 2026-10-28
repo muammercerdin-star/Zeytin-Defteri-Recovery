@@ -177,8 +177,8 @@ public final class TezgahActivity extends Activity {
 
         // Sıkı düzen: her şey tek ekrana sığsın (gerekirse yine kayar).
         body.addView(header());
-        // Ana ekrandan gelindiyse boş tezgâhta ikinci "Tartım başlat" yok; yarım alımda "Tartıma devam et" kalır.
-        if (!fromHome || !model.isEmpty()) body.addView(startButton(), margins(-1, dp(58), 6));
+        // Her zaman sihirbazı açar: boşken "Yeni tartım başlat", yarım alımda "Tartıma devam et".
+        body.addView(startButton(), margins(-1, dp(58), 6));
         // Tezgah boşken son fiş (numara numara döküm) hemen burada: satıcıyla teyit için.
         body.addView(lastSlipCard(), margins(-1, -2, 8));
         body.addView(gradeRow(), margins(-1, -2, 8));
@@ -1183,7 +1183,7 @@ public final class TezgahActivity extends Activity {
      */
     private View startButton() {
         boolean cont = !model.isEmpty();
-        TextView b = text(cont ? "▶  Tartıma devam et" : "▶  Tartım başlat", 20, BG, true);
+        TextView b = text(cont ? "▶  Tartıma devam et" : "▶  Yeni tartım başlat", 20, BG, true);
         b.setGravity(Gravity.CENTER);
         b.setBackground(round(GREEN, 0, 18));
         b.setContentDescription(cont ? "Tartıma devam et: numara numara sorar" : "Tartım başlat: numara numara, en son satanı sorar");
