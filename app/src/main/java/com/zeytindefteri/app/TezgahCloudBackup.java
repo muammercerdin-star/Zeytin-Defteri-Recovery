@@ -268,6 +268,7 @@ public final class TezgahCloudBackup {
                 try {
                     String owner = h.getActiveOwnerUid();
                     if (owner == null || !owner.equals(uid)) { post(done, false, "Hesap eşleşmedi"); return; }
+                    TezgahRescue.save(app, h.getWritableDatabase(), owner); // yanlış yedekse "geri al" için
                     n = TezgahBackup.restore(h.getWritableDatabase(), owner, d);
                     if (n >= 0) applyPrefs(app, owner, d);
                 } finally {

@@ -139,6 +139,7 @@ public class GardenCloudRepository {
         gardensRef(uid)
                 .document(cloudId)
                 .set(data, SetOptions.merge())
+                .addOnCompleteListener(CloudWrites.listener())
                 .addOnSuccessListener(unused ->
                         databaseHelper.markCloudUploadComplete(uid, "gardens", finalCloudId, localUpdatedAt));
     }

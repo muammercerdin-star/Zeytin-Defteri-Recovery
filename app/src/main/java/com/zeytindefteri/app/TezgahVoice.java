@@ -123,7 +123,7 @@ public final class TezgahVoice {
         switch (k) {
             case DAY: return day(all, s.contains("dun") && !s.contains("bugun") ? yesterday : today,
                     s.contains("dun") && !s.contains("bugun") ? "Dün" : "Bugün");
-            case PRODUCER: return producer(question, all);
+            case PRODUCER: return producer(question, all, today);
             case DEBT_TOTAL: return debtTotal(all);
             case TRADER: return trader(ledger);
             case CRATES: return crates(crates, today);
@@ -160,7 +160,21 @@ public final class TezgahVoice {
         return new Answer(Kind.DAY, label + "ün alımı", text);
     }
 
-    static Answer producer(String question, List<TezgahPurchases.Purchase> all) {
+    /**
+     * Zeytin sezonu 1 Eylül'de başlar (hasat Eylül–Ocak arası): Ekim 2026 → 2026-09-01, Mart 2027 → 2026-09-01.
+     * Borç sezondan bağımsızdır (eski sezondan kalan borç da borçtur); "bu sezon" toplamı yalnız bu sezonun alımları.
+     */
+    static String seasonStart(String today) {
+        if (today == null || today.length() < 7) return "";
+        try {
+            int y = Integer.parseInt(today.substring(0, 4)), m = Integer.parseInt(today.substring(5, 7));
+            return (m >= 9 ? y : y - 1) + "-09-01";
+        } catch (NumberFormatException e) {
+            return "";
+        }
+    }
+
+    static Answer producer(String question, List<TezgahPurchases.Purchase> all, String today) {
         List<String> names = matchSellers(question, all);
         if (names.isEmpty()) return new Answer(Kind.PRODUCER, "Üretici", "Bu adla bir üretici bulamadım.");
         if (names.size() > 1) {
@@ -171,20 +185,26 @@ public final class TezgahVoice {
         }
         String name = names.get(0);
         String key = norm(name);
-        int n = 0, open = 0;
-        double kg = 0, gross = 0, debt = 0;
+        String from = seasonStart(today);
+        int n = 0, open = 0, older = 0, oldOpen = 0;
+        double kg = 0, gross = 0, debt = 0, oldDebt = 0;
         String lastDate = "";
         for (TezgahPurchases.Purchase p : all) {
             if (!norm(p.seller).equals(key)) continue;
-            n++;
-            kg += p.kg;
-            gross += p.gross;
-            if (p.remaining() > 0.5) { open++; debt += p.remaining(); }
-            if (p.date.compareTo(lastDate) > 0) lastDate = p.date;
+            boolean thisSeason = from.isEmpty() || (p.date != null && p.date.compareTo(from) >= 0);
+            if (thisSeason) { n++; kg += p.kg; gross += p.gross; } else older++;
+            if (p.remaining() > 0.5) {
+                open++;
+                debt += p.remaining();
+                if (!thisSeason) { oldOpen++; oldDebt += p.remaining(); }
+            }
+            if (p.date != null && p.date.compareTo(lastDate) > 0) lastDate = p.date;
         }
         String text = (debt > 0.5 ? name + ": toplam borcun " + TezgahModel.tl(debt) + " (" + open + " fiş)."
                 : name + ": borcun yok.")
-                + "\nBu sezon " + n + " alım: " + TezgahModel.kg(kg) + ", " + TezgahModel.tl(gross) + "."
+                + (oldDebt > 0.5 ? "\nBunun " + TezgahModel.tl(oldDebt) + " kadarı geçen sezonlardan (" + oldOpen + " fiş)." : "")
+                + (n > 0 ? "\nBu sezon " + n + " alım: " + TezgahModel.kg(kg) + ", " + TezgahModel.tl(gross) + "."
+                        : "\nBu sezon henüz alım yok" + (older > 0 ? "; önceki sezonlarda " + older + " alım var." : "."))
                 + (lastDate.isEmpty() ? "" : "\nSon alım: " + SalePayStatus.shortDate(lastDate) + ".");
         return new Answer(Kind.PRODUCER, name, text);
     }

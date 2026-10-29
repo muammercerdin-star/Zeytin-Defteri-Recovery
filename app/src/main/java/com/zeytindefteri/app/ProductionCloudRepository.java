@@ -229,6 +229,7 @@ public class ProductionCloudRepository {
         )
                 .document(cloudId)
                 .set(data, SetOptions.merge())
+                .addOnCompleteListener(CloudWrites.listener())
                 .addOnSuccessListener(unused ->
                         databaseHelper.markCloudUploadComplete(
                                 uid,

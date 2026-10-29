@@ -19,7 +19,7 @@ public class TezgahCloudPackTest {
     ok(TezgahCloudPack.hash(text).equals(TezgahCloudPack.hash(other)),"yalnız tarih değişince özet aynı");
     ok(!TezgahCloudPack.hash(text).equals(TezgahCloudPack.hash(text+"I9\tX\n")),"kayıt değişince özet değişir");
     try{ TezgahCloudPack.gunzip(new byte[]{1,2,3}); ok(false,"bozuk kabul edildi"); }catch(IllegalArgumentException e){ n++; }
-    TezgahBackup.Data empty=TezgahBackup.parse("ZEYTIN-DEFTERI-YEDEK 1\n@created 1\n");
+    TezgahBackup.Data empty=TezgahBackup.parse("ZEYTIN-DEFTERI-YEDEK 1\n@created 1\n#TABLE tezgah_purchases\n#COLS id\n");
     ok(!TezgahCloudPack.hasRows(empty),"boş yedek buluta gitmez");
     ok(TezgahCloudPack.hasRows(TezgahBackup.parse("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE tezgah_crates\n#COLS id\nI1\n")),"kayıt varsa gider");
     ok(TezgahCloudPack.PART_BYTES<1024*1024,"parça belge sınırının altında");

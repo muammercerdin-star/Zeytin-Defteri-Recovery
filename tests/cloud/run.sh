@@ -14,3 +14,6 @@ src=[A+x for x in ['TezgahCloudPack.java','TezgahBackup.java','TezgahZ.java','Te
 subprocess.run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','-nowarn','-encoding','UTF-8','-d',out,*stubs,*src,'tests/cloud/TezgahCloudPackTest.java'],check=True)
 subprocess.run(['java','-Dfile.encoding=UTF-8','-cp',out,'com.zeytindefteri.app.TezgahCloudPackTest'],check=True)
 P
+# Eşitleme turu: yazmalar bitmeden "tamam" denmez.
+java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" app/src/main/java/com/zeytindefteri/app/CloudWriteBatch.java tests/cloud/CloudWriteBatchTest.java
+java -cp "$D" com.zeytindefteri.app.CloudWriteBatchTest

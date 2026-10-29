@@ -45,6 +45,16 @@ public class TezgahVoiceTest {
     String pr=t(TezgahVoice.answer("Volkan Afşar'ın borcu ne kadar",all,led,cr,T,Y).text);
     ok(pr.contains("toplam borcun 5.790 ₺ (2 fiş)")&&pr.contains("2 alım: 87 kg"),"üretici: "+pr);
     ok(t(TezgahVoice.answer("mehmetin borcu",all,led,cr,T,Y).text).contains("borcun yok"),"ödemiş üretici");
+    // sezon: 1 Eylül'den başlar; eski sezonun borcu borçtur ama "bu sezon" toplamına girmez
+    ok(TezgahVoice.seasonStart("2026-10-28").equals("2026-09-01")&&TezgahVoice.seasonStart("2027-03-05").equals("2026-09-01")
+        &&TezgahVoice.seasonStart("2026-09-01").equals("2026-09-01")&&TezgahVoice.seasonStart("2026-08-31").equals("2025-09-01"),"sezon başı");
+    List<TezgahPurchases.Purchase> two=new ArrayList<>(all);
+    two.add(p(7,"Mehmet Afşar","2025-11-10",400,20000,18000,10));
+    String ms=t(TezgahVoice.answer("mehmetin borcu",two,led,cr,T,Y).text);
+    ok(ms.contains("toplam borcun 2.000 ₺ (1 fiş)")&&ms.contains("2.000 ₺ kadarı geçen sezonlardan")
+        &&ms.contains("Bu sezon 1 alım: 61 kg, 3.960 ₺"),"geçen sezon ayrı: "+ms);
+    String none=t(TezgahVoice.answer("mehmetin borcu",two,led,cr,"2027-09-15","2027-09-14").text);
+    ok(none.contains("Bu sezon henüz alım yok; önceki sezonlarda 2 alım var"),"yeni sezonda alım yok: "+none);
     ok(TezgahVoice.answer("volkanın borcu",all,led,cr,T,Y).text.contains("birden fazla"),"belirsiz ad");
     String dt=t(TezgahVoice.answer("üreticilere toplam borcum",all,led,cr,T,Y).text);
     ok(dt.contains("toplam 6.790 ₺")&&dt.indexOf("Volkan Afşar")<dt.indexOf("Volkan Yılmaz"),"toplam borç sırayla: "+dt);

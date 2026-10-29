@@ -6833,6 +6833,16 @@ public class ProducerFeedActivity extends Activity {
                     public void onError(
                             Exception error
                     ) {
+                        // Çevrimdışı ilk: telefondaki kayıtlar yerinde, yüklenmeyenler sonraki turda gider.
+                        android.util.Log.w("ZDSync", "Eşitleme tamamlanamadı", error);
+                    }
+
+                    @Override
+                    public void onUploaded(int written, int failed, int pending) {
+                        if (failed > 0 || pending > 0) {
+                            android.util.Log.w("ZDSync", "Yükleme: " + written + " tamam, "
+                                    + failed + " hata, " + pending + " bekliyor");
+                        }
                     }
                 }
         );

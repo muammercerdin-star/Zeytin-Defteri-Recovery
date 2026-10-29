@@ -171,6 +171,7 @@ public final class AccountDeletion {
                             db.close();
                         }
                         clearPreferences(activity, uid);
+                        TezgahRescue.wipe(activity, uid);
                         progress.dismiss();
                         finishSignedOut(activity, "Hesabın ve verilerin silindi.");
                     });
@@ -267,6 +268,7 @@ public final class AccountDeletion {
                     } finally {
                         db.close();
                     }
+                    TezgahRescue.wipe(activity, "");
                     finishSignedOut(activity, "Bu telefondaki misafir verilerin silindi.");
                 })
                 .show();

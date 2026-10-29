@@ -16,12 +16,19 @@ import java.util.Map;
  * Dosya sade metindir (kütüphane gerekmez, sürümden bağımsız):
  *   ZEYTIN-DEFTERI-YEDEK 1
  *   @created 1761330000000
+ *   @tables 8                       (yedekteki tablo ve satır sayısı: yarım kalmış dosya böyle anlaşılır)
+ *   @rows 120
  *   #TABLE tezgah_purchases
  *   #COLS id  record_date  …        (sekmeyle ayrılır)
  *   I12  S2026-10-24  D73.5  N      (I tam sayı, D ondalık, S metin, N boş; \t \n \\ kaçışlı)
  *   #PREF tare  S2
  *
- * Geri yükleme bu hesabın bu tablolardaki satırlarını yedektekiyle DEĞİŞTİRİR (id'ler korunur, böylece
+ * Eksik dosya reddedilir: hiç tablo yoksa, bir tablonun sütun satırı yoksa ya da @tables/@rows tutmuyorsa
+ * (yarıda kesilmiş indirme, yanlış kopyalanmış metin) mevcut kayıtlara dokunulmaz. @tables/@rows satırları
+ * eski uygulamalarda yok sayılır; onlarsız eski yedekler de okunur.
+ *
+ * Geri yükleme bu hesabın yedekte bulunan tablolardaki satırlarını yedektekiyle DEĞİŞTİRİR (yedekte hiç
+ * bulunmayan tablo, örneğin eski sürüm yedeğinde olmayan kasa defteri, olduğu gibi kalır) (id'ler korunur, böylece
  * alım ↔ Z ↔ ödeme bağları bozulmaz). owner_uid her zaman şu anki hesap yapılır. Bulut verisine dokunmaz.
  */
 public final class TezgahBackup {
@@ -37,6 +44,8 @@ public final class TezgahBackup {
         public final Map<String, List<String>> cols = new LinkedHashMap<>();
         public final Map<String, List<Object[]>> rows = new LinkedHashMap<>();
         public final Map<String, Object> prefs = new LinkedHashMap<>();
+        /** Dosyadaki bütün tablo/satır sayısı (bilinmeyen tablolar dahil). */
+        int tablesSeen, rowsSeen;
 
         public int rowCount(String table) { List<Object[]> r = rows.get(table); return r == null ? 0 : r.size(); }
 
@@ -62,11 +71,15 @@ public final class TezgahBackup {
         StringBuilder b = new StringBuilder();
         b.append(MAGIC).append(' ').append(VERSION).append('\n');
         b.append("@created ").append(now).append('\n');
+        StringBuilder head = b;
+        b = new StringBuilder();
+        int tables = 0, rowsOut = 0;
         for (String t : TABLES) {
             List<String> cols = columns(db, t);
             cols.remove("owner_uid");
             if (cols.isEmpty()) continue;
             b.append("#TABLE ").append(t).append('\n');
+            tables++;
             b.append("#COLS ").append(String.join("\t", cols)).append('\n');
             StringBuilder sql = new StringBuilder("SELECT ");
             for (int i = 0; i < cols.size(); i++) {
@@ -84,6 +97,7 @@ public final class TezgahBackup {
                         b.append(cell(type, val));
                     }
                     b.append('\n');
+                    rowsOut++;
                 }
             } finally {
                 c.close();
@@ -95,7 +109,9 @@ public final class TezgahBackup {
                 b.append("#PREF ").append(escape(e.getKey())).append('\t').append(encode(v)).append('\n');
             }
         }
-        return b.toString();
+        // Sayılar tablolardan önce: eski sürümler bu satırları (tablo dışında oldukları için) yok sayar.
+        head.append("@tables ").append(tables).append('\n').append("@rows ").append(rowsOut).append('\n');
+        return head.append(b).toString();
     }
 
     static String cell(String sqlType, String value) {
@@ -169,14 +185,23 @@ public final class TezgahBackup {
         Data d = new Data();
         String table = null;
         List<String> cols = null;
+        boolean skipping = false;
+        int wantTables = -1, wantRows = -1;
         for (int i = 1; i < lines.length; i++) {
             String line = lines[i];
             if (line.isEmpty()) continue;
             if (line.startsWith("@created ")) {
                 try { d.created = Long.parseLong(line.substring(9).trim()); } catch (NumberFormatException ignored) { }
+            } else if (line.startsWith("@tables ") && d.tablesSeen == 0) {
+                wantTables = count(line.substring(8));
+            } else if (line.startsWith("@rows ") && d.tablesSeen == 0) {
+                wantRows = count(line.substring(6));
             } else if (line.startsWith("#TABLE ")) {
+                d.tablesSeen++;
+                if (table != null && cols == null) throw new IllegalArgumentException(HALF);
                 table = line.substring(7).trim();
-                if (!known(table)) { table = null; cols = null; continue; } // bilinmeyen tablo atlanır
+                skipping = !known(table);
+                if (skipping) { table = null; cols = null; continue; } // bilinmeyen tablo atlanır
                 cols = null;
                 d.rows.put(table, new ArrayList<>());
             } else if (line.startsWith("#COLS ")) {
@@ -190,15 +215,37 @@ public final class TezgahBackup {
             } else if (line.startsWith("#PREF ")) {
                 String[] kv = line.substring(6).split("\t", -1);
                 if (kv.length == 2) d.prefs.put(unescape(kv[0]), decode(kv[1]));
+            } else if (skipping) {
+                d.rowsSeen++; // bilinmeyen tablonun satırı: yazılmaz ama sayılır
             } else if (table != null && cols != null) {
+                d.rowsSeen++;
                 String[] cells = line.split("\t", -1);
                 if (cells.length != cols.size()) throw new IllegalArgumentException("Bozuk satır (" + (i + 1) + ").");
                 Object[] row = new Object[cells.length];
                 for (int k = 0; k < cells.length; k++) row[k] = decode(cells[k]);
                 d.rows.get(table).add(row);
+            } else if (table != null) {
+                throw new IllegalArgumentException(HALF); // sütun satırından önce kayıt
             }
         }
+        if (table != null && cols == null) throw new IllegalArgumentException(HALF);
+        if (d.cols.isEmpty()) {
+            throw new IllegalArgumentException("Bu yedek dosyası eksik: içinde hiç kayıt bölümü yok. "
+                    + "Telefondaki kayıtlara dokunulmadı.");
+        }
+        if ((wantTables >= 0 && wantTables != d.tablesSeen) || (wantRows >= 0 && wantRows != d.rowsSeen)) {
+            throw new IllegalArgumentException("Bu yedek dosyası yarım kalmış"
+                    + (wantRows >= 0 ? " (" + wantRows + " kayıttan " + d.rowsSeen + " tanesi var)" : "")
+                    + ". Telefondaki kayıtlara dokunulmadı; yedeğin tam halini seç.");
+        }
         return d;
+    }
+
+    private static final String HALF = "Bu yedek dosyası yarım ya da bozuk. Telefondaki kayıtlara dokunulmadı.";
+
+    private static int count(String raw) {
+        try { return Math.max(0, Integer.parseInt(raw.trim())); }
+        catch (NumberFormatException e) { throw new IllegalArgumentException(HALF); }
     }
 
     private static boolean known(String table) {
@@ -219,11 +266,11 @@ public final class TezgahBackup {
         db.beginTransaction();
         try {
             for (String t : TABLES) {
-                List<String> have = columns(db, t);
-                db.delete(t, "COALESCE(owner_uid,'')=?", new String[]{o});
                 List<String> cols = d.cols.get(t);
                 List<Object[]> rows = d.rows.get(t);
-                if (cols == null || rows == null) continue;
+                if (cols == null || rows == null) continue; // yedekte olmayan tablo: telefondaki hali kalır
+                List<String> have = columns(db, t);
+                db.delete(t, "COALESCE(owner_uid,'')=?", new String[]{o});
                 for (Object[] row : rows) {
                     ContentValues v = new ContentValues();
                     for (int k = 0; k < cols.size(); k++) {

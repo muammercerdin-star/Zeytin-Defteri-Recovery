@@ -179,6 +179,7 @@ public class SupportCloudRepository {
                 final String finalCloudId = cloudId;
                 firestore.collection("users").document(uid).collection("inventory_items")
                         .document(cloudId).set(m, SetOptions.merge())
+                        .addOnCompleteListener(CloudWrites.listener())
                         .addOnSuccessListener(unused -> databaseHelper.markCloudUploadComplete(
                                 uid, "inventory_items", finalCloudId, localUpdatedAt));
             }
@@ -234,6 +235,7 @@ public class SupportCloudRepository {
                 final String finalCloudId = cloudId;
                 firestore.collection("users").document(uid).collection(collection)
                         .document(cloudId).set(m, SetOptions.merge())
+                        .addOnCompleteListener(CloudWrites.listener())
                         .addOnSuccessListener(unused -> databaseHelper.markCloudUploadComplete(
                                 uid, table, finalCloudId, localUpdatedAt));
             }
@@ -301,6 +303,7 @@ public class SupportCloudRepository {
                 firestore.collection("users").document(uid).collection("gardens")
                         .document(gardenCloudId).collection("notes")
                         .document(cloudId).set(m, SetOptions.merge())
+                        .addOnCompleteListener(CloudWrites.listener())
                         .addOnSuccessListener(unused -> databaseHelper.markCloudUploadComplete(
                                 uid, "garden_notes", finalCloudId, localUpdatedAt));
             }

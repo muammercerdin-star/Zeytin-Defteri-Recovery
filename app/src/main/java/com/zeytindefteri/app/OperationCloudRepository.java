@@ -259,6 +259,7 @@ public class OperationCloudRepository {
                         data,
                         SetOptions.merge()
                 )
+                .addOnCompleteListener(CloudWrites.listener())
                 .addOnSuccessListener(unused ->
                         databaseHelper.markCloudUploadComplete(
                                 uid, "operations", finalOperationCloudId, localUpdatedAt));

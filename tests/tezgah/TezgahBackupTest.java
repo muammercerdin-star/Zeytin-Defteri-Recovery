@@ -73,7 +73,36 @@ public class TezgahBackupTest {
     ok(!TezgahBackup.escape("a\nb").contains("\n"),"satır sonu kaçışlanır");
     // Bozuk dosyalar
     bad("merhaba"); bad("ZEYTIN-DEFTERI-YEDEK 9\n"); bad("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE tezgah_z\n#COLS id\tz_no\nI1\n");
-    ok(TezgahBackup.parse("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE kotu_tablo\n#COLS id\nI1\n").rows.isEmpty(),"bilinmeyen tablo atlanır");
+    // Eksik / yarım dosyalar reddedilir (ChatGPT incelemesi: yalnız başlık satırı kayıtları siliyordu)
+    bad("ZEYTIN-DEFTERI-YEDEK 1\n");
+    bad("ZEYTIN-DEFTERI-YEDEK 1\n@created 5\n");
+    bad("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE kotu_tablo\n#COLS id\nI1\n"); // hiç bilinen tablo yok
+    bad("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE tezgah_z\n#TABLE tezgah_purchases\n#COLS id\nI1\n"); // sütunsuz tablo
+    bad("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE tezgah_z\nI1\n"); // sütun satırından önce kayıt
+    bad("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE tezgah_z\n"); // son tablo yarım
+    ok(text.contains("\n@tables 8\n")&&text.contains("\n@rows "),"kayıt sayısı işareti yazılır");
+    ok(text.indexOf("@rows ")<text.indexOf("#TABLE "),"işaret tablolardan önce (eski sürüm yok sayar)");
+    String[] ls=text.split("\n",-1);
+    StringBuilder cut=new StringBuilder(); boolean dropped=false;
+    for(String l:ls){ if(!dropped&&l.startsWith("I"+p2+"\t")){ dropped=true; continue; } cut.append(l).append('\n'); }
+    ok(dropped,"test: satır bulundu");
+    bad(cut.toString()); // tek satırı eksik
+    bad(text.substring(0,text.indexOf("#TABLE tezgah_payments"))); // ortadan kesilmiş
+    try{ TezgahBackup.parse(cut.toString()); }catch(IllegalArgumentException e){ ok(e.getMessage().contains("yarım")&&e.getMessage().contains("dokunulmadı"),"anlaşılır mesaj: "+e.getMessage()); }
+    // Eski (işaretsiz) yedek okunur
+    String legacy=text.replaceAll("@tables \\d+\n","").replaceAll("@rows \\d+\n","");
+    ok(TezgahBackup.parse(legacy).purchases()==2,"eski yedek okunur");
+    // Bilinmeyen tablo yanında bilinen tablo: okunur, bilinmeyen atlanır ama sayılır
+    TezgahBackup.Data mix=TezgahBackup.parse("ZEYTIN-DEFTERI-YEDEK 1\n@tables 2\n@rows 2\n#TABLE kotu_tablo\n#COLS id\nI1\n#TABLE tezgah_z\n#COLS id\nI7\n");
+    ok(mix.rowCount("tezgah_z")==1&&!mix.rows.containsKey("kotu_tablo"),"bilinmeyen tablo atlanır");
+    // Yedekte olmayan tabloya dokunulmaz (eski sürüm yedeği kasa defterini silmesin)
+    ok(TezgahCrates.add(db,"u3","Aracı",TezgahCrates.GAVE,40,"2026-10-25",0,"",700L)>0,"u3 kasa");
+    String onlyPurchases="ZEYTIN-DEFTERI-YEDEK 1\n#TABLE tezgah_purchases\n"+text.substring(text.indexOf("#COLS ",text.indexOf("#TABLE tezgah_purchases")),text.indexOf("#TABLE tezgah_payments"));
+    TezgahBackup.Data op2=TezgahBackup.parse(onlyPurchases);
+    ok(op2.purchases()==2,"yalnız alım yedeği okunur");
+    ok(TezgahBackup.restore(db,"u3",op2)==2,"yalnız alımlar yazıldı");
+    ok(TezgahCrates.balanceOf(db,"u3","aracı")==40,"yedekte olmayan kasa defteri olduğu gibi kaldı");
+    ok(TezgahPayments.history(db,"u3",find(TezgahPurchases.all(db,"u3",100),p1)).size()==3,"yedekte olmayan ödemeler kaldı");
     System.out.println("PASS: "+n+" ödeme ve yedek kontrolü");
   }
   static void bad(String s){ try{ TezgahBackup.parse(s); throw new AssertionError("bozuk kabul edildi: "+s);}catch(IllegalArgumentException e){ n++; } }

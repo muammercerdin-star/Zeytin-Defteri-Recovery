@@ -12,13 +12,28 @@ package com.zeytindefteri.app;
  *
  * Böylece yeni telefon geri yükleme + çoklu cihaz + son değişiklik kazanır
  * politikası tek noktadan yürütülür.
+ *
+ * onComplete: buluttakiler bu telefona indi (giriş akışı bunu bekler, yüklemeyi beklemez).
+ * onUploaded: 5. adımdaki yazmaların sunucudan sonucu geldi (ya da 90 sn doldu, bekleyenler sayılır).
+ * Tur, yüklemeler bitene kadar "çalışıyor" sayılır; aynı kayıt üst üste gönderilmez. Başarısız ya da
+ * bekleyen kayıtlar "yüklenmedi" işaretli kalır ve sonraki turda yeniden gönderilir.
  */
 public class PrivateCloudSyncManager {
 
     public interface Callback {
         void onComplete();
         void onError(Exception error);
+
+        /** Yüklemelerin sonucu: yazılan, başarısız ve süre dolduğunda hâlâ bekleyen kayıt sayısı. */
+        default void onUploaded(int written, int failed, int pending) { }
     }
+
+    /** Son yükleme turunun özeti (ekranlarda "bulut eşitlemesi bekliyor" demek için). */
+    public static volatile int lastWritten = -1, lastFailed, lastPending;
+    public static volatile long lastUploadAt;
+
+    private static final long UPLOAD_WAIT_MS = 90_000L;
+    private static final android.os.Handler MAIN = new android.os.Handler(android.os.Looper.getMainLooper());
 
     private final GardenCloudRepository gardens;
     private final OperationCloudRepository operations;
@@ -99,12 +114,33 @@ public class PrivateCloudSyncManager {
         });
     }
 
-    private void uploadLocal(String uid, Callback callback) {
-        gardens.syncAllLocalGardens(uid);
-        operations.syncAllLocalOperations(uid);
-        production.syncAllLocal(uid);
-        support.syncAllLocal(uid);
-        finish(uid, callback, null);
+    private void uploadLocal(final String uid, final Callback callback) {
+        // İndirme bitti: giriş/ana ekran beklemesin.
+        if (callback != null) callback.onComplete();
+        final CloudWriteBatch batch = CloudWrites.begin();
+        try {
+            gardens.syncAllLocalGardens(uid);
+            operations.syncAllLocalOperations(uid);
+            production.syncAllLocal(uid);
+            support.syncAllLocal(uid);
+        } catch (RuntimeException e) {
+            // İndirme zaten bitti (onComplete gitti); kayıtlar "yüklenmedi" kalır, sonraki turda yeniden denenir.
+            lastFailed = 1;
+            lastUploadAt = System.currentTimeMillis();
+            finish(uid, null, null);
+            return;
+        } finally {
+            CloudWrites.end();
+        }
+        batch.close((written, failed, pending) -> MAIN.post(() -> {
+            lastWritten = written;
+            lastFailed = failed;
+            lastPending = pending;
+            lastUploadAt = System.currentTimeMillis();
+            if (callback != null) callback.onUploaded(written, failed, pending);
+            finish(uid, null, null);
+        }));
+        MAIN.postDelayed(batch::timeout, UPLOAD_WAIT_MS);
     }
 
     private synchronized void finish(String uid, Callback callback, Exception error) {

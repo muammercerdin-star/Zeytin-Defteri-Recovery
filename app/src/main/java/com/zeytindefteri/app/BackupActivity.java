@@ -133,6 +133,16 @@ public final class BackupActivity extends Activity {
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, dp(52));
         rp.topMargin = dp(10);
         body.addView(restore, rp);
+        final java.io.File rescue = TezgahRescue.latest(this, owner);
+        if (rescue != null) {
+            TextView undo = text("↶ Geri yüklemeyi geri al · " + DM_HM.format(new Date(TezgahRescue.time(rescue)))
+                    + " öncesine dön", 14, AMBER, true);
+            undo.setGravity(Gravity.CENTER);
+            undo.setPadding(dp(8), dp(12), dp(8), dp(12));
+            undo.setContentDescription("Son geri yüklemeden önceki kayıtlara dön");
+            undo.setOnClickListener(v -> undoRestore(rescue));
+            body.addView(undo, margins(4));
+        }
 
         // Bulut yedeği (otomatik): durum, şimdi yedekle, buluttan geri yükle.
         LinearLayout cloud = card(BORDER);
@@ -290,8 +300,23 @@ public final class BackupActivity extends Activity {
                 .show();
     }
 
+    /** Son geri yüklemeden hemen önce alınan kurtarma kopyasına döner (yanlış/eski yedek seçildiyse). */
+    private void undoRestore(java.io.File rescue) {
+        final TezgahBackup.Data d;
+        try { d = TezgahRescue.read(rescue); }
+        catch (Exception e) { toast("Kurtarma kopyası okunamadı."); return; }
+        new AlertDialog.Builder(this)
+                .setTitle("Eski hale dönülsün mü?")
+                .setMessage(DM_HM.format(new Date(TezgahRescue.time(rescue))) + " geri yüklemesinden önceki kayıtlar: "
+                        + TezgahBackup.describe(d) + "\n\nŞu anki kayıtların yerine geçer (onların da kopyası alınır).")
+                .setPositiveButton("Eski hale dön", (x, y) -> applyRestore(d))
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
     private void applyRestore(TezgahBackup.Data d) {
         int n;
+        TezgahRescue.save(this, db.getWritableDatabase(), owner); // yanlış yedek seçildiyse "geri al" için
         try { n = TezgahBackup.restore(db.getWritableDatabase(), owner, d); }
         catch (RuntimeException e) { n = -1; }
         if (n < 0) { toast("Geri yükleme başarısız; hiçbir kayıt değişmedi."); return; }
