@@ -105,6 +105,7 @@ public final class TezgahHomeActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        if (tts != null) { try { tts.shutdown(); } catch (RuntimeException ignored) { } }
         if (db != null) db.close();
         super.onDestroy();
     }
@@ -133,7 +134,18 @@ public final class TezgahHomeActivity extends Activity {
         }
 
         body.addView(text(new SimpleDateFormat("d MMMM EEEE", TR).format(new Date()), 13, MUTED, false), margins(-1, -2, 14));
-        body.addView(text("Tezgâh", 24, TEXT, true));
+        // Başlık + sesli soru düğmesi
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setGravity(Gravity.CENTER_VERTICAL);
+        titleRow.addView(text("Tezgâh", 24, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1));
+        TextView ask = text("🎤  Sor", 15, GREEN, true);
+        ask.setGravity(Gravity.CENTER);
+        ask.setPadding(dp(14), 0, dp(14), 0);
+        ask.setBackground(round(CARD, GREEN, 20));
+        ask.setContentDescription("Tezgâh hakkında sesli ya da yazarak sor: bugünün alımı, üretici borcu, tüccar alacağı, kasa");
+        ask.setOnClickListener(v -> askQuestion());
+        titleRow.addView(ask, new LinearLayout.LayoutParams(-2, dp(42)));
+        body.addView(titleRow);
         String cloud = TezgahCloudBackup.statusLine(this);
         if (!cloud.isEmpty()) {
             TextView cl = text(cloud, 12, cloud.contains("bekliyor") || cloud.contains("büyük") ? AMBER : MUTED, false);
@@ -197,6 +209,119 @@ public final class TezgahHomeActivity extends Activity {
         body.addView(row("Kasa · aracıyla", anyCrate ? "Bugün gelen " + crates.in + " · giden " + crates.out : "Gelen / giden kasayı yaz",
                 anyCrate ? (held >= 0 ? "sende " + held : "onda " + (-held)) : "›", anyCrate && held != 0,
                 v -> TezgahCratesActivity.open(this, null)), margins(-1, -2, 8));
+    }
+
+    // ================================================================== tezgâh soruları (sesli / yazılı)
+
+    private static final int REQ_SPEECH = 7411;
+    private android.speech.tts.TextToSpeech tts;
+    private boolean ttsReady;
+    private AlertDialog askDialog;
+
+    /** "Sor" penceresi: yaz ya da mikrofona bas; örnek sorulara dokununca hemen cevaplanır. */
+    private void askQuestion() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(8), dp(20), 0);
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint("Örn. Volkan'ın borcu ne kadar?");
+        input.setSingleLine(true);
+        input.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
+        box.addView(input, new LinearLayout.LayoutParams(-1, -2));
+        TextView mic = text("🎤  Konuşarak sor", 16, BG, true);
+        mic.setGravity(Gravity.CENTER);
+        mic.setBackground(round(GREEN, 0, 16));
+        mic.setOnClickListener(v -> { if (askDialog != null) askDialog.dismiss(); listen(); });
+        box.addView(mic, margins(-1, dp(50), 12));
+        box.addView(text("Örnekler · dokun", 12, MUTED, true), margins(-1, -2, 14));
+        for (final String ex : TezgahVoice.EXAMPLES) {
+            TextView c = text("• " + ex, 15, TEXT, false);
+            c.setPadding(0, dp(8), 0, dp(8));
+            c.setOnClickListener(v -> { if (askDialog != null) askDialog.dismiss(); answer(ex); });
+            box.addView(c);
+        }
+        askDialog = new AlertDialog.Builder(this)
+                .setTitle("Tezgâh'a sor")
+                .setView(box)
+                .setPositiveButton("Sor", (d, w) -> answer(input.getText().toString()))
+                .setNegativeButton("Kapat", null)
+                .create();
+        input.setOnEditorActionListener((v, action, ev) -> {
+            if (askDialog != null) askDialog.dismiss();
+            answer(input.getText().toString());
+            return true;
+        });
+        askDialog.show();
+    }
+
+    /** Android'in ses tanıma ekranı (Türkçe). Yoksa yazarak sormaya yönlendirir. */
+    private void listen() {
+        Intent i = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "tr-TR")
+                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Tezgâh hakkında sor: bugünün alımı, borç, tüccar, kasa")
+                .putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        try {
+            startActivityForResult(i, REQ_SPEECH);
+        } catch (RuntimeException e) {
+            android.widget.Toast.makeText(this, "Bu telefonda ses tanıma yok; yazarak sorabilirsin.", android.widget.Toast.LENGTH_LONG).show();
+            askQuestion();
+        }
+    }
+
+    @Override protected void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        if (request != REQ_SPEECH || result != RESULT_OK || data == null) return;
+        ArrayList<String> words = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
+        if (words != null && !words.isEmpty()) answer(words.get(0));
+    }
+
+    /** Soruyu kayıtlardan cevaplar (yalnız okur), gösterir ve sesli okur. */
+    private void answer(String question) {
+        TezgahVoice.Answer a;
+        try {
+            android.database.sqlite.SQLiteDatabase w = db.getWritableDatabase();
+            SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            String yesterday = iso.format(new Date(System.currentTimeMillis() - 24L * 60 * 60 * 1000));
+            a = TezgahVoice.answer(question, TezgahPurchases.all(w, owner, 100000), TezgahLedger.entries(w, owner),
+                    TezgahCrates.moves(w, owner), today(), yesterday);
+        } catch (RuntimeException e) {
+            a = null;
+        }
+        if (a == null) { android.widget.Toast.makeText(this, "Kayıtlar okunamadı.", android.widget.Toast.LENGTH_SHORT).show(); return; }
+        final TezgahVoice.Answer ans = a;
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(6), dp(20), 0);
+        if (question != null && !question.trim().isEmpty()) box.addView(text("“" + question.trim() + "”", 13, MUTED, false));
+        TextView body = text(ans.text, 17, TEXT, false);
+        body.setLineSpacing(0, 1.15f);
+        box.addView(body, margins(-1, -2, 8));
+        new AlertDialog.Builder(this)
+                .setTitle(ans.title)
+                .setView(box)
+                .setPositiveButton("Tamam", (d, w2) -> stopSpeaking())
+                .setNeutralButton("Yeni soru", (d, w2) -> { stopSpeaking(); askQuestion(); })
+                .setOnCancelListener(d -> stopSpeaking())
+                .show();
+        speak(ans.speech());
+    }
+
+    private void speak(final String text) {
+        if (tts == null) {
+            tts = new android.speech.tts.TextToSpeech(getApplicationContext(), status -> {
+                if (status != android.speech.tts.TextToSpeech.SUCCESS || tts == null) return;
+                int lang = tts.setLanguage(new Locale("tr", "TR"));
+                ttsReady = lang >= 0;
+                if (ttsReady) tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "tezgah-answer");
+            });
+            return;
+        }
+        if (ttsReady) tts.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "tezgah-answer");
+    }
+
+    private void stopSpeaking() {
+        if (tts != null) { try { tts.stop(); } catch (RuntimeException ignored) { } }
     }
 
     /** İkisi de: Bahçe / Tezgâh geçişi. */
