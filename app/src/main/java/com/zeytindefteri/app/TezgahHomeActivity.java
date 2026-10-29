@@ -75,15 +75,17 @@ public final class TezgahHomeActivity extends Activity {
     /** Yeni telefon: tezgâhta hiç kayıt yoksa ve bulutta yedek varsa bir kez sorulur. */
     private void offerCloudRestore() {
         if (!TezgahCloudBackup.shouldOfferRestore(this) || TezgahCloudBackup.hasLocalRows(this)) return;
-        TezgahCloudBackup.fetchMeta((meta, reached) -> {
+        TezgahCloudBackup.fetchMeta(this, (meta, reached) -> {
             if (isFinishing() || isDestroyed()) return;
             if (!reached) return;               // internet yok: bir dahaki açılışta tekrar bakılır
             TezgahCloudBackup.markOffered(this);
             if (meta == null) return;           // bulutta yedek yok
             new AlertDialog.Builder(this)
                     .setTitle("Bulutta yedeğin var")
-                    .setMessage(new SimpleDateFormat("d MMMM yyyy HH:mm", TR).format(new Date(meta.created))
-                            + " tarihli tezgâh yedeği bulundu:\n" + meta.summary + "\n\nBu telefona geri yükleyeyim mi?")
+                    .setMessage(TezgahCloudIndex.label(meta) + " · "
+                            + new SimpleDateFormat("d MMMM yyyy HH:mm", TR).format(new Date(meta.created))
+                            + " tarihli tezgâh yedeği bulundu:\n" + meta.summary + "\n\nBu telefona geri yükleyeyim mi?"
+                            + "\n\nBaşka telefonların yedekleri de varsa Daha fazla → Yedekle / Geri yükle'den seçebilirsin.")
                     .setPositiveButton("Geri yükle", (d, w) -> TezgahCloudBackup.restore(this, meta, (ok, msg) -> {
                         android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show();
                         if (ok && !isFinishing()) render();
@@ -155,6 +157,13 @@ public final class TezgahHomeActivity extends Activity {
             }));
             cl.setContentDescription(cloud + ". Şimdi yedeklemek için dokun.");
             body.addView(cl, margins(-1, -2, 2));
+        }
+        String other = TezgahCloudBackup.otherNewerLine(this);
+        if (!other.isEmpty()) {
+            TextView ow = text(other, 12, AMBER, true);
+            ow.setOnClickListener(v -> startActivity(new Intent(this, BackupActivity.class)));
+            ow.setContentDescription(other + " Yedekler ekranını açmak için dokun.");
+            body.addView(ow, margins(-1, -2, 2));
         }
 
         // "Devam et" yalnız yarım kalmış (bitirilmemiş) bir tartım varsa; bugün alım yapılmış olması yetmez.

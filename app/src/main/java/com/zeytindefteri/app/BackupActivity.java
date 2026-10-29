@@ -150,8 +150,10 @@ public final class BackupActivity extends Activity {
         String cs = TezgahCloudBackup.statusLine(this);
         cloud.addView(text(cs.isEmpty() ? "Henüz buluta yedeklenmedi. Gün sonunda ve uygulamadan çıkınca kendiliğinden yedeklenir."
                 : cs, 15, cs.contains("bekliyor") || cs.contains("büyük") ? AMBER : TEXT, true), margins(4));
-        cloud.addView(text("Google hesabına bağlı; yeni telefonda aynı hesapla girince geri gelir. Yalnız sen görebilirsin.",
-                13, MUTED, false), margins(4));
+        String other = TezgahCloudBackup.otherNewerLine(this);
+        if (!other.isEmpty()) cloud.addView(text(other, 14, AMBER, true), margins(6));
+        cloud.addView(text("Google hesabına bağlı; yeni telefonda aynı hesapla girince geri gelir. Yalnız sen görebilirsin. "
+                + "Her telefon kendi yedeğini tutar, biri ötekinin yedeğini silmez.", 13, MUTED, false), margins(4));
         LinearLayout cb = new LinearLayout(this);
         TextView now = text("Şimdi yedekle", 15, BG, true);
         now.setGravity(Gravity.CENTER);
@@ -186,23 +188,39 @@ public final class BackupActivity extends Activity {
 
     // ================================================================== işlemler
 
-    /** Buluttaki son yedeği gösterir; onaylanırsa bu telefondaki tezgah kayıtlarının yerine yazar. */
+    /** Buluttaki yedekleri gösterir (her telefonun kendi yedeği); seçilen onaylanırsa bu telefondaki tezgah kayıtlarının yerine yazar. */
     private void cloudRestore() {
-        TezgahCloudBackup.fetchMeta((meta, reached) -> {
+        TezgahCloudBackup.fetchAll(this, (all, reached) -> {
             if (isFinishing()) return;
             if (!reached) { toast("Buluta ulaşılamadı; internetini kontrol et."); return; }
-            if (meta == null) { toast("Bulutta yedek yok."); return; }
+            if (all.isEmpty()) { toast("Bulutta yedek yok."); return; }
+            if (all.size() == 1) { confirmCloudRestore(all.get(0)); return; }
+            String[] items = new String[all.size()];
+            for (int i = 0; i < all.size(); i++) {
+                TezgahCloudBackup.Meta m = all.get(i);
+                items[i] = TezgahCloudIndex.label(m) + (i == 0 ? " · en yeni" : "") + "\n"
+                        + DM_HM.format(new Date(m.created)) + " · " + m.summary;
+            }
             new android.app.AlertDialog.Builder(this)
-                    .setTitle("Buluttan geri yüklensin mi?")
-                    .setMessage(DM_HM.format(new Date(meta.created)) + " tarihli yedek: " + meta.summary
-                            + "\n\nBu telefondaki tezgah, ödeme ve sıkım kayıtlarının yerine geçer.")
-                    .setPositiveButton("Geri yükle", (d, w) -> TezgahCloudBackup.restore(this, meta, (ok, msg) -> {
-                        toast(msg);
-                        if (ok && !isFinishing()) render();
-                    }))
+                    .setTitle("Hangi yedek geri yüklensin?")
+                    .setItems(items, (d, w) -> confirmCloudRestore(all.get(w)))
                     .setNegativeButton("Vazgeç", null)
                     .show();
         });
+    }
+
+    private void confirmCloudRestore(TezgahCloudBackup.Meta meta) {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Buluttan geri yüklensin mi?")
+                .setMessage(TezgahCloudIndex.label(meta) + " · " + DM_HM.format(new Date(meta.created)) + " tarihli yedek: "
+                        + meta.summary + "\n\nBu telefondaki tezgah, ödeme ve sıkım kayıtlarının yerine geçer "
+                        + "(önce şimdiki hallerinin kopyası alınır, geri alabilirsin).")
+                .setPositiveButton("Geri yükle", (d, w) -> TezgahCloudBackup.restore(this, meta, (ok, msg) -> {
+                    toast(msg);
+                    if (ok && !isFinishing()) render();
+                }))
+                .setNegativeButton("Vazgeç", null)
+                .show();
     }
 
     private void startBackup() {

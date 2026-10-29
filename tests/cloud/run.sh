@@ -17,3 +17,6 @@ P
 # Eşitleme turu: yazmalar bitmeden "tamam" denmez.
 java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" app/src/main/java/com/zeytindefteri/app/CloudWriteBatch.java tests/cloud/CloudWriteBatchTest.java
 java -cp "$D" com.zeytindefteri.app.CloudWriteBatchTest
+# Bulut yedeği dizini: her telefon kendi bölmesi, eski yedek, en fazla 5 bölme.
+java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" app/src/main/java/com/zeytindefteri/app/TezgahCloudIndex.java tests/cloud/TezgahCloudIndexTest.java
+java -Dfile.encoding=UTF-8 -cp "$D" com.zeytindefteri.app.TezgahCloudIndexTest
