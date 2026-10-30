@@ -52,6 +52,22 @@ public final class ZeytinLeagueView extends ScrollView {
     /** Adlı ön sıralama (Supabase league_region_ranking): bölge → satırlar; yüklenenler. */
     private final java.util.Map<String, List<MarketCloudRepository.RankRow>> previewCache = new java.util.HashMap<>();
     private final java.util.Set<String> previewLoading = new java.util.HashSet<>();
+    /** Ön sıralama filtreleri: ay (0 = sezon) ve cins ("" = tümü); bölge → cins/ay üretici sayıları. */
+    private int previewMonth = 0;
+    private String previewVariety = "";
+    private final java.util.Map<String, List<MarketCloudRepository.FilterCount>> filterCache = new java.util.HashMap<>();
+    /** Geçen ayın ön sıralamasında bu kullanıcının satırı (rozet için): bölge → satır (yoksa boş satır). */
+    private final java.util.Map<String, MarketCloudRepository.RankRow> lastMonthMe = new java.util.HashMap<>();
+    private final java.util.Set<String> lastMonthLoading = new java.util.HashSet<>();
+
+    private static final String[] MONTHS_TR = {"Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz",
+            "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"};
+
+    private static int thisMonth() { return java.util.Calendar.getInstance().get(java.util.Calendar.MONTH) + 1; }
+
+    private static int lastMonth() { int m = thisMonth() - 1; return m < 1 ? 12 : m; }
+
+    private String previewKey(String regionId) { return regionId + "|" + previewVariety + "|" + previewMonth; }
     private DatabaseHelper settingsDb;
     private final List<MarketCloudRepository.LeagueRegionStat> cloudLeagueRegions = new ArrayList<>();
     private boolean cloudDirectoryLoaded;
@@ -128,6 +144,8 @@ public final class ZeytinLeagueView extends ScrollView {
         observedPointer = null;
         localData = local; data = local;
         previewCache.clear();
+        filterCache.clear();
+        lastMonthMe.clear();
         mergeCloudRegions(data);
         refreshCloudDirectory();
         refresh();
@@ -418,6 +436,8 @@ public final class ZeytinLeagueView extends ScrollView {
         middle.addView(label(matches ? "#" + published.rank + " · Doğrulanmış"
                 : pre != null ? "#" + pre.rank + " · Ön sıralama" : "Sıra henüz yok", 15, text, true));
         String reason = "";
+        String badge = badgeLine(regionId);
+        if (!badge.isEmpty()) middle.addView(label(badge, 12, gold, true));
         if (pre != null) {
             reason = pre.producerCount + " üretici arasında · elek kayıtlarına göre";
             TextView why = label(reason, 11.5f, GreenTheme.color(R.color.zd_text_soft), false);
@@ -687,7 +707,8 @@ public final class ZeytinLeagueView extends ScrollView {
     private void emptyRanking() { ranking(null); }
     /** Ön sıralamada bu kullanıcının satırı (bölge yüklenmişse); yoksa null. */
     private MarketCloudRepository.RankRow myPreviewRow(String regionId) {
-        List<MarketCloudRepository.RankRow> rows = regionId == null ? null : previewCache.get(regionId);
+        // Şerit ve kutu her zaman sezonluk, tüm cinsler sırasını gösterir.
+        List<MarketCloudRepository.RankRow> rows = regionId == null ? null : previewCache.get(regionId + "||0");
         if (rows != null) for (MarketCloudRepository.RankRow r : rows) if (r.me) return r;
         return null;
     }
@@ -711,12 +732,16 @@ public final class ZeytinLeagueView extends ScrollView {
         body.addView(heading);
         body.addView(label("Elek kayıtlarına göre · %50 kalite, %35 fiyat, %15 hacim · en az 100 kg", 11.5f, muted, false));
 
-        final String key = region.id;
+        final String regionKey = region.id;
+        previewFilters(regionKey);
+        loadSeasonPreview(regionKey);
+        loadLastMonthBadge(regionKey);
+        final String key = previewKey(regionKey);
         List<MarketCloudRepository.RankRow> rows = previewCache.get(key);
         if (rows == null && !previewLoading.contains(key)) {
             previewLoading.add(key);
             final int token = generation;
-            leagueCloudRepository.loadLeagueRanking(year, key, (result, error) -> {
+            leagueCloudRepository.loadLeagueRanking(year, regionKey, previewVariety, previewMonth, (result, error) -> {
                 previewLoading.remove(key);
                 if (!current(token)) return;
                 previewCache.put(key, error == null ? result : java.util.Collections.emptyList());
@@ -733,7 +758,9 @@ public final class ZeytinLeagueView extends ScrollView {
             return;
         }
         if (rows.isEmpty()) {
-            TextView none = label("Henüz sıralanacak üretici yok. Sıraya girmek için sezonda en az 100 kg fiyatlı elek kaydı gerekir.",
+            TextView none = label(previewMonth == 0 && previewVariety.isEmpty()
+                    ? "Henüz sıralanacak üretici yok. Sıraya girmek için sezonda en az 100 kg fiyatlı elek kaydı gerekir."
+                    : "Bu seçimde en az 5 üretici yok ya da kimse 100 kg'a ulaşmadı. Gizlilik için liste açılmaz.",
                     13, muted, false);
             none.setPadding(dp(14), dp(16), dp(14), dp(16));
             table.addView(none);
@@ -783,6 +810,118 @@ public final class ZeytinLeagueView extends ScrollView {
         body.addView(label(first.producerCount + " üretici · " + first.rankedCount + " sıralamada · adını açmayanlar \"Anonim üretici\"",
                 11, muted, false));
         nameSettingLink();
+    }
+
+    /** Şerit ve kutu için sezonluk sıra her zaman yüklü olsun (filtre farklı olsa da). */
+    private void loadSeasonPreview(String regionKey) {
+        final String key = regionKey + "||0";
+        if (previewCache.containsKey(key) || previewLoading.contains(key)) return;
+        previewLoading.add(key);
+        final int token = generation;
+        leagueCloudRepository.loadLeagueRanking(year, regionKey, "", 0, (result, error) -> {
+            previewLoading.remove(key);
+            if (!current(token)) return;
+            previewCache.put(key, error == null ? result : java.util.Collections.emptyList());
+            render();
+        });
+    }
+
+    /** Geçen ay ilk üçteysen rozet: "🥇 Eylül · Alaşehir 1.si". */
+    private void loadLastMonthBadge(String regionKey) {
+        if (lastMonthMe.containsKey(regionKey) || lastMonthLoading.contains(regionKey)) return;
+        lastMonthLoading.add(regionKey);
+        final int token = generation;
+        leagueCloudRepository.loadLeagueRanking(year, regionKey, "", lastMonth(), (result, error) -> {
+            lastMonthLoading.remove(regionKey);
+            if (!current(token)) return;
+            MarketCloudRepository.RankRow mine = new MarketCloudRepository.RankRow();
+            if (error == null) for (MarketCloudRepository.RankRow r : result) if (r.me) mine = r;
+            lastMonthMe.put(regionKey, mine);
+            if (mine.rank >= 1 && mine.rank <= 3) render();
+        });
+    }
+
+    private String badgeLine(String regionId) {
+        MarketCloudRepository.RankRow r = regionId == null ? null : lastMonthMe.get(regionId);
+        if (r == null || r.rank < 1 || r.rank > 3) return "";
+        String medal = r.rank == 1 ? "🥇" : r.rank == 2 ? "🥈" : "🥉";
+        return medal + " " + MONTHS_TR[lastMonth() - 1] + " ayında " + r.rank + ". oldun";
+    }
+
+    /** Dönem (Sezon / Bu ay / Geçen ay) ve cins çipleri; 5 üreticisi olmayan seçenek kilitli. */
+    private void previewFilters(String regionKey) {
+        if (!filterCache.containsKey(regionKey)) {
+            filterCache.put(regionKey, java.util.Collections.emptyList());
+            final int token = generation;
+            leagueCloudRepository.loadLeagueFilters(year, regionKey, (rows, error) -> {
+                if (!current(token)) return;
+                filterCache.put(regionKey, rows);
+                if (!rows.isEmpty()) render();
+            });
+        }
+        List<MarketCloudRepository.FilterCount> counts = filterCache.get(regionKey);
+        java.util.Map<String, Integer> months = new java.util.HashMap<>();
+        java.util.List<MarketCloudRepository.FilterCount> varieties = new java.util.ArrayList<>();
+        for (MarketCloudRepository.FilterCount f : counts) {
+            if ("month".equals(f.kind)) months.put(f.value, f.producers);
+            else if ("variety".equals(f.kind)) varieties.add(f);
+        }
+        java.util.Collections.sort(varieties, (a, b) -> b.producers - a.producers);
+        boolean v2 = !counts.isEmpty();
+
+        LinearLayout periods = row(); periods.setPadding(0, dp(8), 0, 0);
+        int[] values = {0, thisMonth(), lastMonth()};
+        String[] names = {"Sezon", "Bu ay · " + MONTHS_TR[thisMonth() - 1], "Geçen ay · " + MONTHS_TR[lastMonth() - 1]};
+        for (int i = 0; i < values.length; i++) {
+            final int value = values[i];
+            Integer c = months.get(String.valueOf(value));
+            boolean locked = value != 0 && (!v2 || c == null || c < LeagueBoardModel.MIN_PRODUCERS);
+            periods.addView(filterChip(locked ? "🔒 " + names[i] : names[i], value == previewMonth, locked, () -> {
+                previewMonth = value; expanded = false; render();
+            }), chipLp());
+        }
+        HorizontalScrollView ps = new HorizontalScrollView(getContext());
+        ps.setHorizontalScrollBarEnabled(false); ps.addView(periods); body.addView(ps);
+
+        if (!varieties.isEmpty()) {
+            LinearLayout kinds = row(); kinds.setPadding(0, dp(6), 0, 0);
+            kinds.addView(filterChip("Tüm cinsler", previewVariety.isEmpty(), false, () -> {
+                previewVariety = ""; expanded = false; render();
+            }), chipLp());
+            for (MarketCloudRepository.FilterCount f : varieties) {
+                final String value = f.value;
+                boolean locked = f.producers < LeagueBoardModel.MIN_PRODUCERS;
+                String text = OliveVariety.label(value) + (locked
+                        ? " · 🔒 " + (LeagueBoardModel.MIN_PRODUCERS - f.producers) + " üretici daha" : "");
+                kinds.addView(filterChip(text, value.equals(previewVariety), locked, () -> {
+                    previewVariety = value; expanded = false; render();
+                }), chipLp());
+            }
+            HorizontalScrollView vs = new HorizontalScrollView(getContext());
+            vs.setHorizontalScrollBarEnabled(false);
+            vs.setHorizontalFadingEdgeEnabled(true); vs.setFadingEdgeLength(dp(28));
+            vs.addView(kinds); body.addView(vs);
+        }
+    }
+
+    private LinearLayout.LayoutParams chipLp() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2); lp.rightMargin = dp(6); return lp;
+    }
+
+    private TextView filterChip(String text, boolean active, boolean locked, Runnable onPick) {
+        TextView chip = pill(text, active ? bg : locked ? muted : GreenTheme.color(R.color.zd_text_soft),
+                active ? green : card, active ? green : border);
+        chip.setAlpha(locked && !active ? .6f : 1f);
+        chip.setContentDescription(text + (active ? ", seçili" : locked ? ", yeterli üretici yok" : ""));
+        chip.setOnClickListener(v -> {
+            if (locked) {
+                android.widget.Toast.makeText(getContext(), "Gizlilik için bu seçimde en az "
+                        + LeagueBoardModel.MIN_PRODUCERS + " üretici gerekiyor.", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (!active) onPick.run();
+        });
+        return chip;
     }
 
     /** "Ligde adımla görüneyim: Kapalı · Aç" kısayolu (Ayarlar'daki ile aynı pencere). */

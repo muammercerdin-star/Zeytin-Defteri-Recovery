@@ -1022,7 +1022,9 @@ public final class MarketCloudRepository {
 
         String fingerprint = fingerprint(rows);
         String previous = databaseHelper.getSetting(syncHashSettingKey(year), "");
-        if (!fingerprint.isEmpty() && fingerprint.equals(previous)) {
+        // "|v1@<12 saatlik dilim>": cinssiz gönderim; aynı 12 saat içinde tekrar gönderilmez.
+        String v1Mark = fingerprint + "|v1@" + (System.currentTimeMillis() / (12L * 3600_000L));
+        if (!fingerprint.isEmpty() && (fingerprint.equals(previous) || v1Mark.equals(previous))) {
             if (callback != null) callback.onComplete(null);
             return;
         }
@@ -1042,6 +1044,7 @@ public final class MarketCloudRepository {
                 Exception failure = null;
                 Map<String, UploadedRef> uploaded = loadUploadedRefs();
                 Set<String> currentKeys = new LinkedHashSet<>();
+                boolean submitV2 = true;
 
                 try {
                     for (LocalContribution row : syncRows) {
@@ -1058,7 +1061,21 @@ public final class MarketCloudRepository {
                         put(body, "p_sale_date", row.recordDate);
                         put(body, "p_season_year", year);
 
-                        requestRpcRaw("market_submit", body, token);
+                        // Cinsli gönderim (V2); sunucuda henüz kurulmadıysa eski fonksiyona dön.
+                        if (submitV2) {
+                            JSONObject v2 = new JSONObject(body.toString());
+                            put(v2, "p_variety", row.variety);
+                            try {
+                                requestRpcRaw("market_submit_v2", v2, token);
+                            } catch (IllegalStateException missing) {
+                                String m = String.valueOf(missing.getMessage());
+                                if (!(m.contains("PGRST202") || m.contains("Could not find the function") || m.contains("HTTP 404"))) throw missing;
+                                submitV2 = false;
+                                requestRpcRaw("market_submit", body, token);
+                            }
+                        } else {
+                            requestRpcRaw("market_submit", body, token);
+                        }
 
                         UploadedRef ref = new UploadedRef();
                         ref.sourceRecordId = row.sourceRecordId;
@@ -1091,7 +1108,10 @@ public final class MarketCloudRepository {
 
                 saveUploadedRefs(uploaded);
                 if (failure == null) {
-                    databaseHelper.setSetting(syncHashSettingKey(year), finalFingerprint);
+                    // Eski fonksiyonla (cinssiz) gönderildiyse işaretle: V2 kurulunca en geç 12 saatte bir
+                    // yeniden denenir ve kayıtlar cinsiyle gider.
+                    databaseHelper.setSetting(syncHashSettingKey(year), submitV2 ? finalFingerprint
+                            : finalFingerprint + "|v1@" + (System.currentTimeMillis() / (12L * 3600_000L)));
                 }
 
                 final Exception finalFailure = failure;
@@ -1157,6 +1177,7 @@ public final class MarketCloudRepository {
                             "er.record_date AS record_date, " +
                             "TRIM(COALESCE(g.district,'')) AS district, " +
                             "TRIM(COALESCE(g.province,'')) AS province, " +
+                            "COALESCE(g.variety,'') AS variety, " +
                             "eg.grade AS grade, " +
                             "eg.kg AS kg, " +
                             "eg.price_per_kg AS price_per_kg " +
@@ -1190,6 +1211,8 @@ public final class MarketCloudRepository {
                 row.regionKey = regionKey(row.district, row.province);
                 row.regionLabel = regionLabel(row.district, row.province);
                 row.apiGrade = toApiGrade(cursor.getString(cursor.getColumnIndexOrThrow("grade")));
+                row.variety = OliveVariety.apiKey(cursor.getString(cursor.getColumnIndexOrThrow("variety")));
+                if (row.variety.length() > 40) row.variety = row.variety.substring(0, 40);
                 row.kg = cursor.getDouble(cursor.getColumnIndexOrThrow("kg"));
                 row.price = cursor.getDouble(cursor.getColumnIndexOrThrow("price_per_kg"));
 
@@ -1361,8 +1384,66 @@ public final class MarketCloudRepository {
         });
     }
 
+    /** Filtre sayısı: kind "variety" (value: "gemlik") ya da "month" (value: "10"). */
+    public static final class FilterCount {
+        public String kind = "", value = "";
+        public int producers;
+    }
+
+    public interface FiltersCallback { void onComplete(List<FilterCount> rows, Exception error); }
+
+    private static boolean missingFunction(Exception e) {
+        String m = e == null ? "" : String.valueOf(e.getMessage());
+        return m.contains("PGRST202") || m.contains("Could not find the function") || m.contains("HTTP 404");
+    }
+
+    /** Bölgede cins ve ay başına farklı üretici sayısı (V2 kurulu değilse boş liste). */
+    public void loadLeagueFilters(int year, String regionKey, FiltersCallback callback) {
+        String key = safe(regionKey);
+        if (!canUseCloud() || !key.matches("[a-z0-9_]{2,80}")) {
+            if (callback != null) callback.onComplete(Collections.emptyList(), null);
+            return;
+        }
+        withFirebaseToken((token, tokenError) -> {
+            if (tokenError != null || token.isEmpty()) {
+                if (callback != null) callback.onComplete(Collections.emptyList(), tokenError);
+                return;
+            }
+            networkExecutor.execute(() -> {
+                List<FilterCount> out = new ArrayList<>();
+                Exception failure = null;
+                try {
+                    JSONObject body = new JSONObject();
+                    put(body, "p_season_year", year);
+                    put(body, "p_region_key", key);
+                    JSONArray rows = requestRpcArray("league_region_filters", body, token);
+                    for (int i = 0; i < rows.length(); i++) {
+                        JSONObject o = rows.optJSONObject(i);
+                        if (o == null) continue;
+                        FilterCount f = new FilterCount();
+                        f.kind = safe(o.optString("kind", ""));
+                        f.value = safe(o.optString("value", ""));
+                        f.producers = o.optInt("producer_count", 0);
+                        out.add(f);
+                    }
+                } catch (Exception error) {
+                    if (!missingFunction(error)) failure = error;
+                }
+                final Exception f = failure;
+                postToMain(() -> { if (callback != null) callback.onComplete(out, f); });
+            });
+        });
+    }
+
     /** Bölgenin ön sıralaması (5+ üretici). Boş liste: eşik altı ya da kayıt yok. */
     public void loadLeagueRanking(int year, String regionKey, RankingCallback callback) {
+        loadLeagueRanking(year, regionKey, "", 0, callback);
+    }
+
+    /** variety: cins anahtarı ("" = tümü); month: 0 = sezon, 1–12 = ay. V2 yoksa yalnız sezon/tümü döner. */
+    public void loadLeagueRanking(int year, String regionKey, String variety, int month, RankingCallback callback) {
+        final String va = safe(variety);
+        final int mo = Math.max(0, Math.min(12, month));
         String key = safe(regionKey);
         if (!canUseCloud() || !key.matches("[a-z0-9_]{2,80}")) {
             if (callback != null) callback.onComplete(Collections.emptyList(), new IllegalStateException("Bölgesel bağlantı hazır değil"));
@@ -1380,7 +1461,16 @@ public final class MarketCloudRepository {
                     JSONObject body = new JSONObject();
                     put(body, "p_season_year", year);
                     put(body, "p_region_key", key);
-                    JSONArray rows = requestRpcArray("league_region_ranking", body, token);
+                    JSONArray rows;
+                    try {
+                        JSONObject v2 = new JSONObject(body.toString());
+                        put(v2, "p_variety", va);
+                        put(v2, "p_month", mo);
+                        rows = requestRpcArray("league_region_ranking_v2", v2, token);
+                    } catch (Exception missing) {
+                        if (!missingFunction(missing) || !va.isEmpty() || mo != 0) throw missing;
+                        rows = requestRpcArray("league_region_ranking", body, token);
+                    }
                     for (int i = 0; i < rows.length(); i++) {
                         JSONObject o = rows.optJSONObject(i);
                         if (o == null) continue;
@@ -1529,7 +1619,8 @@ public final class MarketCloudRepository {
                         + row.regionKey + "|"
                         + row.apiGrade + "|"
                         + String.format(Locale.US, "%.3f", row.kg) + "|"
-                        + String.format(Locale.US, "%.2f", row.price) + "\n";
+                        + String.format(Locale.US, "%.2f", row.price) + "|"
+                        + row.variety + "\n";
                 digest.update(value.getBytes(StandardCharsets.UTF_8));
             }
             byte[] hash = digest.digest();
@@ -1663,6 +1754,8 @@ public final class MarketCloudRepository {
         String regionKey = "";
         String regionLabel = "";
         String apiGrade = "";
+        /** Zeytin cinsi anahtarı ("gemlik"); boş = belirtilmemiş. */
+        String variety = "";
         double kg;
         double price;
     }

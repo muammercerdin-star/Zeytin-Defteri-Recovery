@@ -115,11 +115,46 @@ public class AddGardenActivity extends Activity {
         if (mode == GardenFormModel.Mode.EDIT && databaseHelper != null && !isSameOwner()) finish();
     }
 
+    /** Cins: dokununca liste; "Diğer" seçilirse alan serbest yazıya açılır. */
+    private void setupVarietyPicker() {
+        if (etVariety == null) return;
+        etVariety.setFocusable(false);
+        etVariety.setCursorVisible(false);
+        etVariety.setHint("Seç: Gemlik, Ayvalık, Domat…");
+        etVariety.setOnClickListener(v -> {
+            String[] items = OliveVariety.CHOICES.toArray(new String[0]);
+            String current = OliveVariety.normalize(text(etVariety));
+            int checked = OliveVariety.CHOICES.indexOf(current);
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("Zeytin cinsi")
+                    .setSingleChoiceItems(items, checked, (d, which) -> {
+                        d.dismiss();
+                        if (OliveVariety.OTHER.equals(items[which])) {
+                            etVariety.setText(OliveVariety.CHOICES.contains(current) ? "" : text(etVariety));
+                            etVariety.setFocusableInTouchMode(true);
+                            etVariety.setFocusable(true);
+                            etVariety.setCursorVisible(true);
+                            etVariety.setOnClickListener(null);
+                            etVariety.setHint("Cinsini yaz");
+                            etVariety.requestFocus();
+                            android.view.inputmethod.InputMethodManager im =
+                                    (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                            if (im != null) im.showSoftInput(etVariety, 0);
+                        } else {
+                            etVariety.setText(items[which]);
+                        }
+                    })
+                    .setNegativeButton("Vazgeç", null)
+                    .show();
+        });
+    }
+
     private void findViews() {
         etGardenName = findViewById(R.id.etGardenName);
         etTreeCount = findViewById(R.id.etTreeCount);
         etGardenAge = findViewById(R.id.etGardenAge);
         etVariety = findViewById(R.id.etVariety);
+        setupVarietyPicker();
         etAreaDecare = findViewById(R.id.etAreaDecare);
         etGardenNotes = findViewById(R.id.etGardenNotes);
         btnSaveGarden = findViewById(R.id.btnSaveGarden);
@@ -267,7 +302,7 @@ public class AddGardenActivity extends Activity {
             etTreeCount.setText(trees > 0 ? String.valueOf(trees) : "");
             etGardenAge.setText(age > 0 ? String.valueOf(age) : "");
             etAreaDecare.setText(area > 0 ? GradeFormModel.number(area) : "");
-            etVariety.setText(str(c, "variety"));
+            etVariety.setText(OliveVariety.normalize(str(c, "variety")));
             etGardenNotes.setText(str(c, "notes"));
             province = savedProvince = str(c, "province");
             district = savedDistrict = str(c, "district");
@@ -494,7 +529,8 @@ public class AddGardenActivity extends Activity {
                 break;
         }
 
-        String variety = text(etVariety);
+        // "Trilye", "gemlik siyahı" → "Gemlik": ligde ve piyasada aynı cins tek isimle buluşsun.
+        String variety = OliveVariety.normalize(text(etVariety));
         String irrigation = GardenFormModel.irrigationToStore(irrigationOptions.get(irrigationIndex));
         String notes = text(etGardenNotes);
 
