@@ -30,7 +30,7 @@ checks = {
     "texts no longer claim default off": "varsayılan kapalı" not in priv + kvkk and "varsayılan olarak kapalıdır" not in priv,
     "privacy text: no stale 'satış kayıtlarından' claim for stats": "Piyasa paylaşımını açarsan satış kayıtlarından" not in priv,
     "kvkk text updated": "Piyasaya Anonim Katkı" in kvkk and "varsayılan açık" in kvkk,
-    "legal version bumped": 'VERSION = "1.4"' in ld,
+    "legal version bumped (>= 1.4)": (lambda m: m is not None and tuple(int(x) for x in m.group(1).split('.')) >= (1, 4))(__import__('re').search(r'VERSION = "([0-9.]+)"', ld)),
 }
 for k, ok in checks.items(): print(("PASS " if ok else "FAIL ") + k)
 sys.exit(0 if all(checks.values()) else 1)

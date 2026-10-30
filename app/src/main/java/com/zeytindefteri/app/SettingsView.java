@@ -92,7 +92,8 @@ final class SettingsView extends ScrollView {
                 backupRow(activity),
                 row(activity, R.drawable.ic_archive_document, "Fiş Yazıcısı", "Bluetooth fiş yazıcısı: seç, kâğıt, Türkçe, deneme fişi", null,
                         () -> TezgahPrinter.settings(activity)),
-                contributionRow(activity));
+                contributionRow(activity),
+                leagueNameRow(activity));
         addSection(body, activity, "UYGULAMA",
                 row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant),
                 typingRow(activity));
@@ -171,6 +172,19 @@ final class SettingsView extends ScrollView {
                 }));
         LinearLayout line = (LinearLayout) row;
         value[0] = (TextView) line.getChildAt(2);
+        return row;
+    }
+
+    /** Zeytin Ligi'nde adımla görüneyim (varsayılan kapalı); değer pencere kapanınca güncellenir. */
+    private static View leagueNameRow(Activity activity) {
+        final TextView[] value = new TextView[1];
+        View row = row(activity, R.drawable.ic_settings_person, "Ligde Adımla Görüneyim",
+                "Zeytin Ligi sıralamasında adın görünsün (kilo ve fiyatın görünmez)",
+                LeagueNamePrompt.stateLabel(activity),
+                () -> LeagueNamePrompt.show(activity, () -> {
+                    if (value[0] != null) value[0].setText(LeagueNamePrompt.stateLabel(activity));
+                }));
+        value[0] = (TextView) ((LinearLayout) row).getChildAt(2);
         return row;
     }
 

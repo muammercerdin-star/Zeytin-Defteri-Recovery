@@ -1260,6 +1260,150 @@ public final class MarketCloudRepository {
                 });
     }
 
+    // ================================================================== ADLI ÖN SIRALAMA (Zeytin Ligi)
+    // Supabase: supabase/ZEYTIN-LIGI-ADLI-SIRALAMA-V1.sql. Ad yalnız izin verenlerde döner; kg/fiyat dönmez.
+
+    public static final String LEAGUE_NAME_SHOW_PREFIX = "league_name_show_";
+    public static final String LEAGUE_NAME_PREFIX = "league_name_";
+
+    /** Bölge ön sıralamasının bir satırı. name boşsa "Anonim üretici". */
+    public static final class RankRow {
+        public int rank, producerCount, rankedCount;
+        public String name = "", dominant = "";
+        public boolean me;
+        public double score;
+    }
+
+    public interface RankingCallback { void onComplete(List<RankRow> rows, Exception error); }
+
+    public interface LeagueProfileCallback { void onComplete(String name, boolean show, Exception error); }
+
+    /** Bu cihazda son bilinen ayar (çevrimdışıyken Ayarlar'da göstermek için). */
+    public boolean leagueNameShownLocally() {
+        return !uid.isEmpty() && "1".equals(databaseHelper.getSetting(LEAGUE_NAME_SHOW_PREFIX + uid, "0"));
+    }
+
+    public String leagueNameLocally() {
+        return uid.isEmpty() ? "" : databaseHelper.getSetting(LEAGUE_NAME_PREFIX + uid, "");
+    }
+
+    private void rememberLeagueProfile(String name, boolean show) {
+        if (uid.isEmpty()) return;
+        databaseHelper.setSetting(LEAGUE_NAME_SHOW_PREFIX + uid, show ? "1" : "0");
+        databaseHelper.setSetting(LEAGUE_NAME_PREFIX + uid, show && name != null ? name : "");
+    }
+
+    public void loadLeagueProfile(LeagueProfileCallback callback) {
+        if (!canUseCloud()) {
+            if (callback != null) callback.onComplete(leagueNameLocally(), leagueNameShownLocally(),
+                    new IllegalStateException("Bulut bağlantısı hazır değil"));
+            return;
+        }
+        withFirebaseToken((token, tokenError) -> {
+            if (tokenError != null || token.isEmpty()) {
+                if (callback != null) callback.onComplete(leagueNameLocally(), leagueNameShownLocally(), tokenError);
+                return;
+            }
+            networkExecutor.execute(() -> {
+                String name = "";
+                boolean show = false;
+                Exception failure = null;
+                try {
+                    JSONArray rows = requestRpcArray("league_get_profile", new JSONObject(), token);
+                    JSONObject row = rows.length() > 0 ? rows.optJSONObject(0) : null;
+                    if (row != null) {
+                        name = safe(row.optString("display_name", ""));
+                        show = row.optBoolean("show_name", false);
+                    }
+                    rememberLeagueProfile(name, show);
+                } catch (Exception error) {
+                    failure = error;
+                    name = leagueNameLocally();
+                    show = leagueNameShownLocally();
+                }
+                final String n = name;
+                final boolean sh = show;
+                final Exception f = failure;
+                postToMain(() -> { if (callback != null) callback.onComplete(n, sh, f); });
+            });
+        });
+    }
+
+    /** Adı ligde göster / gizle. Gizleyince ad sunucudan silinir. */
+    public void setLeagueProfile(String name, boolean show, LeagueProfileCallback callback) {
+        if (!canUseCloud()) {
+            if (callback != null) callback.onComplete(name, !show, new IllegalStateException("İnternet ya da oturum yok"));
+            return;
+        }
+        withFirebaseToken((token, tokenError) -> {
+            if (tokenError != null || token.isEmpty()) {
+                if (callback != null) callback.onComplete(name, !show, tokenError);
+                return;
+            }
+            networkExecutor.execute(() -> {
+                Exception failure = null;
+                String saved = show ? safe(name) : "";
+                try {
+                    JSONObject body = new JSONObject();
+                    put(body, "p_display_name", show ? safe(name) : JSONObject.NULL);
+                    put(body, "p_show_name", show);
+                    String raw = requestRpcRaw("league_set_profile", body, token);
+                    try { saved = show ? safe(new JSONObject(raw).optString("display_name", saved)) : ""; }
+                    catch (Exception ignored) { }
+                    rememberLeagueProfile(saved, show);
+                } catch (Exception error) {
+                    failure = error;
+                }
+                final String s = saved;
+                final Exception f = failure;
+                postToMain(() -> { if (callback != null) callback.onComplete(s, f == null ? show : !show, f); });
+            });
+        });
+    }
+
+    /** Bölgenin ön sıralaması (5+ üretici). Boş liste: eşik altı ya da kayıt yok. */
+    public void loadLeagueRanking(int year, String regionKey, RankingCallback callback) {
+        String key = safe(regionKey);
+        if (!canUseCloud() || !key.matches("[a-z0-9_]{2,80}")) {
+            if (callback != null) callback.onComplete(Collections.emptyList(), new IllegalStateException("Bölgesel bağlantı hazır değil"));
+            return;
+        }
+        withFirebaseToken((token, tokenError) -> {
+            if (tokenError != null || token.isEmpty()) {
+                if (callback != null) callback.onComplete(Collections.emptyList(), tokenError);
+                return;
+            }
+            networkExecutor.execute(() -> {
+                List<RankRow> out = new ArrayList<>();
+                Exception failure = null;
+                try {
+                    JSONObject body = new JSONObject();
+                    put(body, "p_season_year", year);
+                    put(body, "p_region_key", key);
+                    JSONArray rows = requestRpcArray("league_region_ranking", body, token);
+                    for (int i = 0; i < rows.length(); i++) {
+                        JSONObject o = rows.optJSONObject(i);
+                        if (o == null) continue;
+                        RankRow r = new RankRow();
+                        r.rank = o.optInt("rank", i + 1);
+                        r.name = o.isNull("display_name") ? "" : safe(o.optString("display_name", ""));
+                        r.me = o.optBoolean("is_me", false);
+                        r.score = o.optDouble("score", 0);
+                        r.dominant = o.isNull("dominant_grade") ? "" : safe(o.optString("dominant_grade", ""));
+                        r.producerCount = o.optInt("producer_count", 0);
+                        r.rankedCount = o.optInt("ranked_count", 0);
+                        out.add(r);
+                    }
+                } catch (Exception error) {
+                    failure = error;
+                    Log.w(TAG, "league_region_ranking RPC failed", error);
+                }
+                final Exception f = failure;
+                postToMain(() -> { if (callback != null) callback.onComplete(out, f); });
+            });
+        });
+    }
+
     private JSONArray requestRpcArray(
             String functionName,
             JSONObject body,

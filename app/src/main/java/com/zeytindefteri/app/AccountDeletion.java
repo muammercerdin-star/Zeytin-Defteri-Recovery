@@ -134,8 +134,18 @@ public final class AccountDeletion {
         final String uid = user.getUid();
         DatabaseHelper db = new DatabaseHelper(activity);
 
+        // 0) Zeytin Ligi'ndeki adını sil (Supabase). Fonksiyon sunucuda yoksa (kurulmamış) engellemez.
+        MarketCloudRepository market = new MarketCloudRepository(db, uid);
+        market.setLeagueProfile("", false, (savedName, shown, nameError) -> {
+            String m = nameError == null || nameError.getMessage() == null ? "" : nameError.getMessage();
+            if (nameError != null && !(m.contains("PGRST202") || m.contains("Could not find the function") || m.contains("404"))) {
+                db.close();
+                progress.dismiss();
+                failure(activity, "Ligdeki adın silinemedi. İnternet bağlantını kontrol edip tekrar dene. Hiçbir veri silinmedi.");
+                return;
+            }
         // 1) Bu telefondan gönderilmiş anonim piyasa katkılarını geri çek (Supabase).
-        new MarketCloudRepository(db, uid).setContributionOptIn(false, marketError -> {
+        market.setContributionOptIn(false, marketError -> {
             if (marketError != null) {
                 db.close();
                 progress.dismiss();
@@ -177,6 +187,7 @@ public final class AccountDeletion {
                     });
                 }).start();
             });
+        });
         });
     }
 

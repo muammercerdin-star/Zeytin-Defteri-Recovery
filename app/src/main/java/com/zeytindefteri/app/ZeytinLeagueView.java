@@ -49,6 +49,9 @@ public final class ZeytinLeagueView extends ScrollView {
     private String observedPointer;
 
     private MarketCloudRepository leagueCloudRepository;
+    /** Adlı ön sıralama (Supabase league_region_ranking): bölge → satırlar; yüklenenler. */
+    private final java.util.Map<String, List<MarketCloudRepository.RankRow>> previewCache = new java.util.HashMap<>();
+    private final java.util.Set<String> previewLoading = new java.util.HashSet<>();
     private DatabaseHelper settingsDb;
     private final List<MarketCloudRepository.LeagueRegionStat> cloudLeagueRegions = new ArrayList<>();
     private boolean cloudDirectoryLoaded;
@@ -124,6 +127,7 @@ public final class ZeytinLeagueView extends ScrollView {
         if (pointerListener != null) pointerListener.remove();
         observedPointer = null;
         localData = local; data = local;
+        previewCache.clear();
         mergeCloudRegions(data);
         refreshCloudDirectory();
         refresh();
@@ -672,7 +676,114 @@ public final class ZeytinLeagueView extends ScrollView {
         body.addView(controls);
     }
     private void emptyRanking() { ranking(null); }
+    /** Bölgede doğrulanmış Top 20 yok ama 5+ üretici var: elek kayıtlarına göre ön sıralama gösterilir. */
+    private boolean previewEligible(ZeytinLeagueRepository.Region region) {
+        if (region == null || !region.top.isEmpty() || leagueCloudRepository == null || !leagueCloudRepository.canUseCloud()) return false;
+        MarketCloudRepository.LeagueRegionStat cloud = cloudRegion(region.id);
+        return cloud != null && LeagueBoardModel.publishable(cloud.published, cloud.producerCount);
+    }
+
+    private void previewRanking(ZeytinLeagueRepository.Region region) {
+        String district = LeagueBoardModel.splitRegion(region.name)[0];
+        LinearLayout heading = row(); heading.setPadding(0, dp(10), 0, dp(4));
+        TextView title = label(district + " – Ön Sıralama", 15, text, true);
+        heading.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView tag = label("Doğrulanmamış", 11, gold, true);
+        tag.setPadding(dp(8), dp(3), dp(8), dp(3));
+        tag.setBackground(round(bg, gold));
+        heading.addView(tag);
+        body.addView(heading);
+        body.addView(label("Elek kayıtlarına göre · %50 kalite, %35 fiyat, %15 hacim · en az 100 kg", 11.5f, muted, false));
+
+        final String key = region.id;
+        List<MarketCloudRepository.RankRow> rows = previewCache.get(key);
+        if (rows == null && !previewLoading.contains(key)) {
+            previewLoading.add(key);
+            final int token = generation;
+            leagueCloudRepository.loadLeagueRanking(year, key, (result, error) -> {
+                previewLoading.remove(key);
+                if (!current(token)) return;
+                previewCache.put(key, error == null ? result : java.util.Collections.emptyList());
+                render();
+            });
+        }
+        LinearLayout table = column(); table.setBackground(round(card, border)); table.setClipToOutline(true);
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-1, -2); tp.topMargin = dp(8);
+        if (rows == null) {
+            TextView wait = label("Ön sıralama yükleniyor…", 13, muted, false);
+            wait.setPadding(dp(14), dp(16), dp(14), dp(16));
+            table.addView(wait);
+            body.addView(table, tp);
+            return;
+        }
+        if (rows.isEmpty()) {
+            TextView none = label("Henüz sıralanacak üretici yok. Sıraya girmek için sezonda en az 100 kg fiyatlı elek kaydı gerekir.",
+                    13, muted, false);
+            none.setPadding(dp(14), dp(16), dp(14), dp(16));
+            table.addView(none);
+            body.addView(table, tp);
+            nameSettingLink();
+            return;
+        }
+        LinearLayout columns = row(); columns.setPadding(dp(12), dp(8), dp(12), dp(8));
+        float[] w = {.5f, 2.2f, 1.1f, .8f};
+        String[] titles = {"#", "Üretici", "En çok çıkan", "Puan"};
+        for (int i = 0; i < titles.length; i++) {
+            TextView t = label(titles[i], 10, muted, false);
+            t.setGravity(i == 1 ? Gravity.START : Gravity.CENTER);
+            columns.addView(t, new LinearLayout.LayoutParams(0, -2, w[i]));
+        }
+        table.addView(columns);
+        int visible = expanded ? rows.size() : Math.min(10, rows.size());
+        for (int i = 0; i < visible; i++) {
+            MarketCloudRepository.RankRow r = rows.get(i);
+            LinearLayout line = row(); line.setPadding(dp(12), dp(9), dp(12), dp(9));
+            line.setGravity(Gravity.CENTER_VERTICAL);
+            if (r.me) line.setBackgroundColor(GreenTheme.color(R.color.zd_green_soft));
+            String rk = r.rank == 1 ? "🥇" : r.rank == 2 ? "🥈" : r.rank == 3 ? "🥉" : String.valueOf(r.rank);
+            TextView c0 = label(rk, r.rank <= 3 ? 16 : 13, text, true); c0.setGravity(Gravity.CENTER);
+            line.addView(c0, new LinearLayout.LayoutParams(0, -2, w[0]));
+            String who = r.me ? (r.name.isEmpty() ? "Sen" : r.name + " (sen)") : r.name.isEmpty() ? "Anonim üretici" : r.name;
+            TextView c1 = label(who, 13.5f, r.name.isEmpty() && !r.me ? muted : text, !r.name.isEmpty() || r.me);
+            c1.setMaxLines(1); c1.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            line.addView(c1, new LinearLayout.LayoutParams(0, -2, w[1]));
+            TextView c2 = label(r.dominant.isEmpty() ? "—" : r.dominant, 12, GreenTheme.color(R.color.zd_text_soft), false);
+            c2.setGravity(Gravity.CENTER);
+            line.addView(c2, new LinearLayout.LayoutParams(0, -2, w[2]));
+            TextView c3 = label(n(r.score), 13.5f, green, true); c3.setGravity(Gravity.CENTER);
+            line.addView(c3, new LinearLayout.LayoutParams(0, -2, w[3]));
+            line.setContentDescription(r.rank + ". sıra, " + who + ", en çok çıkan " + (r.dominant.isEmpty() ? "belirsiz" : r.dominant)
+                    + ", puan " + n(r.score));
+            table.addView(line);
+        }
+        if (rows.size() > 10) {
+            TextView all = pill(expanded ? "İlk 10'u göster" : "Tüm listeyi gör (" + rows.size() + ")", text, bg, border);
+            all.setOnClickListener(v -> { expanded = !expanded; render(); });
+            LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(-2, -2); ap.gravity = Gravity.CENTER; ap.topMargin = dp(4); ap.bottomMargin = dp(6);
+            table.addView(all, ap);
+        }
+        body.addView(table, tp);
+        MarketCloudRepository.RankRow first = rows.get(0);
+        body.addView(label(first.producerCount + " üretici · " + first.rankedCount + " sıralamada · adını açmayanlar \"Anonim üretici\"",
+                11, muted, false));
+        nameSettingLink();
+    }
+
+    /** "Ligde adımla görüneyim: Kapalı · Aç" kısayolu (Ayarlar'daki ile aynı pencere). */
+    private void nameSettingLink() {
+        if (!(getContext() instanceof android.app.Activity)) return;
+        boolean on = leagueCloudRepository != null && leagueCloudRepository.leagueNameShownLocally();
+        TextView link = label(on ? "Ligde adınla görünüyorsun · Değiştir" : "Ligde adınla görünmek ister misin? · Aç", 13, green, true);
+        link.setMinHeight(dp(44)); link.setGravity(Gravity.CENTER_VERTICAL);
+        link.setOnClickListener(v -> LeagueNamePrompt.show((android.app.Activity) getContext(), () -> {
+            previewCache.clear();
+            render();
+        }));
+        body.addView(link);
+    }
+
     private void ranking(ZeytinLeagueRepository.Region region) {
+        if (previewEligible(region)) { previewRanking(region); return; }
         LinearLayout heading = row(); heading.setPadding(0, dp(6), 0, dp(8));
         TextView title = label(region == null ? "Bölgesel Top 20" : region.name + " Bölgesi – En İyi 20 Üretici", 13, text, true);
         title.setMaxLines(2); title.setEllipsize(android.text.TextUtils.TruncateAt.END);
