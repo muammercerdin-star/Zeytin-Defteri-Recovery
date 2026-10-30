@@ -869,30 +869,49 @@ public final class ZeytinLeagueView extends ScrollView {
         java.util.Collections.sort(varieties, (a, b) -> b.producers - a.producers);
         boolean v2 = !counts.isEmpty();
 
-        LinearLayout periods = row(); periods.setPadding(0, dp(8), 0, 0);
+        // Dönem: tam genişlikte üç eşit parça (taşmaz). Kilitli ay soluk + 🔒.
+        LinearLayout periods = row();
+        periods.setPadding(dp(3), dp(3), dp(3), dp(3));
+        periods.setBackground(round(GreenTheme.color(R.color.zd_surface), border));
         int[] values = {0, thisMonth(), lastMonth()};
-        String[] names = {"Sezon", "Bu ay · " + MONTHS_TR[thisMonth() - 1], "Geçen ay · " + MONTHS_TR[lastMonth() - 1]};
+        String[] names = {"Sezon", MONTHS_TR[thisMonth() - 1], MONTHS_TR[lastMonth() - 1]};
+        String[] spoken = {"Bütün sezon", "Bu ay, " + names[1], "Geçen ay, " + names[2]};
         for (int i = 0; i < values.length; i++) {
             final int value = values[i];
             Integer c = months.get(String.valueOf(value));
-            boolean locked = value != 0 && (!v2 || c == null || c < LeagueBoardModel.MIN_PRODUCERS);
-            periods.addView(filterChip(locked ? "🔒 " + names[i] : names[i], value == previewMonth, locked, () -> {
-                previewMonth = value; expanded = false; render();
-            }), chipLp());
+            final boolean locked = value != 0 && (!v2 || c == null || c < LeagueBoardModel.MIN_PRODUCERS);
+            boolean active = value == previewMonth;
+            TextView seg = label(locked ? "🔒 " + names[i] : names[i], 13, active ? bg
+                    : locked ? muted : GreenTheme.color(R.color.zd_text_soft), true);
+            seg.setGravity(Gravity.CENTER);
+            seg.setMaxLines(1);
+            seg.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            if (active) seg.setBackground(round(green, green));
+            seg.setAlpha(locked && !active ? .65f : 1f);
+            seg.setContentDescription(spoken[i] + (active ? ", seçili" : locked ? ", yeterli üretici yok" : ""));
+            seg.setOnClickListener(v -> {
+                if (locked) {
+                    android.widget.Toast.makeText(getContext(), "Gizlilik için bu ayda en az "
+                            + LeagueBoardModel.MIN_PRODUCERS + " üretici gerekiyor.", android.widget.Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (value != previewMonth) { previewMonth = value; expanded = false; render(); }
+            });
+            periods.addView(seg, new LinearLayout.LayoutParams(0, dp(36), 1f));
         }
-        HorizontalScrollView ps = new HorizontalScrollView(getContext());
-        ps.setHorizontalScrollBarEnabled(false); ps.addView(periods); body.addView(ps);
+        LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(-1, -2); pl.topMargin = dp(10);
+        body.addView(periods, pl);
 
         if (!varieties.isEmpty()) {
-            LinearLayout kinds = row(); kinds.setPadding(0, dp(6), 0, 0);
+            LinearLayout kinds = row(); kinds.setPadding(0, dp(8), 0, 0);
             kinds.addView(filterChip("Tüm cinsler", previewVariety.isEmpty(), false, () -> {
                 previewVariety = ""; expanded = false; render();
             }), chipLp());
             for (MarketCloudRepository.FilterCount f : varieties) {
                 final String value = f.value;
                 boolean locked = f.producers < LeagueBoardModel.MIN_PRODUCERS;
-                String text = OliveVariety.label(value) + (locked
-                        ? " · 🔒 " + (LeagueBoardModel.MIN_PRODUCERS - f.producers) + " üretici daha" : "");
+                String text = locked ? "🔒 " + OliveVariety.label(value) + " " + f.producers + "/" + LeagueBoardModel.MIN_PRODUCERS
+                        : OliveVariety.label(value);
                 kinds.addView(filterChip(text, value.equals(previewVariety), locked, () -> {
                     previewVariety = value; expanded = false; render();
                 }), chipLp());
