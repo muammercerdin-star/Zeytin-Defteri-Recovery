@@ -7,7 +7,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
@@ -45,6 +50,8 @@ public class HarvestActivity extends Activity {
     private final Calendar selectedDate = Calendar.getInstance();
     private final Locale TR = new Locale("tr", "TR");
     private boolean costsOpen = true;
+    /** Seçili bahçenin bu sezonki hasat kayıtları (silmek için); formun altında. */
+    private LinearLayout pastList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +79,132 @@ public class HarvestActivity extends Activity {
         etHarvestDate.setOnClickListener(v -> showDatePicker());
         findViewById(R.id.btnToggleCosts).setOnClickListener(v -> { costsOpen = !costsOpen; updateTotals(); });
         updateTotals();
+        setupPastHarvests();
     }
+
+    // ------------------------------------------------------------ bu sezonun hasat kayıtları (sil)
+
+    private void setupPastHarvests() {
+        ScrollView scroll = findViewById(R.id.harvestScroll);
+        if (scroll == null || scroll.getChildCount() == 0 || !(scroll.getChildAt(0) instanceof ViewGroup)) return;
+        pastList = new LinearLayout(this);
+        pastList.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.topMargin = dp(18);
+        ((ViewGroup) scroll.getChildAt(0)).addView(pastList, lp);
+        spinnerGarden.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) { renderPastHarvests(); }
+            @Override public void onNothingSelected(AdapterView<?> parent) { renderPastHarvests(); }
+        });
+        renderPastHarvests();
+    }
+
+    private long selectedGardenId() {
+        int i = spinnerGarden.getSelectedItemPosition();
+        return i >= 0 && i < gardenIds.size() ? gardenIds.get(i) : -1;
+    }
+
+    private void renderPastHarvests() {
+        if (pastList == null) return;
+        pastList.removeAllViews();
+        long gardenId = selectedGardenId();
+        if (gardenId <= 0) return;
+        int text = GreenTheme.color(R.color.zd_text), muted = GreenTheme.color(R.color.zd_muted);
+        int danger = GreenTheme.color(R.color.zd_danger);
+        TextView head = label("BU SEZONUN HASAT KAYITLARI", 11, muted, true);
+        head.setLetterSpacing(0.08f);
+        pastList.addView(head);
+        TextView hint = label("Elek kayıtları burada görünmez, silinmez. Yanlış ya da elekle çift girilen hasadı buradan sil.",
+                12, muted, false);
+        hint.setPadding(0, dp(4), 0, dp(4));
+        pastList.addView(hint);
+        int count = 0;
+        try (Cursor c = new HarvestRepository(databaseHelper).getSeasonHarvests(gardenId)) {
+            while (c.moveToNext()) {
+                count++;
+                final long id = c.getLong(0);
+                final String date = c.getString(1) == null ? "" : c.getString(1);
+                final double kg = c.getDouble(2);
+                final double cost = c.getDouble(3) + c.getDouble(4) + c.getDouble(5);
+                String note = c.getString(6) == null ? "" : c.getString(6).trim();
+                LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setBackgroundResource(R.drawable.bg_card);
+                row.setPadding(dp(14), dp(10), dp(8), dp(10));
+                LinearLayout words = new LinearLayout(this);
+                words.setOrientation(LinearLayout.VERTICAL);
+                words.addView(label(date + "  ·  " + GradeFormModel.kg(kg), 15, text, true));
+                String sub = (cost > 0 ? "Masraf " + GradeFormModel.money(cost) : "Masraf yok")
+                        + (note.isEmpty() ? "" : "  ·  " + note);
+                TextView st = label(sub, 12, muted, false);
+                st.setSingleLine(true);
+                st.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                words.addView(st);
+                row.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
+                TextView del = label("Sil", 14, danger, true);
+                del.setGravity(Gravity.CENTER);
+                del.setMinWidth(dp(56));
+                del.setMinHeight(dp(44));
+                del.setContentDescription(date + " tarihli " + GradeFormModel.kg(kg) + " hasat kaydını sil");
+                del.setOnClickListener(v -> confirmDelete(id, date, kg, cost));
+                row.addView(del, new LinearLayout.LayoutParams(-2, -2));
+                LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
+                rp.topMargin = dp(8);
+                pastList.addView(row, rp);
+            }
+        } catch (RuntimeException e) {
+            pastList.addView(label("Hasat kayıtları okunamadı.", 13, muted, false));
+            return;
+        }
+        if (count == 0) {
+            TextView none = label("Bu bahçede bu sezon hasat kaydı yok.", 13, muted, false);
+            none.setPadding(0, dp(8), 0, 0);
+            pastList.addView(none);
+        }
+    }
+
+    private void confirmDelete(long id, String date, double kg, double cost) {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Hasat kaydı silinsin mi?")
+                .setMessage(date + " · " + GradeFormModel.kg(kg)
+                        + (cost > 0 ? "\nBu hasadın masrafı (" + GradeFormModel.money(cost) + ") da silinir." : "")
+                        + "\n\nElek kayıtlarına dokunulmaz. Diğer telefonlarından da silinir. Geri alınamaz.")
+                .setPositiveButton("Sil", (d, w) -> {
+                    int n;
+                    try { n = new HarvestRepository(databaseHelper).deleteHarvestWithOperation(id); }
+                    catch (RuntimeException e) { n = 0; }
+                    if (n > 0) {
+                        setResult(RESULT_OK);
+                        Toast.makeText(this, "Hasat kaydı silindi", Toast.LENGTH_SHORT).show();
+                        pushDeletions();
+                    } else {
+                        Toast.makeText(this, "Silinemedi", Toast.LENGTH_LONG).show();
+                    }
+                    renderPastHarvests();
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
+    /** Silme bilgisi buluta hemen gitsin (internet yoksa sonraki eşitlemede). */
+    private void pushDeletions() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+        try { new PrivateCloudSyncManager(databaseHelper).sync(user.getUid(), null); }
+        catch (RuntimeException ignored) { }
+    }
+
+    private TextView label(String value, int sp, int color, boolean bold) {
+        TextView t = new TextView(this);
+        t.setText(value);
+        t.setTextSize(sp);
+        t.setTextColor(color);
+        if (bold) t.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        return t;
+    }
+
+    private int dp(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }
 
     @Override
     protected void onSaveInstanceState(Bundle state) {

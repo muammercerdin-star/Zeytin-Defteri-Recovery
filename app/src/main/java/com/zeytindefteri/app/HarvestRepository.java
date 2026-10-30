@@ -823,6 +823,70 @@ public class HarvestRepository {
 
 
     // ============================================================
+    // BU SEZONUN HASATLARI (silme listesi) + HASATI MASRAF HAREKETİYLE SİL
+    // ============================================================
+
+    /** Bahçenin aktif sezondaki hasat kayıtları (yalnız bu hesabın bahçesi), en yeni başta. */
+    public Cursor getSeasonHarvests(long gardenId) {
+        String owner = databaseHelper.getActiveOwnerUid();
+        String o = owner == null ? "" : owner.trim();
+        String year = String.valueOf(databaseHelper.getActiveSeasonYear());
+        return databaseHelper.getReadableDatabase().rawQuery(
+                "SELECT h.id, h.harvest_date, h.total_kg, h.labor_cost, h.transport_cost, h.other_cost, h.note "
+                        + "FROM harvests h INNER JOIN gardens g ON g.id = h.garden_id "
+                        + "WHERE h.garden_id = ? AND TRIM(COALESCE(g.owner_uid, '')) = ? "
+                        + "AND (COALESCE(h.season_year, 0) = CAST(? AS INTEGER) OR (COALESCE(h.season_year, 0) = 0 AND "
+                        + "(substr(TRIM(h.harvest_date), -4) = ? OR substr(TRIM(h.harvest_date), 1, 4) = ?))) "
+                        + "ORDER BY h.created_at DESC, h.id DESC",
+                new String[]{String.valueOf(gardenId), o, year, year, year});
+    }
+
+    /**
+     * Hasadı ve kaydedilirken oluşturulan "Hasat" işlem hareketini (işçilik/nakliye masrafı) birlikte siler;
+     * ikisi de buluttan silinmek üzere işaretlenir. Boy satırları (harvest_grades) CASCADE ile gider.
+     * Elek kayıtlarına dokunulmaz. Dönüş: silinen hasat sayısı (0: bulunamadı / başka hesabın).
+     */
+    public int deleteHarvestWithOperation(long harvestId) {
+        if (harvestId <= 0) return 0;
+        String owner = databaseHelper.getActiveOwnerUid();
+        String o = owner == null ? "" : owner.trim();
+        SQLiteDatabase db = databaseHelper.getWritableDatabase();
+        long gardenId, createdAt;
+        String date;
+        double kg;
+        try (Cursor c = db.rawQuery("SELECT h.garden_id, h.harvest_date, h.total_kg, h.created_at FROM harvests h "
+                + "INNER JOIN gardens g ON g.id = h.garden_id WHERE h.id = ? AND TRIM(COALESCE(g.owner_uid, '')) = ? LIMIT 1",
+                new String[]{String.valueOf(harvestId), o})) {
+            if (!c.moveToFirst()) return 0;
+            gardenId = c.getLong(0);
+            date = c.getString(1) == null ? "" : c.getString(1).trim();
+            kg = c.getDouble(2);
+            createdAt = c.getLong(3);
+        }
+        // Aynı bahçe, aynı gün, aynı kilo "Hasat" hareketi; birden çok varsa kayıt anına en yakını.
+        long operationId = -1;
+        try (Cursor c = db.rawQuery("SELECT id FROM operations WHERE garden_id = ? AND type = 'Hasat' "
+                + "AND TRIM(operation_date) = ? AND ABS(COALESCE(quantity, 0) - ?) < 0.01 "
+                + "ORDER BY ABS(COALESCE(created_at, 0) - ?) LIMIT 1",
+                new String[]{String.valueOf(gardenId), date, String.valueOf(kg), String.valueOf(createdAt)})) {
+            if (c.moveToFirst()) operationId = c.getLong(0);
+        }
+        int deleted;
+        db.beginTransaction();
+        try {
+            databaseHelper.recordCloudDeletion("harvests", harvestId);
+            if (operationId > 0) databaseHelper.recordCloudDeletion("operations", operationId);
+            deleted = db.delete("harvests", "id = ?", new String[]{String.valueOf(harvestId)});
+            if (operationId > 0) db.delete("operations", "id = ?", new String[]{String.valueOf(operationId)});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+        return deleted;
+    }
+
+
+    // ============================================================
     // DELETE HARVEST GRADE
     // ============================================================
 
