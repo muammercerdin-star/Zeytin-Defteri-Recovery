@@ -168,6 +168,10 @@ public final class MarketView extends ScrollView {
 
     private TextView chartEmptyText;
 
+    /** Grafiğin üstündeki satır: Son / Yüksek / Düşük / Değişim; altındaki kaynak notu. */
+    private LinearLayout chartStatsRow;
+    private TextView chartStatLast, chartStatHigh, chartStatLow, chartStatChange, chartNoteText;
+
     private LinearLayout regionsContainer;
 
     private TextView ownSaleText;
@@ -658,6 +662,8 @@ public final class MarketView extends ScrollView {
                     newState.chartStartDate,
                     newState.chartEndDate
             );
+            chartView.setLabels(newState.chartLabels);
+            applyChartStats(newState);
 
             int chartPointCount =
                     newState.chartValues == null
@@ -1739,6 +1745,16 @@ public final class MarketView extends ScrollView {
         );
 
 
+        chartStatsRow = new LinearLayout(getContext());
+        chartStatsRow.setOrientation(LinearLayout.HORIZONTAL);
+        chartStatLast = chartStat(chartStatsRow, "SON");
+        chartStatHigh = chartStat(chartStatsRow, "YÜKSEK");
+        chartStatLow = chartStat(chartStatsRow, "DÜŞÜK");
+        chartStatChange = chartStat(chartStatsRow, "DEĞİŞİM");
+        LinearLayout.LayoutParams statsLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        statsLp.topMargin = dp(12);
+        box.addView(chartStatsRow, statsLp);
+
         chartEmptyText =
                 label(
                         "Bu elek ve dönem için fiyat hareketi verisi yok.",
@@ -1803,7 +1819,7 @@ public final class MarketView extends ScrollView {
         LinearLayout.LayoutParams chartLp =
                 new LinearLayout.LayoutParams(
                         LayoutParams.MATCH_PARENT,
-                        dp(135)
+                        dp(200)
                 );
 
 
@@ -1817,12 +1833,64 @@ public final class MarketView extends ScrollView {
         );
 
 
+        chartView.setLabels(state.chartLabels);
+
+        chartNoteText = label("", 10.5f, muted, false);
+        chartNoteText.setPadding(0, dp(4), 0, 0);
+        box.addView(chartNoteText);
+
         chartEmptyText.setVisibility(
                 View.GONE
         );
 
+        applyChartStats(state);
 
         return box;
+    }
+
+    /** Borsa uygulamalarındaki gibi küçük başlık + değer sütunu. */
+    private TextView chartStat(LinearLayout row, String title) {
+        LinearLayout col = new LinearLayout(getContext());
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setGravity(Gravity.CENTER_HORIZONTAL);
+        TextView t = label(title, 10.5f, green, true);
+        t.setLetterSpacing(0.04f);
+        t.setGravity(Gravity.CENTER);
+        col.addView(t);
+        TextView v = label("—", 14, text, true);
+        v.setGravity(Gravity.CENTER);
+        v.setSingleLine(true);
+        v.setPadding(0, dp(2), 0, 0);
+        col.addView(v);
+        row.addView(col, new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+        return v;
+    }
+
+    /** Son / Yüksek / Düşük / Değişim ve kaynak notu; grafik yoksa satır gizlenir. */
+    private void applyChartStats(MarketUiState st) {
+        if (chartStatsRow == null) return;
+        float[] v = st == null ? null : st.chartValues;
+        boolean ready = v != null && v.length >= 2;
+        chartStatsRow.setVisibility(ready ? View.VISIBLE : View.GONE);
+        if (chartNoteText != null) {
+            String note = st == null || st.chartNote == null ? "" : st.chartNote;
+            chartNoteText.setText(note);
+            chartNoteText.setVisibility(ready && !note.isEmpty() ? View.VISIBLE : View.GONE);
+        }
+        if (!ready) return;
+        float hi = -Float.MAX_VALUE, lo = Float.MAX_VALUE;
+        for (float x : v) { hi = Math.max(hi, x); lo = Math.min(lo, x); }
+        float first = v[0], last = v[v.length - 1];
+        chartStatLast.setText(PriceChartView.money(last));
+        chartStatHigh.setText(PriceChartView.money(hi));
+        chartStatLow.setText(PriceChartView.money(lo));
+        float pct = first > 0 ? (last - first) / first * 100f : 0f;
+        String sign = pct > 0.005f ? "+" : pct < -0.005f ? "−" : "";
+        java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(new java.util.Locale("tr", "TR"));
+        nf.setMinimumFractionDigits(1);
+        nf.setMaximumFractionDigits(1);
+        chartStatChange.setText(sign + "%" + nf.format(Math.abs(pct)) + (pct > 0.005f ? " ▲" : pct < -0.005f ? " ▼" : ""));
+        chartStatChange.setTextColor(pct > 0.005f ? green : pct < -0.005f ? 0xFFFF6B63 : text);
     }
 
 
@@ -2846,6 +2914,12 @@ public final class MarketView extends ScrollView {
 
         public String chartEndDate;
 
+        /** Her grafik noktasının tarihi ("19 Eki"); dokununca ve alt eksende gösterilir. Boş olabilir. */
+        public String[] chartLabels = new String[0];
+
+        /** Grafiğin kaynağı ("Senin elek fiyatların" gibi); boşsa yazılmaz. */
+        public String chartNote = "";
+
         public List<RegionUiState> regions;
 
         public String ownSale;
@@ -3089,797 +3163,234 @@ public final class MarketView extends ScrollView {
     // FİYAT GRAFİĞİ
     // ============================================================
 
+    /**
+     * Fiyat değişimi grafiği (borsa uygulamalarındaki gibi, yeşil tema): çizgi + altında yeşil gölge,
+     * solda en yüksek / en düşük değer etiketi, son fiyatta kesikli yatay çizgi, uçta parlayan nokta,
+     * altta tarih ekseni (baş · orta · son). Parmakla dokunup sürükleyince o günün fiyatı ve tarihi görünür.
+     */
     public static final class PriceChartView extends View {
-
-        private float[] values;
-
-        private String startDate =
-                "";
-
-        private String endDate =
-                "";
-
-
-        private final Paint gridPaint =
-                new Paint(
-                        Paint.ANTI_ALIAS_FLAG
-                );
-
-
-        private final Paint linePaint =
-                new Paint(
-                        Paint.ANTI_ALIAS_FLAG
-                );
-
-
-        private final Paint fillPaint =
-                new Paint(
-                        Paint.ANTI_ALIAS_FLAG
-                );
-
-
-        private final Paint dotPaint =
-                new Paint(
-                        Paint.ANTI_ALIAS_FLAG
-                );
-
-
-        private final Paint textPaint =
-                new Paint(
-                        Paint.ANTI_ALIAS_FLAG
-                );
-
-
-        private final Paint endTextPaint =
-                new Paint(
-                        Paint.ANTI_ALIAS_FLAG
-                );
-
-
-        private final Path linePath =
-                new Path();
-
-
-        private final Path fillPath =
-                new Path();
-
-
-        private final float density;
-
-
-        public PriceChartView(
-                Context context,
-                float[] values,
-                String startDate,
-                String endDate,
-                int lineColor,
-                int gridColor,
-                int mutedColor,
-                int textColor
-        ) {
-
-            super(
-                    context
-            );
-
-
-            this.density =
-                    getResources()
-                            .getDisplayMetrics()
-                            .density;
-
-
-            this.values =
-                    values == null
-                            ?
-                            new float[0]
-                            :
-                            values.clone();
-
-
-            this.startDate =
-                    startDate == null
-                            ? ""
-                            : startDate;
-
-
-            this.endDate =
-                    endDate == null
-                            ? ""
-                            : endDate;
-
-
-            setWillNotDraw(
-                    false
-            );
-
-
-            gridPaint.setColor(
-                    gridColor
-            );
-
-
-            gridPaint.setStrokeWidth(
-                    dpLocal(
-                            0.8f
-                    )
-            );
-
-
-            gridPaint.setStyle(
-                    Paint.Style.STROKE
-            );
-
-
-            gridPaint.setAlpha(
-                    115
-            );
-
-
-            linePaint.setColor(
-                    lineColor
-            );
-
-
-            linePaint.setStrokeWidth(
-                    dpLocal(
-                            2f
-                    )
-            );
-
-
-            linePaint.setStrokeCap(
-                    Paint.Cap.ROUND
-            );
-
-
-            linePaint.setStrokeJoin(
-                    Paint.Join.ROUND
-            );
-
-
-            linePaint.setStyle(
-                    Paint.Style.STROKE
-            );
-
-
-            fillPaint.setColor(
-                    lineColor
-            );
-
-
-            fillPaint.setAlpha(
-                    25
-            );
-
-
-            fillPaint.setStyle(
-                    Paint.Style.FILL
-            );
-
-
-            dotPaint.setColor(
-                    lineColor
-            );
-
-
-            dotPaint.setStyle(
-                    Paint.Style.FILL
-            );
-
-
-            textPaint.setColor(
-                    mutedColor
-            );
-
-
-            textPaint.setTextSize(
-                    spLocal(
-                            8.5f
-                    )
-            );
-
-
-            textPaint.setTextAlign(
-                    Paint.Align.RIGHT
-            );
-
-
-            endTextPaint.setColor(
-                    textColor
-            );
-
-
-            endTextPaint.setTextSize(
-                    spLocal(
-                            8.5f
-                    )
-            );
-
-
-            endTextPaint.setTextAlign(
-                    Paint.Align.CENTER
-            );
+        private float[] values = new float[0];
+        private String[] labels = new String[0];
+        private String startDate = "", endDate = "";
+        private final int lineColor, gridColor, mutedColor, textColor;
+        private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint gridPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint dashPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint haloPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint axisPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint pillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint pillTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint cursorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path linePath = new Path();
+        private final Path fillPath = new Path();
+        private final android.graphics.RectF rect = new android.graphics.RectF();
+        private final float density, scaled;
+        private int touched = -1;
+        private int gradientHeight = -1;
+
+        public PriceChartView(Context context, float[] values, String startDate, String endDate,
+                              int lineColor, int gridColor, int mutedColor, int textColor) {
+            super(context);
+            density = getResources().getDisplayMetrics().density;
+            scaled = getResources().getDisplayMetrics().scaledDensity;
+            this.lineColor = lineColor;
+            this.gridColor = gridColor;
+            this.mutedColor = mutedColor;
+            this.textColor = textColor;
+            setWillNotDraw(false);
+            linePaint.setColor(lineColor);
+            linePaint.setStrokeWidth(dpLocal(2.2f));
+            linePaint.setStyle(Paint.Style.STROKE);
+            linePaint.setStrokeCap(Paint.Cap.ROUND);
+            linePaint.setStrokeJoin(Paint.Join.ROUND);
+            fillPaint.setStyle(Paint.Style.FILL);
+            gridPaint.setColor(gridColor);
+            gridPaint.setAlpha(70);
+            gridPaint.setStrokeWidth(dpLocal(0.8f));
+            dashPaint.setColor(mutedColor);
+            dashPaint.setAlpha(150);
+            dashPaint.setStrokeWidth(dpLocal(1f));
+            dashPaint.setStyle(Paint.Style.STROKE);
+            dashPaint.setPathEffect(new android.graphics.DashPathEffect(new float[]{dpLocal(5), dpLocal(4)}, 0));
+            dotPaint.setColor(lineColor);
+            haloPaint.setColor(lineColor);
+            haloPaint.setAlpha(60);
+            axisPaint.setColor(mutedColor);
+            axisPaint.setTextSize(spLocal(10.5f));
+            pillPaint.setColor(gridColor);
+            pillPaint.setAlpha(150);
+            pillTextPaint.setColor(textColor);
+            pillTextPaint.setAlpha(210);
+            pillTextPaint.setTextSize(spLocal(10.5f));
+            cursorPaint.setColor(textColor);
+            cursorPaint.setAlpha(120);
+            cursorPaint.setStrokeWidth(dpLocal(1f));
+            setData(values, startDate, endDate);
         }
 
-
-        // ========================================================
-        // DATA
-        // ========================================================
-
-        public void setData(
-                float[] newValues,
-                String startDate,
-                String endDate
-        ) {
-
-            this.values =
-                    newValues == null
-                            ?
-                            new float[0]
-                            :
-                            newValues.clone();
-
-
-            this.startDate =
-                    startDate == null
-                            ? ""
-                            : startDate;
-
-
-            this.endDate =
-                    endDate == null
-                            ? ""
-                            : endDate;
-
-
+        public void setData(float[] newValues, String startDate, String endDate) {
+            values = newValues == null ? new float[0] : newValues.clone();
+            this.startDate = startDate == null ? "" : startDate;
+            this.endDate = endDate == null ? "" : endDate;
+            touched = -1;
+            StringBuilder d = new StringBuilder("Fiyat grafiği");
+            if (values.length >= 2) {
+                d.append(", ").append(this.startDate).append(" ").append(money(values[0]))
+                        .append(", ").append(this.endDate).append(" ").append(money(values[values.length - 1]));
+            }
+            setContentDescription(d.toString());
             invalidate();
         }
 
+        /** Her noktanın tarihi (yoksa yalnız baş/son tarih yazılır). */
+        public void setLabels(String[] newLabels) {
+            labels = newLabels == null ? new String[0] : newLabels.clone();
+            invalidate();
+        }
 
-        // ========================================================
-        // DRAW
-        // ========================================================
+        private String label(int i) {
+            if (i >= 0 && i < labels.length && labels[i] != null && !labels[i].isEmpty()) return labels[i];
+            if (i == 0) return startDate;
+            if (i == values.length - 1) return endDate;
+            return "";
+        }
+
+        static String money(float v) {
+            java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(new java.util.Locale("tr", "TR"));
+            nf.setMinimumFractionDigits(2);
+            nf.setMaximumFractionDigits(2);
+            return nf.format(v);
+        }
 
         @Override
-        protected void onDraw(
-                Canvas canvas
-        ) {
-
-            super.onDraw(
-                    canvas
-            );
-
-
-            if (
-                    values == null
-                            ||
-                            values.length < 1
-                            ||
-                            getWidth() <= 0
-                            ||
-                            getHeight() <= 0
-            ) {
-
-                return;
+        public boolean onTouchEvent(android.view.MotionEvent e) {
+            if (values.length < 2) return super.onTouchEvent(e);
+            switch (e.getActionMasked()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                case android.view.MotionEvent.ACTION_MOVE:
+                    if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(true);
+                    float left = dpLocal(4), right = getWidth() - dpLocal(14);
+                    float t = (e.getX() - left) / Math.max(1f, right - left);
+                    int i = Math.round(Math.max(0f, Math.min(1f, t)) * (values.length - 1));
+                    if (i != touched) {
+                        touched = i;
+                        performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+                        announceForAccessibility(label(i) + " " + money(values[i]) + " lira");
+                        invalidate();
+                    }
+                    return true;
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(false);
+                    postDelayed(() -> { touched = -1; invalidate(); }, 1600);
+                    return true;
+                default:
+                    return super.onTouchEvent(e);
             }
+        }
 
-
-            float left =
-                    dpLocal(
-                            30
-                    );
-
-
-            float right =
-                    getWidth()
-                            -
-                            dpLocal(
-                                    8
-                            );
-
-
-            float top =
-                    dpLocal(
-                            8
-                    );
-
-
-            float bottom =
-                    getHeight()
-                            -
-                            dpLocal(
-                                    20
-                            );
-
-
-            // ====================================================
-            // DİNAMİK MIN / MAX
-            // ====================================================
-
-            float minVal =
-                    Float.MAX_VALUE;
-
-
-            float maxVal =
-                    -Float.MAX_VALUE;
-
-
-            for (
-                    float value :
-                    values
-            ) {
-
-                if (
-                        value < minVal
-                ) {
-
-                    minVal =
-                            value;
-                }
-
-
-                if (
-                        value > maxVal
-                ) {
-
-                    maxVal =
-                            value;
-                }
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            int n = values.length;
+            if (n < 2) return;
+            float w = getWidth(), h = getHeight();
+            float left = dpLocal(4), right = w - dpLocal(14);
+            float top = dpLocal(14), axisH = dpLocal(22), bottom = h - axisH;
+            float min = Float.MAX_VALUE, max = -Float.MAX_VALUE;
+            int maxI = 0, minI = 0;
+            for (int i = 0; i < n; i++) {
+                if (values[i] > max) { max = values[i]; maxI = i; }
+                if (values[i] < min) { min = values[i]; minI = i; }
             }
-
-
-            if (
-                    minVal == maxVal
-            ) {
-
-                minVal -=
-                        1f;
-
-
-                maxVal +=
-                        1f;
-
-            } else {
-
-                float buffer =
-                        (
-                                maxVal
-                                        -
-                                        minVal
-                        )
-                                *
-                                0.12f;
-
-
-                minVal -=
-                        buffer;
-
-
-                maxVal +=
-                        buffer;
+            float span = max - min;
+            if (span < 0.01f) span = Math.max(1f, Math.abs(max) * 0.05f);
+            float lo = min - span * 0.12f, hi = max + span * 0.12f;
+            float[] xs = new float[n], ys = new float[n];
+            for (int i = 0; i < n; i++) {
+                xs[i] = left + (right - left) * i / (n - 1f);
+                ys[i] = bottom - (values[i] - lo) / (hi - lo) * (bottom - top);
             }
-
-
-            // ====================================================
-            // GRID
-            // ====================================================
-
-            int tickCount =
-                    4;
-
-
-            for (
-                    int i = 0;
-                    i < tickCount;
-                    i++
-            ) {
-
-                float tickValue =
-                        minVal
-                                +
-                                (
-                                        maxVal
-                                                -
-                                                minVal
-                                )
-                                        *
-                                        (
-                                                i
-                                                        /
-                                                        (
-                                                                float
-                                                                        )
-                                                                (
-                                                                        tickCount
-                                                                                -
-                                                                                1
-                                                                )
-                                        );
-
-
-                float y =
-                        mapY(
-                                tickValue,
-                                minVal,
-                                maxVal,
-                                top,
-                                bottom
-                        );
-
-
-                canvas.drawLine(
-                        left,
-                        y,
-                        right,
-                        y,
-                        gridPaint
-                );
-
-
-                canvas.drawText(
-                        formatTick(
-                                tickValue,
-                                maxVal - minVal
-                        ),
-                        left
-                                -
-                                dpLocal(
-                                        4
-                                ),
-                        y
-                                +
-                                dpLocal(
-                                        3
-                                ),
-                        textPaint
-                );
+            // Izgara: 3 ince yatay çizgi.
+            for (int g = 0; g < 3; g++) {
+                float y = top + (bottom - top) * g / 2f;
+                canvas.drawLine(left, y, right, y, gridPaint);
             }
-
-
-            // ====================================================
-            // TEK SATIŞ VARSA TEK NOKTA GÖSTER
-            // ====================================================
-
-            if (
-                    values.length == 1
-            ) {
-
-                float singleX =
-                        (left + right) / 2f;
-
-                float singleY =
-                        mapY(
-                                values[0],
-                                minVal,
-                                maxVal,
-                                top,
-                                bottom
-                        );
-
-                canvas.drawCircle(
-                        singleX,
-                        singleY,
-                        dpLocal(3.5f),
-                        dotPaint
-                );
-
-                if (
-                        !startDate.isEmpty()
-                ) {
-
-                    canvas.drawText(
-                            startDate,
-                            singleX,
-                            getHeight()
-                                    -
-                                    dpLocal(3),
-                            endTextPaint
-                    );
-                }
-
-                return;
+            // Çizginin altı: yeşilden şeffafa gölge.
+            if (gradientHeight != getHeight()) {
+                gradientHeight = getHeight();
+                fillPaint.setShader(new android.graphics.LinearGradient(0, top, 0, bottom,
+                        (lineColor & 0x00FFFFFF) | 0x55000000, lineColor & 0x00FFFFFF,
+                        android.graphics.Shader.TileMode.CLAMP));
             }
-
-
-            // ====================================================
-            // ÇİZGİ + DOLGU
-            // ====================================================
-
-            float step =
-                    (
-                            right
-                                    -
-                                    left
-                    )
-                            /
-                            (
-                                    values.length
-                                            -
-                                            1f
-                            );
-
-
             linePath.reset();
-
             fillPath.reset();
-
-
-            for (
-                    int i = 0;
-                    i < values.length;
-                    i++
-            ) {
-
-                float x =
-                        left
-                                +
-                                (
-                                        step
-                                                *
-                                                i
-                                );
-
-
-                float y =
-                        mapY(
-                                values[i],
-                                minVal,
-                                maxVal,
-                                top,
-                                bottom
-                        );
-
-
-                if (
-                        i == 0
-                ) {
-
-                    linePath.moveTo(
-                            x,
-                            y
-                    );
-
-
-                    fillPath.moveTo(
-                            x,
-                            bottom
-                    );
-
-
-                    fillPath.lineTo(
-                            x,
-                            y
-                    );
-
-                } else {
-
-                    linePath.lineTo(
-                            x,
-                            y
-                    );
-
-
-                    fillPath.lineTo(
-                            x,
-                            y
-                    );
-                }
+            for (int i = 0; i < n; i++) {
+                if (i == 0) { linePath.moveTo(xs[i], ys[i]); fillPath.moveTo(xs[i], bottom); fillPath.lineTo(xs[i], ys[i]); }
+                else { linePath.lineTo(xs[i], ys[i]); fillPath.lineTo(xs[i], ys[i]); }
             }
-
-
-            fillPath.lineTo(
-                    right,
-                    bottom
-            );
-
-
+            fillPath.lineTo(xs[n - 1], bottom);
             fillPath.close();
-
-
-            canvas.drawPath(
-                    fillPath,
-                    fillPaint
-            );
-
-
-            canvas.drawPath(
-                    linePath,
-                    linePaint
-            );
-
-
-            // ====================================================
-            // SON NOKTA
-            // ====================================================
-
-            float lastX =
-                    right;
-
-
-            float lastY =
-                    mapY(
-                            values[
-                                    values.length
-                                            -
-                                            1
-                                    ],
-                            minVal,
-                            maxVal,
-                            top,
-                            bottom
-                    );
-
-
-            canvas.drawCircle(
-                    lastX,
-                    lastY,
-                    dpLocal(
-                            3.5f
-                    ),
-                    dotPaint
-            );
-
-
-            // ====================================================
-            // TARİHLER
-            // ====================================================
-
-            if (
-                    !startDate.isEmpty()
-            ) {
-
-                canvas.drawText(
-                        startDate,
-                        left
-                                +
-                                dpLocal(
-                                        10
-                                ),
-                        getHeight()
-                                -
-                                dpLocal(
-                                        3
-                                ),
-                        endTextPaint
-                );
+            canvas.drawPath(fillPath, fillPaint);
+            // Son fiyat hizasında kesikli çizgi.
+            float lastY = ys[n - 1];
+            canvas.drawLine(left, lastY, right, lastY, dashPaint);
+            canvas.drawPath(linePath, linePaint);
+            // En yüksek ve en düşük: solda küçük etiket.
+            drawPill(canvas, money(max), left, ys[maxI], true, top, bottom);
+            if (maxI != minI && max - min >= 0.01f) drawPill(canvas, money(min), left, ys[minI], false, top, bottom);
+            // Uçta parlayan nokta.
+            canvas.drawCircle(xs[n - 1], lastY, dpLocal(9), haloPaint);
+            canvas.drawCircle(xs[n - 1], lastY, dpLocal(4.2f), dotPaint);
+            // Tarih ekseni: baş · orta · son.
+            float ay = h - dpLocal(6);
+            axisPaint.setTextAlign(Paint.Align.LEFT);
+            canvas.drawText(label(0), left, ay, axisPaint);
+            if (n >= 5) {
+                int mid = (n - 1) / 2;
+                axisPaint.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText(label(mid), xs[mid], ay, axisPaint);
             }
-
-
-            if (
-                    !endDate.isEmpty()
-            ) {
-
-                canvas.drawText(
-                        endDate,
-                        right
-                                -
-                                dpLocal(
-                                        15
-                                ),
-                        getHeight()
-                                -
-                                dpLocal(
-                                        3
-                                ),
-                        endTextPaint
-                );
+            axisPaint.setTextAlign(Paint.Align.RIGHT);
+            canvas.drawText(label(n - 1), right + dpLocal(10), ay, axisPaint);
+            // Dokunulan gün: dikey çizgi + baloncuk.
+            if (touched >= 0 && touched < n) {
+                float x = xs[touched], y = ys[touched];
+                canvas.drawLine(x, top - dpLocal(6), x, bottom, cursorPaint);
+                canvas.drawCircle(x, y, dpLocal(8), haloPaint);
+                canvas.drawCircle(x, y, dpLocal(4.2f), dotPaint);
+                String tip = label(touched) + "  ·  " + money(values[touched]) + " TL";
+                float tw = pillTextPaint.measureText(tip) + dpLocal(16);
+                float bx = Math.max(0, Math.min(w - tw, x - tw / 2f));
+                float by = Math.max(0, y - dpLocal(38));
+                rect.set(bx, by, bx + tw, by + dpLocal(24));
+                Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+                bg.setColor(lineColor);
+                canvas.drawRoundRect(rect, dpLocal(12), dpLocal(12), bg);
+                Paint tp = new Paint(pillTextPaint);
+                tp.setColor(0xFF0B1A12);
+                tp.setAlpha(255);
+                tp.setFakeBoldText(true);
+                tp.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText(tip, rect.centerX(), rect.centerY() + tp.getTextSize() / 3f, tp);
             }
         }
 
-
-        // ========================================================
-        // TICK FORMAT
-        // ========================================================
-
-        private String formatTick(
-                float value,
-                float range
-        ) {
-
-            if (
-                    range < 4f
-            ) {
-
-                return String.format(
-                        java.util.Locale.US,
-                        "%.1f",
-                        value
-                );
-            }
-
-
-            return String.valueOf(
-                    Math.round(
-                            value
-                    )
-            );
+        private void drawPill(Canvas canvas, String text, float x, float y, boolean above, float top, float bottom) {
+            float tw = pillTextPaint.measureText(text) + dpLocal(12);
+            float ph = dpLocal(19);
+            float py = above ? y - ph - dpLocal(3) : y + dpLocal(3);
+            py = Math.max(0, Math.min(bottom - ph, py));
+            rect.set(x, py, x + tw, py + ph);
+            canvas.drawRoundRect(rect, dpLocal(6), dpLocal(6), pillPaint);
+            pillTextPaint.setTextAlign(Paint.Align.CENTER);
+            canvas.drawText(text, rect.centerX(), rect.centerY() + pillTextPaint.getTextSize() / 3f, pillTextPaint);
         }
 
+        private float dpLocal(float v) { return v * density; }
 
-        // ========================================================
-        // MAP Y
-        // ========================================================
-
-        private float mapY(
-                float value,
-                float min,
-                float max,
-                float top,
-                float bottom
-        ) {
-
-            if (
-                    max == min
-            ) {
-
-                return (
-                        bottom
-                                +
-                                top
-                )
-                        /
-                        2f;
-            }
-
-
-            float normalized =
-                    (
-                            value
-                                    -
-                                    min
-                    )
-                            /
-                            (
-                                    max
-                                            -
-                                            min
-                            );
-
-
-            normalized =
-                    Math.max(
-                            0f,
-                            Math.min(
-                                    1f,
-                                    normalized
-                            )
-                    );
-
-
-            return bottom
-                    -
-                    (
-                            (
-                                    bottom
-                                            -
-                                            top
-                            )
-                                    *
-                                    normalized
-                    );
-        }
-
-
-        private float dpLocal(
-                float value
-        ) {
-
-            return value
-                    *
-                    density;
-        }
-
-
-        private float spLocal(
-                float value
-        ) {
-
-            return value
-                    *
-                    getResources()
-                            .getDisplayMetrics()
-                            .scaledDensity;
-        }
+        private float spLocal(float v) { return v * scaled; }
     }
 }

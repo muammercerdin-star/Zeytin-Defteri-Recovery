@@ -168,7 +168,7 @@ public final class MarketUiDataProvider {
                 marketStats
         );
 
-        return new MarketView.MarketUiState(
+        MarketView.MarketUiState localState = new MarketView.MarketUiState(
                 new ArrayList<>(UI_GRADES),
                 safeGrade,
                 selectedRegion,
@@ -196,6 +196,9 @@ public final class MarketUiDataProvider {
                 confidence.score,
                 confidence.details
         );
+        localState.chartLabels = chart.labels;
+        localState.chartNote = chart.values.length >= 2 ? "Senin elek kayıtlarından · günlük medyan" : "";
+        return localState;
     }
 
     /**
@@ -245,12 +248,14 @@ public final class MarketUiDataProvider {
         }
 
         float[] chartValues = new float[cloud.chart.size()];
+        String[] chartLabels = new String[cloud.chart.size()];
         String chartStart = "";
         String chartEnd = "";
         for (int i = 0; i < cloud.chart.size(); i++) {
             MarketCloudRepository.ChartPoint point = cloud.chart.get(i);
             chartValues[i] = (float) point.price;
             String label = cloudDayLabel(point.day);
+            chartLabels[i] = label;
             if (i == 0) chartStart = label;
             if (i == cloud.chart.size() - 1) chartEnd = label;
         }
@@ -299,7 +304,19 @@ public final class MarketUiDataProvider {
                 + " toplulaştırılmış kayıt • "
                 + "ham üretici kayıtları telefona indirilmez";
 
-        return new MarketView.MarketUiState(
+        // Bölge grafiği: bir gün en az 5 üretici yoksa o gün yayınlanmaz (gizlilik). Hiç gün kalmadıysa
+        // grafik kaybolmasın: senin elek kayıtlarının grafiği, kaynağı açıkça yazılarak gösterilir.
+        String chartNote = "Bölge · anonim günlük medyan";
+        if (chartValues.length < 2 && local.chartValues != null && local.chartValues.length >= 2) {
+            chartValues = local.chartValues;
+            chartLabels = local.chartLabels == null ? new String[0] : local.chartLabels;
+            chartStart = local.chartStartDate;
+            chartEnd = local.chartEndDate;
+            chartNote = "Bölge grafiği için günde 5 üretici gerekir · şimdilik senin elek fiyatların";
+        } else if (chartValues.length < 2) {
+            chartNote = "";
+        }
+        MarketView.MarketUiState published = new MarketView.MarketUiState(
                 new ArrayList<>(UI_GRADES),
                 local.grade,
                 selectedRegion,
@@ -327,6 +344,9 @@ public final class MarketUiDataProvider {
                 cloud.confidenceScore,
                 details
         );
+        published.chartLabels = chartLabels;
+        published.chartNote = chartNote;
+        return published;
     }
 
     private String cloudDayLabel(String day) {
@@ -993,10 +1013,12 @@ public final class MarketUiDataProvider {
         }
 
         out.values = new float[daily.size()];
+        out.labels = new String[daily.size()];
         for (int i = 0; i < daily.size(); i++) {
             DailyBucket bucket = daily.get(i);
             Collections.sort(bucket.prices);
             out.values[i] = (float) median(bucket.prices);
+            out.labels[i] = bucket.label == null ? "" : bucket.label;
         }
 
         if (!daily.isEmpty()) {
@@ -1362,6 +1384,7 @@ public final class MarketUiDataProvider {
 
     private static final class ChartData {
         float[] values = new float[0];
+        String[] labels = new String[0];
         String startLabel = "";
         String endLabel = "";
     }
