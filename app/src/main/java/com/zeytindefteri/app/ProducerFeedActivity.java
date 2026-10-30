@@ -5434,9 +5434,10 @@ public class ProducerFeedActivity extends Activity {
         LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(-1, dp(10));
         barParams.setMargins(0, dp(12), 0, 0);
         card.addView(elekDistributionBar(seasonGrades, 5), barParams);
-        TextView legend = text(ElekInsights.legend(seasonGrades), 11, MUTED, false);
-        legend.setPadding(0, dp(8), 0, 0);
-        card.addView(legend);
+        // Numara numara kilo: Double / 1 / 2 üstte, 3 / 4 / Yağlık altta (kilo + yüzde).
+        LinearLayout.LayoutParams gradesParams = new LinearLayout.LayoutParams(-1, -2);
+        gradesParams.setMargins(0, dp(10), 0, 0);
+        card.addView(elekGradeKgGrid(seasonGrades), gradesParams);
 
         LinearLayout stats = row();
         stats.setGravity(Gravity.TOP);
@@ -5452,7 +5453,7 @@ public class ProducerFeedActivity extends Activity {
         card.addView(stats, statsParams);
         card.setContentDescription("Sezon toplamı " + fmtTl(totalRevenue) + ", " + fmtKg(totalKg)
                 + ", ortalama " + ElekInsights.formatPerKg(totalRevenue, totalKg) + ". "
-                + ElekInsights.accessibleLegend(seasonGrades) + " " + rows.size() + " kayıt.");
+                + elekGradeKgSpeech(seasonGrades) + " " + rows.size() + " kayıt.");
         body.addView(card, gardensBlockParams(12));
 
         // Alacaklarım: açık alacak varsa tek kart (dokununca Alıcılarım).
@@ -5486,6 +5487,66 @@ public class ProducerFeedActivity extends Activity {
         } catch (Exception ignored) {
             return 0;
         }
+    }
+
+    /** Sezon kartında her numaranın kilosu ve payı: 3 sütun × 2 satır, renk noktası çubuktaki renkle aynı. */
+    private View elekGradeKgGrid(double[] kg) {
+        int[] colors = elekGradeColors();
+        int[] share = ElekInsights.shares(kg);
+        String[] names = {"Double", "1 Numara", "2 Numara", "3 Numara", "4 Numara", "Yağlık"};
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        for (int r = 0; r < 2; r++) {
+            LinearLayout line = row();
+            line.setGravity(Gravity.TOP);
+            for (int c = 0; c < 3; c++) {
+                int i = r * 3 + c;
+                boolean has = i < kg.length && kg[i] > 0;
+                LinearLayout cell = new LinearLayout(this);
+                cell.setOrientation(LinearLayout.VERTICAL);
+                cell.setPadding(dp(10), dp(8), dp(8), dp(8));
+                cell.setBackground(round(GreenTheme.color(R.color.zd_surface), 12, Color.TRANSPARENT));
+                LinearLayout head = row();
+                head.setGravity(Gravity.CENTER_VERTICAL);
+                View dot = new View(this);
+                dot.setBackground(round(has ? colors[i] : BORDER, 4, Color.TRANSPARENT));
+                head.addView(dot, new LinearLayout.LayoutParams(dp(8), dp(8)));
+                TextView name = text(names[i], 11, MUTED, true);
+                name.setSingleLine(true);
+                LinearLayout.LayoutParams np = new LinearLayout.LayoutParams(-2, -2);
+                np.setMargins(dp(6), 0, 0, 0);
+                head.addView(name, np);
+                cell.addView(head);
+                String kgText = has ? fmtKg(kg[i]) : "—";
+                // Dar hücre: "12.345,5 kg" gibi uzun değerler küçülür, kesilmez.
+                TextView amount = text(kgText, kgText.length() > 10 ? 13 : kgText.length() > 8 ? 14 : 16, has ? TEXT : MUTED, true);
+                amount.setSingleLine(true);
+                amount.setPadding(0, dp(4), 0, 0);
+                cell.addView(amount);
+                cell.addView(text(has ? "%" + share[i] : " ", 11, MUTED, false));
+                LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, -2, 1);
+                if (c > 0) cp.setMargins(dp(6), 0, 0, 0);
+                line.addView(cell, cp);
+            }
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+            if (r > 0) lp.setMargins(0, dp(6), 0, 0);
+            grid.addView(line, lp);
+        }
+        return grid;
+    }
+
+    /** Ekran okuyucu: "Double 12 kilo yüzde 1, 1 Numara 85 kilo yüzde 9, …" */
+    private String elekGradeKgSpeech(double[] kg) {
+        int[] share = ElekInsights.shares(kg);
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < kg.length && i < ElekInsights.GRADE_NAMES.length; i++) {
+            if (kg[i] <= 0) continue;
+            out.append(out.length() == 0 ? "Numaralar: " : ", ");
+            out.append(ElekInsights.GRADE_NAMES[i]).append(' ').append(fmtKg(kg[i]).replace("kg", "kilo"))
+                    .append(" yüzde ").append(share[i]);
+        }
+        return out.length() == 0 ? "Henüz miktar girilmedi." : out.append('.').toString();
     }
 
     private View elekDistributionBar(double[] grades, int radiusDp) {
