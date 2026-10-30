@@ -4878,10 +4878,20 @@ public class ProducerFeedActivity extends Activity {
         }
         refreshCurrentSection();
         final int target = y;
-        if (contentHost != null && contentHost.getChildCount() > 0
+        if (target > 0 && contentHost != null && contentHost.getChildCount() > 0
                 && contentHost.getChildAt(0) instanceof ScrollView) {
             final ScrollView s = (ScrollView) contentHost.getChildAt(0);
-            s.post(() -> s.scrollTo(0, target));
+            // Yeni sayfa ilk kez çizilmeden ÖNCE eski konuma kaydır: post() ile bir kare en üstte görünüyor,
+            // filtre/sekme değişince sayfa "atlıyordu".
+            s.getViewTreeObserver().addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener() {
+                @Override public boolean onPreDraw() {
+                    if (s.getViewTreeObserver().isAlive()) s.getViewTreeObserver().removeOnPreDrawListener(this);
+                    if (s.getParent() != contentHost) return true;
+                    int content = s.getChildCount() > 0 ? s.getChildAt(0).getHeight() : 0;
+                    s.scrollTo(0, Math.min(target, Math.max(0, content - s.getHeight())));
+                    return true;
+                }
+            });
         }
     }
 
