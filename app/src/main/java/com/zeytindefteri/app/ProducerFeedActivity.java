@@ -4785,7 +4785,8 @@ public class ProducerFeedActivity extends Activity {
                 g.lastOperationDate = getString(c, "last_operation_date", "");
                 g.lastHarvestDate = getString(c, "last_harvest_date", "");
                 g.photoUri = getString(c, "photo_uri", "");
-                g.harvestKg = getDouble(c, "total_harvest");
+                // Hasat kaydı girilmeyen günler elekten gelir (aynı gün çift sayılmaz): Elek ekranıyla tutarlı.
+                g.harvestKg = getDouble(c, "harvest_with_elek");
                 g.cost = getDouble(c, "total_cost");
                 gardens.add(g);
             }

@@ -1651,6 +1651,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // GARDEN SUMMARIES
     // ============================================================
 
+    /** Gün anahtarı: "dd.MM.yyyy" / "dd/MM/yyyy" / "yyyy-MM-dd…" → "yyyy-MM-dd" (hasat ve elek aynı günde buluşsun). */
+    private static final String ISO_H =
+            "(CASE WHEN substr(TRIM(h.harvest_date), 3, 1) IN ('.', '/') "
+            + "THEN substr(TRIM(h.harvest_date), 7, 4) || '-' || substr(TRIM(h.harvest_date), 4, 2) || '-' || substr(TRIM(h.harvest_date), 1, 2) "
+            + "ELSE substr(TRIM(h.harvest_date), 1, 10) END)";
+    private static final String ISO_E =
+            "(CASE WHEN substr(TRIM(e.record_date), 3, 1) IN ('.', '/') "
+            + "THEN substr(TRIM(e.record_date), 7, 4) || '-' || substr(TRIM(e.record_date), 4, 2) || '-' || substr(TRIM(e.record_date), 1, 2) "
+            + "ELSE substr(TRIM(e.record_date), 1, 10) END)";
+    private static final String ISO_H2 =
+            "(CASE WHEN substr(TRIM(h2.harvest_date), 3, 1) IN ('.', '/') "
+            + "THEN substr(TRIM(h2.harvest_date), 7, 4) || '-' || substr(TRIM(h2.harvest_date), 4, 2) || '-' || substr(TRIM(h2.harvest_date), 1, 2) "
+            + "ELSE substr(TRIM(h2.harvest_date), 1, 10) END)";
+    private static final String ISO_E2 =
+            "(CASE WHEN substr(TRIM(e2.record_date), 3, 1) IN ('.', '/') "
+            + "THEN substr(TRIM(e2.record_date), 7, 4) || '-' || substr(TRIM(e2.record_date), 4, 2) || '-' || substr(TRIM(e2.record_date), 1, 2) "
+            + "ELSE substr(TRIM(e2.record_date), 1, 10) END)";
+
     public Cursor getGardenSummaries() {
 
 
@@ -1685,12 +1703,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "ORDER BY o3.created_at DESC " +
                         "LIMIT 1" +
                         ") AS last_operation_date," +
+                        // Son hasat: hasat ya da elek kaydından en yenisi (elek girilen bahçe "kayıt bekliyor" sayılmaz).
                         "(" +
-                        "SELECT h2.harvest_date " +
+                        "SELECT hd.d FROM (" +
+                        "SELECT " + ISO_H2 + " AS d, h2.created_at AS ca " +
                         "FROM harvests h2 " +
                         "WHERE h2.garden_id = g.id " +
                         "AND " + activeSeasonCondition("h2", "harvest_date") + " " +
-                        "ORDER BY h2.created_at DESC " +
+                        "UNION ALL " +
+                        "SELECT " + ISO_E2 + " AS d, e2.created_at AS ca " +
+                        "FROM elek_records e2 " +
+                        "WHERE e2.garden_id = g.id " +
+                        "AND " + activeSeasonCondition("e2", "record_date") +
+                        ") hd ORDER BY hd.d DESC, hd.ca DESC " +
                         "LIMIT 1" +
                         ") AS last_harvest_date," +
 
@@ -1701,12 +1726,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "AND " + activeSeasonCondition("o2", "operation_date") +
                         ") AS total_cost," +
 
+                        // Yalnız hasat kayıtları (Sezon Raporum "hasat kayıtları" olarak gösterir; elek ayrı).
                         "(" +
-                        "SELECT COALESCE(SUM(h.total_kg), 0) " +
+                        "SELECT COALESCE(SUM(h0.total_kg), 0) " +
+                        "FROM harvests h0 " +
+                        "WHERE h0.garden_id = g.id " +
+                        "AND " + activeSeasonCondition("h0", "harvest_date") +
+                        ") AS total_harvest, " +
+
+                        // Bahçelerim'in hasadı: gün gün hasat ve elek kilosundan BÜYÜĞÜ, günler toplanır. Yalnız elek
+                        // girilen gün elekten gelir; aynı günün zeytini hem hasat hem elek girildiyse çift sayılmaz.
+                        "(" +
+                        "SELECT COALESCE(SUM(MAX(dk.hk, dk.ek)), 0) FROM (" +
+                        "SELECT u.d, SUM(u.hk) AS hk, SUM(u.ek) AS ek FROM (" +
+                        "SELECT " + ISO_H + " AS d, COALESCE(h.total_kg, 0) AS hk, 0 AS ek " +
                         "FROM harvests h " +
                         "WHERE h.garden_id = g.id " +
-                        "AND " + activeSeasonCondition("h", "harvest_date") +
-                        ") AS total_harvest " +
+                        "AND " + activeSeasonCondition("h", "harvest_date") + " " +
+                        "UNION ALL " +
+                        "SELECT " + ISO_E + " AS d, 0 AS hk, COALESCE(e.total_kg, 0) AS ek " +
+                        "FROM elek_records e " +
+                        "WHERE e.garden_id = g.id " +
+                        "AND " + activeSeasonCondition("e", "record_date") +
+                        ") u GROUP BY u.d" +
+                        ") dk" +
+                        ") AS harvest_with_elek " +
 
                         "FROM gardens g " +
 

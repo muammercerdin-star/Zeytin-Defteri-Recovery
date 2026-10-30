@@ -9,6 +9,7 @@ source = (root / 'app/src/main/java/DatabaseHelper.java').read_text(encoding='ut
 body = source[source.index('public Cursor getGardenSummaries('):]
 expr = body.split('rawQuery(', 1)[1]
 expr = expr[:expr.index('"ORDER BY g.name COLLATE NOCASE ASC"') + len('"ORDER BY g.name COLLATE NOCASE ASC"')]
+expr = re.sub(r'^\s*//.*$', '', expr, flags=re.M)  # Java satır yorumları
 YEAR = 2026
 
 def season(m):
@@ -17,6 +18,10 @@ def season(m):
                 f"(substr(TRIM({a}.{col}), -4) = '{YEAR}' OR substr(TRIM({a}.{col}), 1, 4) = '{YEAR}')))")
 
 expr = re.sub(r'activeSeasonCondition\("([^"]+)", "([^"]+)"\)', season, expr)
+# Gün anahtarı sabitleri (ISO_H, ISO_E, ...): kaynaktaki değerleriyle değiştirilir.
+for name, val in re.findall(r'private static final String (ISO_\w+) =\s*(.*?);', source, flags=re.S):
+    lit = ''.join(ast.literal_eval(part) for part in re.findall(r'"(?:[^"\\]|\\.)*"', val))
+    expr = re.sub(r'\b' + name + r'\b', lambda m, lit=lit: repr(lit), expr)
 expr = re.sub(r'\(getActiveOwnerUid\(\)\.isEmpty\(\)\s*\?[^:]*:\s*("WHERE g\.owner_uid = \? ")\)', r'\1', expr, flags=re.S)
 
 def string_expr(node):
@@ -30,6 +35,7 @@ db.executescript('''
 CREATE TABLE gardens(id INTEGER, owner_uid TEXT, name TEXT, tree_count INTEGER, age INTEGER, variety TEXT, photo_uri TEXT);
 CREATE TABLE operations(id INTEGER, garden_id INTEGER, season_year INTEGER, operation_date TEXT, created_at INTEGER, type TEXT, cost REAL);
 CREATE TABLE harvests(id INTEGER, garden_id INTEGER, season_year INTEGER, harvest_date TEXT, created_at INTEGER, total_kg REAL);
+CREATE TABLE elek_records(id INTEGER, garden_id INTEGER, season_year INTEGER, record_date TEXT, created_at INTEGER, total_kg REAL);
 INSERT INTO gardens VALUES (1,'a','Girelli',80,12,'Gemlik',''),(2,'a','Edremit',100,10,'Gemlik',''),(3,'b','Başkası',5,1,'','');
 INSERT INTO operations VALUES (1,1,2026,'2026-09-03',10,'Sulama',500),(2,1,2026,'2026-08-01',5,'Gübreleme',300),(3,1,2025,'2025-12-01',20,'İlaçlama',999),(4,3,2026,'2026-09-04',1,'Sulama',1);
 INSERT INTO harvests VALUES (1,1,2026,'2026-09-03',11,1200),(2,1,2026,'2026-08-20',3,300),(3,1,2025,'2025-11-01',30,9999);
@@ -51,4 +57,20 @@ e = rows[2]
 ok(e['last_operation'] is None and e['last_operation_date'] is None and e['last_harvest_date'] is None, 'empty garden')
 ok(e['total_harvest'] == 0 and e['total_cost'] == 0, 'empty totals')
 ok([r['name'] for r in db.execute(sql, ['a'])] == ['Edremit', 'Girelli'], 'name order unchanged')
+# Elek kayıtları hasada gün gün katılır: aynı gün hasat ve elek varsa büyüğü (çift sayılmaz).
+db.executescript('''
+INSERT INTO gardens VALUES (4,'a','Hacıalılar',200,20,'Ayvalık','');
+INSERT INTO harvests VALUES (10,4,2026,'2026-10-20',40,190);
+INSERT INTO elek_records VALUES (1,4,2026,'2026-10-20',41,150),(2,4,2026,'27.10.2026',50,300),(3,4,2026,'2026-10-29',60,459),
+  (4,4,2025,'2025-11-02',1,5000),(5,3,2026,'2026-10-29',1,777);
+INSERT INTO elek_records VALUES (6,2,0,'29.10.2026',70,265);
+''')
+rows = {r['id']: dict(r) for r in db.execute(sql, ['a'])}
+h = rows[4]
+ok(h['harvest_with_elek'] == 190 + 300 + 459 and h['total_harvest'] == 190, 'harvest + elek by day, max per day, other season excluded: %s' % h['total_harvest'])
+ok(h['last_harvest_date'] == '2026-10-29', 'last harvest date includes elek (ISO): %s' % h['last_harvest_date'])
+ok(rows[2]['harvest_with_elek'] == 265 and rows[2]['total_harvest'] == 0 and rows[2]['last_harvest_date'] == '2026-10-29', 'only elek, dd.MM.yyyy, season_year 0')
+ok(rows[1]['total_harvest'] == 1500 and rows[1]['harvest_with_elek'] == 1500, 'harvest-only garden unchanged')
+db.execute("INSERT INTO elek_records VALUES (7,1,2026,'03.09.2026',80,2000)")
+ok({r['id']: r['harvest_with_elek'] for r in db.execute(sql, ['a'])}[1] == 300 + 2000, 'same day different formats meet: elek bigger wins')
 print(f'PASS: {checks} garden summary SQL checks (host SQLite fixture).')
