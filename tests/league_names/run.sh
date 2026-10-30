@@ -14,3 +14,6 @@ psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f supabase/ZEYTIN-LIGI-CINS-AYLIK-V2.sql 
 psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f supabase/ZEYTIN-LIGI-CINS-AYLIK-V2.sql >/dev/null  # tekrar çalıştırmak zararsız
 psql $PG -d $DB -q -v ON_ERROR_STOP=1 -c "delete from private.market_contributions"
 psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f tests/league_names/checks_v2.sql
+psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f supabase/ZEYTIN-LIGI-ORT-FIYAT-V3.sql >/dev/null
+psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f supabase/ZEYTIN-LIGI-ORT-FIYAT-V3.sql >/dev/null  # tekrar çalıştırmak zararsız
+psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f tests/league_names/checks_v3.sql

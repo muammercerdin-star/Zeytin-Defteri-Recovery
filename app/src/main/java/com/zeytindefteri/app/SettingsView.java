@@ -179,7 +179,7 @@ final class SettingsView extends ScrollView {
     private static View leagueNameRow(Activity activity) {
         final TextView[] value = new TextView[1];
         View row = row(activity, R.drawable.ic_settings_person, "Ligde Adımla Görüneyim",
-                "Zeytin Ligi sıralamasında adın görünsün (kilo ve fiyatın görünmez)",
+                "Ligde adın ve ortalama TL/kg fiyatın görünsün (kilon ve tutarın görünmez)",
                 LeagueNamePrompt.stateLabel(activity),
                 () -> LeagueNamePrompt.show(activity, () -> {
                     if (value[0] != null) value[0].setText(LeagueNamePrompt.stateLabel(activity));

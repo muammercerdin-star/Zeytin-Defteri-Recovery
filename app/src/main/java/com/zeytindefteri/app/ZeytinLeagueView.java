@@ -769,8 +769,8 @@ public final class ZeytinLeagueView extends ScrollView {
             return;
         }
         LinearLayout columns = row(); columns.setPadding(dp(12), dp(8), dp(12), dp(8));
-        float[] w = {.5f, 2.2f, 1.1f, .8f};
-        String[] titles = {"#", "Üretici", "En çok çıkan", "Puan"};
+        float[] w = {.45f, 1.9f, .85f, 1f, .8f};
+        String[] titles = {"#", "Üretici", "En çok", "Ort. TL/kg", "Puan"};
         for (int i = 0; i < titles.length; i++) {
             TextView t = label(titles[i], 10, muted, false);
             t.setGravity(i == 1 ? Gravity.START : Gravity.CENTER);
@@ -793,10 +793,13 @@ public final class ZeytinLeagueView extends ScrollView {
             TextView c2 = label(r.dominant.isEmpty() ? "—" : r.dominant, 12, GreenTheme.color(R.color.zd_text_soft), false);
             c2.setGravity(Gravity.CENTER);
             line.addView(c2, new LinearLayout.LayoutParams(0, -2, w[2]));
+            boolean priced = !Double.isNaN(r.avgPrice) && r.avgPrice > 0;
+            TextView cp = label(priced ? n(r.avgPrice) : "—", 13, priced ? text : muted, true); cp.setGravity(Gravity.CENTER);
+            line.addView(cp, new LinearLayout.LayoutParams(0, -2, w[3]));
             TextView c3 = label(n(r.score), 13.5f, green, true); c3.setGravity(Gravity.CENTER);
-            line.addView(c3, new LinearLayout.LayoutParams(0, -2, w[3]));
+            line.addView(c3, new LinearLayout.LayoutParams(0, -2, w[4]));
             line.setContentDescription(r.rank + ". sıra, " + who + ", en çok çıkan " + (r.dominant.isEmpty() ? "belirsiz" : r.dominant)
-                    + ", puan " + n(r.score));
+                    + (priced ? ", ortalama " + n(r.avgPrice) + " lira kilo" : "") + ", puan " + n(r.score));
             table.addView(line);
         }
         if (rows.size() > 10) {
@@ -965,7 +968,9 @@ public final class ZeytinLeagueView extends ScrollView {
     private void nameSettingLink() {
         if (!(getContext() instanceof android.app.Activity)) return;
         boolean on = leagueCloudRepository != null && leagueCloudRepository.leagueNameShownLocally();
-        TextView link = label(on ? "Ligde adınla görünüyorsun · Değiştir" : "Ligde adınla görünmek ister misin? · Aç", 13, green, true);
+        boolean outdated = leagueCloudRepository != null && leagueCloudRepository.leagueConsentOutdated();
+        TextView link = label(outdated ? "Ortalama fiyatın da adınla görünsün mü? · Onayla"
+                : on ? "Ligde adınla görünüyorsun · Değiştir" : "Ligde adınla görünmek ister misin? · Aç", 13, outdated ? gold : green, true);
         link.setMinHeight(dp(44)); link.setGravity(Gravity.CENTER_VERTICAL);
         link.setOnClickListener(v -> LeagueNamePrompt.show((android.app.Activity) getContext(), () -> {
             previewCache.clear();

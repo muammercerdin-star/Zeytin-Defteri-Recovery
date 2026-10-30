@@ -11,8 +11,8 @@ import android.widget.Toast;
 
 /**
  * "Zeytin Ligi'nde adımla görüneyim" izni (Ayarlar ve Zeytin Ligi kullanır). Varsayılan KAPALI.
- * Açınca ligdeki ön sıralamada adın; sıran, puanın ve en çok çıkan numaranla görünür. Kilon ve
- * fiyatın adınla birlikte gösterilmez. Kapatınca ad sunucudan silinir, "Anonim üretici" olarak kalırsın.
+ * Açınca ligdeki ön sıralamada adın; sıran, puanın, en çok çıkan numaran ve ortalama kg fiyatınla görünür
+ * (onay sürümü 2). Kilon ve toplam tutarın gösterilmez. Kapatınca ad sunucudan silinir, "Anonim üretici" olarak kalırsın.
  */
 final class LeagueNamePrompt {
     private LeagueNamePrompt() {}
@@ -42,9 +42,11 @@ final class LeagueNamePrompt {
         int pad = Math.round(20 * activity.getResources().getDisplayMetrics().density);
         box.setPadding(pad, pad / 2, pad, 0);
         TextView info = new TextView(activity);
-        info.setText("Açarsan Zeytin Ligi'ndeki bölge sıralamasında adın görünür: sıran, puanın ve en çok çıkan "
-                + "elek numaran ile birlikte. Bölgendeki diğer Zeytin Defteri kullanıcıları görebilir.\n\n"
-                + "Kilon, fiyatın ve tutarın adınla birlikte GÖSTERİLMEZ.\n\n"
+        info.setText((repo.leagueConsentOutdated()
+                ? "Yenilik: ligde artık ortalama kilogram fiyatı da görünüyor. Onaylarsan adınla birlikte ortalama fiyatın da görünür; onaylamazsan adın görünür, fiyatın \"—\" olur.\n\n" : "")
+                + "Açarsan Zeytin Ligi'ndeki bölge sıralamasında adın görünür: sıran, puanın, en çok çıkan "
+                + "elek numaran ve ortalama kilogram fiyatın (TL/kg) ile birlikte. Bölgendeki diğer Zeytin Defteri kullanıcıları görebilir.\n\n"
+                + "Kilon ve toplam tutarın GÖSTERİLMEZ.\n\n"
                 + "Kapatırsan adın sunucudan silinir; sıralamada \"Anonim üretici\" olarak kalırsın."
                 + (repo.isContributionOptedIn() ? "" : "\n\nNot: Piyasaya anonim katkın kapalı; sıralamada yer almak için onu da açmalısın."));
         info.setTextSize(14);
@@ -62,7 +64,7 @@ final class LeagueNamePrompt {
         AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setTitle("Ligde adımla görüneyim")
                 .setView(box)
-                .setPositiveButton(on ? "Adı güncelle" : "Adımla görün", null)
+                .setPositiveButton(on ? (repo.leagueConsentOutdated() ? "Onayla" : "Adı güncelle") : "Adımla görün", null)
                 .setNegativeButton("Vazgeç", null)
                 .setNeutralButton(on ? "Adımı gizle" : "Gizlilik", null)
                 .create();

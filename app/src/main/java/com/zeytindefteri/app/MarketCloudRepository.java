@@ -1288,6 +1288,18 @@ public final class MarketCloudRepository {
 
     public static final String LEAGUE_NAME_SHOW_PREFIX = "league_name_show_";
     public static final String LEAGUE_NAME_PREFIX = "league_name_";
+    public static final String LEAGUE_CONSENT_PREFIX = "league_name_consent_";
+    /** Güncel onay sürümü: 2 = ad + ortalama kg fiyatı. */
+    public static final int LEAGUE_CONSENT_VERSION = 2;
+
+    /** Adı açık ama ortalama fiyat onayı eski mi (yeniden onay istenir)? */
+    public boolean leagueConsentOutdated() {
+        if (!leagueNameShownLocally()) return false;
+        int v;
+        try { v = Integer.parseInt(databaseHelper.getSetting(LEAGUE_CONSENT_PREFIX + uid, "1")); }
+        catch (NumberFormatException e) { v = 1; }
+        return v < LEAGUE_CONSENT_VERSION;
+    }
 
     /** Bölge ön sıralamasının bir satırı. name boşsa "Anonim üretici". */
     public static final class RankRow {
@@ -1295,6 +1307,8 @@ public final class MarketCloudRepository {
         public String name = "", dominant = "";
         public boolean me;
         public double score;
+        /** Ortalama TL/kg; gösterilmiyorsa NaN ("—"). */
+        public double avgPrice = Double.NaN;
     }
 
     public interface RankingCallback { void onComplete(List<RankRow> rows, Exception error); }
@@ -1310,8 +1324,9 @@ public final class MarketCloudRepository {
         return uid.isEmpty() ? "" : databaseHelper.getSetting(LEAGUE_NAME_PREFIX + uid, "");
     }
 
-    private void rememberLeagueProfile(String name, boolean show) {
+    private void rememberLeagueProfile(String name, boolean show, int consent) {
         if (uid.isEmpty()) return;
+        databaseHelper.setSetting(LEAGUE_CONSENT_PREFIX + uid, String.valueOf(show ? Math.max(1, consent) : 0));
         databaseHelper.setSetting(LEAGUE_NAME_SHOW_PREFIX + uid, show ? "1" : "0");
         databaseHelper.setSetting(LEAGUE_NAME_PREFIX + uid, show && name != null ? name : "");
     }
@@ -1332,13 +1347,20 @@ public final class MarketCloudRepository {
                 boolean show = false;
                 Exception failure = null;
                 try {
-                    JSONArray rows = requestRpcArray("league_get_profile", new JSONObject(), token);
+                    JSONArray rows;
+                    try { rows = requestRpcArray("league_get_profile_v2", new JSONObject(), token); }
+                    catch (Exception missing) {
+                        if (!missingFunction(missing)) throw missing;
+                        rows = requestRpcArray("league_get_profile", new JSONObject(), token);
+                    }
                     JSONObject row = rows.length() > 0 ? rows.optJSONObject(0) : null;
+                    int consent = 1;
                     if (row != null) {
                         name = safe(row.optString("display_name", ""));
                         show = row.optBoolean("show_name", false);
+                        consent = row.optInt("consent_version", 1);
                     }
-                    rememberLeagueProfile(name, show);
+                    rememberLeagueProfile(name, show, consent);
                 } catch (Exception error) {
                     failure = error;
                     name = leagueNameLocally();
@@ -1370,10 +1392,19 @@ public final class MarketCloudRepository {
                     JSONObject body = new JSONObject();
                     put(body, "p_display_name", show ? safe(name) : JSONObject.NULL);
                     put(body, "p_show_name", show);
-                    String raw = requestRpcRaw("league_set_profile", body, token);
+                    JSONObject v2 = new JSONObject(body.toString());
+                    put(v2, "p_consent_version", LEAGUE_CONSENT_VERSION);
+                    String raw;
+                    int consent = LEAGUE_CONSENT_VERSION;
+                    try { raw = requestRpcRaw("league_set_profile_v2", v2, token); }
+                    catch (Exception missing) {
+                        if (!missingFunction(missing)) throw missing;
+                        raw = requestRpcRaw("league_set_profile", body, token);
+                        consent = 1;
+                    }
                     try { saved = show ? safe(new JSONObject(raw).optString("display_name", saved)) : ""; }
                     catch (Exception ignored) { }
-                    rememberLeagueProfile(saved, show);
+                    rememberLeagueProfile(saved, show, consent);
                 } catch (Exception error) {
                     failure = error;
                 }
@@ -1462,14 +1493,19 @@ public final class MarketCloudRepository {
                     put(body, "p_season_year", year);
                     put(body, "p_region_key", key);
                     JSONArray rows;
+                    JSONObject v2 = new JSONObject(body.toString());
+                    put(v2, "p_variety", va);
+                    put(v2, "p_month", mo);
                     try {
-                        JSONObject v2 = new JSONObject(body.toString());
-                        put(v2, "p_variety", va);
-                        put(v2, "p_month", mo);
-                        rows = requestRpcArray("league_region_ranking_v2", v2, token);
-                    } catch (Exception missing) {
-                        if (!missingFunction(missing) || !va.isEmpty() || mo != 0) throw missing;
-                        rows = requestRpcArray("league_region_ranking", body, token);
+                        rows = requestRpcArray("league_region_ranking_v3", v2, token);
+                    } catch (Exception missing3) {
+                        if (!missingFunction(missing3)) throw missing3;
+                        try {
+                            rows = requestRpcArray("league_region_ranking_v2", v2, token);
+                        } catch (Exception missing) {
+                            if (!missingFunction(missing) || !va.isEmpty() || mo != 0) throw missing;
+                            rows = requestRpcArray("league_region_ranking", body, token);
+                        }
                     }
                     for (int i = 0; i < rows.length(); i++) {
                         JSONObject o = rows.optJSONObject(i);
@@ -1482,6 +1518,7 @@ public final class MarketCloudRepository {
                         r.dominant = o.isNull("dominant_grade") ? "" : safe(o.optString("dominant_grade", ""));
                         r.producerCount = o.optInt("producer_count", 0);
                         r.rankedCount = o.optInt("ranked_count", 0);
+                        r.avgPrice = o.has("avg_price") && !o.isNull("avg_price") ? o.optDouble("avg_price", Double.NaN) : Double.NaN;
                         out.add(r);
                     }
                 } catch (Exception error) {
