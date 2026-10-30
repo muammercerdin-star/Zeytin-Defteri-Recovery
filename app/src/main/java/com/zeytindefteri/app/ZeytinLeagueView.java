@@ -414,9 +414,16 @@ public final class ZeytinLeagueView extends ScrollView {
         String over = district.isEmpty() ? "SENİN SIRAN"
                 : "SENİN SIRAN · " + district.toUpperCase(new Locale("tr", "TR"));
         middle.addView(label(over, 11, green, true));
-        middle.addView(label(matches ? "#" + published.rank + " · Doğrulanmış" : "Sıra henüz yok", 15, text, true));
+        MarketCloudRepository.RankRow pre = matches ? null : myPreviewRow(regionId);
+        middle.addView(label(matches ? "#" + published.rank + " · Doğrulanmış"
+                : pre != null ? "#" + pre.rank + " · Ön sıralama" : "Sıra henüz yok", 15, text, true));
         String reason = "";
-        if (!matches) {
+        if (pre != null) {
+            reason = pre.producerCount + " üretici arasında · elek kayıtlarına göre";
+            TextView why = label(reason, 11.5f, GreenTheme.color(R.color.zd_text_soft), false);
+            why.setPadding(0, dp(2), 0, 0);
+            middle.addView(why);
+        } else if (!matches) {
             reason = LeagueBoardModel.rankReason(p == null ? 0 : p.kg, p != null && p.eligible, data.published);
             TextView why = label(reason, 11.5f, GreenTheme.color(R.color.zd_text_soft), false);
             why.setPadding(0, dp(2), 0, 0);
@@ -441,17 +448,19 @@ public final class ZeytinLeagueView extends ScrollView {
         strip.addView(middle, new LinearLayout.LayoutParams(0, -2, 1));
 
         LinearLayout right = column(); right.setGravity(Gravity.END);
-        right.addView(label(matches ? "Puan" : "Ön puan", 11, muted, false));
-        boolean scored = p != null && p.kg > 0 && p.amount > 0;
-        right.addView(label(scored ? n(p.score) : "—", 15, green, true));
+        right.addView(label(matches || pre != null ? "Puan" : "Ön puan", 11, muted, false));
+        boolean scored = pre != null || (p != null && p.kg > 0 && p.amount > 0);
+        right.addView(label(pre != null ? n(pre.score) : scored ? n(p.score) : "—", 15, green, true));
         if (scored) right.addView(label("/ 100", 10, muted, false));
         strip.addView(right, new LinearLayout.LayoutParams(-2, -2));
         TextView chevron = label("›", 22, muted, false); chevron.setPadding(dp(8), 0, 0, 0);
         chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         strip.addView(chevron);
 
-        strip.setContentDescription((matches ? "Senin sıran " + published.rank : "Sıra henüz yok. " + reason)
-                + (scored ? ", " + (matches ? "puan " : "ön puan ") + n(p.score) : "") + ". Ayrıntılar için dokun.");
+        strip.setContentDescription((matches ? "Senin sıran " + published.rank
+                : pre != null ? "Ön sıralamada " + pre.rank + ". sıradasın. " + reason : "Sıra henüz yok. " + reason)
+                + (pre != null ? ", puan " + n(pre.score) : scored ? ", " + (matches ? "puan " : "ön puan ") + n(p.score) : "")
+                + ". Ayrıntılar için dokun.");
         strip.setOnClickListener(v -> {
             if (ownCardView != null) smoothScrollTo(0, Math.max(0, ownCardView.getTop() - dp(8)));
         });
@@ -676,6 +685,13 @@ public final class ZeytinLeagueView extends ScrollView {
         body.addView(controls);
     }
     private void emptyRanking() { ranking(null); }
+    /** Ön sıralamada bu kullanıcının satırı (bölge yüklenmişse); yoksa null. */
+    private MarketCloudRepository.RankRow myPreviewRow(String regionId) {
+        List<MarketCloudRepository.RankRow> rows = regionId == null ? null : previewCache.get(regionId);
+        if (rows != null) for (MarketCloudRepository.RankRow r : rows) if (r.me) return r;
+        return null;
+    }
+
     /** Bölgede doğrulanmış Top 20 yok ama 5+ üretici var: elek kayıtlarına göre ön sıralama gösterilir. */
     private boolean previewEligible(ZeytinLeagueRepository.Region region) {
         if (region == null || !region.top.isEmpty() || leagueCloudRepository == null || !leagueCloudRepository.canUseCloud()) return false;
@@ -932,8 +948,14 @@ public final class ZeytinLeagueView extends ScrollView {
             box.addView(label(chosen != null && chosen.id.equals(published.region)
                     ? "Doğrulanmış bölgesel sıran" : "Doğrulanmış sıran başka bölgede.", 10, muted, false));
         }
-        else identity.addView(label("Sıra henüz yok", 12, text, true));
-        if (!matches) box.addView(label(published != null ? "Yerel önizleme • Kesin bölgesel sıra değildir."
+        MarketCloudRepository.RankRow pre = matches ? null : myPreviewRow(p == null ? null : p.region);
+        if (!matches && pre != null) {
+            identity.addView(label("#" + pre.rank + "  Sen", 15, text, true));
+            box.addView(label("Ön sıralama · " + pre.producerCount + " üretici arasında · elek kayıtlarına göre, doğrulanmamış.",
+                    10, muted, false));
+        }
+        else if (!matches) identity.addView(label("Sıra henüz yok", 12, text, true));
+        if (!matches && pre == null) box.addView(label(published != null ? "Yerel önizleme • Kesin bölgesel sıra değildir."
                 : data.published ? "Sıran henüz oluşmadı • Yerel önizleme"
                 : "Yerel önizleme • Bölgesel sıra değildir.", 10, muted, false));
         if (p == null || p.kg <= 0) {
@@ -943,7 +965,8 @@ public final class ZeytinLeagueView extends ScrollView {
         LinearLayout values = row(); values.setPadding(0, dp(2), 0, dp(2));
         primaryMetric(values, "TL/kg", n(p.average()), text);
         primaryMetric(values, "kg", n(p.kg), text);
-        primaryMetric(values, matches ? "Puan" : "Ön Puan", p.kg > 0 && p.amount > 0 ? n(p.score) : "—", green);
+        primaryMetric(values, matches || pre != null ? "Puan" : "Ön Puan",
+                pre != null ? n(pre.score) : p.kg > 0 && p.amount > 0 ? n(p.score) : "—", green);
         band.addView(values, new LinearLayout.LayoutParams(0, -2, 3));
         // Secondary values remain accessible without enlarging the personal rank bar.
         TextView detail = label("Ayrıntılar", 10, muted, false);
