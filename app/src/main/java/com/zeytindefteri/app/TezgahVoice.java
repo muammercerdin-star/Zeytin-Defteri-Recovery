@@ -205,7 +205,7 @@ public final class TezgahVoice {
                 + (oldDebt > 0.5 ? "\nBunun " + TezgahModel.tl(oldDebt) + " kadarı geçen sezonlardan (" + oldOpen + " fiş)." : "")
                 + (n > 0 ? "\nBu sezon " + n + " alım: " + TezgahModel.kg(kg) + ", " + TezgahModel.tl(gross) + "."
                         : "\nBu sezon henüz alım yok" + (older > 0 ? "; önceki sezonlarda " + older + " alım var." : "."))
-                + (lastDate.isEmpty() ? "" : "\nSon alım: " + SalePayStatus.shortDate(lastDate) + ".");
+                + (lastDate.isEmpty() ? "" : "\nSon alım: " + SalePayStatus.dayMonth(lastDate) + ".");
         return new Answer(Kind.PRODUCER, name, text);
     }
 

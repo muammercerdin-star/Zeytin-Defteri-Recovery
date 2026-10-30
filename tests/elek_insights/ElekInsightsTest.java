@@ -38,8 +38,8 @@ public final class ElekInsightsTest {
         eq(ElekInsights.topGrade(new double[]{10, 10, 0, 0, 0, 0}), "Double", "tie keeps upper grade");
         eq(ElekInsights.topGrade(none), "—", "no top grade");
         eq(ElekInsights.formatDate("2026-10-13", false), "13 Ekim 2026", "long date");
-        eq(ElekInsights.formatDate("2026-10-13", true), "13 Eki", "short date");
-        eq(ElekInsights.formatDate("2026-05-01", true), "1 May", "short may");
+        eq(ElekInsights.formatDate("2026-10-13", true), "13 Ekim", "short date: full month, no year");
+        eq(ElekInsights.formatDate("2026-05-01", true), "1 Mayıs", "short may");
         eq(ElekInsights.formatDate("13.10.2026", false), "13.10.2026", "unknown format passthrough");
         eq(ElekInsights.formatDate(null, true), "", "null date");
         eq(ElekInsights.formatPerKg(4910, 98), "50,1 TL/kg", "per kg from screenshot");

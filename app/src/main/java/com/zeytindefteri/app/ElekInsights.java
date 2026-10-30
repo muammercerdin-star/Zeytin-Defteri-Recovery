@@ -89,8 +89,9 @@ public final class ElekInsights {
                 int day = Integer.parseInt(v.substring(8, 10));
                 if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
                     String name = MONTHS[month - 1];
+                    // Kısa: yılsız ama ay adı tam ("29 Ekim"); "29 Eki" kesik görünüyordu.
                     return shortMonth
-                            ? day + " " + name.substring(0, Math.min(3, name.length()))
+                            ? day + " " + name
                             : day + " " + name + " " + year;
                 }
             }
