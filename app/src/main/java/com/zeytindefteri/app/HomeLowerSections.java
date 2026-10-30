@@ -23,6 +23,8 @@ public final class HomeLowerSections {
         void sale();
         void seasonReport();
         void market();
+        /** "Bu Sezon" kartında Satış rakamına dokunulunca: satışların dökümü. */
+        default void salesList() { seasonReport(); }
     }
 
     private final Context c;
@@ -59,6 +61,14 @@ public final class HomeLowerSections {
             value.setMaxLines(1);
             cell.addView(value);
             cell.setContentDescription(m.label + ": " + m.value);
+            if ("Satış".equals(m.label)) {
+                // Satış toplamı elek toplamından farklı olabilir; dökümü buradan açılır.
+                TextView hint = label("dökümü ›", 11, green, true);
+                hint.setPadding(0, dp(2), 0, 0);
+                cell.addView(hint);
+                cell.setContentDescription(m.label + ": " + m.value + ". Satışların dökümünü aç");
+                cell.setOnClickListener(v -> actions.salesList());
+            }
             row.addView(cell, new LinearLayout.LayoutParams(0, -2, 1));
         }
         seasonCard.addView(row);

@@ -1944,6 +1944,7 @@ public class ProducerFeedActivity extends Activity {
                     }
                     @Override public void seasonReport() { showSection("REPORTS"); openSeasonReport(); }
                     @Override public void market() { showSection("MARKET"); }
+                    @Override public void salesList() { showSeasonSales(); }
                 });
 
         return scroll;
@@ -6263,6 +6264,122 @@ public class ProducerFeedActivity extends Activity {
                 .create();
         dialog.setOnShowListener(d -> dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(false));
         dialog.show();
+    }
+
+    // ============================================================
+    // SEZON SATIŞLARI DÖKÜMÜ (Ana sayfa "Bu Sezon" → Satış)
+    // ============================================================
+
+    private List<SeasonSalesModel.Line> loadSeasonSaleLines() {
+        List<SeasonSalesModel.Line> out = new ArrayList<>();
+        Cursor c = null;
+        try {
+            c = db.getSeasonSaleLines();
+            while (c != null && c.moveToNext()) {
+                SeasonSalesModel.Line l = new SeasonSalesModel.Line();
+                l.id = c.getLong(0); l.date = c.getString(1); l.garden = c.getString(2);
+                l.kg = c.getDouble(3); l.net = c.getDouble(4); l.sourceElekId = c.getLong(5);
+                l.note = c.getString(6); l.elekExists = c.getInt(7) == 1; l.buyer = c.getString(8);
+                out.add(l);
+            }
+        } catch (RuntimeException e) {
+            android.util.Log.w("SeasonSales", "Satış dökümü okunamadı", e);
+        } finally {
+            if (c != null) c.close();
+        }
+        SeasonSalesModel.markDuplicates(out);
+        return out;
+    }
+
+    /** Satış toplamının dökümü: her satış kaynağıyla (elekten / elle / eleği silinmiş); yanlış olan silinebilir. */
+    private void showSeasonSales() {
+        final List<SeasonSalesModel.Line> lines = loadSeasonSaleLines();
+        SeasonSalesModel.Summary sum = SeasonSalesModel.summarize(lines);
+
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(8), dp(20), dp(8));
+        scroll.addView(box);
+
+        TextView total = text("Toplam " + SeasonSalesModel.tl(sum.total) + " · " + sum.count + " satış", 17, TEXT, true);
+        box.addView(total);
+        TextView explain = text(SeasonSalesModel.explain(sum), 14, MUTED, false);
+        explain.setPadding(0, dp(6), 0, dp(10));
+        box.addView(explain);
+
+        final android.app.AlertDialog[] dialog = new android.app.AlertDialog[1];
+        for (final SeasonSalesModel.Line l : lines) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setPadding(dp(14), dp(12), dp(14), dp(12));
+            boolean warn = l.kind() != SeasonSalesModel.Kind.ELEK;
+            row.setBackground(round(CARD, 14, warn ? GreenTheme.color(R.color.zd_warning) : BORDER));
+
+            LinearLayout top = new LinearLayout(this);
+            top.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            TextView when = text(SeasonSalesModel.date(l.date) + (l.garden.isEmpty() ? "" : " · " + l.garden), 14, TEXT, true);
+            top.addView(when, new LinearLayout.LayoutParams(0, -2, 1));
+            top.addView(text(SeasonSalesModel.tl(l.net), 15, GREEN, true));
+            row.addView(top);
+
+            String detail = SeasonSalesModel.kg(l.kg) + (l.buyer.isEmpty() ? "" : " · " + l.buyer);
+            row.addView(text(detail, 13, MUTED, false));
+            TextView tag = text(SeasonSalesModel.tag(l), 12,
+                    warn ? GreenTheme.color(R.color.zd_warning) : GREEN, true);
+            tag.setPadding(0, dp(4), 0, 0);
+            row.addView(tag);
+
+            row.setContentDescription(SeasonSalesModel.date(l.date) + ", " + l.garden + ", "
+                    + SeasonSalesModel.tl(l.net) + ", " + SeasonSalesModel.tag(l) + ". Silmek için dokun.");
+            row.setOnClickListener(v -> askDeleteSeasonSale(l, dialog[0]));
+
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+            lp.setMargins(0, dp(6), 0, 0);
+            box.addView(row, lp);
+        }
+        if (!lines.isEmpty()) {
+            TextView hint = text("Yanlış ya da çift girilmiş satışa dokunarak silebilirsin.", 12, MUTED, false);
+            hint.setPadding(0, dp(10), 0, 0);
+            box.addView(hint);
+        }
+
+        dialog[0] = new android.app.AlertDialog.Builder(this)
+                .setTitle("Bu sezonun satışları")
+                .setView(scroll)
+                .setPositiveButton("Kapat", null)
+                .create();
+        dialog[0].show();
+    }
+
+    private void askDeleteSeasonSale(SeasonSalesModel.Line l, android.app.AlertDialog list) {
+        String msg = SeasonSalesModel.date(l.date) + (l.garden.isEmpty() ? "" : " · " + l.garden)
+                + "\n" + SeasonSalesModel.kg(l.kg) + " · " + SeasonSalesModel.tl(l.net)
+                + "\n" + SeasonSalesModel.tag(l)
+                + (l.kind() == SeasonSalesModel.Kind.ELEK
+                    ? "\n\nBu satış bir elek kaydından oluştu. Satış silinir; elek kaydı kalır ve istersen yeniden satışa dönüştürebilirsin."
+                    : "")
+                + "\n\nSatışa bağlı alacak kaydı da silinir. Bu işlem geri alınamaz.";
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Satış silinsin mi?")
+                .setMessage(msg)
+                .setPositiveButton("Satışı sil", (d, w) -> {
+                    boolean ok;
+                    try { ok = new ElekSaleBridge(db).deleteSaleWithReceivables(l.id); }
+                    catch (RuntimeException e) { ok = false; }
+                    Toast.makeText(this, ok ? "Satış silindi." : "Satış silinemedi.", Toast.LENGTH_SHORT).show();
+                    if (!ok) return;
+                    // Silme bilgisi buluta hemen gitsin (internet yoksa sonraki eşitlemede).
+                    try {
+                        com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                        if (user != null) new PrivateCloudSyncManager(db).sync(user.getUid(), null);
+                    } catch (RuntimeException ignored) { }
+                    if (list != null) list.dismiss();
+                    refreshCurrentSection();
+                    showSeasonSales();
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
     }
 
     private SeasonReportModel.Data loadSeasonReportData() {

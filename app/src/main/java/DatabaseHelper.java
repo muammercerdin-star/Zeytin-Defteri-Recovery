@@ -3558,6 +3558,35 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
+    /**
+     * Ana sayfadaki "Satış" toplamını oluşturan satışlar, tek tek (getTotalSalesRevenue ile aynı süzgeç,
+     * böylece listenin toplamı kutudaki rakamla birebir aynıdır). Sütunlar:
+     * 0 id · 1 tarih (YYYY-MM-DD) · 2 bahçe · 3 kg · 4 net tutar · 5 elekten mi (1/0; yerel ya da bulut id) · 6 not ·
+     * 7 eleği var mı (1/0) · 8 alıcı adı.
+     */
+    public Cursor getSeasonSaleLines() {
+        return getReadableDatabase().rawQuery(
+                "SELECT s.id, " + SALE_ISO_DATE + ", COALESCE(g.name,''), COALESCE(s.total_kg,0), " +
+                        "COALESCE(s.gross_total,0) - COALESCE(s.transport_cost,0) - COALESCE(s.deductions,0), " +
+                        "(COALESCE(s.source_elek_id,0) > 0 OR COALESCE(s.source_elek_cloud_id,'') <> ''), COALESCE(s.note,''), " +
+                        "(EXISTS (SELECT 1 FROM elek_records e WHERE e.id = s.source_elek_id " +
+                        "OR (COALESCE(s.source_elek_cloud_id,'') <> '' AND e.cloud_id = s.source_elek_cloud_id))), " +
+                        "COALESCE((SELECT b.name FROM buyers b WHERE b.id = s.buyer_id), '') " +
+                        "FROM sales s " +
+                        "INNER JOIN gardens g ON g.id = s.garden_id " +
+                        "WHERE s.sale_kind = 'SALE' AND " + activeOwnerCondition("g.owner_uid") +
+                        " AND " + activeSeasonCondition("s", "sale_date") +
+                        " ORDER BY " + SALE_ISO_DATE + " DESC, s.id DESC",
+                activeOwnerArgs()
+        );
+    }
+
+    private static final String SALE_ISO_DATE =
+            "(CASE WHEN substr(s.sale_date,5,1)='-' THEN substr(s.sale_date,1,10) "
+                    + "WHEN length(s.sale_date)>=10 THEN substr(s.sale_date,7,4)||'-'||substr(s.sale_date,4,2)||'-'||substr(s.sale_date,1,2) "
+                    + "ELSE COALESCE(s.sale_date,'') END)";
+
+
     // ============================================================
     // MARKET
     // ============================================================
