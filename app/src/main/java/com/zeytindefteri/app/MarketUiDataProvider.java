@@ -197,6 +197,11 @@ public final class MarketUiDataProvider {
                 confidence.details
         );
         localState.chartLabels = chart.labels;
+        localState.medianValue = marketStats.saleCount > 0 ? marketStats.median : 0;
+        localState.previousMedianValue = trend.previousMedian > 0 ? trend.previousMedian : 0;
+        localState.rangeLowValue = marketStats.saleCount > 0 ? marketStats.min : 0;
+        localState.rangeHighValue = marketStats.saleCount > 0 ? marketStats.max : 0;
+        localState.ownPriceValue = ownLatest == null ? 0 : ownLatest.price;
         localState.chartNote = chart.values.length >= 2 ? "Senin elek kayıtlarından · günlük medyan" : "";
         return localState;
     }
@@ -345,6 +350,11 @@ public final class MarketUiDataProvider {
                 details
         );
         published.chartLabels = chartLabels;
+        published.medianValue = cloud.median;
+        published.previousMedianValue = cloud.previousAvailable ? cloud.previousMedian : 0;
+        published.rangeLowValue = cloud.rangeLow;
+        published.rangeHighValue = cloud.rangeHigh;
+        published.ownPriceValue = ownLatest == null ? 0 : ownLatest.price;
         published.chartNote = chartNote;
         return published;
     }

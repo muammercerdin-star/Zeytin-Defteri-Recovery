@@ -237,6 +237,14 @@ public final class ZeytinLeagueContainerView extends LinearLayout {
                     }
 
                     @Override
+                    public void onPeriodSelected(String period) {
+                        if (period == null || period.equals(selectedMarketPeriod)) return;
+                        selectedMarketPeriod = period;
+                        ensureRegionAvailable();
+                        refreshMarketData();
+                    }
+
+                    @Override
                     public void onCalculationInfoClicked() {
                         showCalculationInfo();
                     }
@@ -269,7 +277,7 @@ public final class ZeytinLeagueContainerView extends LinearLayout {
 
         marketView.bindState(local);
         marketView.setSourceCaption(
-                "Yerel Elek kayıtlarından piyasa önizlemesi"
+                "Senin elek kayıtların · bölge verisi yükleniyor"
         );
 
         if (marketCloudRepository == null
@@ -289,7 +297,10 @@ public final class ZeytinLeagueContainerView extends LinearLayout {
                     }
 
                     lastCloudMarket = cloud;
-                    marketView.setSourceCaption(cloud.status);
+                    marketView.setSourceCaption(cloud.available
+                            ? cloud.status + " · " + safeRegionName(cloud.district) + "güncellendi "
+                            + new java.text.SimpleDateFormat("HH:mm", new java.util.Locale("tr", "TR")).format(new java.util.Date())
+                            : cloud.status);
 
                     if (!cloud.available) {
                         return;
@@ -431,6 +442,11 @@ public final class ZeytinLeagueContainerView extends LinearLayout {
         String region = "";
         String province = "";
         String label = "";
+    }
+
+    private static String safeRegionName(String district) {
+        String d = district == null ? "" : district.trim();
+        return d.isEmpty() ? "" : d + " · ";
     }
 
     private void showPeriodPicker() {

@@ -899,7 +899,7 @@ public final class MarketCloudRepository {
                     );
 
                     result.status = result.available
-                            ? "Anonim bölgesel Piyasa • Supabase"
+                            ? "Anonim bölge verisi"
                             : "Anonim ağ • "
                             + MarketBackendConfig.PUBLIC_MARKET_MIN_PRODUCERS
                             + " farklı üretici eşiği bekleniyor";

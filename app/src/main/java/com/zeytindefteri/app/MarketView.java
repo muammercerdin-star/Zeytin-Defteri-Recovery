@@ -2,6 +2,7 @@ package com.zeytindefteri.app;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Typeface;
@@ -44,6 +45,9 @@ public final class MarketView extends ScrollView {
         void onRegionFilterClicked();
 
         void onPeriodFilterClicked();
+
+        /** Grafik kartındaki dönem sekmesi (7G / 30G / 90G / Sezon). */
+        default void onPeriodSelected(String period) { onPeriodFilterClicked(); }
 
         void onCalculationInfoClicked();
     }
@@ -170,6 +174,11 @@ public final class MarketView extends ScrollView {
 
     /** Grafiğin üstündeki satır: Son / Yüksek / Düşük / Değişim; altındaki kaynak notu. */
     private LinearLayout chartStatsRow;
+    /** Kahraman kartı: fiyat yanındaki değişim rozeti, aralık çubuğu, "senin fiyatın" satırı. */
+    private TextView heroBadgeText, ownLineText;
+    private RangeBarView rangeBar;
+    /** Grafik kartındaki dönem sekmeleri. */
+    private final java.util.List<TextView> periodTabs = new java.util.ArrayList<>();
     private TextView chartStatLast, chartStatHigh, chartStatLow, chartStatChange, chartNoteText;
 
     private LinearLayout regionsContainer;
@@ -554,6 +563,8 @@ public final class MarketView extends ScrollView {
             changeText.setText(
                     changeValue
             );
+            // "Önceki 30 günde veri yok" gibi olumsuz cümle kahraman kartında durmasın.
+            changeText.setVisibility(changeValue.toLowerCase().contains("veri yok") ? View.INVISIBLE : View.VISIBLE);
 
             changeText.setTextColor(
                     changeValue.startsWith("-")
@@ -664,6 +675,8 @@ public final class MarketView extends ScrollView {
             );
             chartView.setLabels(newState.chartLabels);
             applyChartStats(newState);
+            paintPeriodTabs(newState.selectedPeriod);
+            applyHeroExtras(newState);
 
             int chartPointCount =
                     newState.chartValues == null
@@ -1303,8 +1316,19 @@ public final class MarketView extends ScrollView {
         );
 
 
+        LinearLayout priceRow = new LinearLayout(getContext());
+        priceRow.setOrientation(LinearLayout.HORIZONTAL);
+        priceRow.setGravity(Gravity.CENTER_VERTICAL);
+        priceRow.addView(priceText, new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        heroBadgeText = label("", 12, text, true);
+        heroBadgeText.setGravity(Gravity.CENTER);
+        heroBadgeText.setPadding(dp(9), 0, dp(9), 0);
+        heroBadgeText.setVisibility(View.GONE);
+        LinearLayout.LayoutParams badgeLp = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, dp(26));
+        badgeLp.leftMargin = dp(10);
+        priceRow.addView(heroBadgeText, badgeLp);
         content.addView(
-                priceText,
+                priceRow,
                 matchWrap(
                         2,
                         0
@@ -1318,7 +1342,7 @@ public final class MarketView extends ScrollView {
 
         TextView medianLabel =
                 label(
-                        "Medyan fiyat",
+                        "Ortadaki fiyat (kayıtların yarısı altında, yarısı üstünde)",
                         11.5f,
                         textSoft,
                         false
@@ -1350,6 +1374,14 @@ public final class MarketView extends ScrollView {
                         0
                 )
         );
+        // Aralık çubuğu: en düşük — en yüksek, ortadaki fiyat çizgisi ve senin fiyatın (sarı nokta).
+        rangeBar = new RangeBarView(getContext(), green, border, text, GreenTheme.color(R.color.zd_warning));
+        LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, dp(34));
+        barLp.topMargin = dp(6);
+        content.addView(rangeBar, barLp);
+        ownLineText = label("", 12.5f, text, true);
+        ownLineText.setVisibility(View.GONE);
+        content.addView(ownLineText, matchWrap(4, 0));
 
 
         // ========================================================
@@ -1686,63 +1718,31 @@ public final class MarketView extends ScrollView {
         );
 
 
-        chartPeriodText =
-                label(
-                        state.selectedPeriod
-                                + "  ⌄",
-                        10.5f,
-                        textSoft,
-                        false
-                );
-
-
-        chartPeriodText.setGravity(
-                Gravity.CENTER
-        );
-
-
-        chartPeriodText.setPadding(
-                dp(8),
-                0,
-                dp(8),
-                0
-        );
-
-
-        chartPeriodText.setBackground(
-                round(
-                        surface,
-                        14,
-                        border
-                )
-        );
-
-
-        chartPeriodText.setOnClickListener(
-                v -> {
-
-                    if (
-                            listener != null
-                    ) {
-
-                        listener.onPeriodFilterClicked();
-                    }
-                }
-        );
-
-
-        heading.addView(
-                chartPeriodText,
-                new LinearLayout.LayoutParams(
-                        LayoutParams.WRAP_CONTENT,
-                        dp(28)
-                )
-        );
-
-
         box.addView(
                 heading
         );
+
+        // Dönem sekmeleri (borsa uygulamalarındaki gibi): 7G · 30G · 90G · Sezon.
+        LinearLayout tabs = new LinearLayout(getContext());
+        tabs.setOrientation(LinearLayout.HORIZONTAL);
+        tabs.setPadding(dp(3), dp(3), dp(3), dp(3));
+        tabs.setBackground(round(surface, 16, border));
+        periodTabs.clear();
+        String[][] periods = {{"7G", MarketUiDataProvider.PERIOD_7_DAYS}, {"30G", MarketUiDataProvider.PERIOD_30_DAYS},
+                {"90G", MarketUiDataProvider.PERIOD_90_DAYS}, {"Sezon", MarketUiDataProvider.PERIOD_SEASON}};
+        for (String[] pr : periods) {
+            TextView tab = label(pr[0], 12, textSoft, true);
+            tab.setGravity(Gravity.CENTER);
+            tab.setTag(pr[1]);
+            tab.setContentDescription("Dönem: " + pr[1]);
+            tab.setOnClickListener(v -> { if (listener != null) listener.onPeriodSelected((String) v.getTag()); });
+            tabs.addView(tab, new LinearLayout.LayoutParams(0, dp(30), 1f));
+            periodTabs.add(tab);
+        }
+        LinearLayout.LayoutParams tabsLp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        tabsLp.topMargin = dp(10);
+        box.addView(tabs, tabsLp);
+        paintPeriodTabs(state.selectedPeriod);
 
 
         chartStatsRow = new LinearLayout(getContext());
@@ -1844,8 +1844,74 @@ public final class MarketView extends ScrollView {
         );
 
         applyChartStats(state);
+        applyHeroExtras(state);
 
         return box;
+    }
+
+    private void paintPeriodTabs(String selected) {
+        for (TextView t : periodTabs) {
+            boolean on = t.getTag() != null && t.getTag().equals(selected);
+            t.setTextColor(on ? 0xFF0B1A12 : textSoft);
+            t.setBackground(on ? round(green, 13, Color.TRANSPARENT) : null);
+            t.setSelected(on);
+        }
+    }
+
+    /** Fiyat yanındaki değişim rozeti, aralık çubuğu ve "senin fiyatın" satırı. */
+    private void applyHeroExtras(MarketUiState st) {
+        if (st == null) return;
+        if (heroBadgeText != null) {
+            double now = st.medianValue, before = st.previousMedianValue;
+            String suffix = "";
+            if (!(now > 0 && before > 0) && st.chartValues != null && st.chartValues.length >= 2) {
+                before = st.chartValues[0];
+                now = st.chartValues[st.chartValues.length - 1];
+                suffix = " dönemde";
+            } else if (now > 0 && before > 0) {
+                suffix = " önceki döneme göre";
+            }
+            if (now > 0 && before > 0) {
+                double pct = (now - before) / before * 100d;
+                java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(new java.util.Locale("tr", "TR"));
+                nf.setMinimumFractionDigits(1);
+                nf.setMaximumFractionDigits(1);
+                boolean up = pct > 0.05, down = pct < -0.05;
+                heroBadgeText.setText((up ? "▲ " : down ? "▼ " : "• ") + "%" + nf.format(Math.abs(pct)));
+                heroBadgeText.setTextColor(up ? 0xFF0B1A12 : text);
+                heroBadgeText.setBackground(round(up ? green : down ? danger : surface, 13, Color.TRANSPARENT));
+                heroBadgeText.setContentDescription((up ? "Yükseldi yüzde " : down ? "Düştü yüzde " : "Değişmedi, yüzde ")
+                        + nf.format(Math.abs(pct)) + suffix);
+                heroBadgeText.setVisibility(View.VISIBLE);
+            } else {
+                heroBadgeText.setVisibility(View.GONE);
+            }
+        }
+        if (rangeBar != null) {
+            boolean has = st.rangeHighValue > 0 && st.rangeHighValue >= st.rangeLowValue;
+            rangeBar.setValues(st.rangeLowValue, st.rangeHighValue, st.medianValue, st.ownPriceValue);
+            rangeBar.setVisibility(has ? View.VISIBLE : View.GONE);
+            if (rangeText != null) rangeText.setVisibility(has ? View.GONE : View.VISIBLE);
+        }
+        if (ownLineText != null) {
+            String own = st.ownSale == null ? "" : st.ownSale.trim();
+            String cmp = st.ownComparison == null ? "" : st.ownComparison.trim();
+            if (!own.isEmpty() && !"—".equals(own)) {
+                String head = "● Senin son satışın " + own;
+                android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(head);
+                sb.setSpan(new android.text.style.ForegroundColorSpan(GreenTheme.color(R.color.zd_warning)), 0, 1, 0);
+                if (!cmp.isEmpty()) {
+                    int at = sb.length();
+                    sb.append("\n").append(cmp);
+                    sb.setSpan(new android.text.style.ForegroundColorSpan(textSoft), at, sb.length(), 0);
+                    sb.setSpan(new android.text.style.StyleSpan(Typeface.NORMAL), at, sb.length(), 0);
+                }
+                ownLineText.setText(sb);
+                ownLineText.setVisibility(View.VISIBLE);
+            } else {
+                ownLineText.setVisibility(View.GONE);
+            }
+        }
     }
 
     /** Borsa uygulamalarındaki gibi küçük başlık + değer sütunu. */
@@ -2920,6 +2986,9 @@ public final class MarketView extends ScrollView {
         /** Grafiğin kaynağı ("Senin elek fiyatların" gibi); boşsa yazılmaz. */
         public String chartNote = "";
 
+        /** Sayısal değerler (rozet, aralık çubuğu, "senin fiyatın" satırı için); 0 = yok. */
+        public double medianValue, previousMedianValue, rangeLowValue, rangeHighValue, ownPriceValue;
+
         public List<RegionUiState> regions;
 
         public String ownSale;
@@ -3189,6 +3258,10 @@ public final class MarketView extends ScrollView {
         private final float density, scaled;
         private int touched = -1;
         private int gradientHeight = -1;
+        /** Açılışta çizginin soldan sağa çizilmesi (0 → 1). */
+        private float progress = 1f;
+        private android.animation.ValueAnimator animator;
+        private int lastSignature;
 
         public PriceChartView(Context context, float[] values, String startDate, String endDate,
                               int lineColor, int gridColor, int mutedColor, int textColor) {
@@ -3235,6 +3308,17 @@ public final class MarketView extends ScrollView {
             this.startDate = startDate == null ? "" : startDate;
             this.endDate = endDate == null ? "" : endDate;
             touched = -1;
+            int signature = java.util.Arrays.hashCode(values);
+            if (signature != lastSignature && values.length >= 2) {
+                lastSignature = signature;
+                if (animator != null) animator.cancel();
+                animator = android.animation.ValueAnimator.ofFloat(0f, 1f);
+                animator.setDuration(650);
+                animator.setInterpolator(new android.view.animation.DecelerateInterpolator());
+                animator.addUpdateListener(a -> { progress = (float) a.getAnimatedValue(); invalidate(); });
+                progress = 0f;
+                animator.start();
+            }
             StringBuilder d = new StringBuilder("Fiyat grafiği");
             if (values.length >= 2) {
                 d.append(", ").append(this.startDate).append(" ").append(money(values[0]))
@@ -3298,7 +3382,9 @@ public final class MarketView extends ScrollView {
             if (n < 2) return;
             float w = getWidth(), h = getHeight();
             float left = dpLocal(4), right = w - dpLocal(14);
-            float top = dpLocal(14), axisH = dpLocal(22), bottom = h - axisH;
+            // Üstte en yüksek, altta en düşük fiyat etiketi için yer; çizgiyle çakışmaz.
+            float axisH = dpLocal(22), base = h - axisH;
+            float top = dpLocal(26), bottom = base - dpLocal(24);
             float min = Float.MAX_VALUE, max = -Float.MAX_VALUE;
             int maxI = 0, minI = 0;
             for (int i = 0; i < n; i++) {
@@ -3307,7 +3393,7 @@ public final class MarketView extends ScrollView {
             }
             float span = max - min;
             if (span < 0.01f) span = Math.max(1f, Math.abs(max) * 0.05f);
-            float lo = min - span * 0.12f, hi = max + span * 0.12f;
+            float lo = min - span * 0.04f, hi = max + span * 0.04f;
             float[] xs = new float[n], ys = new float[n];
             for (int i = 0; i < n; i++) {
                 xs[i] = left + (right - left) * i / (n - 1f);
@@ -3315,35 +3401,47 @@ public final class MarketView extends ScrollView {
             }
             // Izgara: 3 ince yatay çizgi.
             for (int g = 0; g < 3; g++) {
-                float y = top + (bottom - top) * g / 2f;
+                float y = top + (base - top) * g / 2f;
                 canvas.drawLine(left, y, right, y, gridPaint);
             }
             // Çizginin altı: yeşilden şeffafa gölge.
             if (gradientHeight != getHeight()) {
                 gradientHeight = getHeight();
-                fillPaint.setShader(new android.graphics.LinearGradient(0, top, 0, bottom,
+                fillPaint.setShader(new android.graphics.LinearGradient(0, top, 0, base,
                         (lineColor & 0x00FFFFFF) | 0x55000000, lineColor & 0x00FFFFFF,
                         android.graphics.Shader.TileMode.CLAMP));
             }
+            // Yumuşak eğri: noktalar arası orta noktalardan geçen kavis (en yüksek/en düşüğü aşmaz).
             linePath.reset();
             fillPath.reset();
-            for (int i = 0; i < n; i++) {
-                if (i == 0) { linePath.moveTo(xs[i], ys[i]); fillPath.moveTo(xs[i], bottom); fillPath.lineTo(xs[i], ys[i]); }
-                else { linePath.lineTo(xs[i], ys[i]); fillPath.lineTo(xs[i], ys[i]); }
+            linePath.moveTo(xs[0], ys[0]);
+            fillPath.moveTo(xs[0], base);
+            fillPath.lineTo(xs[0], ys[0]);
+            for (int i = 1; i < n; i++) {
+                float mx = (xs[i - 1] + xs[i]) / 2f, my = (ys[i - 1] + ys[i]) / 2f;
+                if (i == 1) { linePath.lineTo(mx, my); fillPath.lineTo(mx, my); }
+                else { linePath.quadTo(xs[i - 1], ys[i - 1], mx, my); fillPath.quadTo(xs[i - 1], ys[i - 1], mx, my); }
             }
-            fillPath.lineTo(xs[n - 1], bottom);
+            linePath.lineTo(xs[n - 1], ys[n - 1]);
+            fillPath.lineTo(xs[n - 1], ys[n - 1]);
+            fillPath.lineTo(xs[n - 1], base);
             fillPath.close();
+            // Dönem başındaki fiyat: kesikli çizgi (borsa uygulamalarındaki "dünkü kapanış" gibi).
+            float firstY = ys[0], lastY = ys[n - 1];
+            if (Math.abs(firstY - lastY) > dpLocal(3)) canvas.drawLine(left, firstY, right, firstY, dashPaint);
+            int save = canvas.save();
+            canvas.clipRect(0, 0, left + (right - left) * progress + dpLocal(2), h);
             canvas.drawPath(fillPath, fillPaint);
-            // Son fiyat hizasında kesikli çizgi.
-            float lastY = ys[n - 1];
-            canvas.drawLine(left, lastY, right, lastY, dashPaint);
             canvas.drawPath(linePath, linePaint);
+            canvas.restoreToCount(save);
             // En yüksek ve en düşük: solda küçük etiket.
-            drawPill(canvas, money(max), left, ys[maxI], true, top, bottom);
-            if (maxI != minI && max - min >= 0.01f) drawPill(canvas, money(min), left, ys[minI], false, top, bottom);
-            // Uçta parlayan nokta.
-            canvas.drawCircle(xs[n - 1], lastY, dpLocal(9), haloPaint);
-            canvas.drawCircle(xs[n - 1], lastY, dpLocal(4.2f), dotPaint);
+            drawPill(canvas, money(max), left, ys[maxI], true, 0, base);
+            if (maxI != minI && max - min >= 0.01f) drawPill(canvas, money(min), left, ys[minI], false, 0, base);
+            // Uçta parlayan nokta (çizim bitince).
+            if (progress >= 0.999f) {
+                canvas.drawCircle(xs[n - 1], lastY, dpLocal(9), haloPaint);
+                canvas.drawCircle(xs[n - 1], lastY, dpLocal(4.2f), dotPaint);
+            }
             // Tarih ekseni: baş · orta · son.
             float ay = h - dpLocal(6);
             axisPaint.setTextAlign(Paint.Align.LEFT);
@@ -3358,7 +3456,7 @@ public final class MarketView extends ScrollView {
             // Dokunulan gün: dikey çizgi + baloncuk.
             if (touched >= 0 && touched < n) {
                 float x = xs[touched], y = ys[touched];
-                canvas.drawLine(x, top - dpLocal(6), x, bottom, cursorPaint);
+                canvas.drawLine(x, top - dpLocal(6), x, base, cursorPaint);
                 canvas.drawCircle(x, y, dpLocal(8), haloPaint);
                 canvas.drawCircle(x, y, dpLocal(4.2f), dotPaint);
                 String tip = label(touched) + "  ·  " + money(values[touched]) + " TL";
@@ -3381,8 +3479,8 @@ public final class MarketView extends ScrollView {
         private void drawPill(Canvas canvas, String text, float x, float y, boolean above, float top, float bottom) {
             float tw = pillTextPaint.measureText(text) + dpLocal(12);
             float ph = dpLocal(19);
-            float py = above ? y - ph - dpLocal(3) : y + dpLocal(3);
-            py = Math.max(0, Math.min(bottom - ph, py));
+            float py = above ? y - ph - dpLocal(4) : y + dpLocal(4);
+            py = Math.max(top, Math.min(bottom - ph, py));
             rect.set(x, py, x + tw, py + ph);
             canvas.drawRoundRect(rect, dpLocal(6), dpLocal(6), pillPaint);
             pillTextPaint.setTextAlign(Paint.Align.CENTER);
@@ -3392,5 +3490,71 @@ public final class MarketView extends ScrollView {
         private float dpLocal(float v) { return v * density; }
 
         private float spLocal(float v) { return v * scaled; }
+    }
+
+    /**
+     * Fiyat aralığı çubuğu: en düşük — en yüksek; ortadaki fiyat beyaz çizgi, senin son satışın sarı nokta.
+     * Altında uçlarda en düşük ve en yüksek fiyat yazılır.
+     */
+    public static final class RangeBarView extends View {
+        private double low, high, median, own;
+        private final Paint track = new Paint(Paint.ANTI_ALIAS_FLAG), fill = new Paint(Paint.ANTI_ALIAS_FLAG),
+                tick = new Paint(Paint.ANTI_ALIAS_FLAG), ownDot = new Paint(Paint.ANTI_ALIAS_FLAG),
+                ownHalo = new Paint(Paint.ANTI_ALIAS_FLAG), labels = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final int green;
+        private final float density;
+
+        public RangeBarView(Context c, int green, int border, int text, int gold) {
+            super(c);
+            this.green = green;
+            density = getResources().getDisplayMetrics().density;
+            track.setColor(border);
+            tick.setColor(text);
+            tick.setStrokeWidth(2 * density);
+            ownDot.setColor(gold);
+            ownHalo.setColor(gold);
+            ownHalo.setAlpha(70);
+            labels.setColor(text);
+            labels.setAlpha(170);
+            labels.setTextSize(10.5f * getResources().getDisplayMetrics().scaledDensity);
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        }
+
+        public void setValues(double low, double high, double median, double own) {
+            this.low = low; this.high = high; this.median = median; this.own = own;
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (high <= 0) return;
+            float w = getWidth(), pad = 9 * density, y = 10 * density, r = 3 * density;
+            double lo = Math.min(low, own > 0 ? own : low), hi = Math.max(high, own);
+            double span = Math.max(0.01, hi - lo);
+            java.util.function.DoubleUnaryOperator x = v -> pad + (w - 2 * pad) * (v - lo) / span;
+            android.graphics.RectF rect = new android.graphics.RectF(pad, y - r, w - pad, y + r);
+            canvas.drawRoundRect(rect, r, r, track);
+            if (fill.getShader() == null || getTag() == null || !getTag().equals(getWidth())) {
+                setTag(getWidth());
+                fill.setShader(new android.graphics.LinearGradient(pad, 0, w - pad, 0,
+                        (green & 0x00FFFFFF) | 0x66000000, green, android.graphics.Shader.TileMode.CLAMP));
+            }
+            rect.set((float) x.applyAsDouble(low), y - r, (float) x.applyAsDouble(high), y + r);
+            canvas.drawRoundRect(rect, r, r, fill);
+            if (median > 0) {
+                float mx = (float) x.applyAsDouble(median);
+                canvas.drawLine(mx, y - 6 * density, mx, y + 6 * density, tick);
+            }
+            if (own > 0) {
+                float ox = (float) x.applyAsDouble(own);
+                canvas.drawCircle(ox, y, 8 * density, ownHalo);
+                canvas.drawCircle(ox, y, 4.5f * density, ownDot);
+            }
+            float ty = getHeight() - 1 * density;
+            labels.setTextAlign(Paint.Align.LEFT);
+            canvas.drawText("en düşük " + PriceChartView.money((float) low), pad, ty, labels);
+            labels.setTextAlign(Paint.Align.RIGHT);
+            canvas.drawText("en yüksek " + PriceChartView.money((float) high), w - pad, ty, labels);
+        }
     }
 }
