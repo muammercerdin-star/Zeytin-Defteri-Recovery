@@ -17,6 +17,9 @@ import java.util.Set;
  * - Ödeme geçmişi sale_payments tablosunda, yalnız bu telefonda tutulur (CREATE IF NOT EXISTS,
  *   veritabanı sürümü değişmez). owner_uid sütunu olduğu için hesap silinince LocalAccountWipe siler.
  *   Toplamlar satış/alacak satırlarında olduğu için buluta yine gider.
+ * - Her ödeme satışın kalıcı bulut kimliğini de taşır (sale_cloud_id). sale_id bu telefonun numarasıdır;
+ *   yedek başka telefona yüklenince satışlar buluttan farklı numarayla gelir. Geçmiş okunurken satır,
+ *   bulut kimliğine göre doğru satışa yeniden bağlanır (relink), yanlış satışta görünmez.
  */
 public final class SalePayments {
     static final String TABLE = "sale_payments";
@@ -46,7 +49,62 @@ public final class SalePayments {
     static void ensure(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE + " (id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "sale_id INTEGER NOT NULL, amount REAL NOT NULL, method TEXT DEFAULT 'CASH', paid_on TEXT, "
-                + "created_at INTEGER DEFAULT 0, owner_uid TEXT DEFAULT '')");
+                + "created_at INTEGER DEFAULT 0, owner_uid TEXT DEFAULT '', sale_cloud_id TEXT DEFAULT '')");
+        if (!hasColumn(db, TABLE, "sale_cloud_id")) {
+            db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN sale_cloud_id TEXT DEFAULT ''");
+            // Sütun bu telefonda ilk kez ekleniyor: mevcut satırlar bu telefonun kendi satışlarına aittir,
+            // bulut kimliği numaradan bir kez doldurulur. (Sonradan yüklenen eski yedek satırları boş kalır.)
+            if (hasColumn(db, "sales", "cloud_id")) {
+                db.execSQL("UPDATE " + TABLE + " SET sale_cloud_id = COALESCE((SELECT COALESCE(s.cloud_id,'') FROM sales s "
+                        + "WHERE s.id = " + TABLE + ".sale_id AND COALESCE(s.owner_uid,'') = COALESCE(" + TABLE + ".owner_uid,'')), '')");
+            }
+        }
+    }
+
+    /**
+     * Ödemeleri bulut kimliğine göre doğru satışa bağlar (yedek/başka telefon sonrası numara değişmiş olabilir).
+     * Dönüş: yeniden bağlanan satır sayısı.
+     */
+    public static int relink(SQLiteDatabase db, String owner) {
+        ensure(db);
+        if (!hasColumn(db, "sales", "cloud_id")) return 0;
+        String o = safe(owner);
+        db.execSQL("UPDATE " + TABLE + " SET sale_id = (SELECT s.id FROM sales s WHERE s.cloud_id = " + TABLE + ".sale_cloud_id "
+                        + "AND COALESCE(s.owner_uid,'') = ? ORDER BY s.id LIMIT 1) "
+                        + "WHERE COALESCE(owner_uid,'') = ? AND COALESCE(sale_cloud_id,'') <> '' "
+                        + "AND EXISTS (SELECT 1 FROM sales s WHERE s.cloud_id = " + TABLE + ".sale_cloud_id "
+                        + "AND COALESCE(s.owner_uid,'') = ? AND s.id <> " + TABLE + ".sale_id)",
+                new Object[]{o, o, o});
+        Cursor c = db.rawQuery("SELECT changes()", null);
+        try { return c.moveToFirst() ? c.getInt(0) : 0; } finally { c.close(); }
+    }
+
+    private static boolean hasColumn(SQLiteDatabase db, String table, String column) {
+        Cursor c = db.rawQuery("PRAGMA table_info(" + table + ")", null);
+        try {
+            while (c.moveToNext()) if (column.equals(c.getString(1))) return true;
+            return false;
+        } finally {
+            c.close();
+        }
+    }
+
+    /** Satışın bulut kimliği; yoksa (oturum açıkken) şimdi verilir ki ödeme ona bağlansın. */
+    private static String saleCloudId(SQLiteDatabase db, String owner, long saleId, long now) {
+        if (!hasColumn(db, "sales", "cloud_id")) return "";
+        String id = "";
+        Cursor c = db.rawQuery("SELECT COALESCE(cloud_id,'') FROM sales WHERE id=? AND COALESCE(owner_uid,'')=?",
+                new String[]{String.valueOf(saleId), safe(owner)});
+        try { if (c.moveToFirst()) id = nz(c.getString(0)).trim(); } finally { c.close(); }
+        if (id.isEmpty() && !safe(owner).isEmpty()) {
+            id = java.util.UUID.randomUUID().toString();
+            ContentValues v = new ContentValues();
+            v.put("cloud_id", id);
+            v.put("updated_at", now);
+            if (db.update("sales", v, "id=? AND COALESCE(owner_uid,'')=? AND (cloud_id IS NULL OR cloud_id='')",
+                    new String[]{String.valueOf(saleId), safe(owner)}) <= 0) id = "";
+        }
+        return id;
     }
 
     /** Satışın tahsilat bilgisi; satış bu hesabın değilse null. */
@@ -80,7 +138,7 @@ public final class SalePayments {
     public static List<Payment> history(SQLiteDatabase db, String owner, Info info) {
         List<Payment> out = new ArrayList<>();
         if (info == null) return out;
-        ensure(db);
+        try { relink(db, owner); } catch (RuntimeException ignored) { /* okuma yine yapılır */ }
         double sum = 0;
         Cursor c = db.rawQuery("SELECT amount, COALESCE(method,''), COALESCE(paid_on,'') FROM " + TABLE
                         + " WHERE sale_id=? AND COALESCE(owner_uid,'')=? ORDER BY created_at, id",
@@ -124,6 +182,7 @@ public final class SalePayments {
         try {
             ContentValues row = new ContentValues();
             row.put("sale_id", saleId);
+            row.put("sale_cloud_id", saleCloudId(db, owner, saleId, now));
             row.put("amount", pay);
             row.put("method", known(method) ? method : SalePayStatus.METHODS[0]);
             row.put("paid_on", nz(today));

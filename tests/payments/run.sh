@@ -11,6 +11,7 @@ import pathlib,subprocess,sys
 out=sys.argv[1]; stubs=[str(p) for p in pathlib.Path('tests/buyers/stubs').rglob('*.java')]
 subprocess.run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','-nowarn','-encoding','UTF-8','-d',out,*stubs,
   'app/src/main/java/com/zeytindefteri/app/SalePayStatus.java','app/src/main/java/com/zeytindefteri/app/ElekSaleModel.java',
-  'app/src/main/java/com/zeytindefteri/app/SalePayments.java','tests/payments/SalePaymentsTest.java'],check=True)
+  'app/src/main/java/com/zeytindefteri/app/SalePayments.java','tests/payments/SalePaymentsTest.java','tests/payments/SalePaymentsRelinkTest.java'],check=True)
 subprocess.run(['java','-cp',out,'com.zeytindefteri.app.SalePaymentsTest',str(pathlib.Path(out)/'p.sqlite'),'tests/buyers/sql_helper.py'],check=True)
+subprocess.run(['java','-cp',out,'com.zeytindefteri.app.SalePaymentsRelinkTest',str(pathlib.Path(out)/'ra.sqlite'),str(pathlib.Path(out)/'rb.sqlite'),'tests/buyers/sql_helper.py'],check=True)
 P
