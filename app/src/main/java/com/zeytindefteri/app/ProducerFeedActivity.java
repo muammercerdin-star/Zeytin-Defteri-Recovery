@@ -5352,30 +5352,29 @@ public class ProducerFeedActivity extends Activity {
         final long newRecordGarden = filter > 0 ? filter : homeActiveGardenIdOrZero();
         TextView create = text("+  Yeni elek kaydı", 16, BG, true);
         create.setGravity(Gravity.CENTER);
-        create.setMinHeight(dp(56));
-        create.setBackground(round(GREEN, 28, Color.TRANSPARENT));
+        create.setMinHeight(dp(48));
+        create.setBackground(round(GREEN, 24, Color.TRANSPARENT));
         create.setContentDescription("Yeni elek kaydı oluştur");
         create.setOnClickListener(v -> startActivity(
                 new Intent(this, ElekActivity.class).putExtra("garden_id", newRecordGarden)));
-        body.addView(create, gardensBlockParams(16));
+        body.addView(create, gardensBlockParams(14));
 
+        // Tezgâh ve Yağhane: yan yana iki küçük kart (eskiden iki tam genişlik düğme; çok yer kaplıyordu).
+        LinearLayout tools = row();
+        tools.setGravity(Gravity.CENTER_VERTICAL);
         // Tezgah Modu (tüccar): kantarda kasa kasa zeytin alımı, alım fişi WhatsApp'tan.
-        TextView tezgah = text("Tüccar Tezgahı  ·  kasa kasa alım", 15, GREEN, true);
-        tezgah.setGravity(Gravity.CENTER);
-        tezgah.setMinHeight(dp(50));
-        tezgah.setBackground(round(Color.TRANSPARENT, 25, GREEN));
-        tezgah.setContentDescription("Tüccar Tezgahı'nı aç: kasa kasa zeytin alımı");
+        View tezgah = elekToolTile(R.drawable.ic_op_basket, "Tezgâh", "kasa kasa alım",
+                "Tüccar Tezgahı'nı aç: kasa kasa zeytin alımı");
         tezgah.setOnClickListener(v -> startActivity(new Intent(this, TezgahActivity.class)));
-        body.addView(tezgah, gardensBlockParams(10));
-
+        tools.addView(tezgah, new LinearLayout.LayoutParams(0, -2, 1));
         // Yağhane: sıkım defteri ("kaç kilodan aldım", yağhaneleri karşılaştır).
-        TextView oil = text("Yağhane  ·  kaç kilodan aldım?", 15, GREEN, true);
-        oil.setGravity(Gravity.CENTER);
-        oil.setMinHeight(dp(50));
-        oil.setBackground(round(Color.TRANSPARENT, 25, GREEN));
-        oil.setContentDescription("Yağhane sıkım defterini aç: hangi yağhane kaç kilodan yağ verdi");
+        View oil = elekToolTile(R.drawable.ic_op_drop, "Yağhane", "kaç kilodan?",
+                "Yağhane sıkım defterini aç: hangi yağhane kaç kilodan yağ verdi");
         oil.setOnClickListener(v -> startActivity(new Intent(this, OilActivity.class)));
-        body.addView(oil, gardensBlockParams(10));
+        LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(0, -2, 1);
+        op.setMargins(dp(10), 0, 0, 0);
+        tools.addView(oil, op);
+        body.addView(tools, gardensBlockParams(10));
 
         // Bahçe filtresi
         if (gardenIds.size() > 1) {
@@ -5497,6 +5496,43 @@ public class ProducerFeedActivity extends Activity {
         } catch (Exception ignored) {
             return 0;
         }
+    }
+
+    /** Elek ekranında küçük araç kartı: yeşil ikon + başlık + tek satır açıklama (Tezgâh, Yağhane). */
+    private View elekToolTile(int icon, String title, String sub, String description) {
+        LinearLayout tile = row();
+        tile.setGravity(Gravity.CENTER_VERTICAL);
+        tile.setMinimumHeight(dp(56));
+        tile.setPadding(dp(12), dp(8), dp(10), dp(8));
+        tile.setBackground(round(CARD, 16, BORDER));
+        tile.setContentDescription(description);
+        tile.setClickable(true);
+        tile.setFocusable(true);
+        android.util.TypedValue ripple = new android.util.TypedValue();
+        if (getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)) {
+            tile.setForeground(getDrawable(ripple.resourceId));
+        }
+        android.widget.ImageView ic = new android.widget.ImageView(this);
+        ic.setImageResource(icon);
+        ic.setColorFilter(GREEN);
+        ic.setPadding(dp(7), dp(7), dp(7), dp(7));
+        ic.setBackground(round(GREEN_SOFT, 12, Color.TRANSPARENT));
+        ic.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        tile.addView(ic, new LinearLayout.LayoutParams(dp(36), dp(36)));
+        LinearLayout words = new LinearLayout(this);
+        words.setOrientation(LinearLayout.VERTICAL);
+        words.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        TextView t = text(title, 15, TEXT, true);
+        t.setSingleLine(true);
+        words.addView(t);
+        TextView st = text(sub, 12, MUTED, false);
+        st.setSingleLine(true);
+        st.setEllipsize(TextUtils.TruncateAt.END);
+        words.addView(st);
+        LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(0, -2, 1);
+        wp.setMargins(dp(10), 0, 0, 0);
+        tile.addView(words, wp);
+        return tile;
     }
 
     /** Sezon kartında her numaranın kilosu ve payı: 3 sütun × 2 satır, renk noktası çubuktaki renkle aynı. */
