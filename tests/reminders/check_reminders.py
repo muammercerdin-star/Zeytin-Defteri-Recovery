@@ -137,6 +137,9 @@ with tempfile.TemporaryDirectory(prefix='zeytin-reminders-') as folder:
  conn.commit();conn.close()
  for name in ['ReminderTime','LocalReminderScheduler','ReminderActions','ReminderReceiver','ReminderRestoreReceiver','SessionManager']:
   STUBS[f'com/zeytindefteri/app/{name}.java']=(ROOT/f'app/src/main/java/com/zeytindefteri/app/{name}.java').read_text()
+ # 17:00 elek hatırlatmasının saat hesabı (AlertRules.nextAt) tests/alerts'ta sınanır; burada yalnız çağrıldığı yer tutulur.
+ assert 'ElekReminder.schedule(app);' in STUBS['com/zeytindefteri/app/ReminderRestoreReceiver.java'], 'açılışta elek hatırlatması yeniden kurulmuyor'
+ STUBS['com/zeytindefteri/app/ElekReminder.java']='package com.zeytindefteri.app;\nfinal class ElekReminder{static int calls;static void schedule(android.content.Context c){calls++;}}\n'
  STUBS['com/zeytindefteri/app/ReminderRepository.java']=(ROOT/'app/src/main/java/ReminderRepository.java').read_text();STUBS['com/zeytindefteri/app/Run.java']=RUNNER
  for name,content in STUBS.items():p=t/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(content)
  subprocess.run(['java','com.sun.tools.javac.Main','--release','8','-encoding','UTF-8','-d',str(t/'classes')]+[str(x) for x in t.rglob('*.java')],check=True)

@@ -69,7 +69,16 @@ test('missing record and stale expected_status never update',async()=>{
 });
 test('client rules still deny moderation access; existing report/block contracts retained',()=>{
  const rules=fs.readFileSync(require('node:path').join(__dirname,'../../firestore.rules'),'utf8');
- assert.ok(!rules.includes('moderation_admin'));assert.ok(rules.includes('allow list, update, delete: if false;'));
+ // Ücretsiz plan moderasyonu (c41c2da): moderatör yetkisi yalnız isMod() içinde; eski şikâyet kuyruğu (reports)
+ // istemciye kapalı kalır ve moderatör kaydı yalnız konsoldan yazılır.
+ const block=(start)=>{const i=rules.indexOf(start);assert.ok(i>=0,start);let d=0;for(let j=i+start.length-1;;j++){if(rules[j]==='{')d++;else if(rules[j]==='}'&&--d===0)return rules.slice(i,j+1);}};
+ assert.equal(rules.split('moderation_admin').length-1,2,'moderation_admin yalnız isMod() açıklaması ve tanımında');
+ const reports=block('match /reports/{reporterUid}/items/{reportId} {');
+ assert.ok(!reports.includes('isMod()')&&!reports.includes('moderation_admin'),'reports moderatöre açılmış');
+ assert.ok(rules.includes('allow list, update, delete: if false;'));
+ const mods=block('match /zd_moderators/{uid} {');
+ assert.ok(mods.includes('allow list, write: if false;')&&mods.includes('request.auth.uid == uid'),'moderatör kaydı istemciden yazılabilir');
+ assert.ok(!/if\s+true/.test(rules),'koşulsuz izin');
  assert.ok(rules.includes('allow create: if reportingUser() && validReport();'));assert.ok(rules.includes('match /user_blocks/{blockerUid}/items/{blockedUid}'));
 });
 

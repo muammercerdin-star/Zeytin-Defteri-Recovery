@@ -6,7 +6,8 @@ a = open(os.path.join(R, "app/src/main/java/com/zeytindefteri/app/ProducerFeedAc
 v = open(os.path.join(R, "app/src/main/java/com/zeytindefteri/app/ZeytinLeagueView.java"), encoding="utf-8").read()
 inp = a[a.index("private HomeLeagueModel.Input homeLeagueInput("):a.index("private void renderHomeLeagueCard(")]
 checks = {
-    "card added right after the hero": re.search(r"body\.addView\(hero\);\s*View leagueCard = buildHomeLeagueCard\(\);", a) is not None,
+    # Hasat döneminde "Bugünün eleği" kahramanın hemen altına girer (d44e29d); lig kartı ondan sonra gelir.
+    "card added right after the hero": re.search(r"body\.addView\(hero\);\s*(?://[^\n]*\s*)?View todayElek = buildHomeTodayElek\(garden\);\s*if \(todayElek != null\) \{[^}]*\}\s*View leagueCard = buildHomeLeagueCard\(\);", a) is not None,
     "card states come from HomeLeagueModel.build": "HomeLeagueModel.build(in)" in a,
     "tap opens Zeytin Ligi tab": 'card.setOnClickListener(v -> showSection("REPORTS"));' in a,
     "long press hides per user": "homeLeagueHiddenKey(uid), \"1\"" in a,

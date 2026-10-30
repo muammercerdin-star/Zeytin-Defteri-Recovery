@@ -3,14 +3,15 @@ diğer modüllerin kurallarının değişmediği. Firebase emülatör testi DEĞ
 davranışı functions/test/posts.rules.test.js ve storage.rules.test.js ile emülatörde doğrulanmalıdır.
 
 Kullanım: python3 tests/security/check_static.py [karşılaştırma-commit'i]
-Karşılaştırma commit'i verilmezse sertleştirmeden önceki commit (731ef3e) kullanılır."""
+Karşılaştırma commit'i verilmezse incelenmiş son kural sürümü olan moderasyon commit'i (c41c2da) kullanılır;
+sertleştirmeden önceki 731ef3e de verilebilir (o zaman 1. bölümdeki karşılaştırma moderasyon farkını gösterir)."""
 from pathlib import Path
 import re, subprocess, sys
 
 ROOT = Path(__file__).resolve().parents[2]
 JAVA = ROOT / 'app/src/main/java'
 APP = JAVA / 'com/zeytindefteri/app'
-BASE = sys.argv[1] if len(sys.argv) > 1 else '731ef3e'
+BASE = sys.argv[1] if len(sys.argv) > 1 else 'c41c2da'
 failures, checks = [], 0
 
 def check(ok, msg):
@@ -47,7 +48,10 @@ check(rules.replace(posts, '<POSTS>') == base_rules.replace(base_posts, '<POSTS>
       'social_posts dışında firestore.rules değişmiş (diğer modüller etkilenebilir)')
 # Yorum kurallarına yalnızca moderatör kaldırması koruması eklendi (sahibi kaldırılan yanıtı geri açamaz).
 MOD_GUARD = "          && resource.data.get('moderated_by', '') == ''\n"
-check(comments.replace(MOD_GUARD, '') == base_comments, 'yorum kuralları moderasyon koruması dışında değişmiş')
+def strip_mod(t): return t.replace(MOD_GUARD, '')
+check(strip_mod(comments) == strip_mod(base_comments), 'yorum kuralları moderasyon koruması dışında değişmiş')
+# Yorumda yazar moderasyon alanlarına dokunamaz, susturulan yazamaz.
+check(comments.count('hasAny(modKeys())') >= 2 and 'notMuted()' in comments, 'yorumda moderasyon alanı koruması yok')
 check('allow read: if request.auth != null;' in post_only, 'gönderi okuma kuralı değişmiş')
 check(re.search(r'allow delete: if request\.auth != null && resource\.data\.user_id == request\.auth\.uid;', post_only),
       'gönderi silme kuralı değişmiş')
@@ -78,7 +82,12 @@ publish_code = re.sub(r'//[^\n]*', '', re.sub(r'/\*.*?\*/', '', publish, flags=r
 written = set(re.findall(r'data\.put\(\s*"(\w+)"', publish_code))
 check(written <= fields, f'istemcinin yazdığı alan kuralda yok: {sorted(written - fields)}')
 check(required <= written, f'kuralın zorunlu alanını istemci yazmıyor: {sorted(required - written)}')
-check(fields - written <= {'is_active'}, f'kuralda istemcinin yazmadığı beklenmedik alan: {sorted(fields - written)}')
+mod_keys = set(re.findall(r"'(\w+)'", re.search(r'function modKeys\(\) \{(.*?)\}', rules, re.S).group(1)))
+check(mod_keys == {'status', 'report_count', 'moderated_by', 'moderated_at'}, f'moderasyon alanları değişmiş: {sorted(mod_keys)}')
+check(fields - written <= {'is_active'} | mod_keys, f'kuralda istemcinin yazmadığı beklenmedik alan: {sorted(fields - written - mod_keys)}')
+check(not (written & {'moderated_by', 'moderated_at'}), 'istemci moderatör alanı yazıyor')
+check("!('moderated_by' in keys) && !('moderated_at' in keys)" in post_only, 'yazar moderatör alanı yazabilir')
+check('affectedKeys().hasAny(modKeys())' in update, 'yazar kendi gönderisini onaylayabilir')
 cp = read(JAVA / 'CreatePostActivity.java')
 codes = set(re.findall(r'"([A-Z_]{3,})"', cp[cp.index('getPostTypeCode('):cp.index('getCursorString(')]))
 quick = set(re.findall(r'"([A-Z_]+)"', re.search(r'Arrays\.asList\(("MARKET".*?)\)', scr).group(1))) | {'GENERAL'}
@@ -108,9 +117,18 @@ uses = [p.name for p in JAVA.rglob('*.java') if re.search(r'FirebaseStorage|Stor
 check(not uses, f'istemci Storage kullanıyor; kapalı kural onu bozar: {uses}')
 
 # 6) Hesap silme korunur
-acc_diff = subprocess.run(['git', 'diff', BASE, '--', 'functions/account', 'app/src/main/java/com/zeytindefteri/app/AccountDeletion.java'],
-                          cwd=ROOT, capture_output=True, text=True).stdout
-check(acc_diff == '', 'hesap silme kodu değişmiş')
+# Sunucu tarafı silme yalnız genişleyebilir: 731ef3e'ye göre hiçbir satır çıkarılmamış olmalı.
+srv_diff = subprocess.run(['git', 'diff', '731ef3e', '--', 'functions/account'], cwd=ROOT, capture_output=True, text=True).stdout
+removed = [l for l in srv_diff.splitlines() if l.startswith('-') and not l.startswith('---')]
+check(not removed, f'sunucu hesap silme kodundan satır çıkarılmış: {removed[:3]}')
+acc = read(APP / 'AccountDeletion.java')
+acc_code = re.sub(r'(?m)^\s*//.*$', '', acc)  # yalnız satır yorumları (URL'deki // kalır)
+order = ['setLeagueProfile("", false', 'setContributionOptIn(false', '/deleteAccount', 'LocalAccountWipe.wipe(',
+         'clearPreferences(activity, uid)', 'TezgahRescue.wipe(activity, uid)', 'finishSignedOut(activity, "Hesabın']
+pos = [acc_code.find(x) for x in order]
+check(all(p >= 0 for p in pos), f'hesap silme adımı eksik: {[x for x, p in zip(order, pos) if p < 0]}')
+check('FirebaseAuth.getInstance().signOut()' in acc_code, 'silme sonunda oturum kapanmıyor')
+check('TezgahRescue.wipe(activity, "")' in acc_code, 'misafir silmede kurtarma kopyası kalıyor')
 check("deleteStoragePrefix(`social_posts/${uid}/`)" in read(ROOT / 'functions/account/service.js'), 'Storage temizliği kalkmış')
 check("getStorage().bucket().deleteFiles" in read(ROOT / 'functions/account/functions.js'), 'Storage temizliği Admin SDK ile değil')
 
