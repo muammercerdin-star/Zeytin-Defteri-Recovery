@@ -809,7 +809,25 @@ public final class ZeytinLeagueView extends ScrollView {
         MarketCloudRepository.RankRow first = rows.get(0);
         body.addView(label(first.producerCount + " üretici · " + first.rankedCount + " sıralamada · adını açmayanlar \"Anonim üretici\"",
                 11, muted, false));
+        boolean meListed = false;
+        for (MarketCloudRepository.RankRow r : rows) if (r.me) meListed = true;
+        if (!meListed) {
+            TextView why = label("Sen bu listede yoksun · " + notListedReason(), 12, gold, true);
+            why.setPadding(0, dp(6), 0, 0);
+            body.addView(why);
+        }
         nameSettingLink();
+    }
+
+    /** Listede olmayan kullanıcıya neden ve ne yapacağı. */
+    private String notListedReason() {
+        ZeytinLeagueScore.Producer p = data == null ? null : data.local;
+        if (leagueCloudRepository != null && !leagueCloudRepository.isContributionOptedIn())
+            return "Ayarlar → Piyasaya Anonim Katkı kapalı; açınca kayıtların bölgeye katılır.";
+        if (p == null || p.kg <= 0) return "Bu bölgede bu sezon fiyatlı elek kaydın yok.";
+        if (p.kg < ZeytinLeagueScore.MIN_KG)
+            return "Sıraya girmek için " + n(ZeytinLeagueScore.MIN_KG - p.kg) + " kg daha fiyatlı elek kaydı gerekir.";
+        return "Kayıtların bölgeye henüz ulaşmamış olabilir: bahçenin il/ilçesini kontrol et, Piyasa'yı açıp yenile.";
     }
 
     /** Şerit ve kutu için sezonluk sıra her zaman yüklü olsun (filtre farklı olsa da). */
@@ -1113,6 +1131,11 @@ public final class ZeytinLeagueView extends ScrollView {
                     10, muted, false));
         }
         else if (!matches) identity.addView(label("Sıra henüz yok", 12, text, true));
+        if (!matches && pre == null && p != null && p.kg > 0) {
+            TextView todo = label(LeagueBoardModel.rankReason(p.kg, p.eligible, data.published), 11.5f, gold, true);
+            todo.setPadding(0, dp(2), 0, dp(2));
+            box.addView(todo);
+        }
         if (!matches && pre == null) box.addView(label(published != null ? "Yerel önizleme • Kesin bölgesel sıra değildir."
                 : data.published ? "Sıran henüz oluşmadı • Yerel önizleme"
                 : "Yerel önizleme • Bölgesel sıra değildir.", 10, muted, false));
