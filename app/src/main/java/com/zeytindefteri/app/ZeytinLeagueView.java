@@ -295,6 +295,9 @@ public final class ZeytinLeagueView extends ScrollView {
     private void gradeFilters() {
         HorizontalScrollView scroll = new HorizontalScrollView(getContext());
         scroll.setHorizontalScrollBarEnabled(false);
+        // Kenarda solma: çiplerin kaydırılabildiği anlaşılsın ("Yağlık" kesik görünmesin).
+        scroll.setHorizontalFadingEdgeEnabled(true);
+        scroll.setFadingEdgeLength(dp(32));
         scroll.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) ->
                 gradeFilterScrollX = scrollX);
         LinearLayout options = row();
@@ -329,34 +332,20 @@ public final class ZeytinLeagueView extends ScrollView {
         restoreHorizontalBeforeDraw(scroll, restoreGradeX);
     }
 
+    /**
+     * İnce başlık: üstteki sekme zaten "Zeytin Ligi" diyor; büyük başlık kartı ekranın üçte birini bilgi
+     * vermeden kaplıyordu. Kupa + tek satır açıklama, liste yukarı çıkar.
+     */
     private void header() {
-        // Fotoğrafsız başlık: koyu yeşil geçiş + soluk kupa + altta yeşil→altın çizgi.
-        FrameLayout hero = new FrameLayout(getContext());
-        GradientDrawable fill = new GradientDrawable(GradientDrawable.Orientation.TR_BL,
-                new int[]{0xff24503a, 0xff163428, GreenTheme.color(R.color.zd_surface)});
-        fill.setCornerRadius(dp(20)); fill.setStroke(dp(1), border);
-        hero.setBackground(fill); hero.setClipToOutline(true);
-        ImageView watermark = icon(R.drawable.ic_league_nav, green);
-        watermark.setAlpha(.13f);
-        FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(dp(120), dp(120), Gravity.END | Gravity.TOP);
-        wp.rightMargin = -dp(6); wp.topMargin = -dp(8);
-        hero.addView(watermark, wp);
-        View line = new View(getContext());
-        line.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{green, gold}));
-        hero.addView(line, new FrameLayout.LayoutParams(-1, dp(3), Gravity.BOTTOM));
-        LinearLayout copy = column(); copy.setGravity(Gravity.CENTER_VERTICAL);
-        copy.setPadding(dp(16), dp(12), dp(16), dp(14));
-        LinearLayout heading = row();
-        ImageView trophy = icon(R.drawable.ic_league_nav, gold);
-        heading.addView(trophy, new LinearLayout.LayoutParams(dp(28), dp(28)));
-        TextView title = label("Zeytin Ligi", 26, text, true); title.setPadding(dp(10), 0, 0, 0);
-        heading.addView(title, new LinearLayout.LayoutParams(0, -2, 1)); copy.addView(heading);
-        TextView motto = label("Gerçek satış verileriyle bölgenin en iyi üreticileri", 13,
+        LinearLayout line = row();
+        line.setGravity(Gravity.CENTER_VERTICAL);
+        line.setPadding(dp(4), dp(4), dp(4), dp(2));
+        line.addView(icon(R.drawable.ic_league_nav, gold), new LinearLayout.LayoutParams(dp(18), dp(18)));
+        TextView motto = label("Gerçek satış verileriyle bölgenin en iyi üreticileri", 12.5f,
                 GreenTheme.color(R.color.zd_text_soft), false);
-        motto.setPadding(0, dp(8), 0, 0); copy.addView(motto);
-        hero.addView(copy, new FrameLayout.LayoutParams(-1, -1));
-        float scale = Math.max(1, getResources().getConfiguration().fontScale);
-        body.addView(hero, new LinearLayout.LayoutParams(-1, dp(Math.min(150, 112 * scale))));
+        motto.setPadding(dp(8), 0, 0, 0);
+        line.addView(motto, new LinearLayout.LayoutParams(0, -2, 1));
+        body.addView(line);
     }
 
     /**
@@ -422,18 +411,42 @@ public final class ZeytinLeagueView extends ScrollView {
                 : "SENİN SIRAN · " + district.toUpperCase(new Locale("tr", "TR"));
         middle.addView(label(over, 11, green, true));
         middle.addView(label(matches ? "#" + published.rank + " · Doğrulanmış" : "Sıra henüz yok", 15, text, true));
+        String reason = "";
+        if (!matches) {
+            reason = LeagueBoardModel.rankReason(p == null ? 0 : p.kg, p != null && p.eligible, data.published);
+            TextView why = label(reason, 11.5f, GreenTheme.color(R.color.zd_text_soft), false);
+            why.setPadding(0, dp(2), 0, 0);
+            middle.addView(why);
+            if (p != null && p.kg > 0 && !p.eligible) {
+                // 100 kg eşiğine ilerleme
+                FrameLayout track = new FrameLayout(getContext());
+                track.setBackground(round(bg, bg));
+                View fillBar = new View(getContext());
+                fillBar.setBackground(round(gold, gold));
+                track.addView(fillBar, new FrameLayout.LayoutParams(0, -1));
+                final float frac = (float) Math.max(0, Math.min(1, p.kg / ZeytinLeagueScore.MIN_KG));
+                track.addOnLayoutChangeListener((v, l, t, rr, b, ol, ot, orr, ob) -> {
+                    int w = Math.round((rr - l) * frac);
+                    if (fillBar.getLayoutParams().width != w) { fillBar.getLayoutParams().width = w; fillBar.requestLayout(); }
+                });
+                LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-1, dp(5));
+                tp.topMargin = dp(5);
+                middle.addView(track, tp);
+            }
+        }
         strip.addView(middle, new LinearLayout.LayoutParams(0, -2, 1));
 
         LinearLayout right = column(); right.setGravity(Gravity.END);
         right.addView(label(matches ? "Puan" : "Ön puan", 11, muted, false));
         boolean scored = p != null && p.kg > 0 && p.amount > 0;
         right.addView(label(scored ? n(p.score) : "—", 15, green, true));
+        if (scored) right.addView(label("/ 100", 10, muted, false));
         strip.addView(right, new LinearLayout.LayoutParams(-2, -2));
         TextView chevron = label("›", 22, muted, false); chevron.setPadding(dp(8), 0, 0, 0);
         chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         strip.addView(chevron);
 
-        strip.setContentDescription((matches ? "Senin sıran " + published.rank : "Sıra henüz yok")
+        strip.setContentDescription((matches ? "Senin sıran " + published.rank : "Sıra henüz yok. " + reason)
                 + (scored ? ", " + (matches ? "puan " : "ön puan ") + n(p.score) : "") + ". Ayrıntılar için dokun.");
         strip.setOnClickListener(v -> {
             if (ownCardView != null) smoothScrollTo(0, Math.max(0, ownCardView.getTop() - dp(8)));
@@ -457,15 +470,14 @@ public final class ZeytinLeagueView extends ScrollView {
 
         LinearLayout band = row(); band.setPadding(dp(10), 0, dp(10), 0);
         band.setBackgroundColor(active ? 0xff21503a : GreenTheme.color(R.color.zd_surface));
-        TextView badgeView = label(badge, 12, active ? green : GreenTheme.color(R.color.zd_text_soft), true);
-        badgeView.setGravity(Gravity.CENTER); badgeView.setMinWidth(dp(28)); badgeView.setPadding(dp(4), 0, dp(4), 0);
-        badgeView.setBackground(round(bg, active ? green : border));
-        badgeView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        band.addView(badgeView, new LinearLayout.LayoutParams(-2, dp(28)));
-        View spacer = new View(getContext()); band.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1));
-        TextView tag = label(LeagueBoardModel.tag(hasTop, open), 12, hasTop ? gold : open ? green : muted, true);
+        // Harf rozeti (A/E/G) anlam taşımıyordu; yerine sade durum etiketi.
+        TextView tag = label(LeagueBoardModel.friendlyTag(hasTop, open, producers), 12,
+                hasTop ? gold : open ? green : GreenTheme.color(R.color.zd_text_soft), true);
         tag.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        band.addView(tag);
+        tag.setGravity(Gravity.CENTER_VERTICAL);
+        tag.setPadding(dp(10), 0, dp(10), 0);
+        tag.setBackground(round(bg, hasTop ? gold : open ? green : border));
+        band.addView(tag, new LinearLayout.LayoutParams(-2, dp(28)));
         tile.addView(band, new LinearLayout.LayoutParams(-1, dp(44)));
         View divider = new View(getContext()); divider.setBackgroundColor(active ? green : border);
         tile.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
@@ -487,7 +499,7 @@ public final class ZeytinLeagueView extends ScrollView {
             details.addView(label(kg > 0d ? n(kg) + " kg toplam" : "— kg", 12, GreenTheme.color(R.color.zd_text_soft), false));
             String dominant = cloud.dominantGrade == null ? "" : cloud.dominantGrade.trim();
             details.addView(label(isGradeSpecific() ? "Seçili: " + selectedLeagueGrade
-                    : "Baskın: " + (dominant.isEmpty() ? "—" : dominant), 12, muted, false));
+                    : "En çok çıkan: " + (dominant.isEmpty() ? "—" : dominant), 12, muted, false));
             spoken = (price > 0d ? ", ortalama " + n(price) + " TL/kg" : "") + (kg > 0d ? ", " + n(kg) + " kg" : "");
         } else if (hasTop) {
             // Firestore Top 20 yayında ama Supabase özeti yok/eşik altı: eşik çubuğu
@@ -778,7 +790,9 @@ public final class ZeytinLeagueView extends ScrollView {
         table.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
         LinearLayout line = row(); line.setPadding(dp(5), dp(4), dp(5), dp(4)); line.setMinimumHeight(dp(40));
         if (isMine(p)) line.setBackgroundColor(GreenTheme.color(R.color.zd_green_soft));
-        TextView rank = cell(line, String.valueOf(p.rank), 0, medal, true, 12);
+        String rankText = p.rank == 1 ? "🥇" : p.rank == 2 ? "🥈" : p.rank == 3 ? "🥉" : String.valueOf(p.rank);
+        TextView rank = cell(line, rankText, 0, medal, true, p.rank >= 1 && p.rank <= 3 ? 15 : 12);
+        rank.setContentDescription(p.rank + ". sıra");
         if (p.rank >= 1 && p.rank <= 3) rank.setBackground(round(bg, medal));
         cell(line, isMine(p) ? "Sen" : p.name, 1, text, true, 12);
         cell(line, p.dominant(), 2, text, false, 10);

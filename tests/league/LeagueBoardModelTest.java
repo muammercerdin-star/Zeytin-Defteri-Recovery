@@ -37,6 +37,14 @@ public final class LeagueBoardModelTest {
         eq(LeagueBoardModel.tag(true, false), "TOP 20", "top tag");
         eq(LeagueBoardModel.tag(false, true), "ANONİM", "open tag");
         eq(LeagueBoardModel.tag(false, false), "EŞİK", "threshold tag");
+        eq(LeagueBoardModel.friendlyTag(true, false, 2), "🏆 Top 20", "friendly top");
+        eq(LeagueBoardModel.friendlyTag(false, true, 7), "✓ Açık", "friendly open");
+        eq(LeagueBoardModel.friendlyTag(false, false, 2), "🔒 3 üretici daha", "friendly threshold");
+        eq(LeagueBoardModel.rankReason(0, false, false), "Elek kaydı girince ön puanın oluşur", "reason no kg");
+        eq(LeagueBoardModel.rankReason(62.4, false, true), "Sıraya girmek için 38 kg daha fiyatlı elek kaydı", "reason kg");
+        eq(LeagueBoardModel.rankReason(150, false, true), "Sıraya girmek için fiyatlı elek kaydı gerekli", "reason unpriced");
+        eq(LeagueBoardModel.rankReason(150, true, false), "Puanın hazır · bölge sıralaması yayınlanınca sıran çıkar", "reason unpublished");
+        eq(LeagueBoardModel.rankReason(150, true, true), "Puanın hazır · sıran bir sonraki güncellemede çıkar", "reason published");
         eq(LeagueBoardModel.statusLine(4, false), "4 bölge • Bölge rakamları 5 üreticiyle açılır", "status waiting");
         eq(LeagueBoardModel.statusLine(4, true), "4 bölge • Top 20 yayında", "status top");
         eq(LeagueBoardModel.statusLine(0, false), "Bu sezon için henüz bölge yok", "status empty");

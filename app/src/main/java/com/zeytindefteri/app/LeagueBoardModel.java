@@ -91,6 +91,29 @@ public final class LeagueBoardModel {
         return open ? "ANONİM" : "EŞİK";
     }
 
+    /** Kart etiketi, sade dille: "🏆 Top 20" · "✓ Açık" · "🔒 3 üretici daha". */
+    public static String friendlyTag(boolean hasTop, boolean open, int producers) {
+        if (hasTop) return "🏆 Top 20";
+        if (open) return "✓ Açık";
+        int need = MIN_PRODUCERS - Math.max(0, producers);
+        return "🔒 " + Math.max(1, need) + " üretici daha";
+    }
+
+    /**
+     * "Sıra henüz yok" yerine neden ve ne yapılacağı (tek satır).
+     * kg: bu sezonki elek kilosu; eligible: puan için yeterli; published: bölge sıralaması yayında.
+     */
+    public static String rankReason(double kg, boolean eligible, boolean published) {
+        if (kg <= 0) return "Elek kaydı girince ön puanın oluşur";
+        if (!eligible) {
+            long need = Math.round(Math.ceil(Math.max(0, ZeytinLeagueScore.MIN_KG - kg)));
+            return need > 0 ? "Sıraya girmek için " + need + " kg daha fiyatlı elek kaydı"
+                    : "Sıraya girmek için fiyatlı elek kaydı gerekli";
+        }
+        return published ? "Puanın hazır · sıran bir sonraki güncellemede çıkar"
+                : "Puanın hazır · bölge sıralaması yayınlanınca sıran çıkar";
+    }
+
     public static String statusLine(int regionCount, boolean anyTop) {
         if (regionCount <= 0) return "Bu sezon için henüz bölge yok";
         return regionCount + " bölge • " + (anyTop
