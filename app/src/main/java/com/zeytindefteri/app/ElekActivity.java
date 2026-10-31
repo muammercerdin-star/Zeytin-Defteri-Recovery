@@ -406,7 +406,7 @@ public class ElekActivity extends Activity {
                 startActivity(new android.content.Intent(ElekActivity.this, ElekReceiptActivity.class)
                         .putExtra(ElekReceiptActivity.EXTRA_RECORD_ID, recordId));
             }
-        });
+        }, (android.view.ViewGroup) findViewById(R.id.btnElekVoice));
         return voice;
     }
 

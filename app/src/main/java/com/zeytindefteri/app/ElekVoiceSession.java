@@ -57,7 +57,9 @@ final class ElekVoiceSession {
     private Runnable afterSpeech;
     private boolean closed;
 
-    ElekVoiceSession(Activity activity, Host host) { this.a = activity; this.host = host; }
+    private final android.view.ViewGroup button;   // "Sesle doldur" düğmesi: oturum boyunca ses dalgasına dönüşür
+
+    ElekVoiceSession(Activity activity, Host host, android.view.ViewGroup button) { this.a = activity; this.host = host; this.button = button; }
 
     /** Düğmeye basılınca. İzin yoksa ister; izin gelince Activity yeniden start() çağırır. */
     void start() {
@@ -228,6 +230,9 @@ final class ElekVoiceSession {
         ttsReady = false;
         if (overlay != null && overlay.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) overlay.getParent()).removeView(overlay);
         overlay = null;
+        // Düğme eski hâline döner: küçük küre, "Sesle doldur", "Söyle, asistan yazsın".
+        for (int i = 0; i < button.getChildCount(); i++) button.getChildAt(i).setVisibility(android.view.View.VISIBLE);
+        button.setContentDescription("Sesle doldur: kiloları söyle, asistan forma yazsın");
         a.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
@@ -238,39 +243,32 @@ final class ElekVoiceSession {
     }
 
     private void buildDialog() {
-        int muted = GreenTheme.color(R.color.zd_muted);
-        // Çerçevesiz: kutu/zemin yok; yalnız ses dalgası çubukları ve küçük kapat düğmesi.
-        LinearLayout root = new LinearLayout(a); root.setOrientation(LinearLayout.VERTICAL); root.setGravity(Gravity.CENTER_HORIZONTAL);
-
+        // Düğmenin kendi içeriği gizlenir, yerine ses dalgası + durum + kapat gelir (formun üstünde hiçbir şey yüzmez).
+        for (int i = 0; i < button.getChildCount(); i++) button.getChildAt(i).setVisibility(android.view.View.GONE);
         LinearLayout row = new LinearLayout(a); row.setGravity(Gravity.CENTER_VERTICAL);
-        orb = new ElekVoiceWaveView(a);
+        LinearLayout col = new LinearLayout(a); col.setOrientation(LinearLayout.VERTICAL); col.setGravity(Gravity.CENTER_HORIZONTAL);
+        orb = new ElekVoiceWaveView(a).onGreen();
         orb.setClickable(true); orb.setFocusable(true);
         orb.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES);
         orb.setContentDescription("Sesli elek asistanı. Tekrar dinlemesi için dokun.");
         orb.setOnClickListener(v -> { if (recognizer == null && afterSpeech == null) { silent = 0; listen(); } });
+        col.addView(orb, new LinearLayout.LayoutParams(-1, dp(38)));
+        status = label("", 12, 0xE6FFFFFF, true); status.setGravity(Gravity.CENTER); status.setSingleLine(true);
+        status.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        col.addView(status, new LinearLayout.LayoutParams(-1, -2));
+        row.addView(col, new LinearLayout.LayoutParams(0, -2, 1f));
         android.widget.ImageView close = new android.widget.ImageView(a);
-        close.setImageResource(R.drawable.ic_op_close); close.setColorFilter(GreenTheme.color(R.color.zd_text));
-        close.setPadding(dp(9), dp(9), dp(9), dp(9));
-        GradientDrawable cb = new GradientDrawable(); cb.setShape(GradientDrawable.OVAL); cb.setColor(0xCC0C1F28);
+        close.setImageResource(R.drawable.ic_op_close); close.setColorFilter(0xFFFFFFFF);
+        close.setPadding(dp(8), dp(8), dp(8), dp(8));
+        GradientDrawable cb = new GradientDrawable(); cb.setShape(GradientDrawable.OVAL); cb.setColor(0x33000000);
         close.setBackground(cb); close.setClickable(true); close.setFocusable(true);
         close.setContentDescription("Sesli elek asistanını kapat");
         close.setOnClickListener(v -> close());
-        row.addView(orb, new LinearLayout.LayoutParams(dp(220), dp(64)));
-        LinearLayout.LayoutParams xp = new LinearLayout.LayoutParams(dp(36), dp(36)); xp.leftMargin = dp(6);
+        LinearLayout.LayoutParams xp = new LinearLayout.LayoutParams(dp(36), dp(36)); xp.leftMargin = dp(8);
         row.addView(close, xp);
-        root.addView(row, new LinearLayout.LayoutParams(-2, -2));
-        status = label("", 12, muted, false); status.setGravity(Gravity.CENTER); status.setMaxLines(3);
-        status.setShadowLayer(dp(3), 0, dp(1), 0xEE000000);
-        root.addView(status, new LinearLayout.LayoutParams(-1, -2));
-
-        // Altta ortada, kaydet çubuğunun hemen üstünde yüzer; kilolar ve toplam görünür kalır.
-        android.widget.FrameLayout content = a.findViewById(android.R.id.content);
-        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(dp(290), -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        lp.bottomMargin = dp(112);
-        if (overlay != null && overlay.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) overlay.getParent()).removeView(overlay);
-        overlay = root;
-        // Zemin yok: dalganın dışındaki boşluk dokunmaları alttaki forma bırakır.
-        content.addView(root, lp);
+        overlay = row;
+        button.addView(row, new LinearLayout.LayoutParams(-1, -1));
+        button.setContentDescription("Sesli elek asistanı açık");
         a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   // elek başında ekran kararmasın
     }
 

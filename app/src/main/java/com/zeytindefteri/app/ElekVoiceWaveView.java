@@ -17,6 +17,10 @@ public final class ElekVoiceWaveView extends View {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Mode mode = Mode.IDLE;
+    private boolean onGreen;
+
+    /** Yeşil düğmenin içinde: beyaz çubuklar, gölgesiz. */
+    public ElekVoiceWaveView onGreen() { onGreen = true; return this; }
     private float target, level;
     private long lastRms;
 
@@ -52,9 +56,9 @@ public final class ElekVoiceWaveView extends View {
             k = Math.max(0, Math.min(1, k));
             float h = 7 * u + k * span;
             float x = start + i * (w + gap), y = (getHeight() - h) / 2f;
-            c.drawRoundRect(x, y + 1.5f * u, x + w, y + h + 1.5f * u, w / 2, w / 2, shadow);   // arka plan ne olursa olsun seçilsin
-            paint.setColor(mode == Mode.IDLE ? GreenTheme.color(R.color.zd_muted) : green);
-            paint.setAlpha(mode == Mode.IDLE ? 150 : (int) (255 * (0.55f + 0.45f * WEIGHTS[i])));
+            if (!onGreen) c.drawRoundRect(x, y + 1.5f * u, x + w, y + h + 1.5f * u, w / 2, w / 2, shadow);   // her zeminde seçilsin
+            paint.setColor(onGreen ? 0xFFFFFFFF : mode == Mode.IDLE ? GreenTheme.color(R.color.zd_muted) : green);
+            paint.setAlpha(mode == Mode.IDLE ? (onGreen ? 110 : 150) : (int) (255 * (0.55f + 0.45f * WEIGHTS[i])));
             c.drawRoundRect(x, y, x + w, y + h, w / 2, w / 2, paint);
         }
         if (mode != Mode.IDLE && isAttachedToWindow() && getWindowVisibility() == VISIBLE) postInvalidateDelayed(33);
