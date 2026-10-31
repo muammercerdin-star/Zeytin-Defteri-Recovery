@@ -147,6 +147,7 @@ public final class ZeytinLeagueView extends ScrollView {
         filterCache.clear();
         lastMonthMe.clear();
         mergeCloudRegions(data);
+        cloudRetry = 0;
         refreshCloudDirectory();
         refresh();
         final int token = generation;
@@ -218,19 +219,37 @@ public final class ZeytinLeagueView extends ScrollView {
         if (worker != null) worker.shutdownNow();
         super.onDetachedFromWindow();
     }
-    private void refreshCloudDirectory() {
-        if (leagueCloudRepository == null || !leagueCloudRepository.canUseCloud()) return;
+    /** Bölge dizini alınamazsa kendiliğinden yeniden dener (zayıf çekimde "Yerel önizleme"de takılı kalmasın). */
+    private static final long[] CLOUD_RETRY_MS = {3000, 10000, 30000};
+    private int cloudRetry;
 
+    private void retryCloudDirectory(int token) {
+        if (cloudRetry >= CLOUD_RETRY_MS.length) {
+            if (localData != null && data == localData && !cloudDirectoryLoaded) {
+                localData.status = "Bölge bilgileri alınamadı • ↻ ile yenile";
+                render();
+            }
+            return;
+        }
+        long wait = CLOUD_RETRY_MS[cloudRetry++];
+        main.postDelayed(() -> { if (current(token) && !cloudDirectoryLoaded) refreshCloudDirectory(); }, wait);
+    }
+
+    private void refreshCloudDirectory() {
         final int token = generation;
+        if (leagueCloudRepository == null) return;
+        if (!leagueCloudRepository.canUseCloud()) { retryCloudDirectory(token); return; }   // oturum henüz hazır değil
         final int request = ++cloudDirectorySerial;
         leagueCloudRepository.loadLeagueRegions(year, selectedLeagueGrade, (regions, error) -> {
             if (!current(token) || request != cloudDirectorySerial) return;
             if (error != null) {
                 cloudDirectoryLoaded = false;
+                retryCloudDirectory(token);
                 return;
             }
 
             cloudDirectoryLoaded = true;
+            cloudRetry = 0;
             cloudLeagueRegions.clear();
             if (regions != null) cloudLeagueRegions.addAll(regions);
 
