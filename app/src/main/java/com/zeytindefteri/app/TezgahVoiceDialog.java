@@ -27,9 +27,9 @@ public final class TezgahVoiceDialog {
     private static final Locale TR = new Locale("tr", "TR");
     private final TezgahModel model;
     private final List<String> sellers;
-    private final List<Integer> added = new ArrayList<>();
+    private final List<Integer> added = new ArrayList<>();     // bu konuşmada eklenen tartımların sırası (geri al için)
     private final List<Double> addedNet = new ArrayList<>();   // net söylenen tartımın neti, değilse -1
-    private double committingNet = -1;   // bu konuşmada eklenen tartımların sırası (geri al için)
+    private double committingNet = -1;
     private Phase phase = Phase.WEIGH;
     private int grade;
     public String seller = "";
@@ -51,7 +51,34 @@ public final class TezgahVoiceDialog {
 
     public Phase phase() { return phase; }
     public int grade() { return grade; }
-    public double paid() { return paid; }
+    /** Kaydedilecek ödeme: "tamamı" seçildiyse güncel toplam (fiyat sonradan değiştiyse de doğru kalsın). */
+    public double paid() { return pay == ElekSaleModel.PAY_ALL ? model.total() : paid; }
+
+    /**
+     * Ekrandaki tezgahla eşitle (her cevaptan önce): fiyat ve dara her zaman ekrandan alınır. Tartımlar elle
+     * değiştiyse (elle ekleme, ✕ ile silme, Sıfırla) ekrandakiler esas alınır ve "geri al" geçmişi sıfırlanır;
+     * böylece asistan yanlış tartımı silemez, toplamı yanlış okuyamaz.
+     */
+    public void sync(TezgahModel live) {
+        if (live == null) return;
+        model.setTare(live.tare());
+        for (int g = 0; g < TezgahModel.GRADES.length; g++) model.setPrice(g, live.price(g));
+        if (!sameItems(model.items(), live.items())) {
+            model.clear();
+            for (TezgahModel.Weighing w : live.items()) model.add(w.grade, w.kasa, w.kg);
+            added.clear(); addedNet.clear();
+            if (phase == Phase.KASA_CHECK) phase = Phase.WEIGH;
+        }
+    }
+
+    private static boolean sameItems(List<TezgahModel.Weighing> a, List<TezgahModel.Weighing> b) {
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            TezgahModel.Weighing x = a.get(i), y = b.get(i);
+            if (x.grade != y.grade || x.kasa != y.kasa || Math.abs(x.kg - y.kg) > 1e-6) return false;
+        }
+        return true;
+    }
     public TezgahModel model() { return model; }
 
     public String greeting() {
@@ -138,7 +165,11 @@ public final class TezgahVoiceDialog {
         if (!Double.isNaN(said.kg)) return add(said.grade >= 0 ? said.grade : grade, said.kasa, said.kg, said.grade >= 0 && said.grade != grade);
         if (said.grade >= 0) { grade = said.grade; return ask(label(grade) + ", kaç kilo?"); }
         if (said.kasa >= 0) return fixKasa(said.kasa);
-        if (has(s, "yok|gec|sonraki|atla|bos|hayir|cikmadi|tamam|baska yok|devam")) {
+        if (has(s, "hayir|yanlis|olmadi")) {
+            // Tek başına "hayır/yanlış": numarayı atlamaz, ne yapılacağını sorar.
+            return ask(added.isEmpty() ? "Kantardaki kiloyu söyle." : "Kasa sayısını söyle ya da geri al de.");
+        }
+        if (has(s, "yok|gec|sonraki|atla|bos|cikmadi|tamam|baska yok|devam")) {
             if (grade >= TezgahModel.GRADES.length - 1) return finish();
             grade++;
             return ask(label(grade) + ", kaç kilo?");
@@ -213,6 +244,7 @@ public final class TezgahVoiceDialog {
 
     private Reply kasaCheck(String s, String raw) {
         Said said = parse(raw);
+        if (!Double.isNaN(said.kg)) { phase = Phase.WEIGH; return weigh(raw, s); }   // "hayır 45": yeni kilo söylendi
         committingNet = pNet;
         if (said.kasa >= 0 && Double.isNaN(said.kg)) return commit(pGrade, said.kasa, pendingKg(said.kasa), "", -1);
         if (has(s, "evet|olur|yap|tamam|dogru")) return commit(pGrade, pSuggested, pendingKg(pSuggested), kasaWord(pSuggested) + ", ", -1);
@@ -320,18 +352,22 @@ public final class TezgahVoiceDialog {
 
     private Reply answerPay(String raw, String s) {
         double total = model.total();
+        if (has(s, "satan degil|baska satan|satan yanlis|satani degistir|ad yanlis|isim yanlis")) {
+            seller = ""; sellerNew = false; phase = Phase.SELLER;
+            return ask("Kimden aldın?");
+        }
         Said said = parse(raw);
         boolean amount = !Double.isNaN(said.kg) && said.kg >= 10;   // "bir kısmı"ndaki "bir" tutar değil
         if (has(s, "kismi|kismini|kismen|biraz")) {
             if (amount) return partial(said.kg);
             phase = Phase.PAY_AMOUNT; return ask("Ne kadar ödedin?");
         }
-        if (amount && !has(s, "yarisi")) return partial(said.kg);
-        if (has(s, "odemedim|odenmedi|sonra|borc|veresiye|henuz|hayir|yok|vermedim")) {
+        if (amount && !has(s, "yarisi|yarisini|yarim")) return partial(said.kg);
+        if (has(s, "odemedim|odenmedi|sonra|borc|borclu|borca|borcu|veresiye|henuz|hayir|yok|vermedim")) {
             pay = ElekSaleModel.PAY_NONE; paid = 0; return confirmQuestion("");
         }
-        if (has(s, "yarisi")) return partial(Math.round(total / 2));
-        if (has(s, "tamami|tamamini|hepsi|hepsini|odedim|pesin|verdim|evet|tam|nakit")) {
+        if (has(s, "yarisi|yarisini|yarim")) return partial(Math.round(total / 2));
+        if (has(s, "tamami|tamamini|hepsi|hepsini|odedim|odendi|yaptim|pesin|verdim|evet|tam|nakit")) {
             pay = ElekSaleModel.PAY_ALL; paid = total; return confirmQuestion("");
         }
         return ask("Tamamı mı, bir kısmı mı, sonra mı?");

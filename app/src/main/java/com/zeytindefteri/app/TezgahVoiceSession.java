@@ -50,6 +50,15 @@ final class TezgahVoiceSession {
 
     boolean isOpen() { return !closed && logic != null; }
 
+    /** Ekran yeniden kurulunca (fiyat, dara, satan değişti) ses dalgası yeni düğmeye taşınır. */
+    void rebind(android.view.ViewGroup b) {
+        if (!isOpen() || b == null || b == button || overlay == null) return;
+        if (overlay.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) overlay.getParent()).removeView(overlay);
+        button = b;
+        for (int i = 0; i < button.getChildCount(); i++) button.getChildAt(i).setVisibility(android.view.View.GONE);
+        button.addView(overlay, new LinearLayout.LayoutParams(-1, -1));
+    }
+
     static final int MIC_REQUEST = 7302;
     /** Sessiz dinleme turu sınırı (bir tur ~5–8 sn): ~10 dakika ses gelmezse durur. */
     private static final int SILENT_LIMIT = 90;
@@ -68,7 +77,7 @@ final class TezgahVoiceSession {
     private Runnable afterSpeech;
     private boolean closed;
 
-    private final android.view.ViewGroup button;   // "Sesle doldur" düğmesi: oturum boyunca ses dalgasına dönüşür
+    private android.view.ViewGroup button;   // "Sesle doldur" düğmesi: oturum boyunca ses dalgasına dönüşür
 
     TezgahVoiceSession(Activity activity, Host host, android.view.ViewGroup button) { this.a = activity; this.host = host; this.button = button; }
 
@@ -195,6 +204,7 @@ final class TezgahVoiceSession {
         stopListening();
         if (text.isEmpty()) { heardNothing(SpeechRecognizer.ERROR_NO_MATCH); return; }
         silent = 0;
+        logic.sync(host.snapshot());   // elle yapılan değişiklikler (fiyat, dara, ekleme/silme) önce alınır
         TezgahVoiceDialog.Reply r = logic.handle(text);
         // Tartım anında ekrana yazılır (asistan konuşurken tüccar sonucu görür).
         if (r.removeIndex >= 0) host.removeAt(r.removeIndex);

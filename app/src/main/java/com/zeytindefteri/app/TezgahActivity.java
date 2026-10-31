@@ -195,6 +195,7 @@ public final class TezgahActivity extends Activity {
             body.addView(summaryCard(), margins(-1, -2, 8));
             setContentView(root);
             refreshTotals();
+            if (voice != null) voice.rebind(voiceBar);   // ekran yeniden kurulduysa ses dalgası kaybolmasın
             return;
         }
         // Her zaman sihirbazı açar: boşken "Yeni tartım başlat", yarım alımda "Tartıma devam et".
@@ -1569,6 +1570,8 @@ public final class TezgahActivity extends Activity {
     }
 
     private boolean savePurchase(double paid, boolean qr) {
+        // Elle "Bitir" ile kaydedilirse açık sesli tartım kapanır (eski tartımları ikinci kez kaydetmeye kalkmasın).
+        if (voice != null && voice.isOpen()) voice.close();
         // Kayıttan önce: bu üreticinin şimdiye kadarki bütün borcu "önceki borç" olur.
         double prev = previousDebt(TezgahWizardFlow.sellerOrWalkIn(seller), Long.MAX_VALUE, -1);
         String text = model.receipt("Zeytin alım fişi", "Satan", seller, displayDate(), paid, prev);

@@ -124,6 +124,38 @@ public class TezgahVoiceDialogTest {
         r = nt.handle("evet");
         check(r.kasa == 2 && r.kg == 54 && TezgahModel.net(r.kasa, r.kg, 2) == 50, "evet → 2 kasa, net yine 50");
 
+        // İnceleme düzeltmeleri
+        TezgahVoiceDialog q = new TezgahVoiceDialog(model(), "", Arrays.asList());
+        q.handle("55");
+        r = q.handle("hayır");
+        check(q.grade() == 0 && r.action == TezgahVoiceDialog.Action.NONE && r.speech.contains("Kasa sayısını söyle"), "tek başına 'hayır' numarayı atlamaz: " + r.speech);
+        q.handle("1 kasa 40");   // uyarı bekliyor
+        r = q.handle("hayır 45");
+        check(r.action == TezgahVoiceDialog.Action.ADD && r.kg == 45 && q.phase() == TezgahVoiceDialog.Phase.WEIGH, "uyarıda yeni kilo söylenirse o eklenir: " + r.speech);
+        // Elle değişiklik: ekranda biri silindi, fiyat değişti
+        TezgahModel live = model();
+        live.add(0, 2, 55);   // ekranda yalnız ilk tartım kaldı (45'lik elle silindi)
+        live.setPrice(0, 200);
+        q.sync(live);
+        check(q.model().items().size() == 1 && q.model().price(0) == 200, "senkron: ekrandaki tartımlar ve fiyat alınır");
+        r = q.handle("geri al");
+        check(r.action == TezgahVoiceDialog.Action.NONE && r.speech.startsWith("Bu konuşmada eklenen tartım yok"), "elle değişince geri al yanlış tartımı silmez: " + r.speech);
+        r = q.handle("bitti");
+        check(r.speech.contains("Tutar 10200 lira"), "toplam yeni fiyatla: " + r.speech);   // 51*200
+        q.handle("münferit");
+        r = q.handle("yarısını");
+        check(q.paid() == 5100, "'yarısını' yarım ödeme: " + q.paid());
+        TezgahVoiceDialog u = new TezgahVoiceDialog(model(), "Yusuf Çerdin", Arrays.asList("Necip Avşar"));
+        u.handle("27"); u.handle("bitti");
+        r = u.handle("satan yanlış");
+        check(u.phase() == TezgahVoiceDialog.Phase.SELLER && u.seller.isEmpty(), "ödemede satan değiştirilebilir: " + r.speech);
+        u.handle("Necip"); r = u.handle("borçlu kalsın");
+        check(u.paid() == 0 && u.seller.equals("Necip Avşar"), "'borçlu' → ödeme sonra");
+        TezgahVoiceDialog w2 = new TezgahVoiceDialog(model(), "Ali", Arrays.asList());
+        w2.handle("27"); w2.handle("bitti"); w2.handle("tamamını"); 
+        TezgahModel live2 = model(); live2.add(0, 1, 27); live2.setPrice(0, 150); w2.sync(live2);
+        check(w2.paid() == 25 * 150, "tamamı: kayıtta güncel toplam: " + w2.paid());
+
         // Ayrıştırma
         TezgahVoiceDialog.Said s = TezgahVoiceDialog.parse("1 numara 40, 2 kasa");
         check(s.grade == 1 && s.kg == 40 && s.kasa == 2, "1 numara 40, 2 kasa");
