@@ -1154,7 +1154,9 @@ public final class TezgahDayActivity extends Activity {
                     } else {
                         new AlertDialog.Builder(this)
                                 .setTitle("Alım silinsin mi?")
-                                .setMessage(name + " · " + TezgahModel.kg(p.kg) + " · " + TezgahModel.tl(p.gross))
+                                .setMessage(name + " · " + TezgahModel.kg(p.kg) + " · " + TezgahModel.tl(p.gross)
+                                        + (p.paid > 0.5 ? "\n\nBu alıma yazılmış " + TezgahModel.tl(p.paid)
+                                        + " ödeme kaydı da silinir." : ""))
                                 .setPositiveButton("Sil", (x, y) -> {
                                     TezgahPurchases.delete(db.getWritableDatabase(), owner, p.id);
                                     render();

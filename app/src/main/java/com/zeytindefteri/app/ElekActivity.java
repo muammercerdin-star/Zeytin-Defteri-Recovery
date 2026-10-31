@@ -3191,6 +3191,7 @@ public class ElekActivity extends Activity {
 
     /** QR'dan gelen fiyatlar yalnız bu kayıt için; kaydettikten sonra kendi fiyatların geri gelir. */
     private boolean qrPricesActive;
+    private boolean qrDuplicateOk;
 
     private void applyTezgahQr(String raw) {
         TezgahQr.Slip slip = TezgahQr.decode(raw);
@@ -3198,6 +3199,19 @@ public class ElekActivity extends Activity {
             Toast.makeText(this, "Bu bir Zeytin Defteri tezgah fişi değil.", Toast.LENGTH_LONG).show();
             return;
         }
+        // Aynı fiş ikinci kez okutulursa uyar: iki kez kaydedilirse satış ve alacak çift görünür.
+        android.content.SharedPreferences seen = getSharedPreferences("zd_qr_seen", MODE_PRIVATE);
+        String key = "h" + Integer.toHexString(raw.trim().hashCode());
+        if (seen.getBoolean(key, false) && !qrDuplicateOk) {
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("Bu fiş daha önce okutuldu")
+                    .setMessage("Aynı tezgah fişini daha önce okuttun. Kaydettiysen tekrar kaydetme; satış çift görünür.")
+                    .setPositiveButton("Yine de doldur", (d, w) -> { qrDuplicateOk = true; applyTezgahQr(raw); qrDuplicateOk = false; })
+                    .setNegativeButton("Vazgeç", null)
+                    .show();
+            return;
+        }
+        seen.edit().putBoolean(key, true).apply();
         try {
             java.util.Date date = new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(slip.date);
             if (date != null) {

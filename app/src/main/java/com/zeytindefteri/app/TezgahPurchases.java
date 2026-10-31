@@ -185,13 +185,20 @@ public final class TezgahPurchases {
     /** Yalnız açık dönemdeki alım silinir; gün sonu alınmış (Z'li) alım kilitlidir. */
     public static boolean delete(SQLiteDatabase db, String owner, long id) {
         ensure(db);
-        boolean ok = db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0",
-                new String[]{String.valueOf(id), owner == null ? "" : owner}) > 0;
-        if (ok) {
-            TezgahPayments.deleteFor(db, owner, id);
-            TezgahCrates.deleteFor(db, owner, id);
+        // Tek işlem: alım, ödemeleri ve kasa hareketleri birlikte silinir ya da hiçbiri silinmez.
+        db.beginTransaction();
+        try {
+            boolean ok = db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0",
+                    new String[]{String.valueOf(id), owner == null ? "" : owner}) > 0;
+            if (ok) {
+                TezgahPayments.deleteFor(db, owner, id);
+                TezgahCrates.deleteFor(db, owner, id);
+                db.setTransactionSuccessful();
+            }
+            return ok;
+        } finally {
+            db.endTransaction();
         }
-        return ok;
     }
 
     /** Gün özeti satırı: "3 alım · 1.240 kg · 98.500 ₺ · 12.000 ₺ borç". */

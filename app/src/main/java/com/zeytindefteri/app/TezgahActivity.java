@@ -268,8 +268,11 @@ public final class TezgahActivity extends Activity {
         if (model.isEmpty()) { toast("Tezgah zaten boş."); return; }
         new AlertDialog.Builder(this)
                 .setTitle("Tezgah sıfırlansın mı?")
-                .setMessage(model.items().size() + " tartım silinecek. Kaydedilmemiş bilgiler kaybolur.")
-                .setPositiveButton("Sıfırla", (d, w) -> { model.clear(); saveDraft(); build(); })
+                .setMessage(model.items().size() + " tartım ve satan adı silinecek. Kaydedilmemiş bilgiler kaybolur.")
+                .setPositiveButton("Sıfırla", (d, w) -> {
+                    // Satan da silinir: yoksa sıradaki üreticinin alımı öncekinin adına (ve borcuna) yazılırdı.
+                    model.clear(); seller = ""; sellerPhone = ""; saveDraft(); build();
+                })
                 .setNegativeButton("Vazgeç", null)
                 .show();
     }
@@ -721,7 +724,8 @@ public final class TezgahActivity extends Activity {
         final String who = p.seller.isEmpty() ? "Adsız üretici" : p.seller;
         // Aynı üreticinin bu fişten önceki alımlarından kalan borç: fişte "Önceki borç" + "GÜNCEL BORÇ".
         final double prevDebt = previousDebt(p.seller, p.createdAt, p.id);
-        final String receipt = m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(), p.paid, prevDebt);
+        // Fişin tarihi alımın kendi saati (dünkü fiş bugünün tarihiyle gitmesin).
+        final String receipt = m.receipt("Zeytin alım fişi", "Satan", p.seller, displayDate(p.createdAt), p.paid, prevDebt);
         String time = p.createdAt > 0 ? new SimpleDateFormat("HH:mm", Locale.US).format(new Date(p.createdAt)) : "";
 
         TextView kicker = text((slipIndex == 0 ? "SON FİŞ" : "FİŞ") + (time.isEmpty() ? "" : " · " + time)
