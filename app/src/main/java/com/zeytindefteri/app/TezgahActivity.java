@@ -91,7 +91,8 @@ public final class TezgahActivity extends Activity {
         // Yeni alım 1 kasadan başlar; yarım kalan alıma devam ederken son yazılan kasa kalır.
         if (model.isEmpty()) kasa = 1;
         build();
-        if (fromHome && state == null) body.post(() -> { if (!isFinishing() && wizard == null) openWizard(); });
+        // Ana ekrandan "Tartım başlat" ile gelince sihirbaz kendiliğinden açılmaz: tüccar "Yeni tartım başlat"
+        // (elle) ya da "Sesle tart" (sesli) ile kendisi başlatır.
     }
 
     /** Alım defterinden dönünce (silme, borç kapama) gün özeti ve son fiş tazelensin. */
@@ -1224,15 +1225,27 @@ public final class TezgahActivity extends Activity {
         wizard = new android.app.Dialog(this);
         wizard.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
         ScrollView scroll = new ScrollView(this);
+        LinearLayout wizardColumn = new LinearLayout(this);
+        wizardColumn.setOrientation(LinearLayout.VERTICAL);
+        // Sesle tartımda en üstte asistanın ses dalgası durur (adımlar değişse de yerinde kalır).
+        wizardVoiceBar = new LinearLayout(this);
+        wizardVoiceBar.setGravity(Gravity.CENTER_VERTICAL);
+        wizardVoiceBar.setPadding(dp(12), 0, dp(10), 0);
+        wizardVoiceBar.setBackgroundResource(R.drawable.elek_voice_premium);
+        wizardVoiceBar.setVisibility(View.GONE);
+        LinearLayout.LayoutParams vb = new LinearLayout.LayoutParams(-1, dp(60));
+        vb.setMargins(dp(14), dp(14), dp(14), 0);
+        wizardColumn.addView(wizardVoiceBar, vb);
         wizardBox = new LinearLayout(this);
         wizardBox.setOrientation(LinearLayout.VERTICAL);
         wizardBox.setPadding(dp(18), dp(14), dp(18), dp(16));
+        wizardColumn.addView(wizardBox);
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.parseColor("#0C1C27"));
         bg.setCornerRadius(dp(24));
         bg.setStroke(dp(1), LINE);
         scroll.setBackground(bg);
-        scroll.addView(wizardBox);
+        scroll.addView(wizardColumn);
         wizard.setContentView(scroll);
         android.view.Window w = wizard.getWindow();
         if (w != null) {
@@ -1243,7 +1256,7 @@ public final class TezgahActivity extends Activity {
             w.setDimAmount(0.55f);
             w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
-        wizard.setOnDismissListener(d -> { wizard = null; wizardPayAfter = false; saveDraft(); build(); });
+        wizard.setOnDismissListener(d -> { if (voice != null) voice.close(); wizard = null; wizardPayAfter = false; saveDraft(); build(); });
         renderWizard();
         wizard.show();
     }
@@ -1464,7 +1477,7 @@ public final class TezgahActivity extends Activity {
         wizardKasaInput.addTextChangedListener(watcher(refresh));
         wizardKg.addTextChangedListener(watcher(refresh));
         refresh.run();
-        showKeyboard(wizardKg);
+        if (!voiceOpen()) showKeyboard(wizardKg);   // sesle tartımda klavye açılmaz
     }
 
     /** stay=true: ekledikten sonra aynı numarada kalır; false: sonraki numaraya geçer. */
@@ -1593,18 +1606,41 @@ public final class TezgahActivity extends Activity {
         b.addView(col, cp);
         b.addView(text("›", 26, Color.WHITE, true));
         b.setContentDescription("Sesle tart: kantardaki kiloyu söyle, asistan kasa, dara ve neti hesaplasın");
-        b.setOnClickListener(v -> {
-            if (voice != null) voice.close();
-            voice = new TezgahVoiceSession(this, voiceHost(), b);
-            voice.start();
-        });
+        b.setOnClickListener(v -> startVoice());
         return b;
+    }
+
+    private LinearLayout wizardVoiceBar;
+
+    private boolean voiceOpen() { return voice != null && voice.isOpen(); }
+
+    /**
+     * Sesle tart: kilo yazma ekranı (sihirbaz) hemen açılır, üstünde asistanın ses dalgası durur.
+     * Double'dan başlar, söylenen her tartım ekrana yazılır, "yok" deyince sıradaki numara açılır;
+     * Yağlık'tan sonra tartım biter, toplam kilo, tutar ve ortalama fiyat söylenir.
+     */
+    private void startVoice() {
+        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO}, TezgahVoiceSession.MIC_REQUEST);
+            return;
+        }
+        if (!android.speech.SpeechRecognizer.isRecognitionAvailable(this)) {
+            toast("Bu telefonda ses tanıma bulunamadı. Tartımı elle girebilirsin.");
+            return;
+        }
+        if (voice != null) voice.close();
+        if (wizard == null) { wizardPayAfter = false; openWizard(TezgahWizardFlow.start(model)); }
+        wizardVoiceBar.removeAllViews();
+        wizardVoiceBar.setVisibility(View.VISIBLE);
+        voice = new TezgahVoiceSession(this, voiceHost(), wizardVoiceBar);
+        voice.start();
     }
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
-        if (requestCode == TezgahVoiceSession.MIC_REQUEST && voice != null) {
-            voice.onPermission(results.length > 0 && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED);
+        if (requestCode == TezgahVoiceSession.MIC_REQUEST) {
+            if (results.length > 0 && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) startVoice();
+            else toast("Sesle tartmak için mikrofon izni gerekli. Tartımı elle de girebilirsin.");
         }
     }
 
@@ -1629,7 +1665,12 @@ public final class TezgahActivity extends Activity {
                 saveDraft();
                 if (body != null && body.getChildCount() > 0) { body.removeViewAt(0); body.addView(header(), 0); }
             }
-            @Override public boolean save(double paid) { return savePurchase(paid, true); }
+            @Override public boolean save(double paid) {
+                if (wizard != null) wizard.dismiss();
+                return savePurchase(paid, true);
+            }
+            @Override public void show(TezgahVoiceDialog d) { showVoiceStep(d); }
+            @Override public void closed() { if (wizardVoiceBar != null) wizardVoiceBar.setVisibility(View.GONE); }
         };
     }
 
@@ -1642,6 +1683,28 @@ public final class TezgahActivity extends Activity {
         if (lastSlipBox != null) lastSlipBox.setVisibility(View.GONE);
         if (seller.isEmpty() && body != null && body.getChildCount() > 0) { body.removeViewAt(0); body.addView(header(), 0); }
         voiceRefresh();
+    }
+
+    /** Konuşmanın bulunduğu adımı kilo ekranında gösterir; son tartım numaranın altında yazar. */
+    private void showVoiceStep(TezgahVoiceDialog d) {
+        if (wizard == null) return;
+        TezgahVoiceDialog.Phase ph = d.phase();
+        boolean weighing = ph == TezgahVoiceDialog.Phase.WEIGH || ph == TezgahVoiceDialog.Phase.KASA_CHECK;
+        wizardStep = weighing ? d.grade() : TezgahWizardFlow.SELLER;
+        renderWizard();
+        if (weighing && wizardNote != null && !model.isEmpty()) {
+            List<TezgahModel.Weighing> items = model.items();
+            TezgahModel.Weighing w = items.get(items.size() - 1);
+            if (w.grade == wizardStep) {
+                wizardNote.setVisibility(View.VISIBLE);
+                wizardNote.setTextColor(GREEN);
+                wizardNote.setText("Son tartım: " + TezgahModel.kg(w.kg) + " · " + (w.kasa > 0 ? w.kasa + " kasa" : "kasasız")
+                        + " · net " + TezgahModel.kg(TezgahModel.net(w.kasa, w.kg, model.tare())));
+            }
+        }
+        android.view.View focus = wizard.getCurrentFocus();
+        android.view.inputmethod.InputMethodManager im = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (focus != null && im != null) im.hideSoftInputFromWindow(focus.getWindowToken(), 0);
     }
 
     private void voiceRefresh() {

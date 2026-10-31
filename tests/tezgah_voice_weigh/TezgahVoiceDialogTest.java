@@ -50,7 +50,7 @@ public class TezgahVoiceDialogTest {
         r = d.handle("bitti");
         check(d.phase() == TezgahVoiceDialog.Phase.SELLER && r.speech.endsWith("Kimden aldın?"), "bitti → kimden: " + r.speech);
         // 13*130 + 87*100 + 74*40 = 1690 + 8700 + 2960 = 13350
-        check(r.speech.contains("13350 lira"), "toplam tutar: " + r.speech);
+        check(r.speech.startsWith("Tartım bitti. Toplam net 174 kilo. Tutar 13350 lira. Ortalama kilo fiyatı 76,7 lira."), "bitişte kilo, para, ortalama: " + r.speech);
         check(r.action != TezgahVoiceDialog.Action.SAVE, "bitti KAYDETMEZ");
         r = d.handle("Ahmet'ten aldım");
         check(d.phase() == TezgahVoiceDialog.Phase.SELLER_PICK && r.speech.startsWith("Hangisi?"), "iki Ahmet → hangisi: " + r.speech);

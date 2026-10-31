@@ -6,7 +6,7 @@ ses = open(os.path.join(A, "TezgahVoiceSession.java"), encoding="utf-8").read()
 dia = open(os.path.join(A, "TezgahVoiceDialog.java"), encoding="utf-8").read()
 checks = [
     ("Tezgah ekraninda Sesle tart dugmesi var", "body.addView(voiceButton()" in act and '"Sesle tart"' in act),
-    ("mikrofon izni sonucu oturuma iletilir", "TezgahVoiceSession.MIC_REQUEST" in act and "voice.onPermission" in act),
+    ("mikrofon izni sonucu oturuma iletilir", "TezgahVoiceSession.MIC_REQUEST" in act and "PERMISSION_GRANTED) startVoice();" in act),
     ("ekrandan cikinca oturum kapanir", re.search(r"onPause\(\) \{\s*if \(voice != null\) voice.close\(\);", act) is not None),
     ("kayit ancak SAVE eyleminde", ses.count("host.save(") == 1 and "Action.SAVE" in ses),
     ("SAVE yalniz onay asamasinda evet ile", re.search(r"private Reply confirm\(String s\).*?Action\.SAVE", dia, re.S) is not None and dia.count("Action.SAVE") == 1),
@@ -14,6 +14,10 @@ checks = [
     ("kayit QR fisini acar", "savePurchase(paid, true)" in act),
     ("dugme ses dalgasina donusur", "new ElekVoiceWaveView(a).onGreen()" in ses),
     ("ekran kararmaz", "FLAG_KEEP_SCREEN_ON" in ses),
+    ("ana ekrandan gelince sihirbaz kendiliginden acilmaz", "fromHome && state == null) body.post" not in act),
+    ("Sesle tart kilo ekranini (sihirbaz) hemen acar, ses dalgasi ustte", "openWizard(TezgahWizardFlow.start(model)); }" in act and "new TezgahVoiceSession(this, voiceHost(), wizardVoiceBar)" in act),
+    ("sesle tartimda klavye acilmaz", "if (!voiceOpen()) showKeyboard(wizardKg);" in act),
+    ("sihirbaz kapaninca asistan da kapanir", "if (voice != null) voice.close(); wizard = null;" in act),
     ("sessizlikte konusmaz, sessizce dinlemeye devam eder", "Bekliyorum" not in ses and "Hâlâ buradayım" not in ses and "main.postDelayed(this::listen, 250)" in ses),
 ]
 bad = 0

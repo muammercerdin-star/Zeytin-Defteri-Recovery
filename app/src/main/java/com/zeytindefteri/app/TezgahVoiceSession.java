@@ -42,7 +42,13 @@ final class TezgahVoiceSession {
         void setSeller(String name);
         /** Alımı kaydeder ve fişi (QR) açar; başarılıysa true. */
         boolean save(double paid);
+        /** Konuşmanın bulunduğu adımı (numara ya da satan) ekranda göster. */
+        default void show(TezgahVoiceDialog d) { }
+        /** Asistan kapandı. */
+        default void closed() { }
     }
+
+    boolean isOpen() { return !closed && logic != null; }
 
     static final int MIC_REQUEST = 7302;
     /** Sessiz dinleme turu sınırı (bir tur ~5–8 sn): ~10 dakika ses gelmezse durur. */
@@ -97,6 +103,7 @@ final class TezgahVoiceSession {
             });
             if (pendingSpeech != null) { String s = pendingSpeech; pendingSpeech = null; say(s, pendingListen); }
         }));
+        host.show(logic);
         say(logic.greeting(), true);
     }
 
@@ -193,6 +200,7 @@ final class TezgahVoiceSession {
         if (r.removeIndex >= 0) host.removeAt(r.removeIndex);
         if (r.action == TezgahVoiceDialog.Action.ADD) host.add(r.grade, r.kasa, r.kg);
         if (r.action == TezgahVoiceDialog.Action.SELLER) host.setSeller(logic.seller);
+        if (r.action != TezgahVoiceDialog.Action.SAVE && r.action != TezgahVoiceDialog.Action.CANCEL) host.show(logic);
         if (r.action == TezgahVoiceDialog.Action.SAVE) {
             final double paid = logic.paid();
             // Önce söyler, sonra kaydeder (kayıt ekranı yeniden kurar, fiş açılır).
@@ -243,7 +251,7 @@ final class TezgahVoiceSession {
         // Düğme eski hâline döner.
         for (int i = 0; i < button.getChildCount(); i++) button.getChildAt(i).setVisibility(android.view.View.VISIBLE);
         button.setContentDescription("Sesle tart: kantardaki kiloyu söyle, asistan kasa, dara ve neti hesaplasın");
-        a.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        host.closed();
     }
 
     // ------------------------------------------------------------ pencere: yüzen küre

@@ -249,8 +249,9 @@ public final class TezgahVoiceDialog {
 
     private Reply finish() {
         if (model.isEmpty()) return ask("Henüz tartım yok. Kantardaki kiloyu söyle.");
-        String head = "Toplam net " + num(model.totalNet()) + " kilo, " + model.totalKasa() + " kasa"
-                + (model.total() > 0 ? ", " + money(model.total()) + " lira." : ".");
+        // Sıra: kilo, para, ortalama kilo fiyatı.
+        String head = "Tartım bitti. Toplam net " + num(model.totalNet()) + " kilo.";
+        if (model.total() > 0.5) head += " Tutar " + money(model.total()) + " lira. Ortalama kilo fiyatı " + num(model.averagePrice()) + " lira.";
         List<String> missing = model.missingPrices();
         if (!missing.isEmpty()) head += " " + String.join(", ", missing) + " için fiyat girilmemiş.";
         if (seller.isEmpty()) { phase = Phase.SELLER; return ask(head + " Kimden aldın?"); }
