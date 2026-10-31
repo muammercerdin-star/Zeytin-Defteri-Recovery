@@ -372,6 +372,58 @@ public class ElekActivity extends Activity {
         }
     }
 
+    // ============================================================ SESLİ ELEK (konuşma penceresi)
+    private ElekVoiceSession voice;
+    private long voiceSavedId = -1;
+
+    private ElekVoiceSession voiceSession() {
+        if (voice == null) voice = new ElekVoiceSession(this, new ElekVoiceSession.Host() {
+            @Override public double[] kg() {
+                return new double[]{readDouble(etKgDouble), readDouble(etKg1), readDouble(etKg2),
+                        readDouble(etKg3), readDouble(etKg4), readDouble(etKgOil)};
+            }
+            @Override public double[] prices() { return new double[]{priceDouble, price1, price2, price3, price4, priceOil}; }
+            @Override public boolean soldOnSave() { return saleOnSave; }
+            @Override public void fill(double[] values, Boolean sold, String buyer) {
+                EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
+                for (int i = 0; i < kg.length && i < values.length; i++) {
+                    if (kg[i] == null) continue;
+                    String v = values[i] > 0 ? TezgahQr.field(values[i]) : "";
+                    if (!v.equals(kg[i].getText().toString())) kg[i].setText(v);
+                }
+                if (sold != null) saleOnSave = sold;
+                if (saleOnSave && etSaleBuyer != null && buyer != null && !buyer.trim().isEmpty()) etSaleBuyer.setText(buyer.trim());
+                renderSaleOnSave();
+                calculateAll();
+                refreshElekInsights();
+            }
+            @Override public long save() {
+                voiceSavedId = -1;
+                saveElekRecord();
+                return voiceSavedId;
+            }
+            @Override public void openReceipt(long recordId) {
+                startActivity(new android.content.Intent(ElekActivity.this, ElekReceiptActivity.class)
+                        .putExtra(ElekReceiptActivity.EXTRA_RECORD_ID, recordId));
+            }
+        });
+        return voice;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == ElekVoiceSession.MIC_REQUEST && voice != null) {
+            voice.onPermission(results.length > 0 && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (voice != null) voice.close();   // ekrandan çıkınca mikrofon ve ses kapanır
+        super.onPause();
+    }
+
     static final String EXTRA_VOICE_KG = "voice_kg";
     static final String EXTRA_VOICE_SOLD = "voice_sold";
     static final String EXTRA_VOICE_BUYER = "voice_buyer";
@@ -1686,6 +1738,9 @@ public class ElekActivity extends Activity {
         // Defterden oku: elek defteri sayfasının fotoğrafı telefonda okunur, kontrol ekranından sonra forma dolar.
         android.view.View notebookButton = findViewById(R.id.btnElekNotebook);
         if (notebookButton != null) notebookButton.setOnClickListener(view -> NotebookScanUi.start(this));
+        // Sesle doldur: asistan konuşarak kiloları alır, "bitti"de toplamı okur, "evet"te kaydeder.
+        android.view.View voiceButton = findViewById(R.id.btnElekVoice);
+        if (voiceButton != null) voiceButton.setOnClickListener(view -> voiceSession().start());
         // Ana sayfadaki "Defterden oku" ile açıldıysa kamera/galeri seçimi hemen gelsin.
         if (notebookButton != null && getIntent() != null && getIntent().getBooleanExtra("open_notebook", false)) {
             getIntent().removeExtra("open_notebook");
@@ -2446,6 +2501,7 @@ public class ElekActivity extends Activity {
         // ========================================================
 
         if (result != -1) {
+            voiceSavedId = result;
             long saleId = -1;
             if (wantSale) {
                 saleId = new ElekSaleBridge(databaseHelper).createSale(result, pay, partial, buyer);
@@ -3200,6 +3256,7 @@ public class ElekActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (voice != null) voice.close();
         if (priceDialog != null) priceDialog.dismiss();
 
         if (databaseHelper != null) {

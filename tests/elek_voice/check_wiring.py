@@ -17,4 +17,12 @@ body = e[e.index('private void applyVoiceEntry('):]
 body = body[:body.index('\n    }\n') ]
 check('saveElek' not in body and 'btnSaveElek.performClick' not in body and 'createSale' not in body, 'form doldurulur, kayıt/satış KENDİLİĞİNDEN yapılmaz')
 check('savedInstanceState == null' in e[e.index('EXTRA_VOICE_KG)'):][:0] or 'savedInstanceState == null && getIntent() != null && getIntent().hasExtra(EXTRA_VOICE_KG)' in e, 'ekran dönünce tekrar doldurulmaz')
+v = (A / 'ElekVoiceSession.java').read_text(encoding='utf8')
+lay = (A.parents[3] / 'res/layout/activity_elek.xml').read_text(encoding='utf8')
+check('@+id/btnElekVoice' in lay and 'R.id.btnElekVoice' in e, 'elek formunda "Sesle doldur" düğmesi')
+check(v.count('host.save()') == 1 and v.index('host.save()') > v.index('if (r.action == ElekVoiceDialog.Action.SAVE)'), 'kayıt yalnız konuşmanın SAVE cevabında (onaydan sonra)')
+check('voice.close()' in e[e.index('protected void onPause()'):][:200], 'ekrandan çıkınca mikrofon kapanır')
+check('voiceSavedId = result;' in e, 'kaydın numarası konuşmaya döner (makbuz açılır)')
+check('RECORD_AUDIO' in v and 'MIC_REQUEST' in e, 'mikrofon izni istenir')
+check('FLAG_KEEP_SCREEN_ON' in v, 'konuşma sırasında ekran kararmaz')
 print('elek_voice wiring:', 'PASS' if not fails else f'{len(fails)} FAIL'); sys.exit(1 if fails else 0)

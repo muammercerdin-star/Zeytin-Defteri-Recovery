@@ -110,6 +110,44 @@ public final class ElekVoiceEntry {
         return e;
     }
 
+    /** Cümlede geçen satış bilgisi (kilo olmasa da): {sold} ve alıcı. "Ahmet'e sattım, bitti" gibi. */
+    public static Boolean soldIn(String raw) {
+        String s = normalize(raw == null ? "" : raw);
+        if (s.matches(".*\\b(satmadim|satmadik|satilmadi|satmayacagim)\\b.*")) return false;
+        if (s.matches(".*\\b(sattim|sattik|satildi|sattigim|satiyorum|sat|verdim|verdik)\\b.*")) return true;
+        return null;
+    }
+
+    public static String buyerIn(String raw) {
+        if (raw == null) return "";
+        String out = "";
+        Matcher b = BUYER.matcher(raw);
+        while (b.find()) {
+            String rest = raw.substring(b.end()).toLowerCase(TR);
+            if (rest.contains("sat") || rest.contains("ver")) out = b.group(1).trim();
+        }
+        return out;
+    }
+
+    /** Cümlede adı geçen sınıflar (sıra: Double..Yağlık). "3 numarayı sil" → [3]. */
+    public static boolean[] gradesIn(String raw) {
+        boolean[] out = new boolean[6];
+        String s = normalize(raw == null ? "" : raw);
+        String[] t = s.split(" ");
+        for (int i = 0; i < t.length; i++) {
+            int g = gradeWord(t[i]);
+            if (g >= 0) { out[g] = true; continue; }
+            Matcher glued = Pattern.compile("^([1-4])(numara\\p{L}*|no|nolu)$").matcher(t[i]);
+            if (glued.find()) { out[Integer.parseInt(glued.group(1))] = true; continue; }
+            String next = i + 1 < t.length ? t[i + 1] : "";
+            if (next.startsWith("numara") || next.equals("no") || next.equals("nolu")) {
+                int[] end = new int[1]; double v = number(t, i, end);
+                if (!Double.isNaN(v) && end[0] == i + 1 && v >= 1 && v <= 4 && v == Math.floor(v)) out[(int) v] = true;
+            }
+        }
+        return out;
+    }
+
     /** Sınıf adı: 0 Double, 1-4 numara sıra adları, 5 Yağlık; değilse -1. */
     private static int gradeWord(String w) {
         if (w.equals("double") || w.equals("duble") || w.equals("dubl") || w.equals("dabil") || w.equals("dobl") || w.equals("dubleyi")) return 0;
