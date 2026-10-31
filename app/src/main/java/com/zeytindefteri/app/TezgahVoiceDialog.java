@@ -183,7 +183,7 @@ public final class TezgahVoiceDialog {
         boolean estimated = kasa < 0;
         int k = estimated ? estimateKasa(kg, tare) : kasa;
         String err = TezgahModel.addError(k, kg, tare);
-        if (!err.isEmpty()) return ask(err.replace(" kg", " kilo") + " Kiloyu yeniden söyle.");
+        if (!err.isEmpty()) return ask(err.replace(" kg", " kilo").replace("\u00a0kg", " kilo") + " Kiloyu yeniden söyle.");
         if (!estimated) {
             int sug = TezgahModel.suggestedKasa(k, kg, tare);
             if (sug > 0) {

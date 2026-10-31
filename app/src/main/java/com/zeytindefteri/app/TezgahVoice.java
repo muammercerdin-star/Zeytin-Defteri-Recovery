@@ -23,7 +23,7 @@ public final class TezgahVoice {
 
         /** Sesli okuma için: "₺" → "lira", "kg" → "kilo". */
         public String speech() {
-            return text.replace(" ₺", " lira").replace("₺", " lira").replace(" kg", " kilo")
+            return text.replace(" ₺", " lira").replace("₺", " lira").replace(" kg", " kilo").replace("\u00a0kg", " kilo")
                     .replace("·", ",").replace("\n", ". ");
         }
     }

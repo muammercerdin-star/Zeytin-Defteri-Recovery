@@ -161,6 +161,10 @@ public class TezgahVoiceDialogTest {
         TezgahModel live2 = model(); live2.add(0, 1, 27); live2.setPrice(0, 150); w2.sync(live2);
         check(w2.paid() == 25 * 150, "tamamı: kayıtta güncel toplam: " + w2.paid());
 
+        // Fiyat penceresi: ekranda "120 ₺" (bölünmez boşluklu) yazısı geri okununca 0 olmamalı
+        check(TezgahModel.parse(TezgahModel.money(120)) == 120 && TezgahModel.parse(TezgahModel.money(12.5)) == 12.5
+                && TezgahModel.parse("1.250\u202f₺") == 1250, "biçimli fiyat geri okunur (0'a düşmez)");
+
         // Ayrıştırma
         TezgahVoiceDialog.Said s = TezgahVoiceDialog.parse("1 numara 40, 2 kasa");
         check(s.grade == 1 && s.kg == 40 && s.kasa == 2, "1 numara 40, 2 kasa");

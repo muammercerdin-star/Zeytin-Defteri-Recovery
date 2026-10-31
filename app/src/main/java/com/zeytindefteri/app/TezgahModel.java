@@ -356,7 +356,9 @@ public final class TezgahModel {
     /** "1.234,5" / "1234.5" / "258" → sayı; okunamazsa 0. */
     public static double parse(String raw) {
         if (raw == null) return 0;
-        String s = raw.trim().replace(" ", "").replace("kg", "").replace("₺", "").replace("TL", "");
+        // Görünür boşlukların hepsi (normal, bölünmez \u00a0, dar \u202f) atılır: "120 ₺" metni de okunur.
+        String s = raw.trim().replace(" ", "").replace("\u00a0", "").replace("\u202f", "")
+                .replace("kg", "").replace("₺", "").replace("TL", "");
         if (s.isEmpty()) return 0;
         int comma = s.lastIndexOf(','), dot = s.lastIndexOf('.');
         if (comma >= 0 && dot >= 0) {

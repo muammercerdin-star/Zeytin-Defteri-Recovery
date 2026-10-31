@@ -164,7 +164,10 @@ public final class TezgahActivity extends Activity {
      * Yarım kalan tezgaha devam ederken sorulmaz.
      */
     private void confirmTodayPrices(Runnable then) {
-        if (!model.isEmpty() || today().equals(prefs.getString("price_day_" + owner, ""))) { then.run(); return; }
+        boolean anyMissing = false;
+        for (int g = 0; g < TezgahModel.GRADES.length; g++) if (model.price(g) <= 0) anyMissing = true;
+        // Bugün onaylandıysa sorulmaz; ama fiyatı boş numara varsa yine sorulur.
+        if (!model.isEmpty() || (!anyMissing && today().equals(prefs.getString("price_day_" + owner, "")))) { then.run(); return; }
         LinearLayout form = new LinearLayout(this);
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(dp(20), dp(4), dp(20), 0);
@@ -174,7 +177,7 @@ public final class TezgahActivity extends Activity {
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
             row.addView(dialogLabel(TezgahModel.LABELS[g], 17, true), new LinearLayout.LayoutParams(0, -2, 1));
-            in[g] = dialogInput(model.price(g) > 0 ? TezgahModel.money(model.price(g)).replace(" ₺", "") : "",
+            in[g] = dialogInput(model.price(g) > 0 ? TezgahModel.money(model.price(g)).replace(" ₺", "") : "",
                     "₺/kg", InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
             in[g].setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
             row.addView(in[g], new LinearLayout.LayoutParams(dp(130), -2));
@@ -187,8 +190,11 @@ public final class TezgahActivity extends Activity {
                 .setView(sc)
                 .setPositiveButton("Bu fiyatlarla başla", (d, w) -> {
                     for (int g = 0; g < in.length; g++) {
-                        double v = TezgahModel.parse(in[g].getText().toString());
-                        if (v >= 0 && v <= 100000) model.setPrice(g, v);
+                        String typed = in[g].getText().toString().trim();
+                        double v = TezgahModel.parse(typed);
+                        // Boş bırakıldıysa fiyat yok (sonra sorulur); okunamayan yazıda eski fiyat korunur, 0'a düşmez.
+                        if (typed.isEmpty()) model.setPrice(g, 0);
+                        else if (v > 0 && v <= 100000) model.setPrice(g, v);
                     }
                     rememberBuyPrices();
                     markPricesToday();
@@ -832,7 +838,7 @@ public final class TezgahActivity extends Activity {
             row.setMinimumHeight(dp(28));
             row.addView(text(TezgahModel.LABELS[g], 14, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1.05f));
             row.addView(text(m.gradeKasa(g) + " kasa", 13, MUTED, false), new LinearLayout.LayoutParams(0, -2, 0.75f));
-            TextView kg = text(shortKg(m.gradeNet(g)) + " × " + (m.price(g) > 0 ? TezgahModel.money(m.price(g)).replace(" ₺", "") : "0"),
+            TextView kg = text(shortKg(m.gradeNet(g)) + " × " + (m.price(g) > 0 ? TezgahModel.money(m.price(g)).replace(" ₺", "") : "0"),
                     14, TEXT, false);
             row.addView(kg, new LinearLayout.LayoutParams(0, -2, 1.4f));
             TextView amount = text(TezgahModel.tl(m.gradeAmount(g)), 14, TEXT, true);
