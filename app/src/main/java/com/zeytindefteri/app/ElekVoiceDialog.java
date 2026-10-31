@@ -42,7 +42,7 @@ public final class ElekVoiceDialog {
     public Phase phase() { return phase; }
 
     public static String greeting() {
-        return "Dinliyorum. Elek kilolarını söyle. Örneğin: 3 numara 120 kilo.";
+        return "Dinliyorum, kilolarını söyle.";
     }
 
     public Reply handle(String raw) {
@@ -94,12 +94,11 @@ public final class ElekVoiceDialog {
         }
         if (finish) {
             if (total() <= 0) return new Reply("Henüz kilo söylemedin. Örneğin: 3 numara 120 kilo.", Action.NONE, true);
-            return askConfirm(said.length() > 0 ? said + " yazdım. " : "");
+            return askConfirm(said.length() > 0 ? "Tamam, " + said + ". " : "");
         }
         if (e != null) {
             misses = 0; fills++;
-            String tail = fills == 1 ? " Diğer kiloları bekliyorum." : fills == 2 ? " Başka?" : " Başka? Bitince bitti de.";
-            return new Reply(said + " yazdım." + tail, Action.FILL, true);
+            return new Reply(fillReply(said.toString()), Action.FILL, true);
         }
         if (soldSaid != null || !buyerSaid.isEmpty()) {
             String who = buyer.isEmpty() ? "" : buyer + " adına ";
@@ -111,7 +110,16 @@ public final class ElekVoiceDialog {
                 : "Anlayamadım. Örneğin: 3 numara 120 kilo diyebilirsin.", Action.NONE, true);
     }
 
-    /** Söylenen sınıfların yeni değeri eskisinin yerine geçer. Dönen metin: "3 numara 120 kilo". */
+    /** Kısa, değişen cevaplar: robot gibi her seferinde aynı cümle tekrarlanmasın. */
+    private String fillReply(String said) {
+        if (fills == 1) return "Tamam, " + said + " kilo. Diğerlerini bekliyorum.";
+        if (fills == 2) return "Aldım, " + said + ". Başka?";
+        String[] lead = {"Yazdım, ", "Tamam, ", "Aldım, "};
+        String head = lead[(fills - 3) % lead.length] + said + ".";
+        return fills == 3 ? head + " Bitince bitti demen yeterli." : head + " Başka?";
+    }
+
+    /** Söylenen sınıfların yeni değeri eskisinin yerine geçer. Dönen metin: "3 numara 120" (sesli okumada sade). */
     private String apply(ElekVoiceEntry e, String raw) {
         undo.push(kg.clone());
         StringBuilder b = new StringBuilder();
@@ -119,11 +127,11 @@ public final class ElekVoiceDialog {
             if (e.kg[i] <= 0) continue;
             kg[i] = e.kg[i];
             if (b.length() > 0) b.append(", ");
-            b.append(SPOKEN[i]).append(' ').append(num(e.kg[i])).append(" kilo");
+            b.append(SPOKEN[i]).append(' ').append(num(e.kg[i]));
         }
         if (e.sold != null) sold = e.sold;
         if (!e.buyer.isEmpty()) { buyer = e.buyer; sold = true; }
-        return b.length() == 0 ? "" : Character.toUpperCase(b.charAt(0)) + b.substring(1);
+        return b.toString();
     }
 
     private Reply askConfirm(String prefix) {

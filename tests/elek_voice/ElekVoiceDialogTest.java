@@ -9,9 +9,12 @@ public class ElekVoiceDialogTest {
         ElekVoiceDialog d = new ElekVoiceDialog(new double[6], PRICES, false);
         ElekVoiceDialog.Reply r = d.handle("3 numara 120 kilo");
         check(r.action == ElekVoiceDialog.Action.FILL && d.kg[3] == 120 && r.listen, "ilk kilo yazılır");
-        check(r.speech.equals("3 numara 120 kilo yazdım. Diğer kiloları bekliyorum."), "ilk cevap: " + r.speech);
+        check(r.speech.equals("Tamam, 3 numara 120 kilo. Diğerlerini bekliyorum."), "ilk cevap: " + r.speech);
         r = d.handle("2 numara 80, double 20");
-        check(d.kg[2] == 80 && d.kg[0] == 20 && r.speech.endsWith("Başka?"), "ikinci cevap: " + r.speech);
+        check(d.kg[2] == 80 && d.kg[0] == 20 && r.speech.equals("Aldım, double 20, 2 numara 80. Başka?"), "ikinci cevap: " + r.speech);
+        r = d.handle("3 numara yanlış 100 olacak");
+        check(r.speech.equals("Yazdım, 3 numara 100. Bitince bitti demen yeterli."), "üçüncü cevap değişir: " + r.speech);
+        r = d.handle("geri al");
         r = d.handle("3 numara yanlış 100 olacak");
         check(d.kg[3] == 100, "düzeltme eskisinin yerine geçer (toplanmaz)");
         r = d.handle("geri al");

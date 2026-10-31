@@ -79,6 +79,11 @@ final class ElekVoiceSession {
             try { if (st == TextToSpeech.SUCCESS) lang = tts.setLanguage(new Locale("tr", "TR")); } catch (Exception ignored) { }
             ttsReady = st == TextToSpeech.SUCCESS && lang >= 0;
             ttsFailed = !ttsReady;
+            if (ttsReady) {
+                pickBestVoice();
+                tts.setSpeechRate(0.95f);
+                tts.setPitch(1.02f);
+            }
             if (ttsReady) tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                 @Override public void onStart(String id) { }
                 @Override public void onDone(String id) { main.post(ElekVoiceSession.this::spoken); }
@@ -87,6 +92,23 @@ final class ElekVoiceSession {
             if (pendingSpeech != null) { String s = pendingSpeech; pendingSpeech = null; say(s, pendingListen); }
         }));
         say(ElekVoiceDialog.greeting(), true);
+    }
+
+    /** Telefondaki Türkçe seslerden en kalitelisini seçer (yüklü olan; eşitlikte internetsiz olan). */
+    private void pickBestVoice() {
+        try {
+            android.speech.tts.Voice best = null; int bestScore = Integer.MIN_VALUE;
+            java.util.Set<android.speech.tts.Voice> voices = tts.getVoices();
+            if (voices == null) return;
+            for (android.speech.tts.Voice v : voices) {
+                if (v == null || v.getLocale() == null || !"tr".equals(v.getLocale().getLanguage())) continue;
+                java.util.Set<String> f = v.getFeatures();
+                if (f != null && f.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)) continue;
+                int score = v.getQuality() * 10 - v.getLatency() - (v.isNetworkConnectionRequired() ? 3 : 0);
+                if (score > bestScore) { bestScore = score; best = v; }
+            }
+            if (best != null) tts.setVoice(best);
+        } catch (RuntimeException ignored) { }
     }
 
     void onPermission(boolean granted) {
@@ -238,15 +260,15 @@ final class ElekVoiceSession {
         LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(dp(132), dp(132)); op.leftMargin = dp(10); op.rightMargin = dp(10);
         row.addView(orb, op);
         row.addView(close, new LinearLayout.LayoutParams(dp(46), dp(46)));
-        root.addView(row);
-        status = label("", 12, muted, false); status.setGravity(Gravity.CENTER);
-        status.setMaxWidth(dp(250)); status.setMaxLines(3);
-        root.addView(status, new LinearLayout.LayoutParams(-2, -2));
+        root.addView(row, new LinearLayout.LayoutParams(-2, -2));
+        status = label("", 12, muted, false); status.setGravity(Gravity.CENTER); status.setMaxLines(3);
+        root.addView(status, new LinearLayout.LayoutParams(-1, -2));
 
         // Formun üstünde, sağ altta yüzer (kaydet düğmesinin üzerinde); kilolar ve sol alttaki toplam görünür kalır.
         root.setBackground(round(0xE60C1F28, border, 28));
         android.widget.FrameLayout content = a.findViewById(android.R.id.content);
-        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.END);
+        // Genişlik sabit: içerik ölçümüne bırakınca bazı telefonlarda kutu daralıp boş bir dikey çubuk gibi kalıyordu.
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(dp(290), -2, Gravity.BOTTOM | Gravity.END);
         lp.rightMargin = dp(10); lp.bottomMargin = dp(12);
         if (overlay != null && overlay.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) overlay.getParent()).removeView(overlay);
         overlay = root;
