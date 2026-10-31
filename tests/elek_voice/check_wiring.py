@@ -25,4 +25,6 @@ check('voice.close()' in e[e.index('protected void onPause()'):][:200], 'ekranda
 check('voiceSavedId = result;' in e, 'kaydın numarası konuşmaya döner (makbuz açılır)')
 check('RECORD_AUDIO' in v and 'MIC_REQUEST' in e, 'mikrofon izni istenir')
 check('FLAG_KEEP_SCREEN_ON' in v, 'konuşma sırasında ekran kararmaz')
+check('android.R.id.content' in v and 'new Dialog(' not in v, 'küre ekranın kendi içinde (ayrı pencere değil; bazı telefonlarda görünmüyordu)')
+check('if (!ttsReady) status.setText(' in v, 'Türkçe ses yoksa cevap yazıyla gösterilir')
 print('elek_voice wiring:', 'PASS' if not fails else f'{len(fails)} FAIL'); sys.exit(1 if fails else 0)

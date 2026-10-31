@@ -2,7 +2,6 @@ package com.zeytindefteri.app;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
@@ -46,7 +45,7 @@ final class ElekVoiceSession {
     private final Activity a;
     private final Host host;
     private final Handler main = new Handler(Looper.getMainLooper());
-    private Dialog dialog;
+    private android.view.View overlay;   // ekranın kendi içinde yüzen küre (ayrı pencere değil: bazı telefonlarda görünmüyordu)
     private TextToSpeech tts;
     private boolean ttsReady, ttsFailed;
     private String pendingSpeech; private boolean pendingListen;
@@ -71,6 +70,7 @@ final class ElekVoiceSession {
             Toast.makeText(a, "Bu telefonda ses tanıma bulunamadı. Kiloları elle yazabilirsin.", Toast.LENGTH_LONG).show();
             return;
         }
+        close();   // açık bir oturum varsa (düğmeye tekrar basıldı) önce kapat
         closed = false; silent = 0;
         logic = new ElekVoiceDialog(host.kg(), host.prices(), host.soldOnSave());
         buildDialog();
@@ -103,6 +103,7 @@ final class ElekVoiceSession {
         orb.mode(ElekVoiceOrbView.Mode.SPEAKING);
         status.setText("");
         orb.setContentDescription("Asistan: " + text);
+        if (!ttsReady) status.setText(text.length() > 70 ? text.substring(0, 68) + "…" : text);   // Türkçe ses yoksa yazıyla
         afterSpeech = () -> { if (then != null) then.run(); else if (listenAfter) listen(); else idle("Devam etmek için küreye dokun"); };
         if (ttsReady) {
             if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "elek-" + System.nanoTime()) == TextToSpeech.ERROR) spoken();
@@ -206,7 +207,9 @@ final class ElekVoiceSession {
         stopListening();
         if (tts != null) { try { tts.stop(); tts.shutdown(); } catch (RuntimeException ignored) { } tts = null; }
         ttsReady = false;
-        if (dialog != null && dialog.isShowing()) { try { dialog.dismiss(); } catch (RuntimeException ignored) { } }
+        if (overlay != null && overlay.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) overlay.getParent()).removeView(overlay);
+        overlay = null;
+        a.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     // ------------------------------------------------------------ pencere: yüzen küre
@@ -237,22 +240,20 @@ final class ElekVoiceSession {
         row.addView(close, new LinearLayout.LayoutParams(dp(46), dp(46)));
         root.addView(row);
         status = label("", 12, muted, false); status.setGravity(Gravity.CENTER);
+        status.setMaxWidth(dp(250)); status.setMaxLines(3);
         root.addView(status, new LinearLayout.LayoutParams(-2, -2));
 
-        dialog = new Dialog(a);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(root);
-        dialog.setCanceledOnTouchOutside(false);
-        dialog.setOnDismissListener(d -> close());
-        Window w = dialog.getWindow();
-        if (w != null) {
-            w.setBackgroundDrawableResource(android.R.color.transparent);
-            w.setLayout(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
-            w.setGravity(Gravity.BOTTOM | Gravity.END);    // sağ altta, kaydet düğmesinin üstünde; kilolar ve toplam görünür
-            w.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-            w.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        }
-        dialog.show();
+        // Formun üstünde, sağ altta yüzer (kaydet düğmesinin üzerinde); kilolar ve sol alttaki toplam görünür kalır.
+        root.setBackground(round(0xE60C1F28, border, 28));
+        android.widget.FrameLayout content = a.findViewById(android.R.id.content);
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.END);
+        lp.rightMargin = dp(10); lp.bottomMargin = dp(12);
+        if (overlay != null && overlay.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) overlay.getParent()).removeView(overlay);
+        overlay = root;
+        root.setElevation(dp(12));
+        root.setClickable(true);   // kürenin arkasındaki düğmeye yanlışlıkla basılmasın
+        content.addView(root, lp);
+        a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   // elek başında ekran kararmasın
     }
 
     private android.widget.ImageView circleIcon(int icon, int tint, int bg, int stroke, String desc) {
