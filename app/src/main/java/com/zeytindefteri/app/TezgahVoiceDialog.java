@@ -14,8 +14,8 @@ import java.util.Locale;
  * "bitti" → toplam, "Kimden aldın?", ödeme (tamamı / bir kısmı / sonra), okuma ve "evet" olmadan asla kaydetmez.
  */
 public final class TezgahVoiceDialog {
-    public enum Phase { WEIGH, KASA_CHECK, SELLER, SELLER_PICK, PAY, PAY_AMOUNT, CONFIRM, DONE }
-    public enum Action { NONE, ADD, UNDO, SELLER, SAVE, CANCEL }
+    public enum Phase { WEIGH, KASA_CHECK, PRICE, SELLER, SELLER_PICK, PAY, PAY_AMOUNT, CONFIRM, DONE }
+    public enum Action { NONE, ADD, UNDO, PRICE, SELLER, SAVE, CANCEL }
 
     public static final class Reply {
         public final String speech; public final Action action; public final boolean listen;
@@ -146,6 +146,7 @@ public final class TezgahVoiceDialog {
         }
         switch (phase) {
             case KASA_CHECK: return kasaCheck(s, raw);
+            case PRICE: return answerPrice(raw);
             case SELLER: return answerSeller(raw, s);
             case SELLER_PICK: return pickSeller(raw, s);
             case PAY: return answerPay(raw, s);
@@ -279,13 +280,33 @@ public final class TezgahVoiceDialog {
         return r;
     }
 
+    private int priceGrade = -1;
+
+    /** Fiyatı olmayan numara 0 ₺ yazılmasın: bitişte fiyatı sorulur. PRICE eylemi: grade + kg (= fiyat). */
+    private Reply answerPrice(String raw) {
+        Said said = parse(raw);
+        double v = said.kg;
+        if (Double.isNaN(v) || v <= 0 || v > 100000) return ask(label(priceGrade) + " kilo fiyatı kaç lira?");
+        int g = priceGrade;
+        model.setPrice(g, v);
+        priceGrade = -1;
+        phase = Phase.WEIGH;
+        Reply next = finish();
+        Reply r = new Reply("Tamam, " + label(g) + " " + num(v) + " lira. " + next.speech, Action.PRICE, next.listen);
+        r.grade = g; r.kg = v;
+        return r;
+    }
+
     private Reply finish() {
         if (model.isEmpty()) return ask("Henüz tartım yok. Kantardaki kiloyu söyle.");
+        int missingPrice = model.firstMissingPrice();
+        if (missingPrice >= 0) {
+            priceGrade = missingPrice; phase = Phase.PRICE;
+            return ask(label(missingPrice) + " için fiyat girilmemiş. Kilo fiyatı kaç lira?");
+        }
         // Sıra: kilo, para, ortalama kilo fiyatı.
         String head = "Tartım bitti. Toplam net " + num(model.totalNet()) + " kilo.";
         if (model.total() > 0.5) head += " Tutar " + money(model.total()) + " lira. Ortalama kilo fiyatı " + num(model.averagePrice()) + " lira.";
-        List<String> missing = model.missingPrices();
-        if (!missing.isEmpty()) head += " " + String.join(", ", missing) + " için fiyat girilmemiş.";
         if (seller.isEmpty()) { phase = Phase.SELLER; return ask(head + " Kimden aldın?"); }
         return askPay(head + " Satan " + seller + ".");
     }
@@ -438,6 +459,7 @@ public final class TezgahVoiceDialog {
         switch (phase) {
             case SELLER: return "Kimden aldın?";
             case PAY: return "Tamamı mı, bir kısmı mı, sonra mı?";
+            case PRICE: return label(priceGrade) + " kilo fiyatı kaç lira?";
             case CONFIRM: return "Kaydedeyim mi?";
             default: return label(grade) + ", kaç kilo?";
         }

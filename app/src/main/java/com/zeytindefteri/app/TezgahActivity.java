@@ -154,6 +154,61 @@ public final class TezgahActivity extends Activity {
         return out;
     }
 
+    // ================================================================== günün fiyatı
+
+    private void markPricesToday() { prefs.edit().putString("price_day_" + owner, today()).apply(); }
+
+    /**
+     * Günün ilk tartımında fiyatlar bir kez sorulur (eski fiyatla alım yapılmasın): altı numaranın fiyatı
+     * tek pencerede, hatırlanan fiyatlar dolu gelir; "Bu fiyatlarla başla" deyince o gün bir daha sorulmaz.
+     * Yarım kalan tezgaha devam ederken sorulmaz.
+     */
+    private void confirmTodayPrices(Runnable then) {
+        if (!model.isEmpty() || today().equals(prefs.getString("price_day_" + owner, ""))) { then.run(); return; }
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(20), dp(4), dp(20), 0);
+        form.addView(dialogLabel("Fiyat değiştiyse düzelt. Bugün bir daha sorulmaz.", 14, false), margins(-1, -2, 0));
+        final EditText[] in = new EditText[TezgahModel.GRADES.length];
+        for (int g = 0; g < in.length; g++) {
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.addView(dialogLabel(TezgahModel.LABELS[g], 17, true), new LinearLayout.LayoutParams(0, -2, 1));
+            in[g] = dialogInput(model.price(g) > 0 ? TezgahModel.money(model.price(g)).replace(" ₺", "") : "",
+                    "₺/kg", InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            in[g].setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+            row.addView(in[g], new LinearLayout.LayoutParams(dp(130), -2));
+            form.addView(row, margins(-1, -2, 6));
+        }
+        ScrollView sc = new ScrollView(this);
+        sc.addView(form);
+        new AlertDialog.Builder(this)
+                .setTitle("Bugünkü alım fiyatları (₺/kg)")
+                .setView(sc)
+                .setPositiveButton("Bu fiyatlarla başla", (d, w) -> {
+                    for (int g = 0; g < in.length; g++) {
+                        double v = TezgahModel.parse(in[g].getText().toString());
+                        if (v >= 0 && v <= 100000) model.setPrice(g, v);
+                    }
+                    rememberBuyPrices();
+                    markPricesToday();
+                    saveDraft();
+                    build();
+                    then.run();
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
+    /** Pencere içi yazı: telefonun pencere temasının rengiyle (koyu ekran rengi açık pencerede kaybolmasın). */
+    private TextView dialogLabel(String value, int sp, boolean bold) {
+        TextView t = new TextView(this);
+        t.setText(value);
+        t.setTextSize(sp);
+        if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
+        return t;
+    }
+
     private void rememberBuyPrices() {
         TezgahModel p = new TezgahModel();
         for (int g = 0; g < TezgahModel.GRADES.length; g++) p.setPrice(g, model.price(g));
@@ -988,6 +1043,7 @@ public final class TezgahActivity extends Activity {
                     if (v < 0 || v > 100000) { toast("Fiyatı kontrol et."); return; }
                     model.setPrice(g, v);
                     rememberBuyPrices();
+                    markPricesToday();
                     saveDraft();
                     replaceSummary();
                     refreshTotals();
@@ -1045,14 +1101,15 @@ public final class TezgahActivity extends Activity {
 
     private void finishTezgah() {
         if (model.isEmpty()) { toast("Önce en az bir tartım ekle."); return; }
-        List<String> missing = model.missingPrices();
-        if (!missing.isEmpty()) {
+        final int missing = model.firstMissingPrice();
+        if (missing >= 0) {
+            // Fiyatsız numara 0 ₺ yazılıp üreticinin alacağı eksik görünmesin: fiyat girilmeden bitirilmez.
             new AlertDialog.Builder(this)
                     .setTitle("Fiyatı girilmemiş numara var")
-                    .setMessage(android.text.TextUtils.join(", ", missing)
-                            + " için fiyat yok; tutara 0 ₺ olarak girer. Yine de devam edilsin mi?")
-                    .setPositiveButton("Devam et", (d, w) -> askSellerThenPay())
-                    .setNegativeButton("Fiyat gir", null)
+                    .setMessage(android.text.TextUtils.join(", ", model.missingPrices())
+                            + " için kilo fiyatı yok. Alımı bitirmeden önce fiyatı gir.")
+                    .setPositiveButton("Fiyat gir", (d, w) -> askPrice(missing))
+                    .setNegativeButton("Vazgeç", null)
                     .show();
             return;
         }
@@ -1227,7 +1284,7 @@ public final class TezgahActivity extends Activity {
         b.setGravity(Gravity.CENTER);
         b.setBackground(round(GREEN, 0, 18));
         b.setContentDescription(cont ? "Tartıma devam et: numara numara sorar" : "Tartım başlat: numara numara, en son satanı sorar");
-        b.setOnClickListener(v -> openWizard());
+        b.setOnClickListener(v -> confirmTodayPrices(this::openWizard));
         return b;
     }
 
@@ -1576,6 +1633,7 @@ public final class TezgahActivity extends Activity {
     private boolean savePurchase(double paid, boolean qr) {
         // Elle "Bitir" ile kaydedilirse açık sesli tartım kapanır (eski tartımları ikinci kez kaydetmeye kalkmasın).
         if (voice != null && voice.isOpen()) voice.close();
+        if (model.firstMissingPrice() >= 0) { toast("Fiyatı girilmemiş numara var; önce fiyatı gir."); return false; }
         // Kayıttan önce: bu üreticinin şimdiye kadarki bütün borcu "önceki borç" olur.
         double prev = previousDebt(TezgahWizardFlow.sellerOrWalkIn(seller), Long.MAX_VALUE, -1);
         String text = model.receipt("Zeytin alım fişi", "Satan", seller, displayDate(), paid, prev);
@@ -1629,7 +1687,7 @@ public final class TezgahActivity extends Activity {
         b.addView(col, cp);
         b.addView(text("›", 26, Color.WHITE, true));
         b.setContentDescription("Sesle tart: kantardaki kiloyu söyle, asistan kasa, dara ve neti hesaplasın");
-        b.setOnClickListener(v -> startVoice());
+        b.setOnClickListener(v -> confirmTodayPrices(this::startVoice));
         return b;
     }
 
@@ -1696,6 +1754,13 @@ public final class TezgahActivity extends Activity {
                 return savePurchase(paid, true);
             }
             @Override public void show(TezgahVoiceDialog d) { showVoiceStep(d); }
+            @Override public void setPrice(int g, double price) {
+                model.setPrice(g, price);
+                rememberBuyPrices();
+                markPricesToday();
+                saveDraft();
+                voiceRefresh();
+            }
             @Override public void closed() {
                 if (wizardVoiceBar != null) wizardVoiceBar.setVisibility(View.GONE);
                 if (voiceMode) { voiceMode = false; if (!isFinishing()) build(); }

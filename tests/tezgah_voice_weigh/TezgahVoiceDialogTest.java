@@ -101,9 +101,14 @@ public class TezgahVoiceDialogTest {
 
         // Fiyatsız: ödeme sorulmaz
         TezgahVoiceDialog z = new TezgahVoiceDialog(new TezgahModel(), "", Arrays.asList());
-        z.handle("27"); z.handle("bitti");
-        r = z.handle("münferit");
-        check(z.phase() == TezgahVoiceDialog.Phase.CONFIRM, "fiyat yoksa ödeme sorulmaz: " + r.speech);
+        z.handle("27");
+        r = z.handle("bitti");
+        check(z.phase() == TezgahVoiceDialog.Phase.PRICE && r.speech.equals("Double için fiyat girilmemiş. Kilo fiyatı kaç lira?"), "fiyatsız numara: fiyat sorulur: " + r.speech);
+        r = z.handle("şey");
+        check(z.phase() == TezgahVoiceDialog.Phase.PRICE && r.action == TezgahVoiceDialog.Action.NONE, "fiyat anlaşılmazsa yeniden sorar");
+        r = z.handle("yüz kırk");
+        check(r.action == TezgahVoiceDialog.Action.PRICE && r.grade == 0 && r.kg == 140 && z.phase() == TezgahVoiceDialog.Phase.SELLER
+                && r.speech.startsWith("Tamam, Double 140 lira. Tartım bitti. Toplam net 25 kilo. Tutar 3500 lira."), "fiyat söylenince devam eder: " + r.speech);
 
         // Net söylenirse dara düşülmez
         TezgahVoiceDialog nt = new TezgahVoiceDialog(model(), "", Arrays.asList());

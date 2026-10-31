@@ -42,6 +42,8 @@ final class TezgahVoiceSession {
         void setSeller(String name);
         /** Alımı kaydeder ve fişi (QR) açar; başarılıysa true. */
         boolean save(double paid);
+        /** Sesle söylenen kilo fiyatı (fiyatı girilmemiş numara için). */
+        default void setPrice(int grade, double price) { }
         /** Konuşmanın bulunduğu adımı (numara ya da satan) ekranda göster. */
         default void show(TezgahVoiceDialog d) { }
         /** Asistan kapandı. */
@@ -210,6 +212,7 @@ final class TezgahVoiceSession {
         if (r.removeIndex >= 0) host.removeAt(r.removeIndex);
         if (r.action == TezgahVoiceDialog.Action.ADD) host.add(r.grade, r.kasa, r.kg);
         if (r.action == TezgahVoiceDialog.Action.SELLER) host.setSeller(logic.seller);
+        if (r.action == TezgahVoiceDialog.Action.PRICE) host.setPrice(r.grade, r.kg);
         if (r.action != TezgahVoiceDialog.Action.SAVE && r.action != TezgahVoiceDialog.Action.CANCEL) host.show(logic);
         if (r.action == TezgahVoiceDialog.Action.SAVE) {
             final double paid = logic.paid();

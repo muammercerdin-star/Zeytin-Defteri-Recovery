@@ -222,6 +222,12 @@ public final class TezgahModel {
         return out;
     }
 
+    /** Tartımı olup fiyatı girilmemiş ilk numara; yoksa -1. */
+    public int firstMissingPrice() {
+        for (int g = 0; g < GRADES.length; g++) if (gradeNet(g) > 0 && prices[g] <= 0) return g;
+        return -1;
+    }
+
     // ------------------------------------------------------------------ metinler
 
     /** Tartım satırı: "10 kasa · 258 kg → net 238 kg". */
