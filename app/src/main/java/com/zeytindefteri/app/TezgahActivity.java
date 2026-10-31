@@ -101,11 +101,13 @@ public final class TezgahActivity extends Activity {
     }
 
     @Override protected void onPause() {
+        if (voice != null) voice.close();
         saveDraft();
         super.onPause();
     }
 
     @Override protected void onDestroy() {
+        if (voice != null) voice.close();
         if (lastSlipBox != null && slipCollapse != null) lastSlipBox.removeCallbacks(slipCollapse);
         if (db != null) db.close();
         super.onDestroy();
@@ -180,6 +182,8 @@ public final class TezgahActivity extends Activity {
         body.addView(header());
         // Her zaman sihirbazı açar: boşken "Yeni tartım başlat", yarım alımda "Tartıma devam et".
         body.addView(startButton(), margins(-1, dp(58), 6));
+        // Sesle tart: kiloyu söyle, asistan kasa + dara + neti söyleyip tezgaha yazsın.
+        body.addView(voiceButton(), margins(-1, dp(64), 8));
         // Tezgah boşken son fiş (numara numara döküm) hemen burada: satıcıyla teyit için.
         body.addView(lastSlipCard(), margins(-1, -2, 8));
         // Elle tartım kutusu (numara sekmeleri + kasa/kantar) kaldırıldı: tartım yalnız sihirbazla.
@@ -1535,7 +1539,7 @@ public final class TezgahActivity extends Activity {
         catch (RuntimeException e) { return 0; }
     }
 
-    private void savePurchase(double paid, boolean qr) {
+    private boolean savePurchase(double paid, boolean qr) {
         // Kayıttan önce: bu üreticinin şimdiye kadarki bütün borcu "önceki borç" olur.
         double prev = previousDebt(TezgahWizardFlow.sellerOrWalkIn(seller), Long.MAX_VALUE, -1);
         String text = model.receipt("Zeytin alım fişi", "Satan", seller, displayDate(), paid, prev);
@@ -1548,7 +1552,7 @@ public final class TezgahActivity extends Activity {
         } catch (RuntimeException e) {
             id = -1;
         }
-        if (id <= 0) { toast("Alım kaydedilemedi. Tekrar dene."); return; }
+        if (id <= 0) { toast("Alım kaydedilemedi. Tekrar dene."); return false; }
         rememberBuyPrices();
         String phone = sellerPhone;
         model.clear();
@@ -1564,6 +1568,87 @@ public final class TezgahActivity extends Activity {
         toast("Alım kaydedildi ✓ Sıradaki üretici için tezgah hazır.");
         if (qr) showQr(saved, today(), savedSeller, paid, text, phone);
         else shareText(text, phone);
+        return true;
+    }
+
+    // ================================================================== sesle tart
+
+    private TezgahVoiceSession voice;
+
+    /** Elek'teki "Sesle doldur" ile aynı yeşil düğme; basınca kendisi ses dalgasına dönüşür. */
+    private View voiceButton() {
+        LinearLayout b = new LinearLayout(this);
+        b.setGravity(Gravity.CENTER_VERTICAL);
+        b.setPadding(dp(12), 0, dp(14), 0);
+        b.setBackgroundResource(R.drawable.elek_voice_premium);
+        b.setClickable(true);
+        b.setFocusable(true);
+        b.addView(new ElekVoiceOrbView(this).compact(), new LinearLayout.LayoutParams(dp(44), dp(44)));
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.addView(text("Sesle tart", 18, Color.WHITE, true));
+        col.addView(text("Kiloyu söyle; kasa, dara, net hesaplansın", 13, 0xE6FFFFFF, false));
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, -2, 1f);
+        cp.leftMargin = dp(12);
+        b.addView(col, cp);
+        b.addView(text("›", 26, Color.WHITE, true));
+        b.setContentDescription("Sesle tart: kantardaki kiloyu söyle, asistan kasa, dara ve neti hesaplasın");
+        b.setOnClickListener(v -> {
+            if (voice != null) voice.close();
+            voice = new TezgahVoiceSession(this, voiceHost(), b);
+            voice.start();
+        });
+        return b;
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == TezgahVoiceSession.MIC_REQUEST && voice != null) {
+            voice.onPermission(results.length > 0 && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED);
+        }
+    }
+
+    private TezgahVoiceSession.Host voiceHost() {
+        return new TezgahVoiceSession.Host() {
+            @Override public TezgahModel snapshot() { return TezgahModel.decode(model.encode()); }
+            @Override public String seller() { return seller; }
+            @Override public List<String> sellers() {
+                List<String> names = new ArrayList<>();
+                try { for (TezgahPurchases.Purchase p : TezgahPurchases.all(db.getWritableDatabase(), owner, 2000)) names.add(p.seller); }
+                catch (RuntimeException ignored) { }
+                return TezgahWizardFlow.recent(names, 500);
+            }
+            @Override public void add(int g, int k, double kg) { voiceCommit(g, k, kg); }
+            @Override public void removeAt(int index) {
+                if (!model.remove(index)) return;
+                saveDraft();
+                voiceRefresh();
+            }
+            @Override public void setSeller(String name) {
+                seller = name == null ? "" : name.trim();
+                saveDraft();
+                if (body != null && body.getChildCount() > 0) { body.removeViewAt(0); body.addView(header(), 0); }
+            }
+            @Override public boolean save(double paid) { return savePurchase(paid, true); }
+        };
+    }
+
+    /** Sesle söylenen tartım: sihirbazdaki gibi tezgaha yazılır, ekran canlı tazelenir. */
+    private void voiceCommit(int g, int k, double kg) {
+        if (!model.add(g, k, kg)) return;
+        grade = g;
+        kasa = k;
+        saveDraft();
+        if (lastSlipBox != null) lastSlipBox.setVisibility(View.GONE);
+        if (seller.isEmpty() && body != null && body.getChildCount() > 0) { body.removeViewAt(0); body.addView(header(), 0); }
+        voiceRefresh();
+    }
+
+    private void voiceRefresh() {
+        renderGradeTabs();
+        replaceWeighings();
+        replaceSummary();
+        refreshTotals();
     }
 
     private String traderName() { return TezgahShare.traderName(); }

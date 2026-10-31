@@ -149,7 +149,7 @@ public final class ElekVoiceEntry {
     }
 
     /** Sınıf adı: 0 Double, 1-4 numara sıra adları, 5 Yağlık; değilse -1. */
-    private static int gradeWord(String w) {
+    static int gradeWord(String w) {
         if (w.equals("double") || w.equals("duble") || w.equals("dubl") || w.equals("dabil") || w.equals("dobl") || w.equals("dubleyi")) return 0;
         if (w.startsWith("yaglik") || w.equals("yagli") || w.equals("yaglisi")) return 5;
         for (int i = 0; i < ORDINALS.length; i++) if (w.equals(ORDINALS[i])) return i + 1;
@@ -164,8 +164,9 @@ public final class ElekVoiceEntry {
         double total = 0, cur = 0; int j = i; boolean seen = false;
         while (j < t.length) {
             String x = t[j]; int u = index(UNITS, x), k = index(TENS, x);
-            if (u > 0) { cur += u; seen = true; }
-            else if (k > 0) { cur += 10 * k; seen = true; }
+            // "elli beş iki kasa": birler basamağı doluysa yeni birler yeni sayıdır (57 değil 55 + 2).
+            if (u > 0) { if (cur % 10 != 0) break; cur += u; seen = true; }
+            else if (k > 0) { if (cur % 100 != 0) break; cur += 10 * k; seen = true; }
             else if (x.equals("yuz")) { cur = (cur == 0 ? 1 : cur) * 100; seen = true; }
             else if (x.equals("bin")) { total += (cur == 0 ? 1 : cur) * 1000; cur = 0; seen = true; }
             else break;
