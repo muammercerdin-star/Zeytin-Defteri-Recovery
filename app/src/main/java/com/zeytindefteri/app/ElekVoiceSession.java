@@ -52,8 +52,7 @@ final class ElekVoiceSession {
     private SpeechRecognizer recognizer;
     private ElekVoiceDialog logic;
     private TextView status;
-    private android.widget.ImageView micButton;
-    private ElekVoiceOrbView orb;
+    private ElekVoiceWaveView orb;   // asistanın ses dalgası (çerçevesiz)
     private int silent = 0;
     private Runnable afterSpeech;
     private boolean closed;
@@ -122,7 +121,7 @@ final class ElekVoiceSession {
     private void say(String text, boolean listenAfter, Runnable then) {
         if (closed) return;
         stopListening();
-        orb.mode(ElekVoiceOrbView.Mode.SPEAKING);
+        orb.mode(ElekVoiceWaveView.Mode.SPEAKING);
         status.setText("");
         orb.setContentDescription("Asistan: " + text);
         if (!ttsReady) status.setText(text.length() > 70 ? text.substring(0, 68) + "…" : text);   // Türkçe ses yoksa yazıyla
@@ -148,11 +147,11 @@ final class ElekVoiceSession {
         try {
             recognizer = SpeechRecognizer.createSpeechRecognizer(a);
             recognizer.setRecognitionListener(new RecognitionListener() {
-                @Override public void onReadyForSpeech(Bundle b) { orb.mode(ElekVoiceOrbView.Mode.LISTENING); status.setText("Dinliyorum"); }
+                @Override public void onReadyForSpeech(Bundle b) { orb.mode(ElekVoiceWaveView.Mode.LISTENING); status.setText("Dinliyorum"); }
                 @Override public void onBeginningOfSpeech() { }
                 @Override public void onRmsChanged(float v) { orb.rms(v); }
                 @Override public void onBufferReceived(byte[] b) { }
-                @Override public void onEndOfSpeech() { orb.mode(ElekVoiceOrbView.Mode.THINKING); status.setText(""); }
+                @Override public void onEndOfSpeech() { orb.mode(ElekVoiceWaveView.Mode.THINKING); status.setText(""); }
                 @Override public void onError(int e) { main.post(() -> heardNothing(e)); }
                 @Override public void onResults(Bundle b) { main.post(() -> heardText(first(b))); }
                 @Override public void onPartialResults(Bundle b) { }
@@ -164,7 +163,6 @@ final class ElekVoiceSession {
             i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
             i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
             recognizer.startListening(i);
-            micButton.setAlpha(1f);
         } catch (RuntimeException e) {
             idle("Mikrofon açılamadı, küreye dokun");
         }
@@ -220,7 +218,6 @@ final class ElekVoiceSession {
             try { recognizer.cancel(); recognizer.destroy(); } catch (RuntimeException ignored) { }
             recognizer = null;
         }
-        if (micButton != null) micButton.setAlpha(0.55f);
     }
 
     void close() {
@@ -236,55 +233,47 @@ final class ElekVoiceSession {
 
     // ------------------------------------------------------------ pencere: yüzen küre
     private void idle(String hint) {
-        if (orb != null) orb.mode(ElekVoiceOrbView.Mode.IDLE);
+        if (orb != null) orb.mode(ElekVoiceWaveView.Mode.IDLE);
         if (status != null) status.setText(hint);
     }
 
     private void buildDialog() {
-        int card = GreenTheme.color(R.color.zd_card), border = GreenTheme.color(R.color.zd_border);
-        int muted = GreenTheme.color(R.color.zd_muted), green = GreenTheme.color(R.color.zd_green);
+        int muted = GreenTheme.color(R.color.zd_muted);
+        // Çerçevesiz: kutu/zemin yok; yalnız ses dalgası çubukları ve küçük kapat düğmesi.
         LinearLayout root = new LinearLayout(a); root.setOrientation(LinearLayout.VERTICAL); root.setGravity(Gravity.CENTER_HORIZONTAL);
-        root.setPadding(dp(12), dp(4), dp(12), dp(10));
 
         LinearLayout row = new LinearLayout(a); row.setGravity(Gravity.CENTER_VERTICAL);
-        micButton = circleIcon(R.drawable.ic_op_mic, green, card, border, "Dinlemeyi başlat ya da durdur");
-        micButton.setOnClickListener(v -> { if (recognizer != null) { stopListening(); idle("Devam etmek için küreye dokun"); } else { silent = 0; listen(); } });
-        orb = new ElekVoiceOrbView(a);
+        orb = new ElekVoiceWaveView(a);
         orb.setClickable(true); orb.setFocusable(true);
         orb.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        orb.setContentDescription("Sesli elek asistanı");
+        orb.setContentDescription("Sesli elek asistanı. Tekrar dinlemesi için dokun.");
         orb.setOnClickListener(v -> { if (recognizer == null && afterSpeech == null) { silent = 0; listen(); } });
-        android.widget.ImageView close = circleIcon(R.drawable.ic_op_close, GreenTheme.color(R.color.zd_text), card, border, "Sesli elek asistanını kapat");
+        android.widget.ImageView close = new android.widget.ImageView(a);
+        close.setImageResource(R.drawable.ic_op_close); close.setColorFilter(GreenTheme.color(R.color.zd_text));
+        close.setPadding(dp(9), dp(9), dp(9), dp(9));
+        GradientDrawable cb = new GradientDrawable(); cb.setShape(GradientDrawable.OVAL); cb.setColor(0xCC0C1F28);
+        close.setBackground(cb); close.setClickable(true); close.setFocusable(true);
+        close.setContentDescription("Sesli elek asistanını kapat");
         close.setOnClickListener(v -> close());
-        row.addView(micButton, new LinearLayout.LayoutParams(dp(46), dp(46)));
-        LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(dp(132), dp(132)); op.leftMargin = dp(10); op.rightMargin = dp(10);
-        row.addView(orb, op);
-        row.addView(close, new LinearLayout.LayoutParams(dp(46), dp(46)));
+        row.addView(orb, new LinearLayout.LayoutParams(dp(220), dp(64)));
+        LinearLayout.LayoutParams xp = new LinearLayout.LayoutParams(dp(36), dp(36)); xp.leftMargin = dp(6);
+        row.addView(close, xp);
         root.addView(row, new LinearLayout.LayoutParams(-2, -2));
         status = label("", 12, muted, false); status.setGravity(Gravity.CENTER); status.setMaxLines(3);
+        status.setShadowLayer(dp(3), 0, dp(1), 0xEE000000);
         root.addView(status, new LinearLayout.LayoutParams(-1, -2));
 
-        // Formun üstünde, sağ altta yüzer (kaydet düğmesinin üzerinde); kilolar ve sol alttaki toplam görünür kalır.
-        root.setBackground(round(0xE60C1F28, border, 28));
+        // Altta ortada, kaydet çubuğunun hemen üstünde yüzer; kilolar ve toplam görünür kalır.
         android.widget.FrameLayout content = a.findViewById(android.R.id.content);
-        // Genişlik sabit: içerik ölçümüne bırakınca bazı telefonlarda kutu daralıp boş bir dikey çubuk gibi kalıyordu.
-        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(dp(290), -2, Gravity.BOTTOM | Gravity.END);
-        lp.rightMargin = dp(10); lp.bottomMargin = dp(12);
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(dp(290), -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        lp.bottomMargin = dp(112);
         if (overlay != null && overlay.getParent() instanceof android.view.ViewGroup) ((android.view.ViewGroup) overlay.getParent()).removeView(overlay);
         overlay = root;
-        root.setElevation(dp(12));
-        root.setClickable(true);   // kürenin arkasındaki düğmeye yanlışlıkla basılmasın
+        // Zemin yok: dalganın dışındaki boşluk dokunmaları alttaki forma bırakır.
         content.addView(root, lp);
         a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   // elek başında ekran kararmasın
     }
 
-    private android.widget.ImageView circleIcon(int icon, int tint, int bg, int stroke, String desc) {
-        android.widget.ImageView v = new android.widget.ImageView(a);
-        v.setImageResource(icon); v.setColorFilter(tint); v.setPadding(dp(11), dp(11), dp(11), dp(11));
-        GradientDrawable g = new GradientDrawable(); g.setShape(GradientDrawable.OVAL); g.setColor(bg); g.setStroke(dp(1), stroke);
-        v.setBackground(g); v.setClickable(true); v.setFocusable(true); v.setContentDescription(desc);
-        return v;
-    }
 
     private TextView label(String s, int sp, int color, boolean bold) {
         TextView t = new TextView(a); t.setText(s); t.setTextSize(sp); t.setTextColor(color);
