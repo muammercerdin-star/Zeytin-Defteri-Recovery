@@ -27,7 +27,7 @@ public final class ElekVoiceDialog {
     public Boolean sold;           // null: formdaki ayar kalır
     public String buyer = "";
     private final double[] prices;
-    private final boolean soldByDefault;
+    private boolean soldByDefault;
     private final java.util.List<String> buyers;
     /** Söylenen alıcı listede yoksa true: kayıtta yeni alıcı olarak eklenir. */
     public boolean buyerNew;
@@ -66,15 +66,16 @@ public final class ElekVoiceDialog {
         }
         if (phase == Phase.ASK_BUYER) return answerBuyer(raw, s);
         if (phase == Phase.CONFIRM) {
-            ElekVoiceEntry e = ElekVoiceEntry.parse(raw);
+            ElekVoiceEntry e = ElekVoiceEntry.parse(forParse(raw));
             if (e != null) { apply(e, raw); return askConfirm("Düzelttim. "); }
+            // Önce olumsuz: "doğru değil", "tamam değil", "evet ama bekle" KAYDETMEZ.
+            if (has(s, "hayir", "duzelt", "bekle", "dur", "degil", "yanlis", "kaydetme", "olmaz")) {
+                phase = Phase.LISTENING;
+                return new Reply("Tamam, düzeltmeyi söyle. Örneğin: 3 numara 100 olacak.", Action.NONE, true);
+            }
             if (yes(s)) {
                 phase = Phase.DONE;
                 return new Reply(isSold() ? "Kaydediyorum, fişi hazırlıyorum." : "Kaydediyorum.", Action.SAVE, false);
-            }
-            if (has(s, "hayir", "duzelt", "bekle", "dur", "degil", "yanlis")) {
-                phase = Phase.LISTENING;
-                return new Reply("Tamam, düzeltmeyi söyle. Örneğin: 3 numara 100 olacak.", Action.NONE, true);
             }
             return new Reply("Kaydetmem için evet, düzeltmek için hayır de.", Action.NONE, true);
         }
@@ -94,7 +95,7 @@ public final class ElekVoiceDialog {
             if (any) { undo.push(before); return new Reply("Sildim. " + listLine(), Action.FILL, true); }
             return new Reply("Hangi sınıfı sileyim? Örneğin: 3 numarayı sil.", Action.NONE, true);
         }
-        ElekVoiceEntry e = ElekVoiceEntry.parse(raw);
+        ElekVoiceEntry e = ElekVoiceEntry.parse(forParse(raw));
         Boolean soldSaid = ElekVoiceEntry.soldIn(raw);
         String buyerSaid = ElekVoiceEntry.buyerIn(raw);
         boolean finish = has(s, "bitti", "hepsi bu", "bu kadar", "tamamdir", "kaydet", "tamam", "bitir");
@@ -125,6 +126,28 @@ public final class ElekVoiceDialog {
         if (questionLike(s)) return new Reply("Burada sadece kilo yazıyorum. Örneğin: 3 numara 120 kilo. Bitince bitti de.", Action.NONE, true);
         return new Reply(misses >= 2 ? "Yine anlayamadım. Sınıfı ve kiloyu söyle: double 20, 1 numara 90 gibi."
                 : "Anlayamadım. Örneğin: 3 numara 120 kilo diyebilirsin.", Action.NONE, true);
+    }
+
+    /** Konuşmada "değiştir / güncelle" düzeltme demektir ("3 numarayı 100 olarak değiştir"); ayrıştırıcı bu sözleri görmesin. */
+    static String forParse(String raw) {
+        return raw == null ? "" : raw.replaceAll("(?iu)\\b(de[gğ]i[sş]tir|g[uü]ncelle)\\p{L}*", " ");
+    }
+
+    /**
+     * Formla eşitle (her cevaptan önce): kullanıcı formda elle kilo yazdıysa / sildiyse ya da kaydettiyse (form boşaldı)
+     * asistan formdakini esas alır; fiyat ve "sattım" ayarı da formdan gelir. Böylece elle yazılan silinmez,
+     * elle kaydedilen kayıt sesle ikinci kez kaydedilemez.
+     */
+    public void sync(double[] formKg, double[] formPrices, boolean formSold) {
+        if (formPrices != null) for (int i = 0; i < 6 && i < formPrices.length; i++) prices[i] = formPrices[i];
+        soldByDefault = formSold;
+        if (formKg == null) return;
+        boolean differ = false;
+        for (int i = 0; i < 6 && i < formKg.length; i++) if (Math.abs(Math.max(0, formKg[i]) - kg[i]) > 1e-6) differ = true;
+        if (!differ) return;
+        for (int i = 0; i < 6 && i < formKg.length; i++) kg[i] = Math.max(0, formKg[i]);
+        undo.clear();
+        if (phase == Phase.CONFIRM || phase == Phase.ASK_BUYER) phase = Phase.LISTENING;   // değişen form yeniden onaylanmalı
     }
 
     /** Kısa, değişen cevaplar: robot gibi her seferinde aynı cümle tekrarlanmasın. */

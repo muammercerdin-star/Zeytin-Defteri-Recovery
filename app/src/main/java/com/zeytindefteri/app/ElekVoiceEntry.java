@@ -64,14 +64,15 @@ public final class ElekVoiceEntry {
             if (w.isEmpty()) continue;
             int g = gradeWord(w);
             if (g >= 0) { items.add(new double[]{0, g}); continue; }
-            Matcher glued = Pattern.compile("^([1-4])(numara|no|nolu)$").matcher(w);   // "3numara"
+            Matcher glued = Pattern.compile("^([1-4])(numara\\p{L}*|no|nolu)$").matcher(w);   // "3numara", "3numaradan"
             if (glued.find()) { items.add(new double[]{0, Integer.parseInt(glued.group(1))}); continue; }
             int[] end = new int[1];
             double v = number(t, i, end);
             if (!Double.isNaN(v)) {
                 boolean single = end[0] == i + 1;
                 String next = end[0] < t.length ? t[end[0]] : "";
-                if (single && (next.equals("numara") || next.equals("no") || next.equals("nolu") || next.equals("numarali"))
+                // "3 numara", "3 numaradan / numaraya / numarayı" (ekli hâller de sınıf)
+                if (single && (next.startsWith("numara") || next.equals("no") || next.equals("nolu"))
                         && v >= 1 && v <= 4 && v == Math.floor(v)) {
                     items.add(new double[]{0, v}); i = end[0];         // "3 numara" → sınıf
                 } else {

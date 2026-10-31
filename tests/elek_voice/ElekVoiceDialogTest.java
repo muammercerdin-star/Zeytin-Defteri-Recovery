@@ -63,6 +63,38 @@ public class ElekVoiceDialogTest {
         f.handle("2 numara 10"); r = f.handle("oku");
         check(r.speech.contains("2 numara 10, 3 numara 50"), "formdaki mevcut kilolarla başlar");
         check(new ElekVoiceDialog(null, null, false).handle("").listen, "boş ses: dinlemeye devam");
+        // İnceleme düzeltmeleri
+        ElekVoiceDialog x = new ElekVoiceDialog(new double[6], PRICES, false);
+        x.handle("3 numara 120"); x.handle("bitti");
+        ElekVoiceDialog.Reply y = x.handle("doğru değil");
+        check(y.action != ElekVoiceDialog.Action.SAVE && x.phase() == ElekVoiceDialog.Phase.LISTENING, "'doğru değil' KAYDETMEZ");
+        x.handle("bitti");
+        y = x.handle("tamam değil");
+        check(y.action != ElekVoiceDialog.Action.SAVE, "'tamam değil' KAYDETMEZ");
+        x.handle("bitti");
+        y = x.handle("evet, başka yok");
+        check(y.action == ElekVoiceDialog.Action.SAVE, "'evet, başka yok' kaydeder");
+        ElekVoiceDialog z = new ElekVoiceDialog(new double[6], PRICES, false);
+        z.handle("3 numaradan 120 kilo");
+        check(z.kg[3] == 120, "'3 numaradan 120' anlaşılır");
+        z.handle("2 numarayı 80 yap");
+        check(z.kg[2] == 80, "'2 numarayı 80 yap' anlaşılır");
+        z.handle("3 numarayı 100 olarak değiştir");
+        check(z.kg[3] == 100, "'değiştir' ile düzeltme");
+        // Formla eşitleme: elle yazılan silinmez, elle kaydedilen ikinci kez kaydedilmez
+        z.sync(new double[]{0, 0, 80, 100, 15, 0}, PRICES, false);
+        y = z.handle("bitti");
+        check(z.kg[4] == 15 && y.speech.contains("4 numara 15"), "elle yazılan 4 numara korunur: " + y.speech);
+        z.sync(new double[6], PRICES, false);   // form elle kaydedildi, boşaldı
+        check(z.phase() == ElekVoiceDialog.Phase.LISTENING, "form değişince onay düşer");
+        y = z.handle("evet");
+        check(y.action != ElekVoiceDialog.Action.SAVE, "elle kaydedilen form sesle ikinci kez kaydedilmez");
+        double[] p2 = PRICES.clone(); p2[3] = 50;
+        ElekVoiceDialog w = new ElekVoiceDialog(new double[6], PRICES, false);
+        w.handle("3 numara 100"); w.sync(new double[]{0,0,0,100,0,0}, p2, false);
+        y = w.handle("bitti");
+        check(y.speech.contains("5.000 lira"), "fiyat formdan güncel: " + y.speech);
+
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " ElekVoiceDialog");
         if (bad > 0) System.exit(1);
     }

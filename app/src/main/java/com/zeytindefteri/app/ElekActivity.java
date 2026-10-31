@@ -1761,7 +1761,15 @@ public class ElekActivity extends Activity {
         if (notebookButton != null) notebookButton.setOnClickListener(view -> NotebookScanUi.start(this));
         // Sesle doldur: asistan konuşarak kiloları alır, "bitti"de toplamı okur, "evet"te kaydeder.
         android.view.View voiceButton = findViewById(R.id.btnElekVoice);
-        if (voiceButton != null) voiceButton.setOnClickListener(view -> voiceSession().start());
+        if (voiceButton != null) voiceButton.setOnClickListener(view -> {
+            // Bahçe seçilmeden konuşma sonunda "kaydedemedim" denmesin: önce bahçe.
+            if (selectedGardenId <= 0) {
+                Toast.makeText(this, "Önce bahçe seç, sonra sesle doldur.", Toast.LENGTH_SHORT).show();
+                showGardenPicker();
+                return;
+            }
+            voiceSession().start();
+        });
         android.widget.FrameLayout voiceOrbSlot = findViewById(R.id.elekVoiceOrbSlot);
         if (voiceOrbSlot != null) voiceOrbSlot.addView(new ElekVoiceOrbView(this).compact(),
                 new android.widget.FrameLayout.LayoutParams(-1, -1));
@@ -1804,9 +1812,11 @@ public class ElekActivity extends Activity {
         // ELEK KAYDET
         // ========================================================
 
-        btnSaveElek.setOnClickListener(
-                view -> saveElekRecord()
-        );
+        btnSaveElek.setOnClickListener(view -> {
+            // Elle kaydedilince açık sesli asistan kapanır (aynı kilolar sesle ikinci kez kaydedilmesin).
+            if (voice != null) voice.close();
+            saveElekRecord();
+        });
     }
 
 

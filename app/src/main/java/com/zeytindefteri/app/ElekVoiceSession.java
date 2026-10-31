@@ -182,6 +182,7 @@ final class ElekVoiceSession {
         stopListening();
         if (text.isEmpty()) { heardNothing(SpeechRecognizer.ERROR_NO_MATCH); return; }
         silent = 0;
+        logic.sync(host.kg(), host.prices(), host.soldOnSave());   // formda elle yapılan değişiklikler önce alınır
         ElekVoiceDialog.Reply r = logic.handle(text);
         if (r.action == ElekVoiceDialog.Action.FILL || r.action == ElekVoiceDialog.Action.CANCEL || r.action == ElekVoiceDialog.Action.SAVE) {
             host.fill(logic.kg.clone(), logic.sold, logic.buyer);
