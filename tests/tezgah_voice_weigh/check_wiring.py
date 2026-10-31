@@ -14,6 +14,7 @@ checks = [
     ("kayit QR fisini acar", "savePurchase(paid, true)" in act),
     ("dugme ses dalgasina donusur", "new ElekVoiceWaveView(a).onGreen()" in ses),
     ("ekran kararmaz", "FLAG_KEEP_SCREEN_ON" in ses),
+    ("sessizlikte konusmaz, sessizce dinlemeye devam eder", "Bekliyorum" not in ses and "Hâlâ buradayım" not in ses and "main.postDelayed(this::listen, 250)" in ses),
 ]
 bad = 0
 for name, ok in checks:

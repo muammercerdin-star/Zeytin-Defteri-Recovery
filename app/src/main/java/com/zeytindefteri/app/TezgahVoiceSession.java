@@ -45,6 +45,8 @@ final class TezgahVoiceSession {
     }
 
     static final int MIC_REQUEST = 7302;
+    /** Sessiz dinleme turu sınırı (bir tur ~5–8 sn): ~10 dakika ses gelmezse durur. */
+    private static final int SILENT_LIMIT = 90;
     private final Activity a;
     private final Host host;
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -167,6 +169,9 @@ final class TezgahVoiceSession {
             i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "tr-TR");
             i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
             i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+            // Kısa sayılar ("on üç") için konuşma bitince çabuk bitsin; bazı telefonlar bu ipuçlarını yok sayar.
+            i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1200L);
+            i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1000L);
             recognizer.startListening(i);
         } catch (RuntimeException e) {
             idle("Mikrofon açılamadı, dokun");
@@ -213,8 +218,10 @@ final class TezgahVoiceSession {
             main.postDelayed(this::listen, 600);
             return;
         }
+        // Tezgâhta sessizlik normal: kasalar kantara dizilirken konuşulmaz. Asistan hiç konuşmadan dinlemeye
+        // devam eder; ancak uzun süre (yaklaşık 10 dakika) ses gelmezse pil için durur, dokununca devam eder.
         silent++;
-        if (silent <= 2) say(silent == 1 ? "Bekliyorum. Kantardaki kiloyu söyle." : "Hâlâ buradayım. Bitirdiysen bitti de.", true);
+        if (silent <= SILENT_LIMIT) { status.setText("Dinliyorum"); main.postDelayed(this::listen, 250); }
         else idle("Devam etmek için dokun");
     }
 
