@@ -52,9 +52,9 @@ final class ElekVoiceSession {
     private String pendingSpeech; private boolean pendingListen;
     private SpeechRecognizer recognizer;
     private ElekVoiceDialog logic;
-    private TextView status, heard, reply, micButton;
-    private AssistantVoiceWaveView wave;
-    private LinearLayout log;
+    private TextView status;
+    private android.widget.ImageView micButton;
+    private ElekVoiceOrbView orb;
     private int silent = 0;
     private Runnable afterSpeech;
     private boolean closed;
@@ -100,10 +100,10 @@ final class ElekVoiceSession {
     private void say(String text, boolean listenAfter, Runnable then) {
         if (closed) return;
         stopListening();
-        reply.setText(text);
-        status.setText("Konuşuyor…");
-        wave.listening(false);
-        afterSpeech = () -> { if (then != null) then.run(); else if (listenAfter) listen(); else status.setText("Mikrofona dokunarak devam edebilirsin."); };
+        orb.mode(ElekVoiceOrbView.Mode.SPEAKING);
+        status.setText("");
+        orb.setContentDescription("Asistan: " + text);
+        afterSpeech = () -> { if (then != null) then.run(); else if (listenAfter) listen(); else idle("Devam etmek için küreye dokun"); };
         if (ttsReady) {
             if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "elek-" + System.nanoTime()) == TextToSpeech.ERROR) spoken();
         } else if (!ttsFailed && tts != null) {
@@ -125,14 +125,14 @@ final class ElekVoiceSession {
         try {
             recognizer = SpeechRecognizer.createSpeechRecognizer(a);
             recognizer.setRecognitionListener(new RecognitionListener() {
-                @Override public void onReadyForSpeech(Bundle b) { status.setText("Dinliyorum…"); wave.listening(true); }
+                @Override public void onReadyForSpeech(Bundle b) { orb.mode(ElekVoiceOrbView.Mode.LISTENING); status.setText("Dinliyorum"); }
                 @Override public void onBeginningOfSpeech() { }
-                @Override public void onRmsChanged(float v) { wave.rms(v); }
+                @Override public void onRmsChanged(float v) { orb.rms(v); }
                 @Override public void onBufferReceived(byte[] b) { }
-                @Override public void onEndOfSpeech() { status.setText("Anlıyorum…"); wave.listening(false); }
+                @Override public void onEndOfSpeech() { orb.mode(ElekVoiceOrbView.Mode.THINKING); status.setText(""); }
                 @Override public void onError(int e) { main.post(() -> heardNothing(e)); }
                 @Override public void onResults(Bundle b) { main.post(() -> heardText(first(b))); }
-                @Override public void onPartialResults(Bundle b) { String p = first(b); if (!p.isEmpty()) heard.setText("“" + p + "”"); }
+                @Override public void onPartialResults(Bundle b) { }
                 @Override public void onEvent(int t, Bundle b) { }
             });
             Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -141,9 +141,9 @@ final class ElekVoiceSession {
             i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
             i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
             recognizer.startListening(i);
-            micButton.setText("■  Dinlemeyi durdur");
+            micButton.setAlpha(1f);
         } catch (RuntimeException e) {
-            status.setText("Mikrofon açılamadı. Tekrar dene.");
+            idle("Mikrofon açılamadı, küreye dokun");
         }
     }
 
@@ -157,18 +157,14 @@ final class ElekVoiceSession {
         stopListening();
         if (text.isEmpty()) { heardNothing(SpeechRecognizer.ERROR_NO_MATCH); return; }
         silent = 0;
-        heard.setText("“" + text + "”");
-        addLog("Sen", text);
         ElekVoiceDialog.Reply r = logic.handle(text);
         if (r.action == ElekVoiceDialog.Action.FILL || r.action == ElekVoiceDialog.Action.CANCEL || r.action == ElekVoiceDialog.Action.SAVE) {
             host.fill(logic.kg.clone(), logic.sold, logic.buyer);
         }
-        addLog("Asistan", r.speech);
         if (r.action == ElekVoiceDialog.Action.SAVE) {
             long id = host.save();
             if (id > 0) {
                 String done = logic.isSold() ? "Kaydettim. Fiş hazır." : "Kaydettim.";
-                addLog("Asistan", done);
                 say(r.speech + " " + done, false, () -> { close(); host.openReceipt(id); });
             } else {
                 say("Kaydedemedim. Formdaki uyarıya bak, düzeltip yeniden dene.", false, this::close);
@@ -182,7 +178,7 @@ final class ElekVoiceSession {
     private void heardNothing(int error) {
         if (closed) return;
         stopListening();
-        if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { status.setText("Mikrofon izni yok."); return; }
+        if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { idle("Mikrofon izni yok"); return; }
         if (error == SpeechRecognizer.ERROR_NETWORK || error == SpeechRecognizer.ERROR_NETWORK_TIMEOUT || error == SpeechRecognizer.ERROR_SERVER) {
             say("Ses tanıma için internet gerekiyor olabilir. Bağlantını kontrol edip mikrofona dokun.", false);
             return;
@@ -193,7 +189,7 @@ final class ElekVoiceSession {
         }
         silent++;
         if (silent <= 2) say(silent == 1 ? "Bekliyorum. Kilolarını söyleyebilirsin." : "Hâlâ buradayım. Bitirdiysen bitti de.", true);
-        else { status.setText("Sessiz kaldın, dinlemeyi durdurdum. Devam etmek için mikrofona dokun."); micButton.setText("🎙  Tekrar dinle"); }
+        else idle("Devam etmek için küreye dokun");
     }
 
     private void stopListening() {
@@ -201,8 +197,7 @@ final class ElekVoiceSession {
             try { recognizer.cancel(); recognizer.destroy(); } catch (RuntimeException ignored) { }
             recognizer = null;
         }
-        if (wave != null) wave.listening(false);
-        if (micButton != null) micButton.setText("🎙  Tekrar dinle");
+        if (micButton != null) micButton.setAlpha(0.55f);
     }
 
     void close() {
@@ -214,43 +209,35 @@ final class ElekVoiceSession {
         if (dialog != null && dialog.isShowing()) { try { dialog.dismiss(); } catch (RuntimeException ignored) { } }
     }
 
-    // ------------------------------------------------------------ pencere
+    // ------------------------------------------------------------ pencere: yüzen küre
+    private void idle(String hint) {
+        if (orb != null) orb.mode(ElekVoiceOrbView.Mode.IDLE);
+        if (status != null) status.setText(hint);
+    }
+
     private void buildDialog() {
         int card = GreenTheme.color(R.color.zd_card), border = GreenTheme.color(R.color.zd_border);
-        int text = GreenTheme.color(R.color.zd_text), muted = GreenTheme.color(R.color.zd_muted), green = GreenTheme.color(R.color.zd_green);
-        LinearLayout root = new LinearLayout(a); root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(20), dp(18), dp(20), dp(18));
-        root.setBackground(round(card, border, 24));
+        int muted = GreenTheme.color(R.color.zd_muted), green = GreenTheme.color(R.color.zd_green);
+        LinearLayout root = new LinearLayout(a); root.setOrientation(LinearLayout.VERTICAL); root.setGravity(Gravity.CENTER_HORIZONTAL);
+        root.setPadding(dp(12), dp(4), dp(12), dp(10));
 
-        TextView title = label("🎙  Sesli elek", 18, text, true); root.addView(title);
-        status = label("Hazırlanıyor…", 13, muted, false); status.setPadding(0, dp(2), 0, 0); root.addView(status);
-        wave = new AssistantVoiceWaveView(a);
-        LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(-1, dp(44)); wp.topMargin = dp(10); root.addView(wave, wp);
-        heard = label("", 17, text, true); heard.setGravity(Gravity.CENTER); heard.setPadding(0, dp(6), 0, 0); root.addView(heard);
-        reply = label("", 16, green, true); reply.setPadding(dp(14), dp(12), dp(14), dp(12));
-        reply.setBackground(round(GreenTheme.color(R.color.zd_green_soft), GreenTheme.color(R.color.zd_green_soft), 16));
-        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2); rp.topMargin = dp(12); root.addView(reply, rp);
-
-        ScrollView sv = new ScrollView(a);
-        log = new LinearLayout(a); log.setOrientation(LinearLayout.VERTICAL); sv.addView(log);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(110)); lp.topMargin = dp(10); root.addView(sv, lp);
-
-        TextView hint = label("“3 numara 120 kilo” · “geri al” · “oku” · “Ahmet'e sattım” · “bitti”", 12, muted, false);
-        hint.setPadding(0, dp(8), 0, 0); root.addView(hint);
-
-        LinearLayout row = new LinearLayout(a); row.setGravity(Gravity.CENTER);
-        micButton = button("🎙  Tekrar dinle", green, card);
-        micButton.setOnClickListener(v -> { if (recognizer != null) stopListening(); else { silent = 0; listen(); } });
-        TextView done = button("Bitti", text, card);
-        done.setOnClickListener(v -> heardText("bitti"));
-        TextView cancel = button("Kapat", muted, card);
-        cancel.setOnClickListener(v -> close());
-        row.addView(micButton, new LinearLayout.LayoutParams(0, dp(48), 1.4f));
-        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(0, dp(48), 1f); bp.leftMargin = dp(8);
-        row.addView(done, bp);
-        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, dp(48), 1f); cp.leftMargin = dp(8);
-        row.addView(cancel, cp);
-        LinearLayout.LayoutParams rowp = new LinearLayout.LayoutParams(-1, -2); rowp.topMargin = dp(12); root.addView(row, rowp);
+        LinearLayout row = new LinearLayout(a); row.setGravity(Gravity.CENTER_VERTICAL);
+        micButton = circleIcon(R.drawable.ic_op_mic, green, card, border, "Dinlemeyi başlat ya da durdur");
+        micButton.setOnClickListener(v -> { if (recognizer != null) { stopListening(); idle("Devam etmek için küreye dokun"); } else { silent = 0; listen(); } });
+        orb = new ElekVoiceOrbView(a);
+        orb.setClickable(true); orb.setFocusable(true);
+        orb.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        orb.setContentDescription("Sesli elek asistanı");
+        orb.setOnClickListener(v -> { if (recognizer == null && afterSpeech == null) { silent = 0; listen(); } });
+        android.widget.ImageView close = circleIcon(R.drawable.ic_op_close, GreenTheme.color(R.color.zd_text), card, border, "Sesli elek asistanını kapat");
+        close.setOnClickListener(v -> close());
+        row.addView(micButton, new LinearLayout.LayoutParams(dp(46), dp(46)));
+        LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(dp(132), dp(132)); op.leftMargin = dp(10); op.rightMargin = dp(10);
+        row.addView(orb, op);
+        row.addView(close, new LinearLayout.LayoutParams(dp(46), dp(46)));
+        root.addView(row);
+        status = label("", 12, muted, false); status.setGravity(Gravity.CENTER);
+        root.addView(status, new LinearLayout.LayoutParams(-2, -2));
 
         dialog = new Dialog(a);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -260,31 +247,26 @@ final class ElekVoiceSession {
         Window w = dialog.getWindow();
         if (w != null) {
             w.setBackgroundDrawableResource(android.R.color.transparent);
-            w.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-            w.setGravity(Gravity.BOTTOM);
-            w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   // elek başında ekran kararmasın
+            w.setLayout(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            w.setGravity(Gravity.BOTTOM | Gravity.END);    // sağ altta, kaydet düğmesinin üstünde; kilolar ve toplam görünür
+            w.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            w.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
         dialog.show();
     }
 
-    private void addLog(String who, String line) {
-        TextView t = label(who + ": " + line, 13, GreenTheme.color("Sen".equals(who) ? R.color.zd_text : R.color.zd_muted), "Sen".equals(who));
-        t.setPadding(0, dp(3), 0, dp(3));
-        log.addView(t);
-        if (log.getParent() instanceof ScrollView) ((ScrollView) log.getParent()).post(() -> ((ScrollView) log.getParent()).fullScroll(ScrollView.FOCUS_DOWN));
+    private android.widget.ImageView circleIcon(int icon, int tint, int bg, int stroke, String desc) {
+        android.widget.ImageView v = new android.widget.ImageView(a);
+        v.setImageResource(icon); v.setColorFilter(tint); v.setPadding(dp(11), dp(11), dp(11), dp(11));
+        GradientDrawable g = new GradientDrawable(); g.setShape(GradientDrawable.OVAL); g.setColor(bg); g.setStroke(dp(1), stroke);
+        v.setBackground(g); v.setClickable(true); v.setFocusable(true); v.setContentDescription(desc);
+        return v;
     }
 
     private TextView label(String s, int sp, int color, boolean bold) {
         TextView t = new TextView(a); t.setText(s); t.setTextSize(sp); t.setTextColor(color);
         if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
         return t;
-    }
-
-    private TextView button(String s, int color, int bg) {
-        TextView b = label(s, 14, color, true); b.setGravity(Gravity.CENTER);
-        b.setBackground(round(bg, GreenTheme.color(R.color.zd_border), 16));
-        b.setClickable(true); b.setFocusable(true); b.setContentDescription(s.replace("🎙", "").trim());
-        return b;
     }
 
     private GradientDrawable round(int fill, int stroke, int r) {

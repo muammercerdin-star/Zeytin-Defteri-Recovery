@@ -389,7 +389,7 @@ public class ElekActivity extends Activity {
                 for (int i = 0; i < kg.length && i < values.length; i++) {
                     if (kg[i] == null) continue;
                     String v = values[i] > 0 ? TezgahQr.field(values[i]) : "";
-                    if (!v.equals(kg[i].getText().toString())) kg[i].setText(v);
+                    if (!v.equals(kg[i].getText().toString())) { kg[i].setText(v); flashVoiceField(kg[i]); }
                 }
                 if (sold != null) saleOnSave = sold;
                 if (saleOnSave && etSaleBuyer != null && buyer != null && !buyer.trim().isEmpty()) etSaleBuyer.setText(buyer.trim());
@@ -408,6 +408,19 @@ public class ElekActivity extends Activity {
             }
         });
         return voice;
+    }
+
+    /** Sesle yazılan kilo alanı bir an yeşil çerçeveyle parlar ve görünür alana kayar. */
+    private void flashVoiceField(EditText field) {
+        android.graphics.drawable.Drawable original = field.getBackground();
+        android.graphics.drawable.GradientDrawable glow = new android.graphics.drawable.GradientDrawable();
+        float d = getResources().getDisplayMetrics().density;
+        glow.setCornerRadius(14 * d);
+        glow.setColor(getResources().getColor(R.color.zd_green_soft, null));
+        glow.setStroke(Math.round(3 * d), getResources().getColor(R.color.zd_green, null));
+        field.setBackground(glow);
+        field.requestRectangleOnScreen(new android.graphics.Rect(0, 0, field.getWidth(), field.getHeight()), false);
+        field.postDelayed(() -> field.setBackground(original), 1100);
     }
 
     @Override
@@ -1741,6 +1754,9 @@ public class ElekActivity extends Activity {
         // Sesle doldur: asistan konuşarak kiloları alır, "bitti"de toplamı okur, "evet"te kaydeder.
         android.view.View voiceButton = findViewById(R.id.btnElekVoice);
         if (voiceButton != null) voiceButton.setOnClickListener(view -> voiceSession().start());
+        android.widget.FrameLayout voiceOrbSlot = findViewById(R.id.elekVoiceOrbSlot);
+        if (voiceOrbSlot != null) voiceOrbSlot.addView(new ElekVoiceOrbView(this).compact(),
+                new android.widget.FrameLayout.LayoutParams(-1, -1));
         // Ana sayfadaki "Defterden oku" ile açıldıysa kamera/galeri seçimi hemen gelsin.
         if (notebookButton != null && getIntent() != null && getIntent().getBooleanExtra("open_notebook", false)) {
             getIntent().removeExtra("open_notebook");
