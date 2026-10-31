@@ -27,7 +27,9 @@ public final class TezgahVoiceDialog {
     private static final Locale TR = new Locale("tr", "TR");
     private final TezgahModel model;
     private final List<String> sellers;
-    private final List<Integer> added = new ArrayList<>();   // bu konuşmada eklenen tartımların sırası (geri al için)
+    private final List<Integer> added = new ArrayList<>();
+    private final List<Double> addedNet = new ArrayList<>();   // net söylenen tartımın neti, değilse -1
+    private double committingNet = -1;   // bu konuşmada eklenen tartımların sırası (geri al için)
     private Phase phase = Phase.WEIGH;
     private int grade;
     public String seller = "";
@@ -36,7 +38,7 @@ public final class TezgahVoiceDialog {
     private int pay = ElekSaleModel.PAY_ALL;
     private double paid;
     // kasa uyarısında bekleyen tartım
-    private int pGrade, pKasa, pSuggested; private double pKg;
+    private int pGrade, pKasa, pSuggested; private double pKg, pNet = -1;
 
     /** model: ekrandaki tezgahın kopyası (fiyatlar, dara, önceki tartımlar). seller: ekranda yazılı satan (boş olabilir). */
     public TezgahVoiceDialog(TezgahModel model, String seller, List<String> sellers) {
@@ -67,7 +69,11 @@ public final class TezgahVoiceDialog {
     // ------------------------------------------------------------ ayrıştırma
 
     /** Söylenen tartım: sınıf (-1 yok), kantar kilosu (NaN yok), kasa (-1 söylenmedi, 0 kasasız). */
-    public static final class Said { public int grade = -1, kasa = -1; public double kg = Double.NaN; }
+    public static final class Said {
+        public int grade = -1, kasa = -1; public double kg = Double.NaN;
+        /** "net 13" / "13 net": söylenen kilo zaten net, dara düşülmez. */
+        public boolean net;
+    }
 
     public static Said parse(String raw) {
         Said out = new Said();
@@ -80,6 +86,7 @@ public final class TezgahVoiceDialog {
             java.util.regex.Matcher glued = java.util.regex.Pattern.compile("^([1-4])(numara\\p{L}*|no|nolu)$").matcher(w);
             if (glued.find()) { out.grade = Integer.parseInt(glued.group(1)); continue; }
             if (w.equals("kasasiz") || w.equals("dokme")) { out.kasa = 0; continue; }
+            if (w.equals("net") || w.equals("neti")) { out.net = true; continue; }
             int[] end = new int[1];
             double v = ElekVoiceEntry.number(t, i, end);
             if (Double.isNaN(v)) continue;
@@ -127,6 +134,7 @@ public final class TezgahVoiceDialog {
         if (has(s, "oku|toplam|ne kadar|kac oldu|ne oldu")) return ask(readout() + " " + prompt());
         if (has(s, "bitti|bitir|bitirelim|hepsi bu|kaydet|fis")) return finish();
         Said said = parse(raw);
+        if (!Double.isNaN(said.kg) && said.net) return addNet(said.grade >= 0 ? said.grade : grade, said.kasa, said.kg, said.grade >= 0 && said.grade != grade);
         if (!Double.isNaN(said.kg)) return add(said.grade >= 0 ? said.grade : grade, said.kasa, said.kg, said.grade >= 0 && said.grade != grade);
         if (said.grade >= 0) { grade = said.grade; return ask(label(grade) + ", kaç kilo?"); }
         if (said.kasa >= 0) return fixKasa(said.kasa);
@@ -147,17 +155,45 @@ public final class TezgahVoiceDialog {
         if (!estimated) {
             int sug = TezgahModel.suggestedKasa(k, kg, tare);
             if (sug > 0) {
-                pGrade = g; pKasa = k; pKg = kg; pSuggested = sug; phase = Phase.KASA_CHECK;
+                pGrade = g; pKasa = k; pKg = kg; pSuggested = sug; pNet = -1; phase = Phase.KASA_CHECK;
                 return ask(k + " kasada " + num(kg) + " kilo " + (sug < k ? "az" : "fazla") + ". " + sug + " kasa yapayım mı?");
             }
         }
         return commit(g, k, kg, (named ? label(g) + ", " : "") + (estimated ? kasaWord(k) + ", " : ""), -1);
     }
 
+    /**
+     * Net söylendi ("net 13"): dara düşülmez. Tezgah kantar kilosu sakladığı için kantar = net + kasa × dara yazılır,
+     * böylece kayıttaki net tam söylenen kilo olur, kasa sayısı da toplamda kalır.
+     * Kasa söylenmediyse netten tahmin edilir (bir kasa ~25 kg, en fazla 30 kg).
+     */
+    private Reply addNet(int g, int kasa, double net, boolean named) {
+        if (!(net > 0)) return ask("Net kiloyu yeniden söyle.");
+        double tare = model.tare();
+        boolean estimated = kasa < 0;
+        int k = kasa;
+        if (estimated) {
+            k = Math.max(1, (int) Math.round(net / TezgahModel.TYPICAL_NET_PER_KASA));
+            k = Math.max(k, (int) Math.ceil(net / TezgahModel.MAX_NET_PER_KASA - 1e-9));
+        }
+        double kg = Math.round((net + k * tare) * 100) / 100.0;
+        if (!estimated) {
+            int sug = TezgahModel.suggestedKasa(k, kg, tare);
+            if (sug > 0) {   // kasaya uymuyor: düzeltilirse yine aynı net kalsın
+                pGrade = g; pKasa = k; pKg = kg; pSuggested = sug; pNet = net; phase = Phase.KASA_CHECK;
+                return ask(k + " kasada " + num(net) + " kilo net " + (sug < k ? "az" : "fazla") + ". " + sug + " kasa yapayım mı?");
+            }
+        }
+        committingNet = net;
+        return commit(g, k, kg, (named ? label(g) + ", " : "") + (estimated ? kasaWord(k) + ", " : ""), -1);
+    }
+
     private Reply commit(int g, int k, double kg, String lead, int removeIndex) {
-        if (removeIndex >= 0) { model.remove(removeIndex); added.remove(added.size() - 1); }
+        double netSaid = committingNet; committingNet = -1;
+        if (removeIndex >= 0) { model.remove(removeIndex); added.remove(added.size() - 1); addedNet.remove(addedNet.size() - 1); }
         if (!model.add(g, k, kg)) return ask("Bu tartımı ekleyemedim. Kiloyu yeniden söyle.");
         added.add(model.items().size() - 1);
+        addedNet.add(netSaid);
         grade = g;
         phase = Phase.WEIGH;
         Reply r = new Reply(lead + num(TezgahModel.net(k, kg, model.tare())) + " net.", Action.ADD, true);
@@ -177,23 +213,32 @@ public final class TezgahVoiceDialog {
 
     private Reply kasaCheck(String s, String raw) {
         Said said = parse(raw);
-        if (said.kasa >= 0 && Double.isNaN(said.kg)) return commit(pGrade, said.kasa, pKg, "", -1);
-        if (has(s, "evet|olur|yap|tamam|dogru")) return commit(pGrade, pSuggested, pKg, kasaWord(pSuggested) + ", ", -1);
+        committingNet = pNet;
+        if (said.kasa >= 0 && Double.isNaN(said.kg)) return commit(pGrade, said.kasa, pendingKg(said.kasa), "", -1);
+        if (has(s, "evet|olur|yap|tamam|dogru")) return commit(pGrade, pSuggested, pendingKg(pSuggested), kasaWord(pSuggested) + ", ", -1);
         if (has(s, "hayir|yine de|oldugu gibi|boyle kalsin|dogru soyledim")) return commit(pGrade, pKasa, pKg, "", -1);
+        committingNet = -1;
         return ask(pSuggested + " kasa yapayım mı? Evet ya da hayır de.");
     }
+
+    /** Kasa değişince: net söylendiyse net sabit kalır (kantar yeniden hesaplanır), değilse kantar kilosu aynı. */
+    private double pendingKg(int k) { return pNet >= 0 ? Math.round((pNet + k * model.tare()) * 100) / 100.0 : pKg; }
 
     private Reply fixKasa(int k) {
         if (added.isEmpty()) return ask("Önce kantardaki kiloyu söyle.");
         int idx = added.get(added.size() - 1);
         TezgahModel.Weighing w = model.items().get(idx);
-        if (!TezgahModel.addError(k, w.kg, model.tare()).isEmpty()) return ask(k + " kasa bu kiloya uymuyor. Kasa sayısını yeniden söyle.");
-        return commit(w.grade, k, w.kg, "Düzelttim, " + kasaWord(k) + ", ", idx);
+        double netSaid = addedNet.get(addedNet.size() - 1);
+        double kg = netSaid >= 0 ? Math.round((netSaid + k * model.tare()) * 100) / 100.0 : w.kg;   // net söylendiyse net sabit
+        if (!TezgahModel.addError(k, kg, model.tare()).isEmpty()) return ask(k + " kasa bu kiloya uymuyor. Kasa sayısını yeniden söyle.");
+        committingNet = netSaid;
+        return commit(w.grade, k, kg, "Düzelttim, " + kasaWord(k) + ", ", idx);
     }
 
     private Reply undo() {
         if (added.isEmpty()) return ask("Bu konuşmada eklenen tartım yok. " + prompt());
         int idx = added.remove(added.size() - 1);
+        addedNet.remove(addedNet.size() - 1);
         TezgahModel.Weighing w = model.items().get(idx);
         model.remove(idx);
         grade = w.grade;

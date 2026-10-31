@@ -105,6 +105,25 @@ public class TezgahVoiceDialogTest {
         r = z.handle("münferit");
         check(z.phase() == TezgahVoiceDialog.Phase.CONFIRM, "fiyat yoksa ödeme sorulmaz: " + r.speech);
 
+        // Net söylenirse dara düşülmez
+        TezgahVoiceDialog nt = new TezgahVoiceDialog(model(), "", Arrays.asList());
+        r = nt.handle("net 13");
+        check(r.action == TezgahVoiceDialog.Action.ADD && r.kasa == 1 && r.kg == 15 && r.speech.equals("1 kasa, 13 net."),
+                "net 13 → net 13 kalır (kantar 15 yazılır): " + r.speech + " kg=" + r.kg);
+        check(nt.model().totalNet() == 13, "toplam net 13 (dara düşülmedi)");
+        r = nt.handle("51 net 2 kasa");
+        check(r.kasa == 2 && r.kg == 55 && r.speech.equals("51 net."), "51 net 2 kasa: " + r.speech);
+        r = nt.handle("3 kasa");
+        check(r.kasa == 3 && r.kg == 57 && r.speech.equals("Düzelttim, 3 kasa, 51 net."), "net tartımda kasa düzeltilince net aynı kalır: " + r.speech);
+        r = nt.handle("1 numara net 80");
+        check(r.grade == 1 && r.kasa == 3 && r.speech.equals("1 numara, 3 kasa, 80 net."), "numara + net: " + r.speech);
+        r = nt.handle("kasasız net 30");
+        check(r.kasa == 0 && r.kg == 30 && r.speech.equals("30 net."), "kasasız net: " + r.speech);
+        r = nt.handle("1 kasa net 50");
+        check(nt.phase() == TezgahVoiceDialog.Phase.KASA_CHECK, "1 kasada 50 net uyarısı: " + r.speech);
+        r = nt.handle("evet");
+        check(r.kasa == 2 && r.kg == 54 && TezgahModel.net(r.kasa, r.kg, 2) == 50, "evet → 2 kasa, net yine 50");
+
         // Ayrıştırma
         TezgahVoiceDialog.Said s = TezgahVoiceDialog.parse("1 numara 40, 2 kasa");
         check(s.grade == 1 && s.kg == 40 && s.kasa == 2, "1 numara 40, 2 kasa");
