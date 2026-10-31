@@ -384,6 +384,14 @@ public class ElekActivity extends Activity {
             }
             @Override public double[] prices() { return new double[]{priceDouble, price1, price2, price3, price4, priceOil}; }
             @Override public boolean soldOnSave() { return saleOnSave; }
+            @Override public java.util.List<String> buyers() {
+                java.util.List<String> names = new java.util.ArrayList<>();
+                try {
+                    for (BuyerDirectory.Summary b : BuyerDirectory.list(databaseHelper.getReadableDatabase(),
+                            databaseHelper.getActiveOwnerUid(), databaseHelper.getActiveSeasonYear())) names.add(b.name);
+                } catch (RuntimeException ignored) { }
+                return names;
+            }
             @Override public void fill(double[] values, Boolean sold, String buyer) {
                 EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
                 for (int i = 0; i < kg.length && i < values.length; i++) {

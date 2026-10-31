@@ -13,7 +13,7 @@ import java.util.Locale;
  */
 public final class ElekVoiceDialog {
     public enum Action { NONE, FILL, SAVE, CANCEL }
-    public enum Phase { LISTENING, CONFIRM, DONE }
+    public enum Phase { LISTENING, ASK_BUYER, CONFIRM, DONE }
 
     public static final class Reply {
         public final String speech; public final Action action; public final boolean listen;
@@ -28,12 +28,23 @@ public final class ElekVoiceDialog {
     public String buyer = "";
     private final double[] prices;
     private final boolean soldByDefault;
+    private final java.util.List<String> buyers;
+    /** Söylenen alıcı listede yoksa true: kayıtta yeni alıcı olarak eklenir. */
+    public boolean buyerNew;
+    private boolean buyerAsked;
+    private java.util.List<String> buyerChoices = new java.util.ArrayList<>();
     private Phase phase = Phase.LISTENING;
     private final Deque<double[]> undo = new ArrayDeque<>();
     private int fills = 0, misses = 0;
 
     /** start: formdaki mevcut kilolar; prices: sınıf fiyatları (TL/kg); soldByDefault: formdaki "Bu zeytini sattım". */
     public ElekVoiceDialog(double[] start, double[] prices, boolean soldByDefault) {
+        this(start, prices, soldByDefault, null);
+    }
+
+    /** buyers: alıcı listesindeki adlar ("Kime sattın?" cevabı bunlarla eşleştirilir). */
+    public ElekVoiceDialog(double[] start, double[] prices, boolean soldByDefault, java.util.List<String> buyers) {
+        this.buyers = buyers == null ? new java.util.ArrayList<>() : new java.util.ArrayList<>(buyers);
         for (int i = 0; i < 6 && start != null && i < start.length; i++) kg[i] = Math.max(0, start[i]);
         this.prices = prices == null ? new double[6] : prices.clone();
         this.soldByDefault = soldByDefault;
@@ -53,6 +64,7 @@ public final class ElekVoiceDialog {
             phase = Phase.DONE;
             return new Reply("Tamam, kaydetmeden bıraktım. Yazdıklarım formda duruyor.", Action.CANCEL, false);
         }
+        if (phase == Phase.ASK_BUYER) return answerBuyer(raw, s);
         if (phase == Phase.CONFIRM) {
             ElekVoiceEntry e = ElekVoiceEntry.parse(raw);
             if (e != null) { apply(e, raw); return askConfirm("Düzelttim. "); }
@@ -90,11 +102,16 @@ public final class ElekVoiceDialog {
         if (e != null) said.append(apply(e, raw));
         else {
             if (soldSaid != null) sold = soldSaid;
-            if (!buyerSaid.isEmpty()) { buyer = buyerSaid; sold = true; }
+            if (!buyerSaid.isEmpty()) { setBuyer(buyerSaid); sold = true; }
         }
         if (finish) {
             if (total() <= 0) return new Reply("Henüz kilo söylemedin. Örneğin: 3 numara 120 kilo.", Action.NONE, true);
-            return askConfirm(said.length() > 0 ? "Tamam, " + said + ". " : "");
+            String lead = said.length() > 0 ? "Tamam, " + said + ". " : "";
+            if (isSold() && buyer.isEmpty() && (!buyerAsked || !buyerChoices.isEmpty())) {
+                buyerAsked = true; phase = Phase.ASK_BUYER;
+                return new Reply(lead + (buyerChoices.isEmpty() ? "Kime sattın?" : which(buyerChoices)), Action.FILL, true);
+            }
+            return askConfirm(lead);
         }
         if (e != null) {
             misses = 0; fills++;
@@ -130,8 +147,45 @@ public final class ElekVoiceDialog {
             b.append(SPOKEN[i]).append(' ').append(num(e.kg[i]));
         }
         if (e.sold != null) sold = e.sold;
-        if (!e.buyer.isEmpty()) { buyer = e.buyer; sold = true; }
+        if (!e.buyer.isEmpty()) { setBuyer(e.buyer); sold = true; }
         return b.toString();
+    }
+
+    /** "Kime sattın?" cevabı: listedeyse onu, birden çoksa hangisi, yoksa yeni alıcı. */
+    private Reply answerBuyer(String raw, String s) {
+        if (!buyerChoices.isEmpty()) {
+            String picked = ElekVoiceBuyer.pick(raw, buyerChoices);
+            buyerChoices = new java.util.ArrayList<>();
+            if (picked != null) { buyer = picked; buyerNew = false; return askConfirm("Tamam, " + picked + ". "); }
+        }
+        if (has(s, "gec", "yok", "bilmiyorum", "sonra", "kimse", "bos", "bosver", "atla")) {
+            buyer = ""; buyerNew = false;
+            return askConfirm("Alıcısız kaydediyorum. ");
+        }
+        if (Boolean.FALSE.equals(ElekVoiceEntry.soldIn(raw))) { sold = false; return askConfirm("Tamam, satış olmadan. "); }
+        ElekVoiceBuyer.Match m = ElekVoiceBuyer.match(raw, buyers);
+        switch (m.kind) {
+            case EXISTING: buyer = m.name; buyerNew = false; return askConfirm("Tamam, " + m.name + ". ");
+            case AMBIGUOUS: buyerChoices = m.candidates; return new Reply(which(m.candidates), Action.NONE, true);
+            case NEW: buyer = m.name; buyerNew = true;
+                return askConfirm(m.name + " listende yok, yeni alıcı olarak ekleyeceğim. ");
+            default: return new Reply("Adını anlayamadım. Alıcının adını söyle, yoksa geç de.", Action.NONE, true);
+        }
+    }
+
+    private static String which(java.util.List<String> c) {
+        StringBuilder q = new StringBuilder("Hangisi? ");
+        for (int i = 0; i < c.size() && i < 3; i++) q.append(i == 0 ? "" : ", ").append(c.get(i)).append(" mı");
+        return q.append('?').toString();
+    }
+
+    /** Cümlenin içinde geçen alıcı ("Ahmet'e sattım"): listedekiyle aynı yazılsın. */
+    private void setBuyer(String said) {
+        ElekVoiceBuyer.Match m = ElekVoiceBuyer.match(said, buyers);
+        if (m.kind == ElekVoiceBuyer.Kind.EXISTING) { buyer = m.name; buyerNew = false; }
+        else if (m.kind == ElekVoiceBuyer.Kind.AMBIGUOUS) { buyer = ""; buyerChoices = m.candidates; }
+        else { buyer = m.name.isEmpty() ? said : m.name; buyerNew = true; }
+        buyerAsked = !buyer.isEmpty();
     }
 
     private Reply askConfirm(String prefix) {
@@ -151,7 +205,7 @@ public final class ElekVoiceDialog {
         b.append(" Toplam ").append(num(total())).append(" kilo");
         if (amount() > 0) b.append(", ").append(money(amount())).append(" lira");
         b.append('.');
-        if (isSold() && !buyer.isEmpty()) b.append(" Alıcı ").append(buyer).append('.');
+        if (isSold() && !buyer.isEmpty()) b.append(" Alıcı ").append(buyer).append(buyerNew ? ", yeni alıcı." : ".");
         return b.toString();
     }
 

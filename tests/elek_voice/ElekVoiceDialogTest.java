@@ -39,7 +39,9 @@ public class ElekVoiceDialogTest {
 
         ElekVoiceDialog h = new ElekVoiceDialog(new double[6], PRICES, true);
         h.handle("1 numara 50"); r = h.handle("bitti");
-        check(r.speech.endsWith("Kaydedip fişi hazırlayayım mı?"), "formda satış açıksa fiş sorulur");
+        check(r.speech.endsWith("Kime sattın?"), "formda satış açıksa önce alıcı sorulur: " + r.speech);
+        r = h.handle("geç");
+        check(r.speech.endsWith("Kaydedip fişi hazırlayayım mı?"), "alıcısız da fiş sorulur");
         r = h.handle("hayır");
         check(h.phase() == ElekVoiceDialog.Phase.LISTENING && r.listen, "hayır → dinlemeye döner");
         r = h.handle("satmadım bitti");

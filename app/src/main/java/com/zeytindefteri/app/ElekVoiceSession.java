@@ -39,6 +39,8 @@ final class ElekVoiceSession {
         /** Formu kaydeder; kaydedilen elek kaydının id'si ya da -1. */
         long save();
         void openReceipt(long recordId);
+        /** Alıcı listesindeki adlar ("Kime sattın?" cevabı bunlarla eşleştirilir). */
+        default java.util.List<String> buyers() { return new java.util.ArrayList<>(); }
     }
 
     static final int MIC_REQUEST = 7301;
@@ -73,7 +75,7 @@ final class ElekVoiceSession {
         }
         close();   // açık bir oturum varsa (düğmeye tekrar basıldı) önce kapat
         closed = false; silent = 0;
-        logic = new ElekVoiceDialog(host.kg(), host.prices(), host.soldOnSave());
+        logic = new ElekVoiceDialog(host.kg(), host.prices(), host.soldOnSave(), host.buyers());
         buildDialog();
         tts = new TextToSpeech(a.getApplicationContext(), st -> main.post(() -> {
             int lang = TextToSpeech.LANG_NOT_SUPPORTED;
