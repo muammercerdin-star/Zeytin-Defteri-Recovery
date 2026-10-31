@@ -251,7 +251,7 @@ final class TezgahVoiceSession {
         // Düğme eski hâline döner.
         for (int i = 0; i < button.getChildCount(); i++) button.getChildAt(i).setVisibility(android.view.View.VISIBLE);
         button.setContentDescription("Sesle tart: kantardaki kiloyu söyle, asistan kasa, dara ve neti hesaplasın");
-        host.closed();
+        if (logic != null) host.closed();   // yeni oturumun başındaki temizlikte değil, yalnız açılmış oturum kapanınca
     }
 
     // ------------------------------------------------------------ pencere: yüzen küre

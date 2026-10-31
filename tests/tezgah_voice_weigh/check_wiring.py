@@ -15,7 +15,9 @@ checks = [
     ("dugme ses dalgasina donusur", "new ElekVoiceWaveView(a).onGreen()" in ses),
     ("ekran kararmaz", "FLAG_KEEP_SCREEN_ON" in ses),
     ("ana ekrandan gelince sihirbaz kendiliginden acilmaz", "fromHome && state == null) body.post" not in act),
-    ("Sesle tart kilo ekranini (sihirbaz) hemen acar, ses dalgasi ustte", "openWizard(TezgahWizardFlow.start(model)); }" in act and "new TezgahVoiceSession(this, voiceHost(), wizardVoiceBar)" in act),
+    ("Sesle tart sihirbaz acmaz, tartim yazma ekranini gosterir", "voiceMode = true;" in act and "new TezgahVoiceSession(this, voiceHost(), voiceBar)" in act
+        and re.search(r"if \(voiceMode\) \{.*?gradeRow\(\).*?entryCard\(\).*?weighingsCard\(\)", act, re.S) is not None),
+    ("asistan kapaninca ekran normale doner", "if (voiceMode) { voiceMode = false;" in act),
     ("sesle tartimda klavye acilmaz", "if (!voiceOpen()) showKeyboard(wizardKg);" in act),
     ("sihirbaz kapaninca asistan da kapanir", "if (voice != null) voice.close(); wizard = null;" in act),
     ("sessizlikte konusmaz, sessizce dinlemeye devam eder", "Bekliyorum" not in ses and "Hâlâ buradayım" not in ses and "main.postDelayed(this::listen, 250)" in ses),

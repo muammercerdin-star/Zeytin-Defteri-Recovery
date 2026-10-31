@@ -181,6 +181,22 @@ public final class TezgahActivity extends Activity {
 
         // Sıkı düzen: her şey tek ekrana sığsın (gerekirse yine kayar).
         body.addView(header());
+        if (voiceMode) {
+            // Sesle tartım: sihirbaz yok; tartımın yazıldığı ekran (numara sekmeleri + kasa/kantar + tartımlar)
+            // görünür, en üstte asistanın ses dalgası. Söylenen her tartım burada anında belirir.
+            voiceBar = new LinearLayout(this);
+            voiceBar.setGravity(Gravity.CENTER_VERTICAL);
+            voiceBar.setPadding(dp(12), 0, dp(10), 0);
+            voiceBar.setBackgroundResource(R.drawable.elek_voice_premium);
+            body.addView(voiceBar, margins(-1, dp(64), 6));
+            body.addView(gradeRow(), margins(-1, -2, 8));
+            body.addView(entryCard(), margins(-1, -2, 8));
+            body.addView(weighingsCard(), margins(-1, -2, 8));
+            body.addView(summaryCard(), margins(-1, -2, 8));
+            setContentView(root);
+            refreshTotals();
+            return;
+        }
         // Her zaman sihirbazı açar: boşken "Yeni tartım başlat", yarım alımda "Tartıma devam et".
         body.addView(startButton(), margins(-1, dp(58), 6));
         // Sesle tart: kiloyu söyle, asistan kasa + dara + neti söyleyip tezgaha yazsın.
@@ -1611,6 +1627,9 @@ public final class TezgahActivity extends Activity {
     }
 
     private LinearLayout wizardVoiceBar;
+    /** Sesle tartım açıkken ekran tartım yazma düzenine geçer (sihirbaz açılmaz). */
+    private boolean voiceMode;
+    private LinearLayout voiceBar;
 
     private boolean voiceOpen() { return voice != null && voice.isOpen(); }
 
@@ -1629,10 +1648,10 @@ public final class TezgahActivity extends Activity {
             return;
         }
         if (voice != null) voice.close();
-        if (wizard == null) { wizardPayAfter = false; openWizard(TezgahWizardFlow.start(model)); }
-        wizardVoiceBar.removeAllViews();
-        wizardVoiceBar.setVisibility(View.VISIBLE);
-        voice = new TezgahVoiceSession(this, voiceHost(), wizardVoiceBar);
+        if (wizard != null) wizard.dismiss();
+        voiceMode = true;
+        build();
+        voice = new TezgahVoiceSession(this, voiceHost(), voiceBar);
         voice.start();
     }
 
@@ -1670,7 +1689,10 @@ public final class TezgahActivity extends Activity {
                 return savePurchase(paid, true);
             }
             @Override public void show(TezgahVoiceDialog d) { showVoiceStep(d); }
-            @Override public void closed() { if (wizardVoiceBar != null) wizardVoiceBar.setVisibility(View.GONE); }
+            @Override public void closed() {
+                if (wizardVoiceBar != null) wizardVoiceBar.setVisibility(View.GONE);
+                if (voiceMode) { voiceMode = false; if (!isFinishing()) build(); }
+            }
         };
     }
 
@@ -1687,6 +1709,7 @@ public final class TezgahActivity extends Activity {
 
     /** Konuşmanın bulunduğu adımı kilo ekranında gösterir; son tartım numaranın altında yazar. */
     private void showVoiceStep(TezgahVoiceDialog d) {
+        if (voiceMode) { showVoiceGrade(d); return; }
         if (wizard == null) return;
         TezgahVoiceDialog.Phase ph = d.phase();
         boolean weighing = ph == TezgahVoiceDialog.Phase.WEIGH || ph == TezgahVoiceDialog.Phase.KASA_CHECK;
@@ -1705,6 +1728,27 @@ public final class TezgahActivity extends Activity {
         android.view.View focus = wizard.getCurrentFocus();
         android.view.inputmethod.InputMethodManager im = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         if (focus != null && im != null) im.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+    }
+
+    /** Sesle tartım ekranı: konuşulan numaranın sekmesi seçili, son tartım kilo kutusunun altında yeşil yazar. */
+    private void showVoiceGrade(TezgahVoiceDialog d) {
+        TezgahVoiceDialog.Phase ph = d.phase();
+        boolean weighing = ph == TezgahVoiceDialog.Phase.WEIGH || ph == TezgahVoiceDialog.Phase.KASA_CHECK;
+        if (weighing && d.grade() != grade) selectGrade(d.grade());
+        if (netPreview == null) return;
+        List<TezgahModel.Weighing> items = model.items();
+        if (!weighing) {
+            netPreview.setVisibility(View.VISIBLE);
+            netPreview.setTextColor(GREEN);
+            netPreview.setText("Tartım bitti · net " + TezgahModel.kg(model.totalNet()) + " · " + TezgahModel.tl(model.total())
+                    + (model.averagePrice() > 0 ? " · ort. " + TezgahModel.money(model.averagePrice()) + "/kg" : ""));
+        } else if (!items.isEmpty() && items.get(items.size() - 1).grade == grade) {
+            TezgahModel.Weighing w = items.get(items.size() - 1);
+            netPreview.setVisibility(View.VISIBLE);
+            netPreview.setTextColor(GREEN);
+            netPreview.setText("Son tartım: " + TezgahModel.kg(w.kg) + " · " + (w.kasa > 0 ? w.kasa + " kasa" : "kasasız")
+                    + " · net " + TezgahModel.kg(TezgahModel.net(w.kasa, w.kg, model.tare())));
+        }
     }
 
     private void voiceRefresh() {
