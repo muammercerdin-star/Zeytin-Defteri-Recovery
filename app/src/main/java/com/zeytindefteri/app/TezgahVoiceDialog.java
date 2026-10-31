@@ -7,7 +7,8 @@ import java.util.Locale;
 /**
  * Tezgâhta sesli tartım konuşması (saf, Android'siz, testli).
  *
- * Tüccar kasaları kantara koyar, kiloyu söyler: "55" → "55 kilo, 2 kasa, dara 4, net 51. Başka?"
+ * Tüccar kasaları kantara koyar, kiloyu söyler; asistan kısa cevap verir: "15 kilo 1 kasa" → "13 net".
+ * Kasa söylenmediyse tahmini kasayı da söyler: "55" → "2 kasa, 51 net". Ayrıntı (dara) ekranda yazar.
  * Kasa söylenmezse kiloya göre tahmin edilir (bir kasa ~25 kg zeytin + dara); "55, 3 kasa" denirse o kullanılır,
  * yalnız "3 kasa" denirse son tartımın kasası düzeltilir. "yok" sonraki numaraya geçer, "1 numara 40" o numaraya yazar.
  * "bitti" → toplam, "Kimden aldın?", ödeme (tamamı / bir kısmı / sonra), okuma ve "evet" olmadan asla kaydetmez.
@@ -150,7 +151,7 @@ public final class TezgahVoiceDialog {
                 return ask(k + " kasada " + num(kg) + " kilo " + (sug < k ? "az" : "fazla") + ". " + sug + " kasa yapayım mı?");
             }
         }
-        return commit(g, k, kg, named ? label(g) + ": " : "", -1);
+        return commit(g, k, kg, (named ? label(g) + ", " : "") + (estimated ? kasaWord(k) + ", " : ""), -1);
     }
 
     private Reply commit(int g, int k, double kg, String lead, int removeIndex) {
@@ -159,12 +160,14 @@ public final class TezgahVoiceDialog {
         added.add(model.items().size() - 1);
         grade = g;
         phase = Phase.WEIGH;
-        Reply r = new Reply(lead + line(k, kg) + " Başka?", Action.ADD, true);
+        Reply r = new Reply(lead + num(TezgahModel.net(k, kg, model.tare())) + " net.", Action.ADD, true);
         r.grade = g; r.kasa = k; r.kg = kg; r.removeIndex = removeIndex;
         return r;
     }
 
-    /** "55 kilo, 2 kasa, dara 4, net 51." */
+    private static String kasaWord(int k) { return k == 0 ? "kasasız" : k + " kasa"; }
+
+    /** Uzun okuma (ekran ve "oku" için): "55 kilo, 2 kasa, dara 4, net 51." */
     String line(int k, double kg) {
         double tare = model.tare();
         double net = TezgahModel.net(k, kg, tare);
@@ -175,7 +178,7 @@ public final class TezgahVoiceDialog {
     private Reply kasaCheck(String s, String raw) {
         Said said = parse(raw);
         if (said.kasa >= 0 && Double.isNaN(said.kg)) return commit(pGrade, said.kasa, pKg, "", -1);
-        if (has(s, "evet|olur|yap|tamam|dogru")) return commit(pGrade, pSuggested, pKg, "", -1);
+        if (has(s, "evet|olur|yap|tamam|dogru")) return commit(pGrade, pSuggested, pKg, kasaWord(pSuggested) + ", ", -1);
         if (has(s, "hayir|yine de|oldugu gibi|boyle kalsin|dogru soyledim")) return commit(pGrade, pKasa, pKg, "", -1);
         return ask(pSuggested + " kasa yapayım mı? Evet ya da hayır de.");
     }
@@ -185,7 +188,7 @@ public final class TezgahVoiceDialog {
         int idx = added.get(added.size() - 1);
         TezgahModel.Weighing w = model.items().get(idx);
         if (!TezgahModel.addError(k, w.kg, model.tare()).isEmpty()) return ask(k + " kasa bu kiloya uymuyor. Kasa sayısını yeniden söyle.");
-        return commit(w.grade, k, w.kg, "Düzelttim. ", idx);
+        return commit(w.grade, k, w.kg, "Düzelttim, " + kasaWord(k) + ", ", idx);
     }
 
     private Reply undo() {

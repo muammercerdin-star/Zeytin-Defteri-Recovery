@@ -23,26 +23,26 @@ public class TezgahVoiceDialogTest {
 
         TezgahVoiceDialog d = new TezgahVoiceDialog(model(), "", Arrays.asList("Mehmet Yılmaz", "Ahmet Kaya", "Ahmet Demir"));
         check(d.greeting().equals("Double kantarda. Kaç kilo?"), "karşılama: " + d.greeting());
-        TezgahVoiceDialog.Reply r = d.handle("15");
+        TezgahVoiceDialog.Reply r = d.handle("15 kilo 1 kasa");
         check(r.action == TezgahVoiceDialog.Action.ADD && r.grade == 0 && r.kasa == 1 && r.kg == 15, "15 → Double 1 kasa");
-        check(r.speech.equals("15 kilo, 1 kasa, dara 2, net 13. Başka?"), "15 cevabı: " + r.speech);
+        check(r.speech.equals("13 net."), "15 kilo 1 kasa → yalnız 13 net: " + r.speech);
         r = d.handle("yok");
         check(d.grade() == 1 && r.speech.equals("1 numara, kaç kilo?"), "yok → 1 numara: " + r.speech);
         r = d.handle("55 kilo");
-        check(r.grade == 1 && r.kasa == 2 && r.speech.equals("55 kilo, 2 kasa, dara 4, net 51. Başka?"), "55 cevabı: " + r.speech);
+        check(r.grade == 1 && r.kasa == 2 && r.speech.equals("2 kasa, 51 net."), "kasa söylenmezse tahmini kasa + net: " + r.speech);
         r = d.handle("elli beş iki kasa");
         check(r.kasa == 2 && r.kg == 55, "yazıyla 'elli beş iki kasa' = 55 kg 2 kasa (57 değil)");
         r = d.handle("3 kasa");
         check(r.action == TezgahVoiceDialog.Action.ADD && r.removeIndex == 2 && r.kasa == 3 && r.kg == 55
-                && r.speech.startsWith("Düzelttim. 55 kilo, 3 kasa, dara 6, net 49"), "yalnız '3 kasa' son tartımı düzeltir: " + r.speech);
+                && r.speech.equals("Düzelttim, 3 kasa, 49 net."), "yalnız '3 kasa' son tartımı düzeltir: " + r.speech);
         r = d.handle("geri al");
         check(r.action == TezgahVoiceDialog.Action.UNDO && r.removeIndex == 2 && d.model().items().size() == 2, "geri al son tartımı siler");
         r = d.handle("1 kasa 40");
         check(d.phase() == TezgahVoiceDialog.Phase.KASA_CHECK && r.speech.contains("2 kasa yapayım mı"), "1 kasada 40 kg uyarısı: " + r.speech);
         r = d.handle("evet");
-        check(r.action == TezgahVoiceDialog.Action.ADD && r.kasa == 2 && r.kg == 40, "evet → önerilen kasa");
+        check(r.action == TezgahVoiceDialog.Action.ADD && r.kasa == 2 && r.kg == 40 && r.speech.equals("2 kasa, 36 net."), "evet → önerilen kasa: " + r.speech);
         r = d.handle("3 numara 80");
-        check(r.grade == 3 && r.kasa == 3 && r.speech.startsWith("3 numara: 80 kilo, 3 kasa, dara 6, net 74"), "numara atlama: " + r.speech);
+        check(r.grade == 3 && r.kasa == 3 && r.speech.equals("3 numara, 3 kasa, 74 net."), "numara atlama: " + r.speech);
         r = d.handle("kantarda 2 kilo");
         check(r.action == TezgahVoiceDialog.Action.NONE && d.model().items().size() == 4, "dara kadar kilo eklenmez: " + r.speech);
         r = d.handle("oku");
