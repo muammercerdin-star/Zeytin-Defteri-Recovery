@@ -37,6 +37,8 @@ public final class ZeytinAssistantController {
         default void visual(State state) {}
         default void rms(float level) {}
         void navigate(String target,long gardenId);
+        /** Sesle söylenen elek kilolarıyla elek formunu dolu aç (kaydetmez; kullanıcı onaylar). */
+        default void openElekEntry(long gardenId,ElekVoiceEntry entry){navigate("ELEK",gardenId);}
         void weather(Garden garden,WeatherRepository.ForecastCallback callback);
     }
     private final Activity activity;
@@ -467,6 +469,14 @@ public final class ZeytinAssistantController {
                 List<Garden> gardens=data.gardens();
                 Resolution resolution=pick!=null?pick.resolve(gardens):ZeytinAssistantCommand.resolve(raw,gardens,active,cmd.kind==Kind.MARKET);
                 String gardenName=resolution.garden==null?"":resolution.garden.name;
+                // "Bugün 3 numara 120 kilo (sattım)": cevap yerine elek formu dolu açılır; kayıt kullanıcının onayıyla.
+                final ElekVoiceEntry voice=pick==null?ElekVoiceEntry.parse(raw):null;
+                if(voice!=null){
+                    final long gid=resolution.garden==null?0:resolution.garden.id;
+                    main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Elek formunu dolduruyorum…");haptic();
+                        Toast.makeText(activity,"Elek formu açılıyor: "+voice.summary(),Toast.LENGTH_SHORT).show();dialog.dismiss();host.openElekEntry(gid,voice);}});
+                    return;
+                }
                 if(cmd.kind==Kind.UNKNOWN){
                     // Selam, teşekkür, kayıt silme, ilaç dozu: sabit cevap önce (dozda ilaçlama sorusu önerilmez).
                     String special=ZeytinAssistantText.special(raw);

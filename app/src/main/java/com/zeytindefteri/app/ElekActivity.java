@@ -361,6 +361,41 @@ public class ElekActivity extends Activity {
         calculateAll();
 
         loadSeasonArchive();
+
+        // Asistana söylenen kilolar ("3 numara 120 kilo sattım"): form dolu açılır, Kaydet kullanıcıda.
+        if (savedInstanceState == null && getIntent() != null && getIntent().hasExtra(EXTRA_VOICE_KG)) {
+            final double[] voiceKg = getIntent().getDoubleArrayExtra(EXTRA_VOICE_KG);
+            final int voiceSold = getIntent().getIntExtra(EXTRA_VOICE_SOLD, -1);
+            final String voiceBuyer = getIntent().getStringExtra(EXTRA_VOICE_BUYER);
+            getIntent().removeExtra(EXTRA_VOICE_KG);
+            getWindow().getDecorView().post(() -> applyVoiceEntry(voiceKg, voiceSold, voiceBuyer));
+        }
+    }
+
+    static final String EXTRA_VOICE_KG = "voice_kg";
+    static final String EXTRA_VOICE_SOLD = "voice_sold";
+    static final String EXTRA_VOICE_BUYER = "voice_buyer";
+
+    /** Sesle söylenen kiloları forma koyar; satış ve alıcı söylendiyse onları da. Kaydetmez. */
+    private void applyVoiceEntry(double[] kgValues, int sold, String buyer) {
+        if (kgValues == null) return;
+        EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
+        double total = 0;
+        StringBuilder said = new StringBuilder();
+        for (int i = 0; i < kg.length && i < kgValues.length; i++) {
+            if (kg[i] == null || kgValues[i] <= 0) continue;
+            kg[i].setText(TezgahQr.field(kgValues[i]));
+            total += kgValues[i];
+            if (said.length() > 0) said.append(" · ");
+            said.append(ElekVoiceEntry.LABELS[i]).append(' ').append(TezgahModel.kg(kgValues[i]));
+        }
+        if (sold >= 0) saleOnSave = sold == 1;
+        if (saleOnSave && etSaleBuyer != null && buyer != null && !buyer.trim().isEmpty()) etSaleBuyer.setText(buyer.trim());
+        renderSaleOnSave();
+        calculateAll();
+        refreshElekInsights();
+        Toast.makeText(this, "Sesle dolduruldu: " + said + ". Kontrol edip "
+                + (saleOnSave ? "\"Kaydet ve satışı oluştur\"" : "Kaydet") + "'e bas.", Toast.LENGTH_LONG).show();
     }
 
 
