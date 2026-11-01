@@ -14,13 +14,6 @@ public final class ZeytinAssistantData implements AutoCloseable {
     public ZeytinAssistantData(Context context) {
         db=new DatabaseHelper(context.getApplicationContext()); owner=db.getActiveOwnerUid();season=db.getActiveSeasonYear();
     }
-    /** Alıcı listesi: ad, açık alacak, satış sayısı (asistanın alacak cevapları için). */
-    public List<AssistantReceivables.Entry> receivables(){
-        List<AssistantReceivables.Entry> out=new ArrayList<>();
-        try{for(BuyerDirectory.Summary b:BuyerDirectory.list(db.getReadableDatabase(),owner,season))out.add(new AssistantReceivables.Entry(b.name,b.receivable,b.saleCount));}
-        catch(RuntimeException ignored){}
-        return out;
-    }
     public boolean unchanged(){return owner.equals(db.getActiveOwnerUid()) && season==db.getActiveSeasonYear();}
     public List<Garden> gardens() {
         List<Garden> list=new ArrayList<>();

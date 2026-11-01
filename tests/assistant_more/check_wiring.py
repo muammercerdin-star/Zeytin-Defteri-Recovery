@@ -6,7 +6,7 @@ c = r("com/zeytindefteri/app/ZeytinAssistantController.java"); f = r("com/zeytin
 h = r("HarvestActivity.java"); d = r("com/zeytindefteri/app/ZeytinAssistantData.java")
 checks = [
     ("hasat cumlesi hasat formunu acar (elekten once)", "HarvestVoiceEntry.parse(raw)" in c and c.index("HarvestVoiceEntry.parse(raw)") < c.index("ElekVoiceEntry.parse(raw)")),
-    ("alacak sorusu kayitlardan cevaplanir", "AssistantReceivables.asks(raw)" in c and "data.receivables()" in c and "BuyerDirectory.list" in d),
+    ("alacak sorusu kayitlardan cevaplanir", "AssistantReceivables.asks(raw)" in c and "AssistantReceivablesData.load(" in c and "BuyerDirectory.list" in r("com/zeytindefteri/app/AssistantReceivablesData.java")),
     ("ana ekran hasat formunu boy boy kilo ile acar", "HarvestActivity.EXTRA_VOICE_KG" in f),
     ("hasat formu sesle dolar ama kendiliginden kaydetmez", "applyVoice()" in h and h.count("saveHarvest()") == 2),
 ]

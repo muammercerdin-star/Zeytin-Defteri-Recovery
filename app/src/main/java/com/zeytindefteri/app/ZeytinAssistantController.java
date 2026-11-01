@@ -485,7 +485,7 @@ public final class ZeytinAssistantController {
                 }
                 // "Ahmet'ten ne kadar alacağım var?", "Kim bana borçlu?": alıcı listesindeki açık alacaklardan.
                 if(pick==null&&AssistantReceivables.asks(raw)){
-                    post(token,owner,season,active,cmd,true,"","Alıcılar · açık alacaklar",AssistantReceivables.answer(raw,data.receivables()));
+                    post(token,owner,season,active,cmd,true,"","Alıcılar · açık alacaklar",AssistantReceivables.answer(raw,AssistantReceivablesData.load(activity,owner,season)));
                     return;
                 }
                 final ElekVoiceEntry voice=pick==null?ElekVoiceEntry.parse(raw):null;

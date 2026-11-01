@@ -45,7 +45,11 @@ public class AssistantTextTest {
         // Hazır ve örnek soruların hepsi asistanın gerçekten anladığı sorular olmalı.
         for (String[] group : ZeytinAssistantText.EXAMPLES)
             for (int i = 1; i < group.length; i++)
-                check(ZeytinAssistantCommand.parse(group[i]).kind != ZeytinAssistantCommand.Kind.UNKNOWN, "örnek soru anlaşılmıyor: " + group[i]);
+                // Asistan önce sesli kayıt/alacak yollarına bakar (elek, hasat, işlem, alacak); sonra soru kalıplarına.
+                check(ZeytinAssistantCommand.parse(group[i]).kind != ZeytinAssistantCommand.Kind.UNKNOWN
+                        || ElekVoiceEntry.parse(group[i]) != null || HarvestVoiceEntry.parse(group[i]) != null
+                        || OperationVoiceEntry.parse(group[i]) != null || AssistantReceivables.asks(group[i]),
+                        "örnek soru anlaşılmıyor: " + group[i]);
         for (String q : ZeytinAssistantText.followUps(ZeytinAssistantCommand.Kind.UNKNOWN, ""))
             check(ZeytinAssistantCommand.parse(q).kind != ZeytinAssistantCommand.Kind.UNKNOWN, "öneri anlaşılmıyor: " + q);
         System.out.println("AssistantTextTest: " + checks + " kontrol geçti");
