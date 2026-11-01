@@ -75,14 +75,22 @@ async function handle(request, env, now = Date.now()) {
         { role: "user", content: text },
       ],
       temperature: 0,
-      max_completion_tokens: 160,
+      // Gemma 4 önce "düşünme" metni üretebilir: pay geniş, düşünme kapalı istenir (desteklenmezse yok sayılır).
+      max_completion_tokens: 600,
+      chat_template_kwargs: { enable_thinking: false },
     });
   } catch (e) {
     return json({ ok: false, reason: "model_error" }, 503);
   }
   const content = modelText(out);
-  const result = cleanResult(extractJson(content));
-  if (!result) return json({ ok: false, reason: "not_understood" }, 200);
+  const parsed = extractJson(content);
+  const result = cleanResult(parsed);
+  if (!result) {
+    // Teşhis: içerik DEĞİL, yalnız uzunluk, bitiş nedeni ve JSON bulunup bulunmadığı.
+    const c = out && out.choices && out.choices[0];
+    const diag = "len=" + content.length + ",finish=" + ((c && c.finish_reason) || "?") + ",json=" + (parsed ? (parsed.islem === null ? "null" : "var") : "yok");
+    return json({ ok: false, reason: "not_understood", diag }, 200);
+  }
   return json({ ok: true, result }, 200);
 }
 
@@ -120,7 +128,14 @@ function modelText(out) {
   if (typeof out.response === "string") return out.response;
   if (out.response && typeof out.response === "object") return JSON.stringify(out.response);
   const c = out.choices && out.choices[0];
-  if (c && c.message && typeof c.message.content === "string") return c.message.content;
+  const m = c && c.message;
+  if (m) {
+    const content = typeof m.content === "string" ? m.content : "";
+    // Asıl cevap boşsa düşünme alanındaki son JSON'a bakılır.
+    const reasoning = typeof m.reasoning_content === "string" ? m.reasoning_content : typeof m.reasoning === "string" ? m.reasoning : "";
+    if (content.trim()) return content;
+    return reasoning;
+  }
   return "";
 }
 

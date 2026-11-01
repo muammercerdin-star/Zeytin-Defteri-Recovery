@@ -85,6 +85,14 @@ check(r.status === 200 && r.body.ok, "sağlık kontrolü");
 r = await call(await req({ text: "x" }, good, "/baska"), env({}));
 check(r.status === 404, "bilinmeyen yol");
 
+// düşünme alanı ve teşhis
+r = await call(await req({ text: "Dün Girelli'ye traktörle iki sefer zeytin götürdük, 800 tuttu", gardens: ["Girelli Zeytinliği"] }, good),
+  env({ reply: { choices: [{ finish_reason: "stop", message: { content: null, reasoning_content: "Kullanıcı nakliye diyor. {\"islem\":\"nakliye\",\"bahce\":\"Girelli Zeytinliği\",\"gun\":-1,\"miktar\":2,\"birim\":\"sefer\",\"tutar\":800}" } }] } }));
+check(r.body.ok && r.body.result.islem === "nakliye" && r.body.result.tutar === 800, "içerik boş, düşünme alanındaki JSON okunur: " + JSON.stringify(r.body));
+r = await call(await req({ text: "x y z" }, good), env({ reply: { choices: [{ finish_reason: "length", message: { content: "Hmm, bu cümlede" } }] } }));
+check(!r.body.ok && r.body.diag === "len=15,finish=length,json=yok" && !JSON.stringify(r.body).includes("Hmm"), "teşhis içerik içermez: " + JSON.stringify(r.body));
+check(calls.ai[0].input.max_completion_tokens >= 500 && calls.ai[0].input.chat_template_kwargs.enable_thinking === false, "geniş pay, düşünme kapalı");
+
 // ---- yardımcılar
 check(extractJson("düşünüyorum... {\"a\":{\"b\":1}} son") .a.b === 1, "iç içe JSON");
 check(extractJson("{bozuk} {\"islem\":\"budama\"}").islem === "budama", "bozuktan sonra geçerli JSON");

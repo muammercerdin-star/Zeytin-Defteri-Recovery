@@ -113,7 +113,11 @@ final class AssistantCloudClient {
                 }
                 String body = new String(buf.toByteArray(), StandardCharsets.UTF_8);
                 if (body.contains("\"ok\":true")) { lastOk = true; lastStatus = "Son deneme başarılı: yardımcı " + Math.max(1, Math.round(took / 1000.0)) + " sn'de cevap verdi."; }
-                else fail(body.contains("not_understood") ? "Yardımcı cümleyi bir bahçe işi olarak anlayamadı." : "Yardımcı geçersiz cevap verdi.");
+                else {
+                    java.util.regex.Matcher d = java.util.regex.Pattern.compile("\"diag\"\\s*:\\s*\"([^\"]{0,80})\"").matcher(body);
+                    String diag = d.find() ? " [" + d.group(1) + "]" : "";
+                    fail((body.contains("not_understood") ? "Yardımcı cümleyi bir bahçe işi olarak anlayamadı." : "Yardımcı geçersiz cevap verdi.") + diag);
+                }
                 return body;
             }
         } catch (java.net.SocketTimeoutException e) {
