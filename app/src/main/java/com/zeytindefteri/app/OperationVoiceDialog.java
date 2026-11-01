@@ -60,6 +60,11 @@ public final class OperationVoiceDialog {
         if (s.isEmpty()) return ask("Duyamadım. " + question(step));
         if (has(s, "vazgec|vazgectim|iptal|bosver kaydetme|kaydetme")) { step = Step.DONE; return new Reply("Tamam, kaydetmedim.", Action.CANCEL); }
         if (has(s, "formu ac|form ac|elle yazarim|elle girerim")) { step = Step.DONE; return new Reply("Tamam, formu açıyorum.", Action.OPEN_FORM); }
+        // Soru sorulurken önceki bir bilgi düzeltilirse ("4 saat değil 5 olacak" masraf sorusunda): düzelt, aynı soruya dön.
+        if ((step == Step.WHAT || step == Step.QUANTITY || step == Step.COST) && inlineFix(raw, s)) {
+            inline = true;
+            try { Reply fix = correct(raw, s); if (fix != null) return fix; } finally { inline = false; }
+        }
         switch (step) {
             case GARDEN: {
                 int g = matchGarden(raw);
@@ -188,7 +193,28 @@ public final class OperationVoiceDialog {
         return changed ? fixed() : null;
     }
 
-    private Reply fixed() { refusals = 0; step = Step.CONFIRM; return ask("Düzelttim. " + summary() + " Kaydedeyim mi?"); }
+    private boolean inline;
+
+    private Reply fixed() {
+        refusals = 0;
+        if (inline) {
+            Reply n = next();
+            return ask(step == Step.CONFIRM ? "Düzelttim. " + n.speech : "Düzelttim: " + summary() + " " + n.speech);
+        }
+        step = Step.CONFIRM;
+        return ask("Düzelttim. " + summary() + " Kaydedeyim mi?");
+    }
+
+    /** Soru sırasında söylenen cümle önceki bir bilgiyi mi düzeltiyor (cevap değil)? Gün, bahçe ya da birimli miktar. */
+    private boolean inlineFix(String raw, String s) {
+        if (!has(s, "degil|olacak|olmali|yanlis|aslinda")) return false;
+        String after = ElekVoiceEntry.normalize(afterNot(raw));
+        if (dayIn(after) != 99 && dayIn(after) != entry.dayOffset) return true;
+        String ua = unitIn(after), ub = unitIn(s);
+        boolean qtyUnit = (!ua.isEmpty() && !ua.equals("lira")) || (!ub.isEmpty() && !ub.equals("lira"));
+        if (qtyUnit && entry.quantity > 0 && step != Step.QUANTITY) return true;
+        return gardens != null && gardens.size() > 1 && matchGarden(afterNot(raw)) >= 0 && matchGarden(afterNot(raw)) != garden;
+    }
 
     /** "350 değil, 250 olacak" → "250 olacak"; "değil" yoksa cümlenin kendisi. */
     static String afterNot(String raw) {
@@ -201,7 +227,7 @@ public final class OperationVoiceDialog {
 
     /** Cümledeki gün: 0 bugün, -1 dün, -2 evvelsi gün; yoksa 99. */
     private static int dayIn(String s) {
-        if (has(s, "evvelsi\\p{L}*|evvelki\\p{L}*|onceki gun|obur gun")) return -2;
+        if (has(s, "evvelsi\\p{L}*|evvelki\\p{L}*|evelsi\\p{L}*|evelki\\p{L}*|onceki gun|obur gun")) return -2;
         if (has(s, "dun\\p{L}*")) return -1;
         if (has(s, "bugun\\p{L}*")) return 0;
         return 99;

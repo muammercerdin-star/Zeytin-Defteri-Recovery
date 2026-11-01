@@ -35,10 +35,10 @@ public final class OperationVoiceEntry {
         if (s.isEmpty() || QUESTION.matcher(s).find()) return null;
         int type = typeOf(s);
         if (type < 0) return null;
-        if (!DONE.matcher(s).find() && !s.matches(".*\\b(bugun|dun|evvelsi|onceki)\\b.*")) return null;
+        if (!DONE.matcher(s).find() && !s.matches(".*\\b(bugun|dun|evvelsi|evelsi|onceki)\\b.*")) return null;
         OperationVoiceEntry e = new OperationVoiceEntry();
         e.type = type;
-        if (s.matches(".*\\b(evvelsi|evvelki|onceki gun|obur gun)\\b.*")) e.dayOffset = -2;
+        if (s.matches(".*\\b(evvelsi|evvelki|evelsi|evelki|onceki gun|obur gun)\\b.*")) e.dayOffset = -2;
         else if (s.matches(".*\\bdun\\b.*")) e.dayOffset = -1;
         amounts(s.split(" "), e);
         return e;
@@ -82,17 +82,21 @@ public final class OperationVoiceEntry {
 
     /** "2 saat", "18 kilo", "500 ml", "25 litre", "3 işçi", "500 lira". */
     private static void amounts(String[] t, OperationVoiceEntry e) {
+        double perHead = 0;
         for (int i = 0; i < t.length; i++) {
             int[] end = new int[1];
             double v = ElekVoiceEntry.number(t, i, end);
             if (Double.isNaN(v) || v <= 0) continue;
             String next = end[0] < t.length ? t[end[0]] : "";
             String u = unit(next);
+            // "yevmiye kişi başı 1200", "adam başına 1000 lira": işçi sayısıyla çarpılır
+            if (i >= 1 && t[i - 1].matches("basi|basina|basindan") && i >= 2 && t[i - 2].matches("kisi|adam|isci|nefer")) { perHead = v; i = Math.max(i, end[0] - 1); continue; }
             if (u.equals("lira")) { if (e.cost <= 0) e.cost = v; }
             else if (!u.isEmpty() && e.quantity <= 0) { e.quantity = v; e.unit = u; }
             else if (u.isEmpty() && e.cost <= 0 && costBySpeech(t, i, end[0])) e.cost = v;   // "elektrik 350 tuttu"
             i = Math.max(i, end[0] - 1);
         }
+        if (perHead > 0 && e.cost <= 0) e.cost = e.quantity > 0 && e.unit.equals("kişi") ? perHead * e.quantity : perHead;
     }
 
     /** "Lira" denmeden söylenen tutar: "350 tuttu", "350'ye patladı", "elektrik de 350", "mazot parası 500". */
@@ -122,7 +126,7 @@ public final class OperationVoiceEntry {
         if (w.matches("(kisi\\p{L}*|isci\\p{L}*)")) return "kişi";
         if (w.matches("(agac\\p{L}*)")) return "ağaç";
         if (w.matches("(dekar\\p{L}*|donum\\p{L}*)")) return "dekar";
-        if (w.matches("(adet\\p{L}*|tane\\p{L}*)")) return "adet";
+        if (w.matches("(adet\\p{L}*|tane\\p{L}*|tuzak\\p{L}*)")) return "adet";
         if (w.matches("(ton\\p{L}*)")) return "ton";
         if (w.matches("(metrekup\\p{L}*|kup)")) return "m³";
         return "";

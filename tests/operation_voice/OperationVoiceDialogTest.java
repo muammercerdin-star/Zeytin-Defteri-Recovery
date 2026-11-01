@@ -75,6 +75,16 @@ public class OperationVoiceDialogTest {
         f3.start();
         r = f3.handle("sulama değil gübre");
         check(r.speech.equals("Tamam, gübre olarak düzelttim. Hangi gübreyi attın?") && f3.entry.quantity == 0, "tür düzeltme: " + r.speech);
+        // masraf sorulurken önceki miktar/gün düzeltilir, aynı soruya dönülür
+        OperationVoiceDialog f5 = new OperationVoiceDialog(OperationVoiceEntry.parse("Dün Kuyu dibinde damlamayı açtık 4 saat"), GG, 1);
+        r = f5.start();
+        check(r.speech.equals("Kolay gelsin! Masrafı ne kadar tuttu?"), "masraf sorusu: " + r.speech);
+        r = f5.handle("4 saat değil 5 saat olacak");
+        check(f5.entry.quantity == 5 && f5.entry.cost <= 0 && r.speech.equals("Düzelttim: Kuyu dibi, dün sulama, 5 saat. Masrafı ne kadar tuttu?"), "soru sırasında miktar düzeltme: " + r.speech);
+        r = f5.handle("dün değil evvelsi gün");
+        check(f5.entry.dayOffset == -2 && f5.step() == OperationVoiceDialog.Step.COST, "soru sırasında gün düzeltme");
+        r = f5.handle("300");
+        check(f5.entry.cost == 300 && f5.step() == OperationVoiceDialog.Step.CONFIRM, "sonra tutar cevabı");
         // tutar sorusuna "350 değil 250" → 250
         OperationVoiceDialog f4 = new OperationVoiceDialog(OperationVoiceEntry.parse("Bugün Girelli'yi suladım 2 saat"), GG, 0);
         f4.start();
