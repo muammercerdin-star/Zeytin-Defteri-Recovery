@@ -1155,6 +1155,19 @@ public final class ZeytinLeagueView extends ScrollView {
                     10, muted, false));
         }
         else if (!matches) identity.addView(label("Sıra henüz yok", 12, text, true));
+        // Bahçesi başka bölgedeyse açıkça söyle: kullanıcı başka bölgenin listesinde kendini arayıp durmasın.
+        String ownRegionId = p == null ? "" : p.region;
+        if (chosen != null && ownRegionId != null && !ownRegionId.isEmpty() && !ownRegionId.equals(chosen.id)) {
+            String ownName = "";
+            for (ZeytinLeagueRepository.Region r : data.regions) if (r != null && r.id.equals(ownRegionId)) ownName = LeagueBoardModel.splitRegion(r.name)[0];
+            String here = LeagueBoardModel.splitRegion(chosen.name)[0];
+            TextView where = label(ownName.isEmpty()
+                    ? "Bahçen bu bölgede değil (şu an " + here + " listesi). Senin bölgen henüz açılmadı."
+                    : "Senin bölgen " + ownName + "; şu an " + here + " listesine bakıyorsun. Kendi listen için " + ownName + " kartına dokun.",
+                    11.5f, gold, true);
+            where.setPadding(0, dp(2), 0, dp(2));
+            box.addView(where);
+        }
         if (!matches && pre == null && p != null && p.kg > 0) {
             TextView todo = label(LeagueBoardModel.rankReason(p.kg, p.eligible, data.published), 11.5f, gold, true);
             todo.setPadding(0, dp(2), 0, dp(2));
