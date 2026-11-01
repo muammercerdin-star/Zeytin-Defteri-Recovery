@@ -6997,21 +6997,13 @@ public class ProducerFeedActivity extends Activity {
     private void showDarkDialog(
             AlertDialog dialog
     ) {
+        // Arka plan pencere GÖSTERİLMEDEN verilir: önce varsayılan çerçeveyle açılıp sonra yuvarlak karta
+        // dönüşünce pencere boyu değişiyor, "sıçrama" görünüyordu.
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(round(CARD, 20, BORDER));
+        }
         dialog.setOnShowListener(
                 ignored -> {
-                    if (dialog.getWindow()
-                            != null) {
-
-                        dialog.getWindow()
-                                .setBackgroundDrawable(
-                                        round(
-                                                CARD,
-                                                20,
-                                                BORDER
-                                        )
-                                );
-                    }
-
                     TextView negative =
                             dialog.getButton(
                                     AlertDialog.BUTTON_NEGATIVE
