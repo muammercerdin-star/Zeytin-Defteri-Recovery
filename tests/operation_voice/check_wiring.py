@@ -9,6 +9,9 @@ checks = [
     ("ana ekran formu tur + tarih + miktar + tutar ile acar", "NewOperationActivity.EXTRA_VOICE_DAY_OFFSET" in f and "NewOperationActivity.EXTRA_VOICE_COST" in f),
     ("form sesle dolar ama kendiliginden kaydetmez", "applyVoice()" in n and n.count("saveOperation()") == 2),
     ("ornek cumleler asistanda", "SESLE BAHÇE İŞİ" in r("ZeytinAssistantText.java")),
+    ("asistan eksikleri sorar (sohbet) ve soru sonrasi yeniden dinler", "new OperationVoiceDialog(op,names,gi)" in c and "listenAfterSpeech" in c and "answerDialog(raw)" in c),
+    ("sohbette kayit yalniz SAVE (evet) ile", c.count("host.saveOperation(") == 1 and "case SAVE:" in c),
+    ("ana ekran sohbetle gelen isi kaydeder ve buluta esitler", "public long saveOperation(" in f and "syncOperationByLocalId" in f),
 ]
 bad = 0
 for name, ok in checks:

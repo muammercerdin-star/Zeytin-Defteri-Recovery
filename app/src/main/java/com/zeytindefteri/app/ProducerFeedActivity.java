@@ -6729,6 +6729,20 @@ public class ProducerFeedActivity extends Activity {
                                 }
 
                                 @Override
+                                public long saveOperation(long gardenId, String type, String date, double quantity, String unit, double cost, String note) {
+                                    long id;
+                                    try { id = db.addOperation((int) gardenId, type, date, quantity, unit, cost, note); }
+                                    catch (RuntimeException e) { id = -1; }
+                                    if (id > 0) {
+                                        try {
+                                            FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+                                            if (u != null) new OperationCloudRepository(db).syncOperationByLocalId(u.getUid(), id);
+                                        } catch (RuntimeException ignored) { }
+                                    }
+                                    return id;
+                                }
+
+                                @Override
                                 public void openHarvestEntry(long gardenId, HarvestVoiceEntry entry) {
                                     Intent intent = new Intent(ProducerFeedActivity.this, HarvestActivity.class);
                                     if (gardenId > 0) intent.putExtra("garden_id", gardenId);

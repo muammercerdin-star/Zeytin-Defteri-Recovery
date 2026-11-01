@@ -44,6 +44,27 @@ public final class OperationVoiceEntry {
         return e;
     }
 
+    /**
+     * Sohbette verilen cevaptan sayılar (tür aranmaz): "500 gram" → miktar, "300 lira" → tutar,
+     * birimsiz tek sayı ("500") → miktar (birim boş; soran taraf türün birimini kullanır).
+     */
+    public static OperationVoiceEntry parseAnswer(String raw) {
+        OperationVoiceEntry e = new OperationVoiceEntry();
+        String[] t = ElekVoiceEntry.normalize(raw == null ? "" : raw).split(" ");
+        amounts(t, e);
+        if (e.quantity <= 0) {
+            for (int i = 0; i < t.length; i++) {
+                int[] end = new int[1];
+                double v = ElekVoiceEntry.number(t, i, end);
+                if (Double.isNaN(v) || v <= 0) continue;
+                String next = end[0] < t.length ? t[end[0]] : "";
+                if (!unit(next).equals("lira")) { e.quantity = v; e.unit = unit(next); break; }
+                i = Math.max(i, end[0] - 1);
+            }
+        }
+        return e;
+    }
+
     /** Tür: söz kökünden. Sıra önemli: "ilaç" sulamadan önce ("ilaçlı su"), "mazot" nakliyeden önce. */
     static int typeOf(String s) {
         if (s.matches(".*\\b(ilac\\p{L}*|ilacla\\p{L}*|spreyle\\p{L}*)\\b.*")) return 2;

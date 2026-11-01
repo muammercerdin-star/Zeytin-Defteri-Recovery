@@ -41,6 +41,8 @@ public final class ZeytinAssistantController {
         default void openElekEntry(long gardenId,ElekVoiceEntry entry){navigate("ELEK",gardenId);}
         /** "Bugün Girelli'yi ilaçladım": işlem formunu dolu aç (kaydetmez; kullanıcı Kaydet'e basar). */
         default void openOperationEntry(long gardenId,OperationVoiceEntry entry){navigate("OPERATION",gardenId);}
+        /** Sohbetle tamamlanmış bahçe işini kaydeder ("evet" dendikten sonra); kayıt id'si ya da -1. */
+        default long saveOperation(long gardenId,String type,String date,double quantity,String unit,double cost,String note){return -1;}
         /** "Girelli'den 300 kilo topladık": hasat formunu dolu aç (kaydetmez). */
         default void openHarvestEntry(long gardenId,HarvestVoiceEntry entry){navigate("GARDENS",gardenId);}
         void weather(Garden garden,WeatherRepository.ForecastCallback callback);
@@ -142,7 +144,8 @@ public final class ZeytinAssistantController {
                     }
                 });}
                 public void onStart(String id){update(id,true,"Cevabı okuyorum…");}
-                public void onDone(String id){update(id,false,"Cevap hazır");}
+                public void onDone(String id){update(id,false,"Cevap hazır");
+                    main.post(()->{if(listenAfterSpeech&&panel==session&&visible()&&id.equals(speakingId)){listenAfterSpeech=false;listen();}});}
                 public void onError(String id){update(id,false,"Sesli okuma kullanılamadı; yazılı cevap hazır");}
                 public void onStop(String id,boolean interrupted){update(id,false,"Cevap hazır");}
             });
@@ -454,6 +457,7 @@ public final class ZeytinAssistantController {
         if(!visible()||raw.trim().isEmpty())return;
         typing=false;hideKeyboard();input.setText("");
         lastQuestion=raw.trim();lastRaw=raw;question.setText(lastQuestion);heard.setText("");
+        if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
         run(raw,ZeytinAssistantCommand.parse(raw),null);
     }
     /** "Anladığım" etiketinden zaman ya da bahçe değişti: soru balonu aynı kalır, cevap yeniden hesaplanır. */
@@ -497,6 +501,16 @@ public final class ZeytinAssistantController {
                 }
                 // "Bugün Girelli'yi ilaçladım", "Mazot aldım 500 lira": cevap yerine işlem formu dolu açılır.
                 final OperationVoiceEntry op=pick==null?OperationVoiceEntry.parse(raw):null;
+                if(op!=null && !gardens.isEmpty()){
+                    // Karşısında insan varmış gibi: eksikleri tek tek sorar ("Hangi bahçeyi?", "Ne attın?"), "evet"le kaydeder.
+                    final List<String> names=new java.util.ArrayList<>();for(Garden g:gardens)names.add(g.name);
+                    final int gi=resolution.explicit&&resolution.garden!=null?gardens.indexOf(resolution.garden):-1;
+                    final List<Garden> owned=gardens;
+                    main.post(()->{if(current(token,owner,season,active)){
+                        opDialog=new OperationVoiceDialog(op,names,gi);opGardens=owned;
+                        postDialog(opDialog.start(),"Bahçe işi · sesle kayıt");}});
+                    return;
+                }
                 if(op!=null){
                     final long gid=resolution.garden==null?0:resolution.garden.id;
                     final String where=resolution.garden==null?"":resolution.garden.name+", ";
@@ -792,6 +806,51 @@ public final class ZeytinAssistantController {
         android.graphics.drawable.Drawable d=activity.getDrawable(res);if(d==null)return null;
         d=d.mutate();d.setTint(color);d.setBounds(0,0,dp(size),dp(size));return d;
     }
+    // ============================================================ SOHBETLE KAYIT
+
+    private OperationVoiceDialog opDialog;
+    private List<ZeytinAssistantCommand.Garden> opGardens;
+    /** Soru sorulduysa okuma bitince mikrofon kendiliğinden açılır (sohbet sürer). */
+    private boolean listenAfterSpeech;
+
+    private void answerDialog(String raw){
+        OperationVoiceDialog d=opDialog;
+        OperationVoiceDialog.Reply r=d.handle(raw);
+        long gid=d.garden>=0&&opGardens!=null&&d.garden<opGardens.size()?opGardens.get(d.garden).id:0;
+        switch(r.action){
+            case SAVE:{
+                java.util.Calendar c=java.util.Calendar.getInstance();c.add(java.util.Calendar.DAY_OF_MONTH,d.entry.dayOffset);
+                String date=new java.text.SimpleDateFormat("dd.MM.yyyy",new Locale("tr","TR")).format(c.getTime());
+                long id=host.saveOperation(gid,OperationKinds.TYPES[d.entry.type],date,d.quantityForSave(),d.unitForSave(),d.entry.cost,d.noteForSave());
+                opDialog=null;
+                postDialog(new OperationVoiceDialog.Reply(id>0?r.speech:"Kaydedemedim. Formu açıyorum, oradan kaydedersin.",OperationVoiceDialog.Action.SAVE),"Bahçe işi · kaydedildi");
+                if(id<=0){final long g=gid;main.postDelayed(()->{if(visible())dialog.dismiss();host.openOperationEntry(g,d.entry);},1500);}
+                break;
+            }
+            case OPEN_FORM:{
+                opDialog=null;final long g=gid;
+                postDialog(r,"Bahçe işi · form");
+                main.postDelayed(()->{if(visible())dialog.dismiss();host.openOperationEntry(g,d.entry);},1500);
+                break;
+            }
+            case CANCEL: opDialog=null; postDialog(r,"Bahçe işi"); break;
+            default: postDialog(r,"Bahçe işi · sesle kayıt");
+        }
+    }
+
+    /** Sohbet cevabı: ekrana yazılır, okunur; soruysa okuma bitince yeniden dinler. */
+    private void postDialog(OperationVoiceDialog.Reply r,String label){
+        if(!visible())return;
+        conversation.nextTurn();
+        clearAnswerExtras();
+        lastAnswer=r.speech;answer.setText(r.speech);source.setText(label);
+        lastCmd=null;lastScope=null;followUps.removeAllViews();
+        listenAfterSpeech=r.action==OperationVoiceDialog.Action.ASK;
+        transition(State.ANSWERING,ttsReady?"Soruyorum…":"Cevap hazır");haptic();
+        if(ttsReady&&tts!=null)speak();
+        else if(listenAfterSpeech){listenAfterSpeech=false;main.postDelayed(()->{if(visible())listen();},1500);}
+    }
+
     private void speak(){
         if(!visible()||lastAnswer.isEmpty()||conversation.state()!=State.ANSWERING)return;
         if(!ttsReady||tts==null){transition(State.ANSWERING,"Cevap hazır");return;}
@@ -818,6 +877,7 @@ public final class ZeytinAssistantController {
         if(previous!=null){try{previous.cancel();}catch(Exception ignored){}try{previous.destroy();}catch(Exception ignored){}}
     }
     private void releasePanel(){
+        opDialog=null;listenAfterSpeech=false;
         session++;conversation.nextTurn();stopRecognizer();stopTts();hideKeyboard();
         if(tagSheet!=null){try{tagSheet.dismiss();}catch(Exception ignored){}tagSheet=null;}
         transition(State.IDLE,"Asistan kapatıldı");if(wave!=null)wave.listening(false);ttsReady=false;typing=false;
