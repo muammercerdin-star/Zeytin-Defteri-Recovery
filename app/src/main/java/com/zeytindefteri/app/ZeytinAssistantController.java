@@ -124,6 +124,12 @@ public final class ZeytinAssistantController {
     private void savePersona(){if(persona!=null)personaPrefs().edit().putString("p_"+host.owner(),persona.encode()).apply();}
     /** İnternet yardımcısı: tek seferlik izin cevabı ve "internet yardımcısını aç/kapat" sesli ayarı. */
     private boolean handleCloudCommand(String raw){
+        if(AssistantCloud.asksStatus(raw)){
+            String mode=AssistantCloudClient.mode(activity,host.owner());
+            String state=!AssistantCloudClient.configured()?"İnternet yardımcısı bu sürümde kapalı (adres yok).":"off".equals(mode)?"İnternet yardımcısı kapalı; açmak için “internet yardımcısını aç” de.":mode.isEmpty()?"İnternet yardımcısı için henüz izin sorulmadı.":"İnternet yardımcısı açık.";
+            postDialog(new OperationVoiceDialog.Reply(state+" "+AssistantCloudClient.lastStatus,OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");
+            return true;
+        }
         int toggle=AssistantCloud.toggleCommand(raw);
         if(toggle>=0){
             pendingCloud=null;
@@ -661,7 +667,10 @@ public final class ZeytinAssistantController {
                                 postDialog(opDialog.start(),"Bahçe işi · internet yardımcısı");}});
                             return;
                         }
-                        // Anlaşılamadı / internet koptu / kota doldu: aşağıda bugünkü gibi devam.
+                        // Anlaşılamadı / internet koptu / kota doldu: aşağıda bugünkü gibi devam; nedeni kısa bildirimle görünür.
+                        final String why=AssistantCloudClient.lastOk?"Yardımcının cevabı denetimden geçmedi.":AssistantCloudClient.lastStatus;
+                        if(AssistantCloudClient.lastOk)AssistantCloudClient.lastStatus="Yardımcı cevap verdi ama cevap cümleyle uyuşmadı (denetimden geçmedi).";
+                        main.post(()->{if(visible())Toast.makeText(activity,"İnternet yardımcısı: "+why,Toast.LENGTH_LONG).show();});
                     }
                 }
                 if(cmd.kind==Kind.UNKNOWN){

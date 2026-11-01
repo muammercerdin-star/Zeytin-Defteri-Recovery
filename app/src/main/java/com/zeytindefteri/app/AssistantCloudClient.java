@@ -30,6 +30,12 @@ final class AssistantCloudClient {
 
     private AssistantCloudClient() {}
 
+    /** Son denemenin sonucu (teşhis): "internet yardımcısı durumu" ile okunur, hata olunca kısa bildirim. */
+    static volatile String lastStatus = "Henüz denenmedi.";
+    static volatile boolean lastOk;
+
+    private static String fail(String why) { lastOk = false; lastStatus = why; return null; }
+
     static String url() {
         String u = MarketBackendConfig.buildValue("ZEYTIN_AI_URL", "").trim();
         while (u.endsWith("/")) u = u.substring(0, u.length() - 1);
@@ -65,9 +71,9 @@ final class AssistantCloudClient {
 
     /** Cümleyi sunucuya sorar; cevap gövdesi ya da null. En fazla ~10 sn sürer. */
     static String ask(String raw, List<String> gardens) {
-        if (!configured()) return null;
+        if (!configured()) return fail("Yardımcının adresi uygulamaya yazılmamış (ZEYTIN_AI_URL).");
         String token = idToken();
-        if (token == null || token.isEmpty()) return null;
+        if (token == null || token.isEmpty()) return null;   // nedeni idToken() yazdı
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(url() + "/parse").openConnection();
@@ -82,38 +88,70 @@ final class AssistantCloudClient {
             byte[] bytes = AssistantCloud.requestBody(raw, gardens).getBytes(StandardCharsets.UTF_8);
             connection.setFixedLengthStreamingMode(bytes.length);
             try (OutputStream out = connection.getOutputStream()) { out.write(bytes); }
-            if (connection.getResponseCode() != 200) return null;
+            int code = connection.getResponseCode();
+            if (code != 200) {
+                String reason = "";
+                try (InputStream err = connection.getErrorStream()) {
+                    if (err != null) { byte[] b = new byte[512]; int k = err.read(b); if (k > 0) reason = new String(b, 0, k, StandardCharsets.UTF_8); }
+                } catch (Exception ignored) { }
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"reason\"\\s*:\\s*\"(\\w+)\"").matcher(reason);
+                String r = m.find() ? m.group(1) : "";
+                return fail("Sunucu " + code + " döndü" + (r.isEmpty() ? "" : " (" + reasonText(r) + ")") + ".");
+            }
             try (InputStream in = connection.getInputStream(); ByteArrayOutputStream buf = new ByteArrayOutputStream()) {
                 byte[] chunk = new byte[2048];
                 int k;
                 while ((k = in.read(chunk)) != -1) {
-                    if (buf.size() + k > MAX_RESPONSE) return null;
+                    if (buf.size() + k > MAX_RESPONSE) return fail("Sunucu cevabı çok uzun.");
                     buf.write(chunk, 0, k);
                 }
-                return new String(buf.toByteArray(), StandardCharsets.UTF_8);
+                String body = new String(buf.toByteArray(), StandardCharsets.UTF_8);
+                if (body.contains("\"ok\":true")) { lastOk = true; lastStatus = "Son deneme başarılı: yardımcı cevap verdi."; }
+                else fail(body.contains("not_understood") ? "Yardımcı cümleyi bir bahçe işi olarak anlayamadı." : "Yardımcı geçersiz cevap verdi.");
+                return body;
             }
+        } catch (java.net.SocketTimeoutException e) {
+            return fail("Yardımcı zamanında cevap vermedi (zaman aşımı).");
+        } catch (java.net.UnknownHostException e) {
+            return fail("Sunucunun adresi bulunamadı (internet ya da DNS).");
         } catch (Exception e) {
-            return null;
+            return fail("Bağlantı kurulamadı: " + e.getClass().getSimpleName() + ".");
         } finally {
             if (connection != null) connection.disconnect();
         }
     }
 
-    /** Firebase kimlik belgesi (arka planda bekleyerek; en fazla 3 sn). */
+    /** Firebase kimlik belgesi (arka planda bekleyerek; en fazla 6 sn). */
     private static String idToken() {
         try {
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user == null) return null;
+            if (user == null) return fail("Uygulamada giriş yapılmamış görünüyor (Firebase).");
             final String[] out = new String[1];
+            final String[] err = new String[1];
             final CountDownLatch done = new CountDownLatch(1);
             user.getIdToken(false).addOnCompleteListener(task -> {
-                try { if (task.isSuccessful() && task.getResult() != null) out[0] = task.getResult().getToken(); }
-                catch (RuntimeException ignored) { }
+                try {
+                    if (task.isSuccessful() && task.getResult() != null) out[0] = task.getResult().getToken();
+                    else err[0] = task.getException() == null ? "bilinmeyen" : task.getException().getClass().getSimpleName();
+                } catch (RuntimeException e) { err[0] = e.getClass().getSimpleName(); }
                 done.countDown();
             });
-            return done.await(3, TimeUnit.SECONDS) ? out[0] : null;
+            if (!done.await(6, TimeUnit.SECONDS)) return fail("Giriş belgesi zamanında alınamadı.");
+            if (out[0] == null || out[0].isEmpty()) return fail("Giriş belgesi alınamadı: " + err[0] + ".");
+            return out[0];
         } catch (Exception e) {
-            return null;
+            return fail("Giriş belgesi alınamadı: " + e.getClass().getSimpleName() + ".");
+        }
+    }
+
+    static String reasonText(String r) {
+        switch (r) {
+            case "unauthenticated": return "giriş belgesi kabul edilmedi";
+            case "rate_limited": return "dakikalık sınır doldu";
+            case "no_model": return "Cloudflare'de AI bağlantısı yok";
+            case "model_error": return "model hata verdi ya da günlük kota doldu";
+            case "bad_text": return "cümle geçersiz";
+            default: return r;
         }
     }
 }

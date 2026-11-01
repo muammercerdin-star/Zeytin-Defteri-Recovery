@@ -213,6 +213,12 @@ final class AssistantCloud {
         return -1;
     }
 
+    /** "internet yardımcısı durumu", "yardımcı neden çalışmadı": son denemenin sonucu. */
+    static boolean asksStatus(String raw) {
+        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        return s.matches(".*\\b(internet\\p{L}*|yardimci\\p{L}*)\\b.*") && s.matches(".*\\b(durum\\p{L}*|neden calismadi|niye calismadi|calisiyor mu|ne oldu)\\b.*");
+    }
+
     /** Sesli ayar: "internet yardımcısını kapat / aç". 1 aç, 0 kapat, -1 değil. */
     static int toggleCommand(String raw) {
         String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
