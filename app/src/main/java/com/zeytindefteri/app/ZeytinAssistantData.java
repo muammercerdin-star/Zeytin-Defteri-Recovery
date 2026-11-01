@@ -59,7 +59,12 @@ public final class ZeytinAssistantData implements AutoCloseable {
         if(cmd.kind==ZeytinAssistantCommand.Kind.EXPENSE && !cmd.opType.isEmpty())return typedExpense(cmd,selected,scope);
         Totals t=totals(selected,all,cmd.period);
         switch(cmd.kind) {
-            case HARVEST:return scope+value(t.harvestRows,t.harvest,"kg hasat");
+            case HARVEST:{
+                // Hasat kaydı yoksa ama elek girilmişse: çiftçi için eleklenen zeytin de hasattır; elekten cevap ver.
+                if(t.harvestRows==0&&!t.grades.isEmpty()){double sum=0;for(double n:t.grades.values())sum+=n;
+                    return scope+"ayrı hasat kaydın yok, ama elek kayıtlarına göre "+number(sum)+" kg zeytin eledin. Ayrıca hasat kaydı girmek istersen \"hasat gireceğim\" de.";}
+                return scope+value(t.harvestRows,t.harvest,"kg hasat");
+            }
             case EXPENSE:return scope+value(t.expenseRows,t.expenses,"TL masraf");
             case REVENUE:return scope+value(t.saleRows,t.revenue,"TL satış geliri (nakliye ve kesintiler sonrası)");
             case SOLD:return scope+value(t.saleRows,t.sold,"kg satış");
