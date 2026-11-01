@@ -130,7 +130,37 @@ public final class AssistantPersona {
                     "Salamura kavanozuna sormuşlar: Neden hep tuzlusun? Demiş ki: Hayat bana tuz biber oldu, ben de içime attım! Hahaha."};
             return jokes[jokeIndex++ % jokes.length];
         }
-        if (has(s, "seni seviyorum|cok iyisin|aferin|helal olsun|bravo|harikasin")) {
+        // ---- hesap: "120 kilo 45 liradan kaç eder", "300 çarpı 40"
+        String calc = calc(s);
+        if (calc != null) return calc;
+        // ---- saat / tarih
+        if (has(s, "saat kac|saat kaç")) {
+            Calendar c = Calendar.getInstance();
+            return "Saat " + c.get(Calendar.HOUR_OF_DAY) + ":" + String.format(TR, "%02d", c.get(Calendar.MINUTE)) + suffix() + ".";
+        }
+        if (has(s, "bugun gunlerden ne|hangi gundeyiz|bugun ne gunu|bugunun tarihi|tarih ne")) {
+            return "Bugün " + new java.text.SimpleDateFormat("d MMMM EEEE", TR).format(new java.util.Date()) + suffix() + ".";
+        }
+        // ---- zeytin üzerine genel bilgi (kesin rakam vermez)
+        if (has(s, "zeytin ne zaman toplanir|hasat ne zaman|ne zaman toplanir")) return "Bizim yörede zeytin hasadı genelde Ekim'de başlar, Aralık'a kadar sürer. Sofralıkta rengi dönünce, yağlıkta biraz daha bekletilir. Kesin zamanı zeytinin olgunluğuna bakıp sen bilirsin" + suffix() + ".";
+        if (has(s, "kac yilda meyve|kac senede meyve|ne zaman meyve verir")) return "Aşılı zeytin fidanı genelde 4-5 yılda meyveye başlar, tam verime ise 8-10 yılda girer. Bakımla, suyla çok değişir tabii.";
+        if (has(s, "zeytin sinegi|sinek nedir")) return "Zeytin sineği meyvenin içine yumurta bırakır, kurt düşer, zeytin dökülür, yağ kalitesi bozulur. Bahçeye tuzak asıp sayıyı takip etmek iyi olur; ilaçlama zamanını ziraat mühendisine danış" + suffix() + ".";
+        if (has(s, "var yili|yok yili|periyodisite|bir yil verip")) return "Zeytinin bir yıl bol, bir yıl az vermesine var yılı, yok yılı derler. Düzenli budama, gübre ve su bu farkı azaltır.";
+        // ---- dualar, iyi dilekler
+        if (has(s, "kolay gelsin|hayirli isler|bereketli olsun|hayirli olsun")) return "Sağ ol" + suffix() + ", sana da kolay gelsin. Bereketli bir sezon olsun inşallah!";
+        if (has(s, "allah razi olsun|eyvallah|sag olasin")) return "Sen de var ol" + suffix() + "!";
+        if (s.matches("(gunaydin|iyi gunler|iyi aksamlar|hayirli aksamlar|hayirli sabahlar)( .*)?")) return greeting(hourNow()).replace(", buyur dinliyorum.", "! Buyur, dinliyorum.");
+        if (has(s, "iyi geceler|hayirli geceler")) return "İyi geceler" + suffix() + ", tatlı uykular. Yarın görüşürüz!";
+        // ---- asistan hakkında
+        if (has(s, "nerelisin|memleket\\p{L}*|nerede yasiyorsun|nerdesin")) return "Ben senin telefonundayım, zeytin bahçelerinin arasında! Memleketim zeytinin olduğu her yer. Hehe.";
+        if (has(s, "insan misin|robot musun|yapay zeka misin|gercek misin")) return "Ben Zeytin Defteri'nin asistanıyım, insan değilim ama seni dinlerim, kayıtlarını tutarım. Gizli bir şey yok, hepsi senin telefonunda.";
+        if (has(s, "seni kim yapti|kim yapti seni|seni kim yazdi|yapimcin")) return "Beni Zeytin Defteri'ni yapanlar hazırladı, zeytinciye yardım etsin diye. Sen de geliştirmeme yardım ediyorsun" + suffix() + "!";
+        if (has(s, "evli misin|sevgilin var|esin var")) return "Hehe, benim tek sevdam zeytin ağaçları! Senin hanım nasıl, iyi mi?";
+        if (has(s, "ne yersin|acikitin mi|yemek yer misin")) return "Ben yemem ama zeytinyağlı bir sofraya hayır demezdim herhalde! Hehe.";
+        if (has(s, "uyur musun|yorulur musun|hic yorulmaz misin")) return "Ben yorulmam" + suffix() + ", gece gündüz buradayım. Sen dinlen yeter.";
+        // ---- kızgınlık
+        if (has(s, "aptal|salak|anlamiyorsun|beceriksiz|ise yaramaz|cok kotu|sacma")) return "Kusura bakma" + suffix() + ", daha öğreniyorum. Bir daha başka türlü söyler misin? Elinden geleni yapacağım.";
+        if (has(s, "seni seviyorum|cok iyisin|aferin|helal olsun|bravo|harikasin|zekisin|akillisin|masallah|super\\p{L}*|muthis|cok guzel|sevdim seni|tesekkur ederim zeytin")) {
             return pick("Eksik olma" + suffix() + ", ben de seninle çalışmayı seviyorum!", "Sağ ol" + suffix() + ", utandırdın beni! Hehe.");
         }
         if (has(s, "yoruldum|cok yorgunum|bitkinim")) return "Kolay gelsin" + suffix() + ". Biraz çay iç, dinlen. Kayıtları ben tutarım.";
@@ -138,6 +168,40 @@ public final class AssistantPersona {
             return "Söylediğin kiloyu eleğe yazarım, ilaçlamayı, sulamayı, hasadı kaydederim. Kim sana borçlu, son sulama ne zaman, havalar nasıl, hepsini sorabilirsin" + suffix() + ".";
         }
         return null;
+    }
+
+    private int fallbackIndex;
+
+    /** Hiçbir konuya uymayan sohbet cümlesi: soğuk "bilmiyorum" yerine dostça cevap ve yol gösterme. */
+    public String fallback() {
+        String[] r = {
+                "Hehe, onu tam bilemedim" + suffix() + ". Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.",
+                "Bunu anlayamadım" + suffix() + ", bir daha başka türlü söyler misin?",
+                "Ah, o konuda pek bilgim yok. Bahçenle, eleğinle, satışlarınla ilgili ne istersen sor" + suffix() + "."};
+        return r[fallbackIndex++ % r.length];
+    }
+
+    /** "120 kilo 45 liradan kaç eder", "300 çarpı 40", "1000 bölü 8": hesap; değilse null. */
+    static String calc(String s) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "(\\d+(?:[.,]\\d+)?)\\s*(?:kilo|kg)?\\s*(?:x|carpi|kere|kez)\\s*(\\d+(?:[.,]\\d+)?)").matcher(s);
+        if (m.find()) return "Hesapladım: " + fmt(num(m.group(1)) * num(m.group(2))) + ".";
+        m = java.util.regex.Pattern.compile("(\\d+(?:[.,]\\d+)?)\\s*(?:kilo|kg)\\s*(\\d+(?:[.,]\\d+)?)\\s*(?:lira|tl)(?:dan|den|tan|ten)?\\b").matcher(s);
+        if (m.find() && s.matches(".*\\b(kac|eder|tutar|yapar|ne kadar|hesapla)\\b.*")) {
+            double kg = num(m.group(1)), price = num(m.group(2));
+            return fmt(kg) + " kilo, kilosu " + fmt(price) + " liradan " + fmt(kg * price) + " lira eder.";
+        }
+        m = java.util.regex.Pattern.compile("(\\d+(?:[.,]\\d+)?)\\s*(?:bolu|bölü)\\s*(\\d+(?:[.,]\\d+)?)").matcher(s);
+        if (m.find() && num(m.group(2)) != 0) return "Hesapladım: " + fmt(num(m.group(1)) / num(m.group(2))) + ".";
+        m = java.util.regex.Pattern.compile("(\\d+(?:[.,]\\d+)?)\\s*(?:arti|artı)\\s*(\\d+(?:[.,]\\d+)?)").matcher(s);
+        if (m.find()) return "Hesapladım: " + fmt(num(m.group(1)) + num(m.group(2))) + ".";
+        return null;
+    }
+    private static double num(String v) { return Double.parseDouble(v.replace(',', '.')); }
+    private static String fmt(double v) {
+        double r = Math.round(v * 100) / 100.0;
+        java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(TR); nf.setMaximumFractionDigits(2);
+        return nf.format(r);
     }
 
     /** Tanışmadıysa, bir cevaptan sonra bir kez adını sor (rahatsız etmeden). */

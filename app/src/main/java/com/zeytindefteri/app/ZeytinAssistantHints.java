@@ -135,6 +135,12 @@ public final class ZeytinAssistantHints {
      * @param gardenName soruda adı açıkça geçen bahçe (yoksa boş): önerilere aynen taşınır
      * @param recorded   bu sezon kaydı olan konular; kaydı olmayan konunun sorusu önerilmez
      */
+    /** Cümlede hiçbir kayıt/konu sözü yoksa (sohbet): kart yerine dostça cevap verilir. */
+    static boolean chatOnly(String raw) {
+        String s = ZeytinAssistantCommand.normalize(raw);
+        return !asksHelp(s) && topics(s).isEmpty();
+    }
+
     static Hint hint(String raw, String gardenName, Set<Topic> recorded) {
         String s = ZeytinAssistantCommand.normalize(raw);
         if (asksHelp(s)) return cards("Kayıtların, hava ve piyasa hakkında sorabilirsin. Bir konu seç:");

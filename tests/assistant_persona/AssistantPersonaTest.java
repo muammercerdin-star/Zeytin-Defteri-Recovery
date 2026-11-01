@@ -46,6 +46,24 @@ public class AssistantPersonaTest {
         // bir kez tanışma önerisi
         AssistantPersona z = new AssistantPersona(new java.util.Random(1));
         check(z.introduceOnce().contains("Senin adın ne?") && z.introduceOnce().isEmpty(), "tanışma yalnız bir kez");
+        // daha akıllı sohbet
+        AssistantPersona h = AssistantPersona.decode("Halil|65|amca|1");
+        String x = h.handle("Sen zekisin maşallah");
+        check(x != null && x.contains("Halil amca"), "iltifat: " + x);
+        x = h.handle("120 kilo 45 liradan kaç eder");
+        check(x != null && x.equals("120 kilo, kilosu 45 liradan 5.400 lira eder."), "hesap: " + x);
+        x = h.handle("300 çarpı 40");
+        check("Hesapladım: 12.000.".equals(x), "çarpı: " + x);
+        x = h.handle("kolay gelsin");
+        check(x != null && x.startsWith("Sağ ol Halil amca"), "kolay gelsin: " + x);
+        x = h.handle("robot musun");
+        check(x != null && x.contains("insan değilim"), "robot: " + x);
+        x = h.handle("zeytin ne zaman toplanır");
+        check(x != null && x.contains("Ekim"), "bilgi: " + x);
+        x = h.handle("salak mısın sen");
+        check(x != null && x.startsWith("Kusura bakma"), "kızgınlık: " + x);
+        check(h.handle("toplam ne kadar hasat ettim") == null, "kayıt sorusu persona'ya gitmez");
+        check(h.fallback().contains("Halil amca"), "dostça yedek cevap");
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " AssistantPersona");
         if (bad > 0) System.exit(1);
     }

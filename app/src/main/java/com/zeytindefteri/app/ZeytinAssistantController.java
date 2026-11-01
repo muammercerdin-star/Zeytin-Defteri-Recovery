@@ -598,6 +598,12 @@ public final class ZeytinAssistantController {
                     // Kalıba uymadı: sorudaki konu kelimelerinden yakın sorular ya da konu kartları.
                     Set<ZeytinAssistantHints.Topic> recorded=data.recordedTopics(gardens);
                     String named=resolution.explicit && resolution.garden!=null?resolution.garden.name:"";
+                    if(ZeytinAssistantHints.chatOnly(raw)){
+                        // Konusu olmayan sohbet: soğuk "bilmiyorum + kartlar" yerine dostça cevap, sohbet sürer.
+                        final String line=persona().fallback();
+                        main.post(()->{if(current(token,owner,season,active))postDialog(new OperationVoiceDialog.Reply(line,OperationVoiceDialog.Action.ASK),"Zeytin · sohbet");});
+                        return;
+                    }
                     ZeytinAssistantHints.Hint hint=ZeytinAssistantHints.hint(raw,named,recorded);
                     if(data.unchanged())postHint(token,owner,season,active,hint,recorded);
                     return;
