@@ -145,7 +145,8 @@ public final class TezgahVoiceDialog {
     public Reply handle(String raw) {
         String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
         if (s.isEmpty()) return ask("Duyamadım. " + prompt());
-        if (has(s, "vazgec|vazgectim|kapat|iptal")) {
+        // "2 numarayı iptal et" asistanı kapatmaz (numara silinir); düzeltme sorusunda "vazgeç" yalnız düzeltmeyi bırakır.
+        if (has(s, "vazgec|vazgectim|kapat|iptal") && parse(raw).grade < 0 && phase != Phase.FIX) {
             phase = Phase.DONE;
             return new Reply(model.isEmpty() ? "Tamam, kapattım." : "Tamam, kapattım. Tartımlar ekranda duruyor.", Action.CANCEL, false);
         }
@@ -173,7 +174,13 @@ public final class TezgahVoiceDialog {
             fixGrade = early.grade; phase = Phase.FIX;
             return ask(label(early.grade) + " kaç kilo olacak?");
         }
-        if (fix && !Double.isNaN(early.kg) && lastOf(grade) >= 0) return correct(grade, early.kasa, early.kg, early.net);   // "yanlış, 40 olacak"
+        if (fix && !Double.isNaN(early.kg) && !model.isEmpty()) return correct(lastGrade(), early.kasa, early.kg, early.net);   // "yanlış, 40 olacak"
+        if (fix && early.kasa < 0 && !model.isEmpty() && has(s, "duzelt\\w*|degistir\\w*")) {
+            // Tek başına "düzelt": hangi numara sorulur; sonraki cümle EKLENMEZ, düzeltilir.
+            fixGrade = -1; phase = Phase.FIX;
+            return ask("Hangi numarayı düzelteyim?");
+        }
+        if (early.grade >= 0 && has(s, "sil|kaldir|iptal et") && lastOf(early.grade) >= 0) return deleteLast(early.grade);
         if (has(s, "geri al|sonuncuyu sil|son tartimi sil|yanlis oldu")) return undo();
         if (has(s, "oku|toplam|ne kadar|kac oldu|ne oldu")) return ask(readout() + " " + prompt());
         if (has(s, "bitti|bitir|bitirelim|hepsi bu|kaydet|fis")) return finish();
@@ -266,7 +273,7 @@ public final class TezgahVoiceDialog {
     // ------------------------------------------------------------ geçmişe dönük düzeltme
 
     private int fixGrade = -1;
-    private static final String FIX_WORDS = "yanlis|yanlislik|duzelt|duzeltelim|duzeltiyorum|olacak|olmali|olcak|degistir|degil|aslinda";
+    private static final String FIX_WORDS = "yanlis\\w*|duzelt\\w*|olacak|olmali|olcak|degistir\\w*|degil|aslinda";
 
     /** O numaranın son tartımı; yoksa -1. */
     private int lastOf(int g) {
@@ -308,11 +315,38 @@ public final class TezgahVoiceDialog {
         return back;
     }
 
+    /** "2 numarayı sil": o numaranın son tartımı silinir. */
+    private Reply deleteLast(int g) {
+        int idx = lastOf(g);
+        TezgahModel.Weighing w = model.items().get(idx);
+        forget(idx);
+        Reply r = new Reply("Sildim, " + label(g) + " " + num(TezgahModel.net(w.kasa, w.kg, model.tare())) + " net. " + hasQuestion(grade),
+                Action.UNDO, true);
+        r.removeIndex = idx;
+        return r;
+    }
+
     private Reply answerFix(String raw, String s) {
         Said said = parse(raw);
-        if (!Double.isNaN(said.kg)) { phase = Phase.WEIGH; return correct(fixGrade, said.kasa, said.kg, said.net); }
-        if (has(s, "bosver|gec|tamam|dogru|yok")) { phase = Phase.WEIGH; fixGrade = -1; return ask(hasQuestion(grade)); }
-        return ask(label(fixGrade) + " kaç kilo olacak?");
+        if (has(s, "bosver|vazgec|gec|dogru|yok")) { phase = Phase.WEIGH; fixGrade = -1; return ask(hasQuestion(grade)); }
+        if (said.grade >= 0 && Double.isNaN(said.kg)) {   // "Hangi numara?" → "1 numara"
+            if (lastOf(said.grade) < 0) return ask(label(said.grade) + " için tartım yok. Hangi numarayı düzelteyim?");
+            fixGrade = said.grade;
+            return ask(label(fixGrade) + " kaç kilo olacak?");
+        }
+        if (!Double.isNaN(said.kg)) {
+            int g = said.grade >= 0 ? said.grade : fixGrade >= 0 ? fixGrade : lastGrade();
+            phase = Phase.WEIGH;
+            return correct(g, said.kasa, said.kg, said.net);
+        }
+        return ask(fixGrade >= 0 ? label(fixGrade) + " kaç kilo olacak?" : "Hangi numarayı düzelteyim?");
+    }
+
+    /** Son tartımın numarası (bulunulan numarada tartım yoksa); hiç yoksa bulunulan numara. */
+    private int lastGrade() {
+        if (lastOf(grade) >= 0) return grade;
+        List<TezgahModel.Weighing> items = model.items();
+        return items.isEmpty() ? grade : items.get(items.size() - 1).grade;
     }
 
     private static String kasaWord(int k) { return k == 0 ? "kasasız" : k + " kasa"; }

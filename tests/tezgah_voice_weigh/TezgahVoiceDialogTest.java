@@ -206,6 +206,27 @@ public class TezgahVoiceDialogTest {
         r = cx.handle("2 numara yanlış, 60 olacak");
         check(cx.model().gradeCount(2) == 1 && cx.model().gradeNet(2) == 56 && r.speech.contains("Ödeme şimdi mi, sonra mı?"), "onayda düzeltme toplamı yeniden okur: " + r.speech);
 
+        // Sahadaki durum: önce "düzelt", sonra numara ve kilo → EKLEMEZ, düzeltir
+        TezgahVoiceDialog fx = new TezgahVoiceDialog(model(), "", Arrays.asList());
+        fx.greeting(); fx.handle("geç"); fx.handle("30");   // 1 numara 30
+        r = fx.handle("düzelt");
+        check(fx.phase() == TezgahVoiceDialog.Phase.FIX && r.speech.equals("Hangi numarayı düzelteyim?"), "tek başına düzelt → hangi numara: " + r.speech);
+        r = fx.handle("1 numara 25");
+        check(fx.model().gradeCount(1) == 1 && r.kg == 25 && r.removeIndex == 0, "düzelt sonrası '1 numara 25' düzeltir, eklemez: " + r.speech);
+        fx.handle("düzelt"); fx.handle("1 numara");
+        r = fx.handle("20");
+        check(fx.model().gradeCount(1) == 1 && r.kg == 20, "düzelt → 1 numara → 20: " + r.speech);
+        fx.handle("düzelt");
+        r = fx.handle("22");
+        check(fx.model().gradeCount(1) == 1 && r.kg == 22, "düzelt → yalnız kilo: son tartım düzelir: " + r.speech);
+        r = fx.handle("1 numarayı düzeltme 18");
+        check(fx.model().gradeCount(1) == 1 && r.kg == 18, "'düzeltme' sözü de düzeltir");
+        r = fx.handle("1 numarayı iptal et");
+        check(fx.model().gradeCount(1) == 0 && r.action == TezgahVoiceDialog.Action.UNDO && r.removeIndex == 0, "'1 numarayı iptal et' asistanı kapatmaz, tartımı siler: " + r.speech);
+        fx.handle("40"); fx.handle("düzelt");
+        r = fx.handle("vazgeç");
+        check(fx.phase() == TezgahVoiceDialog.Phase.WEIGH && r.action != TezgahVoiceDialog.Action.CANCEL, "düzeltmede vazgeç yalnız düzeltmeyi bırakır");
+
         // Ayrıştırma
         TezgahVoiceDialog.Said s = TezgahVoiceDialog.parse("1 numara 40, 2 kasa");
         check(s.grade == 1 && s.kg == 40 && s.kasa == 2, "1 numara 40, 2 kasa");
