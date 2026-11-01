@@ -26,12 +26,21 @@ public final class ElekVoiceOrbView extends View {
     private final Shader deep = new RadialGradient(0, 0, 1, new int[]{0x7016503a, 0x0016503a}, null, Shader.TileMode.CLAMP);
     private final Shader halo = new RadialGradient(0, 0, 1, new int[]{0x6656c26a, 0x2256c26a, 0x0056c26a},
             new float[]{0.55f, 0.75f, 1f}, Shader.TileMode.CLAMP);
+    /** Çerçeve: kürenin arkasında koyu cam zemin + ince yeşil halka (sayfadan ayrılsın, yüzüyor gibi dursun). */
+    private final Shader glass = new RadialGradient(0, 0, 1, new int[]{0xE60B1A14, 0xCC0B1A14, 0x000B1A14},
+            new float[]{0f, 0.82f, 1f}, Shader.TileMode.CLAMP);
+    private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Mode mode = Mode.IDLE;
     private float rms, level;
     private long lastRms;
     private boolean small;
 
-    public ElekVoiceOrbView(Context context) { super(context); setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO); }
+    public ElekVoiceOrbView(Context context) {
+        super(context);
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        ring.setStyle(Paint.Style.STROKE);
+        ring.setStrokeWidth(1.5f * context.getResources().getDisplayMetrics().density);
+    }
 
     /** Düğme içindeki küçük süs küresi: hale çizmez. */
     public ElekVoiceOrbView compact() { small = true; return this; }
@@ -56,12 +65,21 @@ public final class ElekVoiceOrbView extends View {
         }
         float speed = mode == Mode.IDLE ? 0.35f : mode == Mode.SPEAKING ? 1.1f : mode == Mode.THINKING ? 1.6f : 0.8f + level;
         float size = Math.min(getWidth(), getHeight()) / 2f;
-        float r = size * (small ? 0.92f : 0.78f) * (1f + pulse);
+        float r = size * (small ? 0.92f : 0.70f) * (1f + pulse);
         float cx = getWidth() / 2f, cy = getHeight() / 2f;
 
-        if (!small && mode != Mode.IDLE) {          // dış ışıma
-            c.save(); c.translate(cx, cy); float hr = r * (1.22f + 0.25f * level + (mode == Mode.SPEAKING ? 0.05f : 0)); c.scale(hr, hr);
-            paint.setShader(halo); c.drawCircle(0, 0, 1, paint); c.restore();
+        if (!small) {
+            // cam zemin (kürenin arkası, sabit; nefes alırken titremez)
+            float base0 = size * 0.70f;
+            c.save(); c.translate(cx, cy); c.scale(base0 * 1.30f, base0 * 1.30f);
+            paint.setShader(glass); c.drawCircle(0, 0, 1, paint); c.restore();
+            // dış ışıma: beklerken hafif, dinlerken/konuşurken belirgin
+            float glow = mode == Mode.IDLE ? 0.9f : 1f;
+            c.save(); c.translate(cx, cy); float hr = r * (mode == Mode.IDLE ? 1.16f : 1.22f + 0.25f * level + (mode == Mode.SPEAKING ? 0.05f : 0)) * glow + r * (1 - glow) * 1.16f; c.scale(hr, hr);
+            paint.setShader(halo); paint.setAlpha(mode == Mode.IDLE ? 150 : 255); c.drawCircle(0, 0, 1, paint); paint.setAlpha(255); c.restore();
+            // ince halka
+            ring.setColor(mode == Mode.LISTENING ? 0x9990E0A0 : 0x5590E0A0);
+            c.drawCircle(cx, cy, base0 * 1.12f, ring);
         }
         c.save();
         clip.reset(); clip.addCircle(cx, cy, r, Path.Direction.CW); c.clipPath(clip);

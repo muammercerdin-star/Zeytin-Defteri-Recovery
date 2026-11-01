@@ -108,6 +108,8 @@ public final class ZeytinAssistantController {
     private final int bg,surface,card,border,text,soft,muted,green,greenSoft,warning,warningSoft,danger;
     /** Yüzen yeşil küre: dinlerken sesle büyür, düşünürken döner, konuşurken nefes alır. */
     private ElekVoiceOrbView orb;
+    /** Küre boyu ve alt menünün üstünde bıraktığı boşluk (menü yazıları örtülmesin). */
+    private static final int ORB_DP=112, ORB_LIFT_DP=74;
     private LinearLayout headBox,footBox;
     /** Üst üste duyulamayan dinleme sayısı: iki kez olunca küre bekler (kart göstermeden). */
     private int quietMisses;
@@ -191,8 +193,8 @@ public final class ZeytinAssistantController {
         dialog.setCanceledOnTouchOutside(false);
         dialog.setOnDismissListener(d->releasePanel());dialog.show();root.requestFocus();
         // Alt menüdeki asistan düğmesi büyüyerek küreye dönüşür (aşağıdan, küçükten).
-        if(orb!=null){orb.setScaleX(.45f);orb.setScaleY(.45f);orb.setTranslationY(0);orb.setAlpha(.7f);
-            orb.animate().scaleX(1f).scaleY(1f).translationY(0).alpha(1f).setDuration(420).setInterpolator(new android.view.animation.OvershootInterpolator(1.1f)).start();}
+        if(orb!=null){orb.setScaleX(.4f);orb.setScaleY(.4f);orb.setTranslationY(dp(ORB_LIFT_DP+ORB_DP/2-28));orb.setAlpha(.7f);
+            orb.animate().scaleX(1f).scaleY(1f).translationY(0).alpha(1f).setDuration(460).setInterpolator(new android.view.animation.OvershootInterpolator(1.05f)).start();}
         Window window=dialog.getWindow();if(window!=null){
             window.setBackgroundDrawableResource(android.R.color.transparent);window.setGravity(Gravity.BOTTOM);window.setLayout(getPanelWidth(),-2);
             WindowManager.LayoutParams wp=window.getAttributes();wp.y=0;wp.dimAmount=.72f;window.setAttributes(wp);
@@ -338,8 +340,9 @@ public final class ZeytinAssistantController {
 
         // Durum yazısı ve küre en altta: alt menüdeki asistan düğmesi büyüyüp bu küreye dönüşür.
         root.addView(headBox,margins(-1,-2,dp(14),0));
-        // Küre tam alt menüdeki asistan düğmesinin yerinde: düğme büyüyüp küre olur (merkezi düğmenin merkeziyle aynı hizada).
-        LinearLayout.LayoutParams op=new LinearLayout.LayoutParams(dp(128),dp(128));op.gravity=Gravity.CENTER_HORIZONTAL;op.topMargin=dp(6);op.bottomMargin=dp(-8);
+        // Küre alt menünün hemen üstünde, menü yazılarını (Elek, Zeytin Ligi) örtmeden; açılırken alttaki asistan
+        // düğmesinden yukarı doğru büyüyerek çıkar (bkz. açılış animasyonu).
+        LinearLayout.LayoutParams op=new LinearLayout.LayoutParams(dp(ORB_DP),dp(ORB_DP));op.gravity=Gravity.CENTER_HORIZONTAL;op.topMargin=dp(4);op.bottomMargin=dp(ORB_LIFT_DP);
         root.addView(orb,op);
 
         LinearLayout foot=row();
