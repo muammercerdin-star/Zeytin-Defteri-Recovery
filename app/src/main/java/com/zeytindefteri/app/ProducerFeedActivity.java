@@ -6524,6 +6524,7 @@ public class ProducerFeedActivity extends Activity {
 
             } else {
                 openZeytinAssistant();
+                maybeHintQuickCreate();
             }
         });
 
@@ -6797,98 +6798,109 @@ public class ProducerFeedActivity extends Activity {
         super.onStop();
     }
 
+    /**
+     * Asistana uzun basınca açılan hızlı kayıt sayfası (alttan): en üstte "Söyle, ben yazayım" (asistan),
+     * altında simgeli büyük kutular; sık kullanılanlar (Elek, Hasat, Satış) önde.
+     */
     private void showQuickCreateMenu() {
-        String[] actions = {
-                "Yeni işlem",
-                "Bahçe ekle",
-                "Hasat kaydı",
-                "Elek kaydı",
-                "Satış / fiyat teklifi",
-                "Salamura",
-                "Sohbet gönderisi"
+        final android.app.Dialog sheet = new android.app.Dialog(this);
+        sheet.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(18), dp(10), dp(18), dp(22));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(CARD);
+        float r = dp(26);
+        bg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+        bg.setStroke(dp(1), BORDER);
+        box.setBackground(bg);
+
+        View handle = new View(this);
+        handle.setBackground(round(BORDER, 3, BORDER));
+        LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(dp(44), dp(5));
+        hp.gravity = Gravity.CENTER_HORIZONTAL;
+        hp.bottomMargin = dp(14);
+        box.addView(handle, hp);
+        box.addView(text("Ne kaydetmek istersin?", 21, TEXT, true));
+
+        // Söyle, ben yazayım: asistan
+        LinearLayout voice = new LinearLayout(this);
+        voice.setGravity(Gravity.CENTER_VERTICAL);
+        voice.setPadding(dp(16), 0, dp(16), 0);
+        voice.setBackgroundResource(R.drawable.elek_voice_premium);
+        voice.addView(new ElekVoiceOrbView(this).compact(), new LinearLayout.LayoutParams(dp(42), dp(42)));
+        LinearLayout vcol = new LinearLayout(this);
+        vcol.setOrientation(LinearLayout.VERTICAL);
+        vcol.addView(text("Söyle, ben yazayım", 18, 0xFFFFFFFF, true));
+        vcol.addView(text("“3 numara 120 kilo sattım” gibi", 13, 0xE6FFFFFF, false));
+        LinearLayout.LayoutParams vp = new LinearLayout.LayoutParams(0, -2, 1f);
+        vp.leftMargin = dp(12);
+        voice.addView(vcol, vp);
+        voice.setContentDescription("Söyle, ben yazayım: Zeytin Asistanını aç");
+        voice.setOnClickListener(v -> { sheet.dismiss(); openZeytinAssistant(); });
+        LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(-1, dp(68));
+        vlp.topMargin = dp(14);
+        box.addView(voice, vlp);
+
+        Object[][] items = {
+                {"🧺", "Elek kaydı", "Kilo, fiyat, satış", ElekActivity.class},
+                {"🌳", "Hasat kaydı", "Toplanan kilo", HarvestActivity.class},
+                {"💰", "Satış", "Fiyat teklifi, alıcı", SaleActivity.class},
+                {"🧪", "İşlem", "İlaçlama, gübre, sulama", NewOperationActivity.class},
+                {"🌱", "Bahçe ekle", "Yeni bahçe", AddGardenActivity.class},
+                {"🥫", "Salamura", "Kavanoz, tuz, tarih", BrineActivity.class},
+                {"💬", "Sohbet gönderisi", "Meydan'da paylaş", CreatePostActivity.class},
         };
+        LinearLayout line = null;
+        for (int i = 0; i < items.length; i++) {
+            if (i % 2 == 0) {
+                line = new LinearLayout(this);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+                lp.topMargin = dp(10);
+                box.addView(line, lp);
+            }
+            final Class<?> target = (Class<?>) items[i][3];
+            LinearLayout tile = new LinearLayout(this);
+            tile.setOrientation(LinearLayout.VERTICAL);
+            tile.setPadding(dp(14), dp(12), dp(12), dp(12));
+            tile.setBackground(round(BG, 18, BORDER));
+            tile.setClickable(true);
+            tile.setFocusable(true);
+            tile.addView(text((String) items[i][0], 24, TEXT, false));
+            tile.addView(text((String) items[i][1], 17, TEXT, true));
+            TextView sub = text((String) items[i][2], 12, MUTED, false);
+            sub.setSingleLine(true);
+            sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            tile.addView(sub);
+            tile.setContentDescription(items[i][1] + ": " + items[i][2]);
+            tile.setOnClickListener(v -> { sheet.dismiss(); startActivity(new Intent(this, target)); });
+            LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, -2, 1f);
+            if (i % 2 == 1) tp.leftMargin = dp(10);
+            line.addView(tile, tp);
+        }
+        if (items.length % 2 == 1 && line != null) line.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
 
-        AlertDialog dialog =
-                new AlertDialog.Builder(this)
-                        .setTitle(
-                                "Ne kaydetmek istersin?"
-                        )
-                        .setItems(
-                                actions,
-                                (d, which) -> {
-                                    Intent intent;
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(box);
+        sheet.setContentView(scroll);
+        android.view.Window w = sheet.getWindow();
+        if (w != null) {
+            // Görünüm gösterilmeden verilir (sıçrama olmasın); alttan kayarak gelir.
+            w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+            w.setLayout(android.view.WindowManager.LayoutParams.MATCH_PARENT, android.view.WindowManager.LayoutParams.WRAP_CONTENT);
+            w.setGravity(Gravity.BOTTOM);
+            w.setWindowAnimations(android.R.style.Animation_InputMethod);
+            w.setDimAmount(0.55f);
+        }
+        sheet.show();
+    }
 
-                                    switch (which) {
-
-                                        case 1:
-                                            intent =
-                                                    new Intent(
-                                                            this,
-                                                            AddGardenActivity.class
-                                                    );
-                                            break;
-
-                                        case 2:
-                                            intent =
-                                                    new Intent(
-                                                            this,
-                                                            HarvestActivity.class
-                                                    );
-                                            break;
-
-                                        case 3:
-                                            intent =
-                                                    new Intent(
-                                                            this,
-                                                            ElekActivity.class
-                                                    );
-                                            break;
-
-                                        case 4:
-                                            intent =
-                                                    new Intent(
-                                                            this,
-                                                            SaleActivity.class
-                                                    );
-                                            break;
-
-                                        case 5:
-                                            intent =
-                                                    new Intent(
-                                                            this,
-                                                            BrineActivity.class
-                                                    );
-                                            break;
-
-                                        case 6:
-                                            intent =
-                                                    new Intent(
-                                                            this,
-                                                            CreatePostActivity.class
-                                                    );
-                                            break;
-
-                                        default:
-                                            intent =
-                                                    new Intent(
-                                                            this,
-                                                            NewOperationActivity.class
-                                                    );
-                                            break;
-                                    }
-
-                                    startActivity(
-                                            intent
-                                    );
-                                }
-                        )
-                        .setNegativeButton(
-                                "Vazgeç",
-                                null
-                        )
-                        .create();
-
-        showDarkDialog(dialog);
+    /** Asistan düğmesine ilk dokunuşlarda bir kez: uzun basmanın varlığı öğrensin. */
+    private void maybeHintQuickCreate() {
+        android.content.SharedPreferences p = getSharedPreferences("zd_hints", MODE_PRIVATE);
+        if (p.getBoolean("quick_create_hint", false)) return;
+        p.edit().putBoolean("quick_create_hint", true).apply();
+        android.widget.Toast.makeText(this, "İpucu: Asistana uzun basarsan hızlı kayıt menüsü açılır.", android.widget.Toast.LENGTH_LONG).show();
     }
 
     private void showSeasonPicker() {
