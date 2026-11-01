@@ -25,7 +25,8 @@ import java.util.concurrent.TimeUnit;
  * Her hata (internet yok, kota doldu, gecikme) null döner: asistan kurallarla devam eder.
  */
 final class AssistantCloudClient {
-    private static final int CONNECT_MS = 3000, READ_MS = 7000, MAX_RESPONSE = 8192;
+    /** Mobil ağda TLS el sıkışması ve modelin ilk (soğuk) açılışı birkaç saniye sürebilir. */
+    private static final int CONNECT_MS = 10000, READ_MS = 20000, MAX_RESPONSE = 8192;
     private static final String PREFS = "zd_cloud_ai";
 
     private AssistantCloudClient() {}
@@ -88,7 +89,12 @@ final class AssistantCloudClient {
             byte[] bytes = AssistantCloud.requestBody(raw, gardens).getBytes(StandardCharsets.UTF_8);
             connection.setFixedLengthStreamingMode(bytes.length);
             try (OutputStream out = connection.getOutputStream()) { out.write(bytes); }
-            int code = connection.getResponseCode();
+            catch (java.net.SocketTimeoutException e) { return fail("Sunucuya bağlanılamadı (bağlantı " + CONNECT_MS / 1000 + " sn'de kurulamadı)."); }
+            long sent = android.os.SystemClock.elapsedRealtime();
+            int code;
+            try { code = connection.getResponseCode(); }
+            catch (java.net.SocketTimeoutException e) { return fail("Sunucuya ulaşıldı ama yardımcı " + READ_MS / 1000 + " sn içinde cevap vermedi."); }
+            long took = android.os.SystemClock.elapsedRealtime() - sent;
             if (code != 200) {
                 String reason = "";
                 try (InputStream err = connection.getErrorStream()) {
@@ -106,7 +112,7 @@ final class AssistantCloudClient {
                     buf.write(chunk, 0, k);
                 }
                 String body = new String(buf.toByteArray(), StandardCharsets.UTF_8);
-                if (body.contains("\"ok\":true")) { lastOk = true; lastStatus = "Son deneme başarılı: yardımcı cevap verdi."; }
+                if (body.contains("\"ok\":true")) { lastOk = true; lastStatus = "Son deneme başarılı: yardımcı " + Math.max(1, Math.round(took / 1000.0)) + " sn'de cevap verdi."; }
                 else fail(body.contains("not_understood") ? "Yardımcı cümleyi bir bahçe işi olarak anlayamadı." : "Yardımcı geçersiz cevap verdi.");
                 return body;
             }
