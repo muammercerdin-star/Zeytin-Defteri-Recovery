@@ -1,5 +1,14 @@
 // Ara sunucu testleri (node test.mjs). Gerçek RSA imzalı belgelerle kimlik, sınır, girdi ve model cevabı denetimi.
-import { handle, verifyFirebaseToken, extractJson, cleanResult, modelText, systemPrompt, resetJwksCache } from "./worker.js";
+// worker.js Cloudflare'e yapıştırılır ve yalnız "export default" içerir; testler iç işlevlere geçici bir kopyadan ulaşır.
+import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, dirname } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "worker.js"), "utf8");
+const tmp = join(mkdtempSync(join(tmpdir(), "zai-")), "w.mjs");
+writeFileSync(tmp, src + "\nexport { handle, verifyFirebaseToken, extractJson, cleanResult, modelText, systemPrompt, resetJwksCache };\n");
+const { handle, verifyFirebaseToken, extractJson, cleanResult, modelText, systemPrompt, resetJwksCache } = await import(pathToFileURL(tmp).href);
+const exportsInWorker = src.match(/^export /gm) || [];
 
 let n = 0, bad = 0;
 const check = (ok, m) => { n++; if (!ok) { bad++; console.log("FAIL " + m); } };
@@ -85,5 +94,6 @@ check(cleanResult({ islem: "sulama", gun: 5 }).gun === 0, "geçersiz gün → 0"
 check(modelText({ response: "{\"islem\":\"mazot\"}" }).includes("mazot"), "eski cevap biçimi");
 check(!systemPrompt([]).includes("undefined"), "bahçesiz talimat");
 
+check(exportsInWorker.length === 1 && /^export default \{/m.test(src), "worker.js yalnız tek giriş noktası (export default)");
 console.log((bad === 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " zeytin-ai worker");
 if (bad) process.exit(1);

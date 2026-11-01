@@ -36,7 +36,7 @@ export default {
   },
 };
 
-export async function handle(request, env, now = Date.now()) {
+async function handle(request, env, now = Date.now()) {
   const url = new URL(request.url);
   if (request.method === "GET" && url.pathname === "/") return json({ ok: true, service: "zeytin-ai" });
   if (request.method !== "POST" || url.pathname !== "/parse") return json({ ok: false, reason: "not_found" }, 404);
@@ -87,7 +87,7 @@ export async function handle(request, env, now = Date.now()) {
 }
 
 /** Model talimatı: telefondaki denemede kullandığımızın, kullanıcının gerçek bahçeleriyle doldurulmuş hâli. */
-export function systemPrompt(gardens) {
+function systemPrompt(gardens) {
   const list = gardens.length ? gardens.map((g) => `"${g.replace(/"/g, "")}"`).join(", ") : "(bahçe listesi yok)";
   return [
     "Sen bir zeytin bahçesi defterinin kayıt yardımcısısın. Kullanıcının Türkçe cümlesinden yapılmış bir bahçe işini çıkar.",
@@ -114,7 +114,7 @@ export function systemPrompt(gardens) {
 }
 
 /** Workers AI cevabı: OpenAI biçimi (choices) ya da eski biçim (response). */
-export function modelText(out) {
+function modelText(out) {
   if (!out) return "";
   if (typeof out === "string") return out;
   if (typeof out.response === "string") return out.response;
@@ -125,7 +125,7 @@ export function modelText(out) {
 }
 
 /** Metindeki ilk {...} JSON nesnesi (```json blokları ve düşünme metni atlanır). */
-export function extractJson(text) {
+function extractJson(text) {
   if (!text) return null;
   const s = String(text);
   for (let start = s.indexOf("{"); start >= 0; start = s.indexOf("{", start + 1)) {
@@ -142,7 +142,7 @@ export function extractJson(text) {
 }
 
 /** Yalnız bilinen alanlar, doğru türlerle. Asıl denetim uygulamada (cümleyle karşılaştırma) yapılır. */
-export function cleanResult(r) {
+function cleanResult(r) {
   if (!r || typeof r !== "object") return null;
   const islem = typeof r.islem === "string" ? r.islem.trim().toLowerCase() : null;
   if (!islem || !OPS.includes(islem)) return null;
@@ -178,7 +178,7 @@ function b64urlBytes(s) {
 }
 
 /** Geçerliyse kullanıcı kimliği (uid), değilse null. */
-export async function verifyFirebaseToken(token, project, now, jwksLoader) {
+async function verifyFirebaseToken(token, project, now, jwksLoader) {
   if (!token || token.length > 4096) return null;
   const parts = token.split(".");
   if (parts.length !== 3) return null;
@@ -212,7 +212,7 @@ export async function verifyFirebaseToken(token, project, now, jwksLoader) {
 }
 
 /** Testler için önbelleği sıfırlar. */
-export function resetJwksCache() { jwksCache = { keys: null, until: 0 }; }
+function resetJwksCache() { jwksCache = { keys: null, until: 0 }; }
 
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
