@@ -14,7 +14,7 @@ import java.util.Locale;
  * "bitti" → toplam, "Kimden aldın?", ödeme (tamamı / bir kısmı / sonra), okuma ve "evet" olmadan asla kaydetmez.
  */
 public final class TezgahVoiceDialog {
-    public enum Phase { WEIGH, KASA_CHECK, PRICE, SELLER, SELLER_PICK, PAY, PAY_AMOUNT, CONFIRM, DONE }
+    public enum Phase { WEIGH, KASA_CHECK, FIX, PRICE, SELLER, SELLER_PICK, PAY, PAY_AMOUNT, CONFIRM, DONE }
     public enum Action { NONE, ADD, UNDO, PRICE, SELLER, SAVE, CANCEL }
 
     public static final class Reply {
@@ -152,17 +152,28 @@ public final class TezgahVoiceDialog {
         switch (phase) {
             case KASA_CHECK: return kasaCheck(s, raw);
             case PRICE: return answerPrice(raw);
+            case FIX: return answerFix(raw, s);
             case SELLER: return answerSeller(raw, s);
             case SELLER_PICK: return pickSeller(raw, s);
             case PAY: return answerPay(raw, s);
             case PAY_AMOUNT: return answerAmount(raw, s);
-            case CONFIRM: return confirm(s);
+            case CONFIRM: return confirm(raw, s);
             case DONE: return new Reply("", Action.NONE, false);
             default: return weigh(raw, s);
         }
     }
 
     private Reply weigh(String raw, String s) {
+        Said early = parse(raw);
+        boolean fix = has(s, FIX_WORDS);
+        if (fix && early.grade >= 0) {
+            // Geçmişe dönük: "2 numara yanlış, 40 olacak" → düzelt; kilo söylenmediyse sor.
+            if (!Double.isNaN(early.kg)) return correct(early.grade, early.kasa, early.kg, early.net);
+            if (lastOf(early.grade) < 0) return ask(label(early.grade) + " için tartım yok. " + hasQuestion(grade));
+            fixGrade = early.grade; phase = Phase.FIX;
+            return ask(label(early.grade) + " kaç kilo olacak?");
+        }
+        if (fix && !Double.isNaN(early.kg) && lastOf(grade) >= 0) return correct(grade, early.kasa, early.kg, early.net);   // "yanlış, 40 olacak"
         if (has(s, "geri al|sonuncuyu sil|son tartimi sil|yanlis oldu")) return undo();
         if (has(s, "oku|toplam|ne kadar|kac oldu|ne oldu")) return ask(readout() + " " + prompt());
         if (has(s, "bitti|bitir|bitirelim|hepsi bu|kaydet|fis")) return finish();
@@ -232,7 +243,7 @@ public final class TezgahVoiceDialog {
 
     private Reply commit(int g, int k, double kg, String lead, int removeIndex) {
         double netSaid = committingNet; committingNet = -1;
-        if (removeIndex >= 0) { model.remove(removeIndex); added.remove(added.size() - 1); addedNet.remove(addedNet.size() - 1); }
+        if (removeIndex >= 0) forget(removeIndex);
         if (!model.add(g, k, kg)) return ask("Bu tartımı ekleyemedim. Kiloyu yeniden söyle.");
         added.add(model.items().size() - 1);
         addedNet.add(netSaid);
@@ -242,6 +253,66 @@ public final class TezgahVoiceDialog {
         Reply r = new Reply(lead + num(TezgahModel.net(k, kg, model.tare())) + " net.", Action.ADD, true);
         r.grade = g; r.kasa = k; r.kg = kg; r.removeIndex = removeIndex;
         return r;
+    }
+
+    /** Modelden idx'teki tartımı siler; "geri al" listesindeki sıraları kaydırır. */
+    private void forget(int idx) {
+        int pos = added.indexOf(idx);
+        if (pos >= 0) { added.remove(pos); addedNet.remove(pos); }
+        for (int i = 0; i < added.size(); i++) if (added.get(i) > idx) added.set(i, added.get(i) - 1);
+        model.remove(idx);
+    }
+
+    // ------------------------------------------------------------ geçmişe dönük düzeltme
+
+    private int fixGrade = -1;
+    private static final String FIX_WORDS = "yanlis|yanlislik|duzelt|duzeltelim|duzeltiyorum|olacak|olmali|olcak|degistir|degil|aslinda";
+
+    /** O numaranın son tartımı; yoksa -1. */
+    private int lastOf(int g) {
+        List<TezgahModel.Weighing> items = model.items();
+        for (int i = items.size() - 1; i >= 0; i--) if (items.get(i).grade == g) return i;
+        return -1;
+    }
+
+    /**
+     * "2 numara yanlış oldu, 40 olacak": 2 numaranın son tartımı DÜZELTİLİR (üstüne eklenmez). Kasa söylenmezse
+     * eski kasa (kiloya uyuyorsa) kalır. Konuşma bulunduğu numaradan (ör. 4 numara) devam eder.
+     */
+    private Reply correct(int g, int kasaSaid, double value, boolean net) {
+        int idx = lastOf(g);
+        int cur = grade;
+        double tare = model.tare();
+        if (idx < 0) {   // o numarada tartım yok: düzeltilecek bir şey yok, ekle
+            Reply r = net ? addNet(g, kasaSaid, value, true) : add(g, kasaSaid, value, true);
+            if (r.action == Action.ADD && g != cur) { grade = cur; askedHas = false; }
+            return r;
+        }
+        TezgahModel.Weighing old = model.items().get(idx);
+        int k = kasaSaid;
+        if (k < 0) {
+            double probe = net ? value + old.kasa * tare : value;
+            boolean fits = TezgahModel.addError(old.kasa, probe, tare).isEmpty() && TezgahModel.suggestedKasa(old.kasa, probe, tare) == 0;
+            k = fits ? old.kasa : (net ? Math.max(1, (int) Math.round(value / TezgahModel.TYPICAL_NET_PER_KASA)) : estimateKasa(value, tare));
+        }
+        double kg = net ? Math.round((value + k * tare) * 100) / 100.0 : value;
+        String err = TezgahModel.addError(k, kg, tare);
+        if (!err.isEmpty()) return ask(err.replace(" kg", " kilo").replace("\u00a0kg", " kilo") + " Düzeltmeyi yeniden söyle.");
+        committingNet = net ? value : -1;
+        Reply r = commit(g, k, kg, "Düzelttim, " + label(g) + ", " + kasaWord(k) + ", ", idx);
+        fixGrade = -1;
+        if (g == cur) return r;
+        grade = cur;   // düzeltme bitti, kalınan numaraya dönülür
+        Reply back = new Reply(r.speech + " " + hasQuestion(cur), Action.ADD, true);
+        back.grade = r.grade; back.kasa = r.kasa; back.kg = r.kg; back.removeIndex = r.removeIndex;
+        return back;
+    }
+
+    private Reply answerFix(String raw, String s) {
+        Said said = parse(raw);
+        if (!Double.isNaN(said.kg)) { phase = Phase.WEIGH; return correct(fixGrade, said.kasa, said.kg, said.net); }
+        if (has(s, "bosver|gec|tamam|dogru|yok")) { phase = Phase.WEIGH; fixGrade = -1; return ask(hasQuestion(grade)); }
+        return ask(label(fixGrade) + " kaç kilo olacak?");
     }
 
     private static String kasaWord(int k) { return k == 0 ? "kasasız" : k + " kasa"; }
@@ -325,7 +396,7 @@ public final class TezgahVoiceDialog {
     private Reply askPay(String lead) {
         if (model.total() <= 0.5) { pay = ElekSaleModel.PAY_NONE; paid = 0; return confirmQuestion(lead); }
         phase = Phase.PAY;
-        return ask(lead + " Ödemeyi yaptın mı? Tamamı mı, bir kısmı mı, sonra mı?");
+        return ask(lead + " Ödeme şimdi mi, sonra mı?");
     }
 
     private static final String SELLER_FILLER = "(?iu)\\b(aldım|aldık|aldim|aldik|getirdi|geldi|ondan|kimden|bundan|üretici|uretici|satan)\\b";
@@ -388,21 +459,14 @@ public final class TezgahVoiceDialog {
             seller = ""; sellerNew = false; phase = Phase.SELLER;
             return ask("Kimden aldın?");
         }
-        Said said = parse(raw);
-        boolean amount = !Double.isNaN(said.kg) && said.kg >= 10;   // "bir kısmı"ndaki "bir" tutar değil
-        if (has(s, "kismi|kismini|kismen|biraz")) {
-            if (amount) return partial(said.kg);
-            phase = Phase.PAY_AMOUNT; return ask("Ne kadar ödedin?");
-        }
-        if (amount && !has(s, "yarisi|yarisini|yarim")) return partial(said.kg);
-        if (has(s, "odemedim|odenmedi|sonra|borc|borclu|borca|borcu|veresiye|henuz|hayir|yok|vermedim")) {
+        // İki şık: şimdi (tamamı ödenir) ya da sonra (tamamı üreticiye borç kalır).
+        if (has(s, "simdi degil|sonra|odemedim|odenmedi|borc|borclu|borca|borcu|veresiye|henuz|hayir|yok|vermedim|kalsin")) {
             pay = ElekSaleModel.PAY_NONE; paid = 0; return confirmQuestion("");
         }
-        if (has(s, "yarisi|yarisini|yarim")) return partial(Math.round(total / 2));
-        if (has(s, "tamami|tamamini|hepsi|hepsini|odedim|odendi|yaptim|pesin|verdim|evet|tam|nakit")) {
+        if (has(s, "simdi|hemen|tamami|tamamini|hepsi|hepsini|odedim|odendi|yaptim|pesin|verdim|evet|nakit")) {
             pay = ElekSaleModel.PAY_ALL; paid = total; return confirmQuestion("");
         }
-        return ask("Tamamı mı, bir kısmı mı, sonra mı?");
+        return ask("Şimdi mi, sonra mı?");
     }
 
     private Reply answerAmount(String raw, String s) {
@@ -439,7 +503,21 @@ public final class TezgahVoiceDialog {
         return ask(b.toString());
     }
 
-    private Reply confirm(String s) {
+    private Reply confirm(String s) { return confirm(s, s); }
+
+    private Reply confirm(String raw, String s) {
+        // Onayda geçmişe dönük düzeltme: "2 numara yanlış, 40 olacak" → düzelt, toplamı yeniden oku.
+        Said said = parse(raw);
+        if (has(s, FIX_WORDS) && said.grade >= 0 && !Double.isNaN(said.kg)) {
+            phase = Phase.WEIGH;
+            Reply r = correct(said.grade, said.kasa, said.kg, said.net);
+            if (r.action != Action.ADD) return r;
+            String fixed = r.speech.contains(" net.") ? r.speech.substring(0, r.speech.indexOf(" net.") + 5) : r.speech;
+            Reply f = finish();
+            Reply out = new Reply(fixed + " " + f.speech, Action.ADD, f.listen);
+            out.grade = r.grade; out.kasa = r.kasa; out.kg = r.kg; out.removeIndex = r.removeIndex;
+            return out;
+        }
         if (has(s, "hayir|dur|bekle|yok|degil")) {
             phase = Phase.WEIGH;
             return ask("Tamam, kaydetmedim. Tartıma devam edebilirsin; bitince bitti de.");
@@ -469,8 +547,9 @@ public final class TezgahVoiceDialog {
     private String prompt() {
         switch (phase) {
             case SELLER: return "Kimden aldın?";
-            case PAY: return "Tamamı mı, bir kısmı mı, sonra mı?";
+            case PAY: return "Şimdi mi, sonra mı?";
             case PRICE: return label(priceGrade) + " kilo fiyatı kaç lira?";
+            case FIX: return label(fixGrade) + " kaç kilo olacak?";
             case CONFIRM: return "Kaydedeyim mi?";
             default: return hasQuestion(grade);
         }

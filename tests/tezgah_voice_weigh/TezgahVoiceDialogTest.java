@@ -56,12 +56,12 @@ public class TezgahVoiceDialogTest {
         check(d.phase() == TezgahVoiceDialog.Phase.SELLER_PICK && r.speech.startsWith("Hangisi?"), "iki Ahmet → hangisi: " + r.speech);
         r = d.handle("Kaya");
         check(r.action == TezgahVoiceDialog.Action.SELLER && d.seller.equals("Ahmet Kaya") && d.phase() == TezgahVoiceDialog.Phase.PAY, "Ahmet Kaya seçildi: " + r.speech);
-        check(r.speech.contains("Tamamı mı, bir kısmı mı, sonra mı?"), "ödeme sorusu");
+        check(r.speech.endsWith("Ödeme şimdi mi, sonra mı?"), "ödeme sorusu iki şık: " + r.speech);
         r = d.handle("bir kısmını");
-        check(d.phase() == TezgahVoiceDialog.Phase.PAY_AMOUNT && r.speech.equals("Ne kadar ödedin?"), "bir kısmı → tutar sorar");
-        r = d.handle("beş bin");
-        check(d.phase() == TezgahVoiceDialog.Phase.CONFIRM && d.paid() == 5000 && r.speech.contains("5000 lira ödendi, 8350 lira borç kalıyor")
-                && r.speech.endsWith("Kaydedip fişi hazırlayayım mı?"), "kısmi ödeme okuması: " + r.speech);
+        check(d.phase() == TezgahVoiceDialog.Phase.PAY && r.speech.equals("Şimdi mi, sonra mı?"), "üçüncü şık yok: yeniden sorar");
+        r = d.handle("sonra");
+        check(d.phase() == TezgahVoiceDialog.Phase.CONFIRM && d.paid() == 0 && r.speech.contains("Ödeme sonra, 13350 lira borç kalıyor")
+                && r.speech.endsWith("Kaydedip fişi hazırlayayım mı?"), "sonra → tamamı borç: " + r.speech);
         r = d.handle("şey");
         check(r.action == TezgahVoiceDialog.Action.NONE && d.phase() == TezgahVoiceDialog.Phase.CONFIRM, "belirsiz cevap kaydetmez");
         r = d.handle("evet");
@@ -88,8 +88,8 @@ public class TezgahVoiceDialogTest {
         // Münferit + borç uyarısı; kısmi tutar doğrudan söylenir
         TezgahVoiceDialog g = new TezgahVoiceDialog(model(), "", Arrays.asList());
         g.handle("Yağlık 54"); g.handle("bitti"); g.handle("münferit");
-        r = g.handle("500 lira verdim");
-        check(g.paid() == 500 && r.speech.contains("Ad yok"), "münferit borç uyarısı: " + r.speech);
+        r = g.handle("sonra");
+        check(g.paid() == 0 && r.speech.contains("Ad yok"), "münferit borç uyarısı: " + r.speech);
 
         // Ekranda satan zaten yazılıysa sormaz; Yağlık'tan sonra 'yok' bitirir; vazgeç
         TezgahVoiceDialog h = new TezgahVoiceDialog(model(), "Ali Veli", Arrays.asList());
@@ -148,8 +148,8 @@ public class TezgahVoiceDialogTest {
         r = q.handle("bitti");
         check(r.speech.contains("Tutar 10200 lira"), "toplam yeni fiyatla: " + r.speech);   // 51*200
         q.handle("münferit");
-        r = q.handle("yarısını");
-        check(q.paid() == 5100, "'yarısını' yarım ödeme: " + q.paid());
+        r = q.handle("şimdi");
+        check(q.paid() == 10200 && r.speech.contains("Tamamı ödendi"), "'şimdi' → tamamı: " + r.speech);
         TezgahVoiceDialog u = new TezgahVoiceDialog(model(), "Yusuf Çerdin", Arrays.asList("Necip Avşar"));
         u.handle("27"); u.handle("bitti");
         r = u.handle("satan yanlış");
@@ -180,6 +180,31 @@ public class TezgahVoiceDialogTest {
         check(vm.grade() == 2 && r.action == TezgahVoiceDialog.Action.NONE, "tartımdan sonra 'hayır' numarayı atlamaz");
         r = vm.handle("geç");
         check(vm.grade() == 3 && r.speech.equals("3 numara var mı?"), "'geç' → sıradaki: " + r.speech);
+
+        // Geçmişe dönük düzeltme: üstüne eklemez, düzeltir; kalınan numaraya döner
+        TezgahVoiceDialog cx = new TezgahVoiceDialog(model(), "", Arrays.asList());
+        cx.greeting(); cx.handle("geç"); cx.handle("geç");
+        cx.handle("55");                         // 2 numara: 2 kasa 55
+        cx.handle("geç"); cx.handle("geç");      // 4 numaradayız
+        check(cx.grade() == 4, "4 numaradayız");
+        r = cx.handle("2 numara yanlış oldu, 45 olacak");
+        check(r.action == TezgahVoiceDialog.Action.ADD && r.removeIndex == 0 && r.grade == 2 && r.kasa == 2 && r.kg == 45
+                && cx.model().gradeCount(2) == 1 && cx.model().gradeNet(2) == 41, "2 numara düzeltildi (eklenmedi): " + r.speech);
+        check(cx.grade() == 4 && r.speech.equals("Düzelttim, 2 numara, 2 kasa, 41 net. 4 numara var mı?"), "kalınan numaraya döner: " + r.speech);
+        r = cx.handle("2 numarayı düzelt");
+        check(cx.phase() == TezgahVoiceDialog.Phase.FIX && r.speech.equals("2 numara kaç kilo olacak?"), "kilo söylenmezse sorar");
+        r = cx.handle("50");
+        check(r.removeIndex == 0 && cx.model().gradeCount(2) == 1 && cx.model().gradeNet(2) == 46 && cx.grade() == 4, "sorulan kilo ile düzeltir: " + r.speech);
+        cx.handle("30");                          // 4 numara tartımı
+        r = cx.handle("yanlış, 28 olacak");
+        check(cx.model().gradeCount(4) == 1 && r.kg == 28, "numarasız 'yanlış, 28 olacak' bulunulan numarayı düzeltir: " + r.speech);
+        r = cx.handle("3 numara yanlış 40");
+        check(cx.model().gradeCount(3) == 1 && cx.grade() == 4, "tartımı olmayan numarada düzeltme = ekleme, yine kalınan numara: " + r.speech);
+        r = cx.handle("geri al");
+        check(cx.model().gradeCount(3) == 0 && cx.model().gradeCount(2) == 1, "geri al son işlemi siler, düzeltmeleri bozmaz");
+        cx.handle("bitti"); cx.handle("münferit"); r = cx.handle("şimdi");
+        r = cx.handle("2 numara yanlış, 60 olacak");
+        check(cx.model().gradeCount(2) == 1 && cx.model().gradeNet(2) == 56 && r.speech.contains("Ödeme şimdi mi, sonra mı?"), "onayda düzeltme toplamı yeniden okur: " + r.speech);
 
         // Ayrıştırma
         TezgahVoiceDialog.Said s = TezgahVoiceDialog.parse("1 numara 40, 2 kasa");
