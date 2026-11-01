@@ -14,7 +14,7 @@ import java.util.Locale;
  * "bitti" → toplam, "Kimden aldın?", ödeme (tamamı / bir kısmı / sonra), okuma ve "evet" olmadan asla kaydetmez.
  */
 public final class TezgahVoiceDialog {
-    public enum Phase { WEIGH, KASA_CHECK, FIX, PRICE, SELLER, SELLER_PICK, PAY, PAY_AMOUNT, CONFIRM, DONE }
+    public enum Phase { WEIGH, KASA_CHECK, FIX, ADD_OR_FIX, PRICE, SELLER, SELLER_PICK, PAY, PAY_AMOUNT, CONFIRM, DONE }
     public enum Action { NONE, ADD, UNDO, PRICE, SELLER, SAVE, CANCEL }
 
     public static final class Reply {
@@ -146,7 +146,7 @@ public final class TezgahVoiceDialog {
         String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
         if (s.isEmpty()) return ask("Duyamadım. " + prompt());
         // "2 numarayı iptal et" asistanı kapatmaz (numara silinir); düzeltme sorusunda "vazgeç" yalnız düzeltmeyi bırakır.
-        if (has(s, "vazgec|vazgectim|kapat|iptal") && parse(raw).grade < 0 && phase != Phase.FIX) {
+        if (has(s, "vazgec|vazgectim|kapat|iptal") && parse(raw).grade < 0 && phase != Phase.FIX && phase != Phase.ADD_OR_FIX) {
             phase = Phase.DONE;
             return new Reply(model.isEmpty() ? "Tamam, kapattım." : "Tamam, kapattım. Tartımlar ekranda duruyor.", Action.CANCEL, false);
         }
@@ -154,6 +154,7 @@ public final class TezgahVoiceDialog {
             case KASA_CHECK: return kasaCheck(s, raw);
             case PRICE: return answerPrice(raw);
             case FIX: return answerFix(raw, s);
+            case ADD_OR_FIX: return answerAddOrFix(raw, s);
             case SELLER: return answerSeller(raw, s);
             case SELLER_PICK: return pickSeller(raw, s);
             case PAY: return answerPay(raw, s);
@@ -181,6 +182,12 @@ public final class TezgahVoiceDialog {
             return ask("Hangi numarayı düzelteyim?");
         }
         if (early.grade >= 0 && has(s, "sil|kaldir|iptal et") && lastOf(early.grade) >= 0) return deleteLast(early.grade);
+        if (early.grade >= 0 && early.grade != grade && !Double.isNaN(early.kg) && lastOf(early.grade) >= 0) {
+            // Geride kalmış, tartımı olan bir numaraya kilo söylendi: büyük ihtimalle düzeltme. Sormadan üstüne eklemez.
+            pending = early; phase = Phase.ADD_OR_FIX;
+            TezgahModel.Weighing w = model.items().get(lastOf(early.grade));
+            return ask(label(early.grade) + " zaten " + num(TezgahModel.net(w.kasa, w.kg, model.tare())) + " net. Düzelteyim mi, ekleyeyim mi?");
+        }
         if (has(s, "geri al|sonuncuyu sil|son tartimi sil|yanlis oldu")) return undo();
         if (has(s, "oku|toplam|ne kadar|kac oldu|ne oldu")) return ask(readout() + " " + prompt());
         if (has(s, "bitti|bitir|bitirelim|hepsi bu|kaydet|fis")) return finish();
@@ -313,6 +320,30 @@ public final class TezgahVoiceDialog {
         Reply back = new Reply(r.speech + " " + hasQuestion(cur), Action.ADD, true);
         back.grade = r.grade; back.kasa = r.kasa; back.kg = r.kg; back.removeIndex = r.removeIndex;
         return back;
+    }
+
+    private Said pending;
+
+    private Reply answerAddOrFix(String raw, String s) {
+        Said p = pending;
+        if (has(s, "duzelt\\w*|degistir\\w*|evet|yanlis\\w*|onun yerine|yerine")) {
+            phase = Phase.WEIGH; pending = null;
+            return correct(p.grade, p.kasa, p.kg, p.net);
+        }
+        if (has(s, "ekle|ekleyin|uzerine|ustune|ayri|yeni|bir daha|daha")) {
+            phase = Phase.WEIGH; pending = null;
+            int cur = grade;
+            Reply r = p.net ? addNet(p.grade, p.kasa, p.kg, true) : add(p.grade, p.kasa, p.kg, true);
+            if (r.action == Action.ADD && p.grade != cur) {
+                grade = cur;
+                Reply back = new Reply(r.speech + " " + hasQuestion(cur), Action.ADD, true);
+                back.grade = r.grade; back.kasa = r.kasa; back.kg = r.kg; back.removeIndex = r.removeIndex;
+                return back;
+            }
+            return r;
+        }
+        if (has(s, "vazgec|bosver|hicbiri|gec")) { phase = Phase.WEIGH; pending = null; return ask(hasQuestion(grade)); }
+        return ask("Düzelteyim mi, ekleyeyim mi?");
     }
 
     /** "2 numarayı sil": o numaranın son tartımı silinir. */

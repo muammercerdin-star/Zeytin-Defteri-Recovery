@@ -14,6 +14,15 @@ public class TezgahVoiceDialogTest {
         return m;
     }
 
+    /** Telefondaki oturum gibi: her cümleden önce ekranla eşitle, cevaptaki silme/ekleme ekrana uygulanır. */
+    static TezgahVoiceDialog.Reply say(TezgahVoiceDialog d, TezgahModel screen, String text) {
+        d.sync(TezgahModel.decode(screen.encode()));
+        TezgahVoiceDialog.Reply r = d.handle(text);
+        if (r.removeIndex >= 0) screen.remove(r.removeIndex);
+        if (r.action == TezgahVoiceDialog.Action.ADD) screen.add(r.grade, r.kasa, r.kg);
+        return r;
+    }
+
     public static void main(String[] a) {
         // Kullanıcının örnekleri: 15 → 1 kasa dara 2 net 13; 55 → 2 kasa dara 4 net 51.
         check(TezgahVoiceDialog.estimateKasa(15, 2) == 1, "15 kg → 1 kasa");
@@ -226,6 +235,25 @@ public class TezgahVoiceDialogTest {
         fx.handle("40"); fx.handle("düzelt");
         r = fx.handle("vazgeç");
         check(fx.phase() == TezgahVoiceDialog.Phase.WEIGH && r.action != TezgahVoiceDialog.Action.CANCEL, "düzeltmede vazgeç yalnız düzeltmeyi bırakır");
+
+        // Uçtan uca (ekranla birlikte): düzeltmede ekrandaki kilo İKİ KATINA ÇIKMAMALI
+        TezgahModel scr = model();
+        TezgahVoiceDialog e2 = new TezgahVoiceDialog(TezgahModel.decode(scr.encode()), "", Arrays.asList());
+        e2.greeting();
+        say(e2, scr, "geç"); say(e2, scr, "17"); say(e2, scr, "geç"); say(e2, scr, "25");   // 1: 15 net, 2: 23 net
+        say(e2, scr, "geç"); say(e2, scr, "33"); say(e2, scr, "geç"); say(e2, scr, "43");   // 3, 4
+        r = say(e2, scr, "2 numara yanlış, 30 olacak");
+        check(scr.gradeCount(2) == 1 && scr.gradeNet(2) == 28, "ekranda 2 numara düzeldi, iki katına çıkmadı: net " + scr.gradeNet(2));
+        say(e2, scr, "düzelt"); say(e2, scr, "2 numara"); r = say(e2, scr, "25");
+        check(scr.gradeCount(2) == 1 && scr.gradeNet(2) == 23, "düzelt → 2 numara → 25: ekranda tek tartım, net 23: " + scr.gradeNet(2));
+        r = say(e2, scr, "2 numara 25");
+        check(e2.phase() == TezgahVoiceDialog.Phase.ADD_OR_FIX && scr.gradeCount(2) == 1 && r.speech.equals("2 numara zaten 23 net. Düzelteyim mi, ekleyeyim mi?"),
+                "geride kalan numaraya kilo: sormadan EKLEMEZ: " + r.speech);
+        r = say(e2, scr, "düzelt");
+        check(scr.gradeCount(2) == 1 && e2.grade() == 4, "düzelt cevabı: tek tartım kalır, 4 numaraya dönülür: " + r.speech);
+        say(e2, scr, "2 numara 30"); r = say(e2, scr, "ekle");
+        check(scr.gradeCount(2) == 2 && e2.grade() == 4 && r.speech.endsWith("4 numara var mı?"), "ekle cevabı: ikinci tartım eklenir: " + r.speech);
+        check(scr.items().size() == e2.model().items().size(), "ekran ile asistan aynı tartım sayısında");
 
         // Ayrıştırma
         TezgahVoiceDialog.Said s = TezgahVoiceDialog.parse("1 numara 40, 2 kasa");
