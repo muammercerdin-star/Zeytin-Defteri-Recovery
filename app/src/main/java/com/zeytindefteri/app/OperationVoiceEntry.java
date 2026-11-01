@@ -78,7 +78,9 @@ public final class OperationVoiceEntry {
     static int typeOf(String s) {
         if (s.matches(".*\\b(ilac\\p{L}*|ilacla\\p{L}*|spreyle\\p{L}*|kukurt\\p{L}*|bordo bulamac\\p{L}*|bakir sulfat\\p{L}*|bakirli ilac\\p{L}*)\\b.*")) return 2;
         if (s.matches(".*\\b(gubre\\p{L}*)\\b.*")) return 1;
-        if (s.matches(".*\\b(sula\\p{L}*|damlama\\p{L}*)\\b.*") || s.matches(".*\\bsu (verdim|verdik|saldim|saldik|actim|actik|verildi)\\b.*")) return 0;
+        // Sulama "mazot"tan önce: "motoru çalıştırıp can suyu verdik, mazotu 300 tuttu" sulamadır (mazot masrafıdır).
+        if (s.matches(".*\\b(sula\\p{L}*|damlama\\p{L}*|hortum\\p{L}*|motopomp\\p{L}*|can suyu\\p{L}*|salma su\\p{L}*)\\b.*")
+                || s.matches(".*\\b(su|suyu|suyunu|sulari|suyumuzu) (ver\\p{L}*|sal\\p{L}*|ac\\p{L}*|bas\\p{L}*|akit\\p{L}*|cektik|cektim)\\b.*")) return 0;
         if (s.matches(".*\\b(buda\\p{L}*)\\b.*")) return 3;
         if (s.matches(".*\\b(tuzak\\p{L}*)\\b.*")) return 4;
         if (s.matches(".*\\b(surdum|surduk|surduruldu|capala\\p{L}*|freze\\p{L}*|toprak isle\\p{L}*|toprak islemesi|diskaro\\p{L}*|kultivator\\p{L}*)\\b.*")) return 5;

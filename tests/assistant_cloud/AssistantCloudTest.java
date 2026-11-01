@@ -57,6 +57,8 @@ public class AssistantCloudTest {
         check(!AssistantCloud.eligible("yarın ilaçlasak mı"), "plan/soru gitmez");
         check(!AssistantCloud.eligible("elek aç"), "komut gitmez");
         check(!AssistantCloud.eligible("Meydan'a yaz: yağmur yağdı Girelli'ye 300 kilo"), "Meydan gitmez");
+        check(AssistantCloud.eligible("Dün Girelli'de ağaçların altını temizledik, iki amele tuttuk 2400 verdik", G), "ağaç geçen iş cümlesi uygun");
+        check(!AssistantCloud.eligible("Kaç ağacım var?", G) && !AssistantCloud.eligible("Girelli'de kaç ağaç var", G), "ağaç sorusu gitmez");
         // gövde
         String body = AssistantCloud.requestBody("Dün \"Girelli\"ye su saldık", G);
         check(body.contains("\\\"Girelli\\\"") && body.contains("\"gardens\":[\"Girelli\",\"Kuyu dibi\"]"), "gövde: " + body);

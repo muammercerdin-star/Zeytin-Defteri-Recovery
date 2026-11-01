@@ -57,6 +57,13 @@ public class OperationVoiceEntryTest {
         check(e != null && e.quantity == 10 && e.unit.equals("adet"), "10 tuzak");
         e = p("evelsi gün kuyudibine gübre attık 20 kilo");
         check(e != null && e.dayOffset == -2, "evelsi (yazım hatası)");
+        // Telefonda (2 Kasım) mazot alımı sanılan cümle
+        e = p("Dün akşam Girelli'de motoru çalıştırıp hortumla zeytinlere can suyu verdik, mazotu 300 tuttu");
+        check(e != null && e.type == 0 && e.dayOffset == -1 && e.cost == 300 && e.quantity == 0, "can suyu + mazot masrafı → sulama: " + (e == null ? "null" : e.type + " " + e.cost));
+        e = p("Bugün ağaçlara suyu açtık 3 saat");
+        check(e != null && e.type == 0 && e.quantity == 3, "suyu açtık → sulama");
+        e = p("Mazot aldım 25 litre 1000 lira");
+        check(e != null && e.type == 7, "yalnız mazot alımı yine mazot");
         OperationVoiceEntry a2 = OperationVoiceEntry.parseAnswer("500 verdik");
         check(a2.cost == 500 && a2.quantity == 0, "500 verdik → tutar, miktar değil");
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " OperationVoiceEntry");

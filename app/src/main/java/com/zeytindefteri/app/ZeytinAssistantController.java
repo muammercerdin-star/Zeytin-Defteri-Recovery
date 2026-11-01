@@ -641,7 +641,9 @@ public final class ZeytinAssistantController {
                 }
                 // Kuralların anlamadığı iş cümlesi: izin varsa internetteki yardımcıya (Gemma 4) sorulur. Cevap cümleyle
                 // karşılaştırılarak denetlenir (AssistantCloud.accept), okunur, "evet" denmeden kaydedilmez.
-                if(pick==null&&cmd.kind==Kind.UNKNOWN&&!gardens.isEmpty()&&AssistantCloudClient.configured()&&ZeytinAssistantText.special(raw)==null){
+                // Soru kalıbı değil, geçmiş zamanlı bir iş cümlesiyse ("ağaçların altını temizledik, 2 amele tuttuk") kayıt sorusu
+                // (TREES vb.) sanılsa bile yardımcıya gider; ekran açma komutları gitmez (eligible soru ve komutları ayırır).
+                if(pick==null&&cmd.kind!=Kind.NAVIGATION&&!gardens.isEmpty()&&AssistantCloudClient.configured()&&ZeytinAssistantText.special(raw)==null){
                     final List<String> names=new java.util.ArrayList<>();for(Garden g:gardens)names.add(g.name);
                     String mode=AssistantCloudClient.mode(activity,owner);
                     if(AssistantCloud.eligible(raw,names)&&!"off".equals(mode)&&AssistantCloudClient.online(activity)){
