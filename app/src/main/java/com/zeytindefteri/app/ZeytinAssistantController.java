@@ -39,6 +39,8 @@ public final class ZeytinAssistantController {
         void navigate(String target,long gardenId);
         /** Sesle söylenen elek kilolarıyla elek formunu dolu aç (kaydetmez; kullanıcı onaylar). */
         default void openElekEntry(long gardenId,ElekVoiceEntry entry){navigate("ELEK",gardenId);}
+        /** "Bugün Girelli'yi ilaçladım": işlem formunu dolu aç (kaydetmez; kullanıcı Kaydet'e basar). */
+        default void openOperationEntry(long gardenId,OperationVoiceEntry entry){navigate("OPERATION",gardenId);}
         void weather(Garden garden,WeatherRepository.ForecastCallback callback);
     }
     private final Activity activity;
@@ -475,6 +477,15 @@ public final class ZeytinAssistantController {
                     final long gid=resolution.garden==null?0:resolution.garden.id;
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Elek formunu dolduruyorum…");haptic();
                         Toast.makeText(activity,"Elek formu açılıyor: "+voice.summary(),Toast.LENGTH_SHORT).show();dialog.dismiss();host.openElekEntry(gid,voice);}});
+                    return;
+                }
+                // "Bugün Girelli'yi ilaçladım", "Mazot aldım 500 lira": cevap yerine işlem formu dolu açılır.
+                final OperationVoiceEntry op=pick==null?OperationVoiceEntry.parse(raw):null;
+                if(op!=null){
+                    final long gid=resolution.garden==null?0:resolution.garden.id;
+                    final String where=resolution.garden==null?"":resolution.garden.name+", ";
+                    main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"İşlem formunu dolduruyorum…");haptic();
+                        Toast.makeText(activity,"İşlem formu açılıyor: "+where+op.summary()+". Kontrol edip Kaydet'e bas.",Toast.LENGTH_LONG).show();dialog.dismiss();host.openOperationEntry(gid,op);}});
                     return;
                 }
                 if(cmd.kind==Kind.UNKNOWN){

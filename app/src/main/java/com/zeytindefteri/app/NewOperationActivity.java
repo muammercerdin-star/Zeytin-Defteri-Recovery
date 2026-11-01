@@ -31,6 +31,9 @@ import java.util.Locale;
 public class NewOperationActivity extends Activity {
 
     private static final int COLUMNS = 4;
+    /** Asistandan ("Dün 2 saat su verdim"): tarih kaydırması, miktar, birim, tutar. Form dolu açılır, kaydetmez. */
+    public static final String EXTRA_VOICE_DAY_OFFSET = "voice_day_offset", EXTRA_VOICE_QUANTITY = "voice_quantity",
+            EXTRA_VOICE_UNIT = "voice_unit", EXTRA_VOICE_COST = "voice_cost";
 
     private DatabaseHelper databaseHelper;
     private OperationCloudRepository operationCloudRepository;
@@ -71,8 +74,37 @@ public class NewOperationActivity extends Activity {
         } else {
             applyIncomingSelection();
         }
+        int unitIndex = savedInstanceState != null ? savedInstanceState.getInt("operation_unit_index", 0) : voiceUnitIndex();
         updateDateText();
-        selectType(selectedType, savedInstanceState != null ? savedInstanceState.getInt("operation_unit_index", 0) : 0);
+        selectType(selectedType, unitIndex);
+        if (savedInstanceState == null) applyVoice();
+    }
+
+    /** Söylenen birim türün birimlerindeyse onun sırası (ör. sulamada "saat" → 0); değilse 0. */
+    private int voiceUnitIndex() {
+        String u = getIntent().getStringExtra(EXTRA_VOICE_UNIT);
+        if (u == null || u.isEmpty()) return 0;
+        String[] units = OperationKinds.form(OperationKinds.TYPES[selectedType]).units;
+        for (int i = 0; i < units.length; i++) if (units[i].equalsIgnoreCase(u)) return i;
+        return 0;
+    }
+
+    /** Asistanın duyduğu tarih / miktar / tutar forma yazılır; birim türde yoksa miktar nota düşer. */
+    private void applyVoice() {
+        if (!getIntent().hasExtra(EXTRA_VOICE_DAY_OFFSET)) return;
+        int offset = getIntent().getIntExtra(EXTRA_VOICE_DAY_OFFSET, 0);
+        if (offset != 0) { selectedDate.add(Calendar.DAY_OF_MONTH, offset); updateDateText(); }
+        double q = getIntent().getDoubleExtra(EXTRA_VOICE_QUANTITY, 0);
+        String u = getIntent().getStringExtra(EXTRA_VOICE_UNIT);
+        double cost = getIntent().getDoubleExtra(EXTRA_VOICE_COST, 0);
+        if (q > 0) {
+            boolean fits = false;
+            for (String x : OperationKinds.form(OperationKinds.TYPES[selectedType]).units) if (x.equalsIgnoreCase(u)) fits = true;
+            if (fits) etQuantity.setText(TezgahQr.field(q));
+            else etNote.setText(ElekVoiceDialog.num(q) + " " + (u == null ? "" : u));
+        }
+        if (cost > 0) etCost.setText(TezgahQr.field(cost));
+        Toast.makeText(this, "Sesle dolduruldu · kontrol edip Kaydet'e bas", Toast.LENGTH_LONG).show();
     }
 
     @Override

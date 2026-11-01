@@ -6728,6 +6728,18 @@ public class ProducerFeedActivity extends Activity {
                                     startActivity(intent);
                                 }
 
+                                @Override
+                                public void openOperationEntry(long gardenId, OperationVoiceEntry entry) {
+                                    Intent intent = new Intent(ProducerFeedActivity.this, NewOperationActivity.class);
+                                    if (gardenId > 0) intent.putExtra("garden_id", gardenId);
+                                    intent.putExtra("operation_type", OperationKinds.TYPES[entry.type]);
+                                    intent.putExtra(NewOperationActivity.EXTRA_VOICE_DAY_OFFSET, entry.dayOffset);
+                                    intent.putExtra(NewOperationActivity.EXTRA_VOICE_QUANTITY, entry.quantity);
+                                    intent.putExtra(NewOperationActivity.EXTRA_VOICE_UNIT, entry.unit);
+                                    intent.putExtra(NewOperationActivity.EXTRA_VOICE_COST, entry.cost);
+                                    startActivity(intent);
+                                }
+
                                 public void weather(
                                         ZeytinAssistantCommand.Garden garden,
                                         WeatherRepository.ForecastCallback callback
