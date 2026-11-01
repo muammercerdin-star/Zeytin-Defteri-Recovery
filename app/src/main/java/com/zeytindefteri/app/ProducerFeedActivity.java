@@ -6843,13 +6843,13 @@ public class ProducerFeedActivity extends Activity {
         box.addView(voice, vlp);
 
         Object[][] items = {
-                {"🧺", "Elek kaydı", "Kilo, fiyat, satış", ElekActivity.class},
-                {"🌳", "Hasat kaydı", "Toplanan kilo", HarvestActivity.class},
-                {"💰", "Satış", "Fiyat teklifi, alıcı", SaleActivity.class},
-                {"🧪", "İşlem", "İlaçlama, gübre, sulama", NewOperationActivity.class},
-                {"🌱", "Bahçe ekle", "Yeni bahçe", AddGardenActivity.class},
-                {"🥫", "Salamura", "Kavanoz, tuz, tarih", BrineActivity.class},
-                {"💬", "Sohbet gönderisi", "Meydan'da paylaş", CreatePostActivity.class},
+                {R.drawable.ic_op_elek, "Elek kaydı", "Kilo, fiyat, satış", ElekActivity.class},
+                {R.drawable.ic_op_basket, "Hasat kaydı", "Toplanan kilo", HarvestActivity.class},
+                {R.drawable.ic_op_tag, "Satış", "Fiyat teklifi, alıcı", SaleActivity.class},
+                {R.drawable.ic_op_flask, "İşlem", "İlaçlama, gübre, sulama", NewOperationActivity.class},
+                {R.drawable.ic_op_tree, "Bahçe ekle", "Yeni bahçe", AddGardenActivity.class},
+                {R.drawable.ic_op_drop, "Salamura", "Kavanoz, tuz, tarih", BrineActivity.class},
+                {R.drawable.ic_op_chat, "Sohbet gönderisi", "Meydan'da paylaş", CreatePostActivity.class},
         };
         LinearLayout line = null;
         for (int i = 0; i < items.length; i++) {
@@ -6866,7 +6866,13 @@ public class ProducerFeedActivity extends Activity {
             tile.setBackground(round(BG, 18, BORDER));
             tile.setClickable(true);
             tile.setFocusable(true);
-            tile.addView(text((String) items[i][0], 24, TEXT, false));
+            ImageView ic = new ImageView(this);
+            ic.setImageResource((Integer) items[i][0]);
+            ic.setColorFilter(GREEN);
+            ic.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(dp(28), dp(28));
+            ip.bottomMargin = dp(6);
+            tile.addView(ic, ip);
             tile.addView(text((String) items[i][1], 17, TEXT, true));
             TextView sub = text((String) items[i][2], 12, MUTED, false);
             sub.setSingleLine(true);
