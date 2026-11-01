@@ -109,9 +109,17 @@ public final class AssistantPersona {
                     "Bomba gibiyim" + suffix() + "! Senin işler nasıl gidiyor?",
                     "Şükür iyiyim. Sen nasılsın" + suffix() + ", eleğe çok zeytin girdi mi?");
         }
-        if (s.matches("(iyiyim|iyi|sukur|idare eder|fena degil|cok iyi)( .*)?")) {
-            return pick("Sevindim! Hadi bakalım, ne yapalım bugün?", "Allah iyilik versin. Ne lazım, söyle.");
+        if (s.matches("(iyiyim|iyi|sukur|idare eder|fena degil|cok iyi|bomba gibi|harika)( .*)?")) {
+            return pick("Sevindim" + suffix() + "! Hadi bakalım, ne yapalım bugün?", "Allah iyilik versin. Ne lazım, söyle" + suffix() + ".");
         }
+        // ---- duygular ve gündelik dertler
+        if (has(s, "kotuyum|uzgunum|canim sikkin|moralim bozuk|keyfim yok|dertliyim")) return "Geçmiş olsun" + suffix() + ", canını sıkma. Her kışın bir baharı var. Anlatmak istersen dinlerim; işlerini de ben tutarım.";
+        if (has(s, "hastayim|rahatsizim|basim agriyor|belim agriyor|dizlerim agriyor")) return "Geçmiş olsun" + suffix() + "! Kendine iyi bak, gerekirse doktora görün. Bugün kayıtları ben hallederim.";
+        if (has(s, "yagmur yagdi|yagmur yagiyor|yagis geldi")) return "Bereket" + suffix() + ", hayırlısı olsun! Zeytin suya hasretti.";
+        if (has(s, "zeytin az|rekolte dusuk|mahsul az|az cikti|verim dusuk")) return "Üzülme" + suffix() + ", zeytinin var yılı yok yılı olur. Seneye bereketli olur inşallah. İstersen bölgede ortalama ne çıkmış bakalım, piyasa de.";
+        if (has(s, "fiyat dusuk|fiyatlar dusuk|para etmiyor|ucuz gitti|zarar ettim")) return "Haklısın" + suffix() + ", emeğin karşılığı alınmalı. Bölgedeki fiyatlara bakmak istersen piyasa de, karşılaştıralım.";
+        if (has(s, "zeytin bol|bereketli|cok cikti|verim iyi|mahsul iyi")) return "Maşallah" + suffix() + ", bereketli olsun! Eleğe girdikçe söyle, ben yazayım.";
+        if (has(s, "cay|kahve")) return "Afiyet olsun" + suffix() + "! Ben içemem ama sana bir bardak çay iyi gelir.";
         if (s.matches("(selam|merhaba|selamun aleykum|selamunaleykum|hey|alo)( .*)?")) {
             String n = call().isEmpty() ? "" : " " + call();
             String r = s.startsWith("selamun") ? "Aleykümselam" + n + "! Buyur, dinliyorum." : pick("Merhaba" + n + "! Buyur, ne yapalım?", "Selam" + n + "! Dinliyorum.");
@@ -183,18 +191,43 @@ public final class AssistantPersona {
 
     /** "120 kilo 45 liradan kaç eder", "300 çarpı 40", "1000 bölü 8": hesap; değilse null. */
     static String calc(String s) {
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
-                "(\\d+(?:[.,]\\d+)?)\\s*(?:kilo|kg)?\\s*(?:x|carpi|kere|kez)\\s*(\\d+(?:[.,]\\d+)?)").matcher(s);
-        if (m.find()) return "Hesapladım: " + fmt(num(m.group(1)) * num(m.group(2))) + ".";
-        m = java.util.regex.Pattern.compile("(\\d+(?:[.,]\\d+)?)\\s*(?:kilo|kg)\\s*(\\d+(?:[.,]\\d+)?)\\s*(?:lira|tl)(?:dan|den|tan|ten)?\\b").matcher(s);
-        if (m.find() && s.matches(".*\\b(kac|eder|tutar|yapar|ne kadar|hesapla)\\b.*")) {
-            double kg = num(m.group(1)), price = num(m.group(2));
-            return fmt(kg) + " kilo, kilosu " + fmt(price) + " liradan " + fmt(kg * price) + " lira eder.";
+        // Sayılar ElekVoiceEntry.number ile okunur: "50.000" binlik ayraçlı (50 bin), "12,5" ondalık, "elli bin" yazıyla.
+        String[] t = s.split(" ");
+        java.util.List<Double> nums = new java.util.ArrayList<>();
+        java.util.List<String> after = new java.util.ArrayList<>();
+        java.util.List<Integer> at = new java.util.ArrayList<>();
+        for (int i = 0; i < t.length; i++) {
+            int[] end = new int[1];
+            double v = ElekVoiceEntry.number(t, i, end);
+            if (Double.isNaN(v)) continue;
+            nums.add(v); at.add(i); after.add(end[0] < t.length ? t[end[0]] : "");
+            i = end[0] - 1;
         }
-        m = java.util.regex.Pattern.compile("(\\d+(?:[.,]\\d+)?)\\s*(?:bolu|bölü)\\s*(\\d+(?:[.,]\\d+)?)").matcher(s);
-        if (m.find() && num(m.group(2)) != 0) return "Hesapladım: " + fmt(num(m.group(1)) / num(m.group(2))) + ".";
-        m = java.util.regex.Pattern.compile("(\\d+(?:[.,]\\d+)?)\\s*(?:arti|artı)\\s*(\\d+(?:[.,]\\d+)?)").matcher(s);
-        if (m.find()) return "Hesapladım: " + fmt(num(m.group(1)) + num(m.group(2))) + ".";
+        if (nums.size() < 2) return null;
+        // İşleç: iki sayı arasında
+        String between = String.join(" ", java.util.Arrays.copyOfRange(t, Math.min(t.length, at.get(0) + 1), at.get(1)));
+        double a = nums.get(0), b = nums.get(1);
+        String op = between.matches(".*\\b(x|carpi|kere|kez|ile carp\\p{L}*)\\b.*") ? "*"
+                : between.matches(".*\\b(bolu|bol)\\b.*") ? "/"
+                : between.matches(".*\\b(arti|ile topla\\p{L}*|daha)\\b.*") ? "+"
+                : between.matches(".*\\b(eksi|cikar\\p{L}*)\\b.*") ? "-" : "";
+        if (!op.isEmpty()) {
+            if (op.equals("/") && b == 0) return "Sıfıra bölemem, hehe!";
+            double r = op.equals("*") ? a * b : op.equals("/") ? a / b : op.equals("+") ? a + b : a - b;
+            return "Hesapladım: " + fmt(a) + (op.equals("*") ? " çarpı " : op.equals("/") ? " bölü " : op.equals("+") ? " artı " : " eksi ")
+                    + fmt(b) + ", " + fmt(r) + " eder.";
+        }
+        // "120 kilo 45 liradan kaç eder"
+        if (after.get(0).matches("(kilo\\p{L}*|kg)") && after.get(1).matches("(lira\\p{L}*|tl\\p{L}*)")
+                && s.matches(".*\\b(kac|eder|tutar|yapar|ne kadar|hesapla\\p{L}*)\\b.*")) {
+            return fmt(a) + " kilo, kilosu " + fmt(b) + " liradan " + fmt(a * b) + " lira eder.";
+        }
+        // "5000'in yüzde 10'u"
+        if (s.matches(".*\\byuzde\\b.*") && s.matches(".*\\b(kac|eder|ne kadar|hesapla\\p{L}*|u|i|si|su)\\b.*")) {
+            boolean pctFirst = between.isEmpty() && t[Math.max(0, at.get(0) - 1)].equals("yuzde");
+            double pct = pctFirst ? a : b, base = pctFirst ? b : a;
+            return fmt(base) + " liranın yüzde " + fmt(pct) + "'si " + fmt(base * pct / 100) + " eder.";
+        }
         return null;
     }
     private static double num(String v) { return Double.parseDouble(v.replace(',', '.')); }

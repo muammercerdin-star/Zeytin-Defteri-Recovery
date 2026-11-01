@@ -140,11 +140,11 @@ public final class ZeytinAssistantController {
         dialog.setCanceledOnTouchOutside(false);
         dialog.setOnDismissListener(d->releasePanel());dialog.show();root.requestFocus();
         // Alt menüdeki asistan düğmesi büyüyerek küreye dönüşür (aşağıdan, küçükten).
-        if(orb!=null){orb.setScaleX(.4f);orb.setScaleY(.4f);orb.setTranslationY(dp(110));orb.setAlpha(.6f);
+        if(orb!=null){orb.setScaleX(.45f);orb.setScaleY(.45f);orb.setTranslationY(0);orb.setAlpha(.7f);
             orb.animate().scaleX(1f).scaleY(1f).translationY(0).alpha(1f).setDuration(420).setInterpolator(new android.view.animation.OvershootInterpolator(1.1f)).start();}
         Window window=dialog.getWindow();if(window!=null){
             window.setBackgroundDrawableResource(android.R.color.transparent);window.setGravity(Gravity.BOTTOM);window.setLayout(getPanelWidth(),-2);
-            WindowManager.LayoutParams wp=window.getAttributes();wp.y=dp(70);wp.dimAmount=.72f;window.setAttributes(wp);
+            WindowManager.LayoutParams wp=window.getAttributes();wp.y=0;wp.dimAmount=.72f;window.setAttributes(wp);
             window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
             // Alt menüdeki küreye dokunulabilsin (dinlemeyi bitirmek için).
             window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
@@ -203,7 +203,7 @@ public final class ZeytinAssistantController {
 
     private View buildPanel(){
         // Çerçevesiz: koyulaşmış ekranın üstünde yüzen yeşil küre (yapay zekâ sesli asistanları gibi); kart yok.
-        LinearLayout root=column();root.setPadding(dp(18),dp(6),dp(18),dp(18));root.setFocusableInTouchMode(true);
+        LinearLayout root=column();root.setPadding(dp(18),dp(6),dp(18),0);root.setFocusableInTouchMode(true);
         root.setBackground(null);
 
         // Üstte yalnız iki küçük yuvarlak: yazarak sor ve kapat. Küre en altta, alt menüdeki asistan düğmesinin üstünde.
@@ -287,7 +287,8 @@ public final class ZeytinAssistantController {
 
         // Durum yazısı ve küre en altta: alt menüdeki asistan düğmesi büyüyüp bu küreye dönüşür.
         root.addView(headBox,margins(-1,-2,dp(14),0));
-        LinearLayout.LayoutParams op=new LinearLayout.LayoutParams(dp(150),dp(150));op.gravity=Gravity.CENTER_HORIZONTAL;op.topMargin=dp(4);
+        // Küre tam alt menüdeki asistan düğmesinin yerinde: düğme büyüyüp küre olur (merkezi düğmenin merkeziyle aynı hizada).
+        LinearLayout.LayoutParams op=new LinearLayout.LayoutParams(dp(128),dp(128));op.gravity=Gravity.CENTER_HORIZONTAL;op.topMargin=dp(6);op.bottomMargin=dp(-8);
         root.addView(orb,op);
 
         LinearLayout foot=row();
