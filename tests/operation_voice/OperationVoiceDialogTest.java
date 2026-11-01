@@ -44,7 +44,42 @@ public class OperationVoiceDialogTest {
         r = s3.handle("masraf yok");
         check(r.speech.equals("Dere Bahçe, bugün gübre, 18 kilo. Kaydedeyim mi?"), "masraf yok: " + r.speech);
         r = s3.handle("hayır");
-        check(r.action == OperationVoiceDialog.Action.OPEN_FORM, "hayır → form açılır, kaydetmez");
+        check(r.action == OperationVoiceDialog.Action.ASK && r.speech.startsWith("Neyi düzelteyim?"), "hayır → önce neyin düzeleceği sorulur, kaydetmez: " + r.speech);
+        r = s3.handle("hayır");
+        check(r.action == OperationVoiceDialog.Action.OPEN_FORM, "ikinci hayır → form açılır, kaydetmez");
+
+        // Sesle düzeltme (kullanıcının örneği): yalnız söylenen alan değişir
+        java.util.List<String> GG = Arrays.asList("Girelli", "Kuyu dibi");
+        OperationVoiceDialog f = new OperationVoiceDialog(OperationVoiceEntry.parse("Dün Girelli'ye üç saat su verdik, elektrik de 350 lira."), GG, 0);
+        r = f.start();
+        check(r.speech.equals("Kolay gelsin! Girelli, dün sulama, 3 saat, 350 lira. Kaydedeyim mi?"), "örnek cümle: " + r.speech);
+        r = f.handle("350 değil, 250 olacak");
+        check(r.speech.equals("Düzelttim. Girelli, dün sulama, 3 saat, 250 lira. Kaydedeyim mi?") && f.entry.quantity == 3, "yalnız tutar: " + r.speech);
+        r = f.handle("dün değil bugün");
+        check(f.entry.dayOffset == 0 && f.entry.cost == 250, "dün değil bugün");
+        r = f.handle("Girelli değil Kuyu dibi");
+        check(f.garden == 1, "bahçe düzeltme: " + r.speech);
+        r = f.handle("3 saat değil 4");
+        check(f.entry.quantity == 4 && f.entry.unit.equals("saat") && f.entry.cost == 250, "miktar düzeltme");
+        r = f.handle("evet");
+        check(r.action == OperationVoiceDialog.Action.SAVE, "düzeltmeden sonra evet → kaydeder");
+        // "250 olacak": hangisi belli değil → sorar
+        OperationVoiceDialog f2 = new OperationVoiceDialog(OperationVoiceEntry.parse("Dün Girelliyi ilaçladık 2 litre 2000 tuttu"), GG, 0);
+        f2.start(); f2.handle("Bakır");
+        r = f2.handle("500 olacak");
+        check(r.speech.equals("500 neyin yerine? Tutar mı, miktar mı?") && f2.entry.cost == 2000, "belirsiz sayı sorulur: " + r.speech);
+        r = f2.handle("tutar");
+        check(f2.entry.cost == 500 && f2.entry.quantity == 2, "tutar seçildi");
+        // tür düzeltme: eski miktar silinir, yeniden sorulur
+        OperationVoiceDialog f3 = new OperationVoiceDialog(OperationVoiceEntry.parse("Dün Girelli'de sulama yaptık 2 saat elektrik 200"), GG, 0);
+        f3.start();
+        r = f3.handle("sulama değil gübre");
+        check(r.speech.equals("Tamam, gübre olarak düzelttim. Hangi gübreyi attın?") && f3.entry.quantity == 0, "tür düzeltme: " + r.speech);
+        // tutar sorusuna "350 değil 250" → 250
+        OperationVoiceDialog f4 = new OperationVoiceDialog(OperationVoiceEntry.parse("Bugün Girelli'yi suladım 2 saat"), GG, 0);
+        f4.start();
+        f4.handle("350 değil 250");
+        check(f4.entry.cost == 250, "tutar sorusunda düzeltme: " + f4.entry.cost);
 
         // Tek bahçe: sormaz; anlaşılmayan bahçe yeniden sorulur
         OperationVoiceDialog s4 = new OperationVoiceDialog(OperationVoiceEntry.parse("Bugün 40 ağaç budadım"), Arrays.asList("Girelli"), -1);

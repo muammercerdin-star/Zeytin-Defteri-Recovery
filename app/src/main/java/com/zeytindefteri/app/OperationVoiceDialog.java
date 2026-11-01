@@ -27,6 +27,10 @@ public final class OperationVoiceDialog {
     public String what = "";
     private Step step;
     private boolean askedWhat, askedQuantity, askedCost;
+    /** Onayda "hayır" kaç kez dendi (ilkinde neyin düzeleceği sorulur, ikincisinde form açılır). */
+    private int refusals;
+    /** "250 olacak" denip miktar mı tutar mı belli değilse bekleyen değer. */
+    private double pendingValue = -1;
 
     /** gardens: bahçe adları; gardenIndex: cümlede adı geçen bahçe (yoksa -1). Tek bahçe varsa o seçilir. */
     public OperationVoiceDialog(OperationVoiceEntry entry, List<String> gardens, int gardenIndex) {
@@ -77,7 +81,7 @@ public final class OperationVoiceDialog {
             case QUANTITY: {
                 askedQuantity = true;
                 if (!skip(s)) {
-                    OperationVoiceEntry extra = OperationVoiceEntry.parseAnswer(raw);
+                    OperationVoiceEntry extra = OperationVoiceEntry.parseAnswer(afterNot(raw));
                     if (extra.quantity <= 0 && extra.cost <= 0) return ask("Sayıyı anlayamadım. " + question(Step.QUANTITY) + " Bilmiyorsan geç de.");
                     if (extra.quantity > 0) { entry.quantity = extra.quantity; entry.unit = extra.unit.isEmpty() ? defaultUnit() : extra.unit; }
                     if (extra.cost > 0) entry.cost = extra.cost;
@@ -87,7 +91,7 @@ public final class OperationVoiceDialog {
             case COST: {
                 askedCost = true;
                 if (!skip(s)) {
-                    OperationVoiceEntry extra = OperationVoiceEntry.parseAnswer(raw);
+                    OperationVoiceEntry extra = OperationVoiceEntry.parseAnswer(afterNot(raw));
                     double v = extra.cost > 0 ? extra.cost : extra.quantity;
                     if (v <= 0) return ask("Tutarı anlayamadım. Kaç lira tuttu? Masraf yoksa yok de.");
                     entry.cost = v;
@@ -95,9 +99,21 @@ public final class OperationVoiceDialog {
                 return next();
             }
             case CONFIRM: {
-                if (has(s, "hayir|degil|yanlis|dur|bekle|olmaz|duzelt\\w*")) {
-                    step = Step.DONE;
-                    return new Reply("Tamam, formu açıyorum, oradan düzeltirsin.", Action.OPEN_FORM);
+                if (pendingValue > 0) {
+                    double v = pendingValue; pendingValue = -1;
+                    if (has(s, "tutar\\p{L}*|masraf\\p{L}*|para\\p{L}*|lira\\p{L}*|fiyat\\p{L}*|ucret\\p{L}*")) { entry.cost = v; return fixed(); }
+                    if (has(s, "miktar\\p{L}*|saat\\p{L}*|kilo\\p{L}*|litre\\p{L}*|gram\\p{L}*|sure\\p{L}*|adet\\p{L}*|isci\\p{L}*|kisi\\p{L}*|agac\\p{L}*|dekar\\p{L}*|sefer\\p{L}*|tane\\p{L}*")) {
+                        entry.quantity = v; if (entry.unit.isEmpty()) entry.unit = defaultUnit(); return fixed();
+                    }
+                }
+                Reply fix = correct(raw, s);
+                if (fix != null) return fix;
+                if (has(s, "hayir|degil|yanlis|dur|bekle|olmaz|duzelt\\w*|degistir\\w*")) {
+                    if (++refusals >= 2) {
+                        step = Step.DONE;
+                        return new Reply("Tamam, formu açıyorum, oradan düzeltirsin.", Action.OPEN_FORM);
+                    }
+                    return ask("Neyi düzelteyim? Mesela “350 değil 250 olacak”, “dün değil bugün” de. Elle düzeltmek istersen “formu aç” de.");
                 }
                 if (has(s, "evet|kaydet|tamam|olur|dogru|aynen|he|onayla")) {
                     step = Step.DONE;
@@ -108,6 +124,111 @@ public final class OperationVoiceDialog {
             default: return new Reply("", Action.CANCEL);
         }
     }
+
+    // ===================================================================== SESLE DÜZELTME
+
+    /** Düzeltme sözü: "350 değil, 250 olacak", "tutar 250 olsun", "aslında 4 saat". */
+    private static final String FIX = "degil|olacak|olmali|olcak|olsun|yanlis|duzelt\\w*|degistir\\w*|aslinda|yaz|yap";
+
+    /**
+     * Kayıt okunduktan sonra yalnız söylenen alanı düzeltir (diğerleri aynı kalır), sonra yeniden okur.
+     * Anlaşılmazsa null (çağıran "Neyi düzelteyim?" der).
+     */
+    Reply correct(String raw, String s) {
+        if (!has(s, FIX) && !has(s, "tutar\\p{L}*|masraf\\p{L}*|miktar\\p{L}*|sure\\p{L}*")) return null;
+        String after = ElekVoiceEntry.normalize(afterNot(raw));
+        String before = s.contains(" degil") || s.startsWith("degil") ? s.substring(0, Math.max(0, s.indexOf("degil"))).trim() : "";
+        boolean changed = false;
+
+        // ---- tarih: "dün değil bugün", "evvelsi gün olacak"
+        int day = dayIn(after);
+        if (day != 99 && day != entry.dayOffset) { entry.dayOffset = day; changed = true; }
+
+        // ---- bahçe: "Girelli değil Kuyu dibi"
+        if (gardens != null && gardens.size() > 1) {
+            int g = matchGarden(afterNot(raw).replaceAll("(?iu)\\b(olacak|olmalı|olmali|olsun|yaz|yap|aslında|aslinda|bahçe\\p{L}*)\\b", " "));
+            if (g >= 0 && g != garden) { garden = g; changed = true; }
+        }
+
+        // ---- tür: "sulama değil gübre"
+        int t = OperationVoiceEntry.typeOf(after);
+        if (t >= 0 && t != entry.type && !before.isEmpty() && OperationVoiceEntry.typeOf(before) == entry.type) {
+            // Tür değişince eski miktar ("2 saat") yeni türe uymaz: silinir, yeni türe göre yeniden sorulur.
+            entry.type = t; entry.quantity = 0; entry.unit = ""; what = "";
+            askedQuantity = false; askedWhat = false; refusals = 0;
+            Reply r = next();
+            return ask("Tamam, " + type().toLowerCase(TR) + " olarak düzelttim. " + r.speech);
+        }
+
+        // ---- sayı: "350 değil 250", "3 saat değil 4", "tutar 250 olacak", "250 olacak"
+        double oldV = firstNumber(before), newV = firstNumber(after);
+        if (newV > 0) {
+            String unitAfter = unitIn(after), unitBefore = unitIn(before);
+            boolean costWord = has(after, "tutar\\p{L}*|masraf\\p{L}*|para\\p{L}*|fiyat\\p{L}*|ucret\\p{L}*") || unitAfter.equals("lira") || unitBefore.equals("lira");
+            boolean qtyWord = has(after, "miktar\\p{L}*|sure\\p{L}*") || (!unitAfter.isEmpty() && !unitAfter.equals("lira")) || (!unitBefore.isEmpty() && !unitBefore.equals("lira"));
+            if (!costWord && !qtyWord && oldV > 0) {
+                if (same(oldV, entry.cost)) costWord = true;
+                else if (same(oldV, entry.quantity)) qtyWord = true;
+            }
+            if (!costWord && !qtyWord) {
+                if (entry.cost > 0 && entry.quantity <= 0) costWord = true;
+                else if (entry.quantity > 0 && entry.cost <= 0) qtyWord = true;
+            }
+            if (costWord) { if (!same(newV, entry.cost)) { entry.cost = newV; changed = true; } }
+            else if (qtyWord) {
+                if (!same(newV, entry.quantity)) { entry.quantity = newV; changed = true; }
+                if (!unitAfter.isEmpty() && !unitAfter.equals("lira")) entry.unit = unitAfter;
+                else if (!unitBefore.isEmpty() && !unitBefore.equals("lira")) entry.unit = unitBefore;
+                else if (entry.unit.isEmpty()) entry.unit = defaultUnit();
+            } else {
+                pendingValue = newV;
+                return ask(ElekVoiceDialog.num(newV) + " neyin yerine? Tutar mı, miktar mı?");
+            }
+        }
+        return changed ? fixed() : null;
+    }
+
+    private Reply fixed() { refusals = 0; step = Step.CONFIRM; return ask("Düzelttim. " + summary() + " Kaydedeyim mi?"); }
+
+    /** "350 değil, 250 olacak" → "250 olacak"; "değil" yoksa cümlenin kendisi. */
+    static String afterNot(String raw) {
+        if (raw == null) return "";
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?iu)\\bde(ğ|g)il\\b").matcher(raw);
+        int end = -1;
+        while (m.find()) end = m.end();
+        return end >= 0 ? raw.substring(end) : raw;
+    }
+
+    /** Cümledeki gün: 0 bugün, -1 dün, -2 evvelsi gün; yoksa 99. */
+    private static int dayIn(String s) {
+        if (has(s, "evvelsi\\p{L}*|evvelki\\p{L}*|onceki gun|obur gun")) return -2;
+        if (has(s, "dun\\p{L}*")) return -1;
+        if (has(s, "bugun\\p{L}*")) return 0;
+        return 99;
+    }
+
+    private static double firstNumber(String s) {
+        String[] t = s.split(" ");
+        for (int i = 0; i < t.length; i++) {
+            int[] end = new int[1];
+            double v = ElekVoiceEntry.number(t, i, end);
+            if (!Double.isNaN(v) && v > 0) return v;
+        }
+        return -1;
+    }
+
+    /** Sayının hemen ardındaki birim ("4 saat" → "saat", "250 lira" → "lira"). */
+    private static String unitIn(String s) {
+        String[] t = s.split(" ");
+        for (int i = 0; i < t.length; i++) {
+            int[] end = new int[1];
+            double v = ElekVoiceEntry.number(t, i, end);
+            if (!Double.isNaN(v) && v > 0) return end[0] < t.length ? OperationVoiceEntry.unit(t[end[0]]) : "";
+        }
+        return "";
+    }
+
+    private static boolean same(double a, double b) { return b > 0 && Math.abs(a - b) < 0.001; }
 
     /** Sıradaki eksik soru; hepsi tamamsa okuma + onay. */
     private Reply next() {

@@ -57,6 +57,7 @@ public final class OperationVoiceEntry {
                 int[] end = new int[1];
                 double v = ElekVoiceEntry.number(t, i, end);
                 if (Double.isNaN(v) || v <= 0) continue;
+                if (e.cost > 0 && Math.abs(v - e.cost) < 0.001) { i = Math.max(i, end[0] - 1); continue; }   // "500 verdik" tutar oldu
                 String next = end[0] < t.length ? t[end[0]] : "";
                 if (!unit(next).equals("lira")) { e.quantity = v; e.unit = unit(next); break; }
                 i = Math.max(i, end[0] - 1);
@@ -67,7 +68,7 @@ public final class OperationVoiceEntry {
 
     /** Tür: söz kökünden. Sıra önemli: "ilaç" sulamadan önce ("ilaçlı su"), "mazot" nakliyeden önce. */
     static int typeOf(String s) {
-        if (s.matches(".*\\b(ilac\\p{L}*|ilacla\\p{L}*|spreyle\\p{L}*)\\b.*")) return 2;
+        if (s.matches(".*\\b(ilac\\p{L}*|ilacla\\p{L}*|spreyle\\p{L}*|kukurt\\p{L}*|bordo bulamac\\p{L}*|bakir sulfat\\p{L}*|bakirli ilac\\p{L}*)\\b.*")) return 2;
         if (s.matches(".*\\b(gubre\\p{L}*)\\b.*")) return 1;
         if (s.matches(".*\\b(sula\\p{L}*|damlama\\p{L}*)\\b.*") || s.matches(".*\\bsu (verdim|verdik|saldim|saldik|actim|actik|verildi)\\b.*")) return 0;
         if (s.matches(".*\\b(buda\\p{L}*)\\b.*")) return 3;
@@ -89,8 +90,22 @@ public final class OperationVoiceEntry {
             String u = unit(next);
             if (u.equals("lira")) { if (e.cost <= 0) e.cost = v; }
             else if (!u.isEmpty() && e.quantity <= 0) { e.quantity = v; e.unit = u; }
+            else if (u.isEmpty() && e.cost <= 0 && costBySpeech(t, i, end[0])) e.cost = v;   // "elektrik 350 tuttu"
             i = Math.max(i, end[0] - 1);
         }
+    }
+
+    /** "Lira" denmeden söylenen tutar: "350 tuttu", "350'ye patladı", "elektrik de 350", "mazot parası 500". */
+    private static final String COST_VERB = "tuttu|tuttur\\p{L}*|odedim|odedik|odendi|patladi|gitti|harcadim|harcadik|harcandi|bayildim|bayildik|saydim|saydik|verdim|verdik|cikti|ettirdi|yedi";
+    private static final String COST_NOUN = "elektrik\\p{L}*|fatura\\p{L}*|masraf\\p{L}*|para\\p{L}*|parasi|ucret\\p{L}*|yevmiye\\p{L}*|tutar\\p{L}*|fiyat\\p{L}*|mazot\\p{L}*|motorin\\p{L}*|benzin\\p{L}*|nakliye\\p{L}*|kira\\p{L}*";
+    private static boolean costBySpeech(String[] t, int start, int end) {
+        String next = end < t.length ? t[end] : "";
+        if (next.matches(COST_VERB)) return true;
+        for (int k = start - 1, seen = 0; k >= 0 && seen < 2; k--, seen++) {
+            if (t[k].matches("de|da|ise|icin")) { seen--; continue; }
+            if (t[k].matches(COST_NOUN)) return true;
+        }
+        return false;
     }
 
     static String unit(String w) {

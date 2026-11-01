@@ -122,6 +122,30 @@ public final class ZeytinAssistantController {
         return persona;
     }
     private void savePersona(){if(persona!=null)personaPrefs().edit().putString("p_"+host.owner(),persona.encode()).apply();}
+    /** Anlamadığı cümleler: yalnız bu telefonda, kullanıcı isterse gösterilir (AssistantMisses). */
+    private void rememberMiss(String raw,String owner){
+        try{
+            android.content.SharedPreferences p=activity.getSharedPreferences("zd_assistant_misses",Context.MODE_PRIVATE);
+            String day=new java.text.SimpleDateFormat("d MMM",new java.util.Locale("tr","TR")).format(new java.util.Date());
+            p.edit().putString("m_"+owner,AssistantMisses.add(p.getString("m_"+owner,""),raw,day)).apply();
+        }catch(RuntimeException ignored){}
+    }
+    private boolean handleMissesCommand(String raw){
+        android.content.SharedPreferences p=activity.getSharedPreferences("zd_assistant_misses",Context.MODE_PRIVATE);
+        String key="m_"+host.owner();
+        if(AssistantMisses.asksClear(raw)){
+            p.edit().remove(key).apply();
+            postDialog(new OperationVoiceDialog.Reply("Tamam, anlamadığım cümleler listesini sildim.",OperationVoiceDialog.Action.ASK),"Zeytin · anlamadıklarım");
+            return true;
+        }
+        if(AssistantMisses.asksShow(raw)){
+            String[] shown=AssistantMisses.show(p.getString(key,""));
+            postDialog(new OperationVoiceDialog.Reply(shown[0],OperationVoiceDialog.Action.ASK),"Zeytin · anlamadıklarım");
+            answer.setTextSize(14);answer.setText(shown[1]);   // okunan kısa söz; ekranda liste
+            return true;
+        }
+        return false;
+    }
 
     public ZeytinAssistantController(Activity activity,Host host){
         this.activity=activity;this.host=host;
@@ -511,6 +535,7 @@ public final class ZeytinAssistantController {
             return;
         }
         if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
+        if(recDialog==null&&handleMissesCommand(raw))return;
         if(recDialog==null){
             String chat=persona().handle(raw);
             if(chat!=null){savePersona();postDialog(new OperationVoiceDialog.Reply(chat,OperationVoiceDialog.Action.ASK),"Zeytin · sohbet");return;}
@@ -602,10 +627,12 @@ public final class ZeytinAssistantController {
                     if(ZeytinAssistantHints.chatOnly(raw)){
                         // Konusu olmayan sohbet: soğuk "bilmiyorum + kartlar" yerine dostça cevap, sohbet sürer.
                         final String line=persona().fallback(raw);
+                        rememberMiss(raw,owner);
                         main.post(()->{if(current(token,owner,season,active))postDialog(new OperationVoiceDialog.Reply(line,OperationVoiceDialog.Action.ASK),"Zeytin · sohbet");});
                         return;
                     }
                     ZeytinAssistantHints.Hint hint=ZeytinAssistantHints.hint(raw,named,recorded);
+                    rememberMiss(raw,owner);
                     if(data.unchanged())postHint(token,owner,season,active,hint,recorded);
                     return;
                 }
@@ -954,7 +981,7 @@ public final class ZeytinAssistantController {
         if(!visible())return;
         conversation.nextTurn();
         clearAnswerExtras();
-        lastAnswer=r.speech;answer.setText(r.speech);source.setText(label);
+        lastAnswer=r.speech;answer.setTextSize(17);answer.setText(r.speech);source.setText(label);
         lastCmd=null;lastScope=null;followUps.removeAllViews();
         listenAfterSpeech=r.action==OperationVoiceDialog.Action.ASK;
         transition(State.ANSWERING,ttsReady?"Soruyorum…":"Cevap hazır");haptic();

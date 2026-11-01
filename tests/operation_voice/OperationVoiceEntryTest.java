@@ -42,6 +42,17 @@ public class OperationVoiceEntryTest {
         e = p("Bugün iki yüz ağaç budadık");
         check(e.quantity == 200 && e.unit.equals("ağaç"), "yazıyla iki yüz ağaç");
         check(p("Bugün Girelli'yi ilaçladım 500 ml 300 lira").summary().equals("ilaçlama, bugün, 500 ml, 300 lira"), "okuma");
+        // "lira" denmeden tutar
+        e = p("Dün Girelliye 3 saat su saldık elektrik 350 tuttu");
+        check(e != null && e.type == 0 && e.quantity == 3 && e.cost == 350, "350 tuttu");
+        e = p("Bugün gübre serptik 50 kilo 1500'e patladı");
+        check(e != null && e.type == 1 && e.quantity == 50 && e.cost == 1500, "1500'e patladı");
+        e = p("Dün mazot aldık mazot parası 500");
+        check(e != null && e.cost == 500, "mazot parası 500");
+        e = p("Bugün kükürt attık");
+        check(e != null && e.type == 2, "kükürt → ilaçlama");
+        OperationVoiceEntry a2 = OperationVoiceEntry.parseAnswer("500 verdik");
+        check(a2.cost == 500 && a2.quantity == 0, "500 verdik → tutar, miktar değil");
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " OperationVoiceEntry");
         if (bad > 0) System.exit(1);
     }
