@@ -18,8 +18,11 @@ check('ZeytinAssistantText.source(' in post, 'cevap kaynağı etiketi yok')
 check('ZeytinAssistantText.followUps(' in post, 'hazır sorular yok')
 check('tts.speak(lastAnswer' in c, 'sesli okuma ekrandaki metni okumuyor')
 check('LANG_MISSING_DATA' in c and 'ttsLanguageMissing' in c and 'openTtsSettings' in c, 'Türkçe ses paketi uyarısı yok')
-for t in ['Mikrofon izni gerekiyor', 'Mikrofon izni kapalı', 'Seni tam anlayamadım', 'Ses tanıma bağlantısı kurulamadı']:
+for t in ['Mikrofon izni gerekiyor', 'Mikrofon izni kapalı', 'Ses tanıma bağlantısı kurulamadı']:
     check(t in c, f'durum kartı yok: {t}')
+# Duyulamayınca kart yok: sohbet sürer (bir kez daha dinler, sonra küre bekler); her cevaptan sonra yeniden dinler.
+check('quietMisses' in c and 'Seni tam anlayamadım' not in c, 'anlaşılamayınca kart çıkmamalı, sessizce yeniden dinlemeli')
+check('listenAfterSpeech=true;   // sohbet sürer' in c, 'cevaptan sonra sohbet sürmüyor')
 check('"Durdur"' in c and '"Yaz"' in c and '"Sesle sor"' in c and '"Tekrar sor"' in c, 'tasarımdaki düğmeler eksik')
 check('FLAG_NOT_TOUCH_MODAL' in c, 'alt menüdeki küreye dokunulamaz')
 check('new Button(' not in c and 'AlertDialog' not in c and 'Color.WHITE' not in c and 'panelButton' not in c,

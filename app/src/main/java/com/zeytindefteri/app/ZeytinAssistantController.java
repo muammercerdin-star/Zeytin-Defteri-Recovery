@@ -108,6 +108,10 @@ public final class ZeytinAssistantController {
     private final int bg,surface,card,border,text,soft,muted,green,greenSoft,warning,warningSoft,danger;
     /** Yüzen yeşil küre: dinlerken sesle büyür, düşünürken döner, konuşurken nefes alır. */
     private ElekVoiceOrbView orb;
+    private LinearLayout headBox,footBox;
+    /** Üst üste duyulamayan dinleme sayısı: iki kez olunca küre bekler (kart göstermeden). */
+    private int quietMisses;
+    private boolean closeAfterSpeech;
 
     public ZeytinAssistantController(Activity activity,Host host){
         this.activity=activity;this.host=host;
@@ -125,9 +129,12 @@ public final class ZeytinAssistantController {
         dialog=new Dialog(activity);dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);dialog.setContentView(root);
         dialog.setCanceledOnTouchOutside(false);
         dialog.setOnDismissListener(d->releasePanel());dialog.show();root.requestFocus();
+        // Alt menüdeki asistan düğmesi büyüyerek küreye dönüşür (aşağıdan, küçükten).
+        if(orb!=null){orb.setScaleX(.4f);orb.setScaleY(.4f);orb.setTranslationY(dp(110));orb.setAlpha(.6f);
+            orb.animate().scaleX(1f).scaleY(1f).translationY(0).alpha(1f).setDuration(420).setInterpolator(new android.view.animation.OvershootInterpolator(1.1f)).start();}
         Window window=dialog.getWindow();if(window!=null){
             window.setBackgroundDrawableResource(android.R.color.transparent);window.setGravity(Gravity.BOTTOM);window.setLayout(getPanelWidth(),-2);
-            WindowManager.LayoutParams wp=window.getAttributes();wp.y=dp(88);wp.dimAmount=.72f;window.setAttributes(wp);
+            WindowManager.LayoutParams wp=window.getAttributes();wp.y=dp(70);wp.dimAmount=.72f;window.setAttributes(wp);
             window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
             // Alt menüdeki küreye dokunulabilsin (dinlemeyi bitirmek için).
             window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
@@ -151,7 +158,9 @@ public final class ZeytinAssistantController {
                 });}
                 public void onStart(String id){update(id,true,"Cevabı okuyorum…");}
                 public void onDone(String id){update(id,false,"Cevap hazır");
-                    main.post(()->{if(listenAfterSpeech&&panel==session&&visible()&&id.equals(speakingId)){listenAfterSpeech=false;listen();}});}
+                    main.post(()->{
+                        if(closeAfterSpeech&&panel==session&&visible()){closeAfterSpeech=false;if(dialog!=null)dialog.dismiss();return;}
+                        if(listenAfterSpeech&&panel==session&&visible()&&id.equals(speakingId)){listenAfterSpeech=false;listen();}});}
                 public void onError(String id){update(id,false,"Sesli okuma kullanılamadı; yazılı cevap hazır");}
                 public void onStop(String id,boolean interrupted){update(id,false,"Cevap hazır");}
             });
@@ -185,23 +194,24 @@ public final class ZeytinAssistantController {
         LinearLayout root=column();root.setPadding(dp(18),dp(6),dp(18),dp(18));root.setFocusableInTouchMode(true);
         root.setBackground(null);
 
-        android.widget.FrameLayout top=new android.widget.FrameLayout(activity);
+        // Üstte yalnız iki küçük yuvarlak: yazarak sor ve kapat. Küre en altta, alt menüdeki asistan düğmesinin üstünde.
+        LinearLayout topBar=row();topBar.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);
+        ImageView keys=icon(R.drawable.ic_op_keyboard,text);keys.setPadding(dp(10),dp(10),dp(10),dp(10));keys.setBackground(round(0x33FFFFFF,0x00000000,20));
+        keys.setContentDescription("Yazarak sor");keys.setOnClickListener(v->secondaryAction());
+        LinearLayout.LayoutParams kp=new LinearLayout.LayoutParams(dp(40),dp(40));kp.rightMargin=dp(10);topBar.addView(keys,kp);
+        ImageView close=icon(R.drawable.ic_op_close,text);close.setPadding(dp(10),dp(10),dp(10),dp(10));close.setBackground(round(0x33FFFFFF,0x00000000,20));
+        close.setContentDescription("Asistanı kapat");close.setOnClickListener(v->{if(dialog!=null)dialog.dismiss();});
+        topBar.addView(close,new LinearLayout.LayoutParams(dp(40),dp(40)));
+        root.addView(topBar,new LinearLayout.LayoutParams(-1,-2));
+
         orb=new ElekVoiceOrbView(activity);
         orb.setClickable(true);orb.setContentDescription("Zeytin Asistanı. Dinlemek ya da bitirmek için dokun.");
         orb.setOnClickListener(v->orbTap());
-        android.widget.FrameLayout.LayoutParams op=new android.widget.FrameLayout.LayoutParams(dp(170),dp(170));op.gravity=Gravity.CENTER_HORIZONTAL;
-        top.addView(orb,op);
-        ImageView close=icon(R.drawable.ic_op_close,text);close.setPadding(dp(10),dp(10),dp(10),dp(10));close.setBackground(round(0x33FFFFFF,0x00000000,20));
-        close.setContentDescription("Asistanı kapat");close.setOnClickListener(v->{if(dialog!=null)dialog.dismiss();});
-        android.widget.FrameLayout.LayoutParams cp=new android.widget.FrameLayout.LayoutParams(dp(40),dp(40));cp.gravity=Gravity.TOP|Gravity.END;
-        top.addView(close,cp);
-        root.addView(top,new LinearLayout.LayoutParams(-1,-2));
 
-        LinearLayout head=column();head.setGravity(Gravity.CENTER_HORIZONTAL);
+        LinearLayout head=column();head.setGravity(Gravity.CENTER_HORIZONTAL);headBox=head;
         dot=new View(activity);dot.setVisibility(View.GONE);head.addView(dot,new LinearLayout.LayoutParams(dp(1),dp(1)));
         title=label("Zeytin Asistanı",20,text,true);title.setGravity(Gravity.CENTER);head.addView(title,new LinearLayout.LayoutParams(-1,-2));
         state=label("",13,soft,false);state.setGravity(Gravity.CENTER);state.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);head.addView(state,new LinearLayout.LayoutParams(-1,-2));
-        root.addView(head,margins(-1,-2,dp(2),0));
 
         wave=new AssistantVoiceWaveView(activity);root.addView(wave,margins(-1,dp(48),dp(12),0));
         heard=label("",20,text,true);heard.setGravity(Gravity.CENTER);heard.setLineSpacing(dp(2),1f);heard.setMaxLines(4);root.addView(heard,margins(-1,-2,dp(8),0));
@@ -263,6 +273,11 @@ public final class ZeytinAssistantController {
         followUps=row();followScroll=new HorizontalScrollView(activity);followScroll.setHorizontalScrollBarEnabled(false);followScroll.addView(followUps);
         root.addView(followScroll,margins(-1,-2,dp(12),0));
 
+        // Durum yazısı ve küre en altta: alt menüdeki asistan düğmesi büyüyüp bu küreye dönüşür.
+        root.addView(headBox,margins(-1,-2,dp(14),0));
+        LinearLayout.LayoutParams op=new LinearLayout.LayoutParams(dp(150),dp(150));op.gravity=Gravity.CENTER_HORIZONTAL;op.topMargin=dp(4);
+        root.addView(orb,op);
+
         LinearLayout foot=row();
         speaker=icon(R.drawable.ic_op_speaker,text);speaker.setPadding(dp(14),dp(14),dp(14),dp(14));speaker.setBackground(round(0x33FFFFFF,0x00000000,24));
         speaker.setOnClickListener(v->toggleSpeech());
@@ -271,6 +286,7 @@ public final class ZeytinAssistantController {
         LinearLayout.LayoutParams prl=new LinearLayout.LayoutParams(0,dp(48),1);prl.rightMargin=dp(10);foot.addView(primary,prl);
         secondary=button("Yaz",R.drawable.ic_op_keyboard,false);secondary.setOnClickListener(v->secondaryAction());
         foot.addView(secondary,new LinearLayout.LayoutParams(dp(104),dp(48)));
+        footBox=foot;
         root.addView(foot,margins(-1,-2,dp(16),0));
         return root;
     }
@@ -311,12 +327,14 @@ public final class ZeytinAssistantController {
         dot.setBackground(round(tone,tone,5));
         wave.setVisibility(View.GONE);wave.listening(listening && !typing);
         if(orb!=null)orb.setVisibility(typing?View.GONE:View.VISIBLE);   // yazarken klavyeye yer kalsın
+        if(footBox!=null)footBox.setVisibility(typing?View.VISIBLE:View.GONE);   // sesli sohbette düğme yok: küreye dokun
         if(orb!=null)orb.mode(typing?ElekVoiceOrbView.Mode.IDLE:listening?ElekVoiceOrbView.Mode.LISTENING:processing?ElekVoiceOrbView.Mode.THINKING
                 :answering&&speaking?ElekVoiceOrbView.Mode.SPEAKING:ElekVoiceOrbView.Mode.IDLE);
         heard.setVisibility(listening && !typing && heard.length()>0?View.VISIBLE:View.GONE);
         question.setVisibility(!listening && !typing && lastQuestion.length()>0 && next!=State.ERROR?View.VISIBLE:View.GONE);
         progress.setVisibility(processing?View.VISIBLE:View.GONE);
-        answerCard.setVisibility(answering && !typing && lastAnswer.length()>0?View.VISIBLE:View.GONE);
+        // Son cevap, küre beklerken de ekranda kalır (sohbetin akışı kaybolmasın).
+        answerCard.setVisibility((answering || next==State.IDLE) && !typing && lastAnswer.length()>0?View.VISIBLE:View.GONE);
         if(next!=State.ERROR || typing)problemCard.setVisibility(View.GONE);
         typed.setVisibility(typing?View.VISIBLE:View.GONE);
         tagsBox.setVisibility(answering && !typing && !hinting && tagsRow.getChildCount()>0?View.VISIBLE:View.GONE);
@@ -351,9 +369,9 @@ public final class ZeytinAssistantController {
     private void problem(Fault fault){
         switch(fault){
             case NO_MATCH: case TIMEOUT:
-                showProblem(fault==Fault.TIMEOUT?"Seni duyamadım":"Seni tam anlayamadım",
-                        "Şöyle sorabilirsin: “Son sulama ne zaman?”, “Bu sezon masrafım kaç?”, “Elek aç”.",
-                        "Tekrar sor",this::listen,true,"Örnekler",()->setTyping(true));return;
+                // Sohbet kesilmesin: kart göstermeden bir kez daha dinler; yine olmazsa küre bekler (dokununca dinler).
+                if(quietMisses<1){quietMisses++;transition(State.LISTENING,"Dinliyorum…");main.postDelayed(()->{if(visible())listen();},400);return;}
+                quietMisses=0;stopTts();transition(State.IDLE,lastAnswer.isEmpty()?"Konuşmak için küreye dokun":"Devam etmek için küreye dokun");return;
             case NETWORK:
                 showProblem("Ses tanıma bağlantısı kurulamadı","İnternet bağlantını kontrol et. Kayıtlarınla ilgili soruları yazarak sormaya devam edebilirsin.",
                         "Tekrar dene",this::listen,false,"Yazarak sor",()->setTyping(true));return;
@@ -471,7 +489,14 @@ public final class ZeytinAssistantController {
     private void submit(String raw){
         if(!visible()||raw.trim().isEmpty())return;
         typing=false;hideKeyboard();input.setText("");
+        quietMisses=0;
         lastQuestion=raw.trim();lastRaw=raw;question.setText(lastQuestion);heard.setText("");
+        if(opDialog==null&&recDialog==null&&ElekVoiceEntry.normalize(raw).matches("(tesekkur\\p{L}*|sag ol\\p{L}*|sagol\\p{L}*|tamam bu kadar|bu kadar|yeter|kapat|gorusuruz|hosca kal|eyvallah)( .*)?")){
+            closeAfterSpeech=true;
+            postDialog(new OperationVoiceDialog.Reply("Rica ederim, kolay gelsin.",OperationVoiceDialog.Action.CANCEL),"Zeytin Asistanı");
+            if(!ttsReady||tts==null)main.postDelayed(()->{if(visible()&&dialog!=null)dialog.dismiss();},1500);
+            return;
+        }
         if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
         if(recDialog!=null&&!recDialog.done()){answerRecord(raw);return;}
         run(raw,ZeytinAssistantCommand.parse(raw),null);
@@ -679,7 +704,9 @@ public final class ZeytinAssistantController {
             if(scope!=null)renderTags(ZeytinAssistantHints.understood(cmd,gardenName,all,scope.gardens.size()),cmd);
             followUps.removeAllViews();
             for(String q:ZeytinAssistantText.followUps(cmd.kind,lastQuestion))followUps.addView(chip(q));
+            listenAfterSpeech=true;   // sohbet sürer: cevaptan sonra yeniden dinler
             transition(State.ANSWERING,ttsReady?"Cevabı okuyorum…":"Cevap hazır");haptic();speak();
+            if(!ttsReady||tts==null){listenAfterSpeech=false;main.postDelayed(()->{if(visible())listen();},2500);}
         });
     }
     private void postHint(int token,String owner,int season,long active,ZeytinAssistantHints.Hint hint,Set<ZeytinAssistantHints.Topic> recorded){
