@@ -112,6 +112,16 @@ public final class ZeytinAssistantController {
     /** Üst üste duyulamayan dinleme sayısı: iki kez olunca küre bekler (kart göstermeden). */
     private int quietMisses;
     private boolean closeAfterSpeech;
+    /** Sohbet kişiliği (ad, yaş, hitap): yalnız bu telefonda saklanır. */
+    private AssistantPersona persona;
+    private int answersThisPanel;
+
+    private android.content.SharedPreferences personaPrefs(){return activity.getSharedPreferences("zd_assistant_persona",Context.MODE_PRIVATE);}
+    private AssistantPersona persona(){
+        if(persona==null)persona=AssistantPersona.decode(personaPrefs().getString("p_"+host.owner(),""));
+        return persona;
+    }
+    private void savePersona(){if(persona!=null)personaPrefs().edit().putString("p_"+host.owner(),persona.encode()).apply();}
 
     public ZeytinAssistantController(Activity activity,Host host){
         this.activity=activity;this.host=host;
@@ -148,7 +158,8 @@ public final class ZeytinAssistantController {
             ttsReady=status==TextToSpeech.SUCCESS && language>=0;
             // Motor çalışıyor ama Türkçe ses yok: kullanıcıya ses paketini kurmasını öner (sessizce susmak yerine).
             ttsLanguageMissing=status==TextToSpeech.SUCCESS && (language==TextToSpeech.LANG_MISSING_DATA || language==TextToSpeech.LANG_NOT_SUPPORTED);
-            if(conversation.state()==State.ANSWERING){refreshTtsNotice();speak();}
+            if(conversation.state()==State.ANSWERING){refreshTtsNotice();speak();
+                if(!ttsReady&&listenAfterSpeech){listenAfterSpeech=false;main.postDelayed(()->{if(visible())listen();},1500);}}
         }));
             tts.setOnUtteranceProgressListener(new UtteranceProgressListener(){
                 private void update(String id,boolean on,String message){main.post(()->{
@@ -166,8 +177,9 @@ public final class ZeytinAssistantController {
             });
         }catch(Exception e){ttsReady=false;}
         main.post(()->{if(panel==session && visible()){
-            String q=pendingQuestion;pendingQuestion=null;
-            if(q!=null)submit(q);else listen();
+            String q=pendingQuestion;pendingQuestion=null;answersThisPanel=0;
+            if(q!=null)submit(q);
+            else postDialog(new OperationVoiceDialog.Reply(persona().greeting(AssistantPersona.hourNow()),OperationVoiceDialog.Action.ASK),"Zeytin");
         }});
     }
     /** Ana sayfadaki hazır sorular için: paneli açar ve soruyu mikrofon açmadan yazılı gönderir. */
@@ -498,6 +510,10 @@ public final class ZeytinAssistantController {
             return;
         }
         if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
+        if(recDialog==null){
+            String chat=persona().handle(raw);
+            if(chat!=null){savePersona();postDialog(new OperationVoiceDialog.Reply(chat,OperationVoiceDialog.Action.ASK),"Zeytin · sohbet");return;}
+        }
         if(recDialog!=null&&!recDialog.done()){answerRecord(raw);return;}
         run(raw,ZeytinAssistantCommand.parse(raw),null);
     }
@@ -695,7 +711,9 @@ public final class ZeytinAssistantController {
     /** @param scope kayıtlardan hesaplanmış cevapta dolu: "Anladığım" etiketleri çizilir. Hata cevaplarında null. */
     private void post(int token,String owner,int season,long active,ZeytinAssistantCommand cmd,boolean all,String gardenName,String sourceLabel,String raw,AnswerScope scope){
         // Tarihler ekranda ve sesli okumada aynı okunur biçimde: "1 Ekim (16 gün önce)".
-        final String shown=ZeytinAssistantText.humanDates(raw,System.currentTimeMillis());
+        String intro=++answersThisPanel==2?persona().introduceOnce():"";
+        if(!intro.isEmpty())savePersona();
+        final String shown=ZeytinAssistantText.humanDates(raw,System.currentTimeMillis())+intro;
         main.post(()->{
             if(!current(token,owner,season,active))return;
             clearAnswerExtras();
@@ -909,7 +927,7 @@ public final class ZeytinAssistantController {
                 String date=new java.text.SimpleDateFormat("dd.MM.yyyy",new Locale("tr","TR")).format(c.getTime());
                 long id=host.saveOperation(gid,OperationKinds.TYPES[d.entry.type],date,d.quantityForSave(),d.unitForSave(),d.entry.cost,d.noteForSave());
                 opDialog=null;
-                postDialog(new OperationVoiceDialog.Reply(id>0?r.speech:"Kaydedemedim. Formu açıyorum, oradan kaydedersin.",OperationVoiceDialog.Action.SAVE),"Bahçe işi · kaydedildi");
+                postDialog(new OperationVoiceDialog.Reply(id>0?"Kaydettim. "+persona().thanks():"Kaydedemedim. Formu açıyorum, oradan kaydedersin.",OperationVoiceDialog.Action.SAVE),"Bahçe işi · kaydedildi");
                 if(id<=0){final long g=gid;main.postDelayed(()->{if(visible())dialog.dismiss();host.openOperationEntry(g,d.entry);},1500);}
                 break;
             }
@@ -934,7 +952,8 @@ public final class ZeytinAssistantController {
         listenAfterSpeech=r.action==OperationVoiceDialog.Action.ASK;
         transition(State.ANSWERING,ttsReady?"Soruyorum…":"Cevap hazır");haptic();
         if(ttsReady&&tts!=null)speak();
-        else if(listenAfterSpeech){listenAfterSpeech=false;main.postDelayed(()->{if(visible())listen();},1500);}
+        else if(tts==null&&listenAfterSpeech){listenAfterSpeech=false;main.postDelayed(()->{if(visible())listen();},1500);}
+        // tts henüz hazırlanıyorsa: hazır olunca okunur (durum ANSWERING), okuma bitince dinler.
     }
 
     private void speak(){

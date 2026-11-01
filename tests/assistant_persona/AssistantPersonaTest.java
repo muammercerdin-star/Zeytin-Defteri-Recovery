@@ -1,0 +1,52 @@
+package com.zeytindefteri.app;
+
+/** Asistanın sohbet kişiliği: tanışma, hitap, hâl hatır, gülme, fıkra; kayıt/soru cümlelerine karışmaz. */
+public class AssistantPersonaTest {
+    static int n = 0, bad = 0;
+    static void check(boolean ok, String m) { n++; if (!ok) { bad++; System.out.println("FAIL " + m); } }
+    public static void main(String[] a) {
+        AssistantPersona p = new AssistantPersona(new java.util.Random(1));
+        String r = p.handle("Merhaba");
+        check(r.endsWith("Ben Zeytin. Senin adın ne?") && p.stage == AssistantPersona.Stage.ASK_NAME, "selam → tanışma: " + r);
+        r = p.handle("Halil");
+        check(p.name.equals("Halil") && r.startsWith("Memnun oldum Halil!") && r.contains("yaşın kaç"), "ad: " + r);
+        r = p.handle("65");
+        check(p.age == 65 && r.contains("zeytin ağacı gibi") && r.contains("Amca mı diyeyim, teyze mi"), "yaş: " + r);
+        r = p.handle("amca de");
+        check(p.call().equals("Halil amca") && r.startsWith("Tamam Halil amca"), "hitap: " + r);
+        check(p.greeting(20).equals("İyi akşamlar Halil amca, buyur dinliyorum."), "selamlama: " + p.greeting(20));
+        check(p.thanks().equals("Eline sağlık Halil amca."), "teşekkür");
+        r = p.handle("adım ne");
+        check(r.startsWith("Tanımaz olur muyum, Halil amca!") && r.contains("65 yaşındasın"), "beni tanıyor musun: " + r);
+        r = p.handle("nasılsın");
+        check(r != null && r.contains("Halil amca"), "hâl hatır adıyla: " + r);
+        r = p.handle("hahaha");
+        check(r != null && r.startsWith("Hehe"), "gülme: " + r);
+        r = p.handle("fıkra anlat");
+        check(r != null && r.contains("Temel"), "fıkra: " + r);
+        r = p.handle("adın ne");
+        check(r.startsWith("Benim adım Zeytin."), "adın ne: " + r);
+        // kayıt ve soru cümlelerine karışmaz
+        check(p.handle("Son sulama ne zaman?") == null, "soru → asıl asistan");
+        check(p.handle("Bugün ilaçladım") == null, "kayıt → asıl asistan");
+        check(p.handle("3 numara 120 kilo sattım") == null, "elek → asıl asistan");
+        // tanışma sırasında komut gelirse tanışma bırakılır
+        AssistantPersona q = new AssistantPersona(new java.util.Random(1));
+        q.handle("selam");
+        check(q.handle("bu sezon masrafım ne kadar oldu acaba") == null && q.stage == AssistantPersona.Stage.NONE, "tanışmada uzun komut → bırakır");
+        // "bana Mehmet abi de"
+        AssistantPersona m = new AssistantPersona(new java.util.Random(1));
+        r = m.handle("bana Mehmet abi de");
+        check(m.name.equals("Mehmet") && m.address.equals("abi") && r.equals("Tamam Mehmet abi, aklımda!"), "bana X abi de: " + r + " / " + m.call());
+        // saklama
+        AssistantPersona back = AssistantPersona.decode(p.encode());
+        check(back.call().equals("Halil amca") && back.age == 65 && back.introduced == p.introduced, "sakla/yükle");
+        r = p.handle("adımı unut");
+        check(p.name.isEmpty() && r.startsWith("Tamam, unuttum"), "unut");
+        // bir kez tanışma önerisi
+        AssistantPersona z = new AssistantPersona(new java.util.Random(1));
+        check(z.introduceOnce().contains("Senin adın ne?") && z.introduceOnce().isEmpty(), "tanışma yalnız bir kez");
+        System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " AssistantPersona");
+        if (bad > 0) System.exit(1);
+    }
+}
