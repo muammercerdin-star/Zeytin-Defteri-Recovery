@@ -53,6 +53,8 @@ android {
 
         buildConfigField 'String', 'SUPABASE_URL', zdBuildString('SUPABASE_URL')
         buildConfigField 'String', 'SUPABASE_PUBLISHABLE_KEY', zdBuildString('SUPABASE_PUBLISHABLE_KEY')
+        // İnternet yardımcısı (cloud/zeytin-ai Worker adresi; gizli değil). Boşsa özellik kapalı.
+        buildConfigField 'String', 'ZEYTIN_AI_URL', zdBuildString('ZEYTIN_AI_URL')
     }
 
     buildFeatures {

@@ -28,6 +28,14 @@ public final class OperationVoiceEntry {
 
     private OperationVoiceEntry() {}
 
+    /** Denetlenmiş dış kaynaktan (AssistantCloud) kayıt; tür OperationKinds.TYPES sırası. */
+    static OperationVoiceEntry of(int type, int dayOffset, double quantity, String unit, double cost) {
+        OperationVoiceEntry e = new OperationVoiceEntry();
+        e.type = type; e.dayOffset = dayOffset; e.quantity = Math.max(0, quantity);
+        e.unit = quantity > 0 && unit != null ? unit : ""; e.cost = Math.max(0, cost);
+        return e;
+    }
+
     /** Kayıt cümlesi değilse null. */
     public static OperationVoiceEntry parse(String raw) {
         if (raw == null || raw.contains("?")) return null;

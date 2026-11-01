@@ -122,6 +122,27 @@ public final class ZeytinAssistantController {
         return persona;
     }
     private void savePersona(){if(persona!=null)personaPrefs().edit().putString("p_"+host.owner(),persona.encode()).apply();}
+    /** İnternet yardımcısı: tek seferlik izin cevabı ve "internet yardımcısını aç/kapat" sesli ayarı. */
+    private boolean handleCloudCommand(String raw){
+        int toggle=AssistantCloud.toggleCommand(raw);
+        if(toggle>=0){
+            pendingCloud=null;
+            AssistantCloudClient.setMode(activity,host.owner(),toggle==1);
+            postDialog(new OperationVoiceDialog.Reply(toggle==1?"Tamam, anlamadığım iş cümlelerini internetteki yardımcıya soracağım.":"Tamam, internete hiçbir şey sormayacağım.",OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");
+            return true;
+        }
+        if(pendingCloud==null)return false;
+        final String asked=pendingCloud;pendingCloud=null;
+        int c=AssistantCloud.consent(raw);
+        if(c==1){AssistantCloudClient.setMode(activity,host.owner(),true);lastRaw=asked;run(asked,ZeytinAssistantCommand.parse(asked),null);return true;}
+        if(c==0){
+            AssistantCloudClient.setMode(activity,host.owner(),false);
+            postDialog(new OperationVoiceDialog.Reply("Peki, internete sormayacağım. O cümleyi başka türlü söyleyebilir ya da formdan ekleyebilirsin. Fikrini değiştirirsen “internet yardımcısını aç” de.",OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");
+            return true;
+        }
+        return false;   // başka bir şey söylendi: soruyu bırak, yeni cümleyi işle
+    }
+
     /** Anlamadığı cümleler: yalnız bu telefonda, kullanıcı isterse gösterilir (AssistantMisses). */
     private void rememberMiss(String raw,String owner){
         try{
@@ -536,6 +557,7 @@ public final class ZeytinAssistantController {
         }
         if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
         if(recDialog==null&&handleMissesCommand(raw))return;
+        if(recDialog==null&&handleCloudCommand(raw))return;
         if(recDialog==null){
             String chat=persona().handle(raw);
             if(chat!=null){savePersona();postDialog(new OperationVoiceDialog.Reply(chat,OperationVoiceDialog.Action.ASK),"Zeytin · sohbet");return;}
@@ -616,6 +638,29 @@ public final class ZeytinAssistantController {
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"İşlem formunu dolduruyorum…");haptic();
                         Toast.makeText(activity,"İşlem formu açılıyor: "+where+op.summary()+". Kontrol edip Kaydet'e bas.",Toast.LENGTH_LONG).show();dialog.dismiss();host.openOperationEntry(gid,op);}});
                     return;
+                }
+                // Kuralların anlamadığı iş cümlesi: izin varsa internetteki yardımcıya (Gemma 4) sorulur. Cevap cümleyle
+                // karşılaştırılarak denetlenir (AssistantCloud.accept), okunur, "evet" denmeden kaydedilmez.
+                if(pick==null&&cmd.kind==Kind.UNKNOWN&&!gardens.isEmpty()&&AssistantCloudClient.configured()&&ZeytinAssistantText.special(raw)==null){
+                    final List<String> names=new java.util.ArrayList<>();for(Garden g:gardens)names.add(g.name);
+                    String mode=AssistantCloudClient.mode(activity,owner);
+                    if(AssistantCloud.eligible(raw,names)&&!"off".equals(mode)&&AssistantCloudClient.online(activity)){
+                        rememberMiss(raw,owner);
+                        if(mode.isEmpty()){
+                            main.post(()->{if(current(token,owner,season,active)){pendingCloud=raw;postDialog(new OperationVoiceDialog.Reply(AssistantCloud.ASK,OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");}});
+                            return;
+                        }
+                        main.post(()->{if(current(token,owner,season,active))transition(State.PROCESSING,"Düşünüyorum…");});
+                        final AssistantCloud.Result cloud=AssistantCloud.accept(AssistantCloudClient.ask(raw,names),raw,names);
+                        if(cloud!=null){
+                            final List<Garden> owned=gardens;
+                            main.post(()->{if(current(token,owner,season,active)){
+                                opDialog=new OperationVoiceDialog(cloud.entry,names,cloud.garden);opGardens=owned;
+                                postDialog(opDialog.start(),"Bahçe işi · internet yardımcısı");}});
+                            return;
+                        }
+                        // Anlaşılamadı / internet koptu / kota doldu: aşağıda bugünkü gibi devam.
+                    }
                 }
                 if(cmd.kind==Kind.UNKNOWN){
                     // Selam, teşekkür, kayıt silme, ilaç dozu: sabit cevap önce (dozda ilaçlama sorusu önerilmez).
@@ -920,6 +965,8 @@ public final class ZeytinAssistantController {
     // ============================================================ SOHBETLE KAYIT
 
     private OperationVoiceDialog opDialog;
+    /** İnternet yardımcısına sorulsun mu diye bekleyen cümle (tek seferlik izin sorusu). */
+    private String pendingCloud;
     private List<ZeytinAssistantCommand.Garden> opGardens;
     /** Soru sorulduysa okuma bitince mikrofon kendiliğinden açılır (sohbet sürer). */
     private boolean listenAfterSpeech;

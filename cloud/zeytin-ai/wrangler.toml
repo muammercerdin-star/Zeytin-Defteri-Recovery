@@ -1,0 +1,19 @@
+# Komut satırıyla yayınlamak isteyenler için (npx wrangler deploy). Web panelinden yayınlıyorsan bu dosya gerekmez.
+name = "zeytin-ai"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[ai]
+binding = "AI"
+
+[vars]
+FIREBASE_PROJECT_ID = "zeytin-defteri"
+
+# Kullanıcı başına dakikada en fazla 6 istek
+[[ratelimits]]
+name = "RATE"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 6
+  period = 60
