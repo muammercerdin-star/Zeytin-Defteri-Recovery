@@ -157,6 +157,7 @@ final class AssistantCloudClient {
             case "no_model": return "Cloudflare'de AI bağlantısı yok";
             case "model_error": return "model hata verdi ya da günlük kota doldu";
             case "bad_text": return "cümle geçersiz";
+            case "upstream": return "aktarıcı Cloudflare'e ulaşamadı";
             default: return r;
         }
     }
