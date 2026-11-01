@@ -368,9 +368,19 @@ public class ElekActivity extends Activity {
             final int voiceSold = getIntent().getIntExtra(EXTRA_VOICE_SOLD, -1);
             final String voiceBuyer = getIntent().getStringExtra(EXTRA_VOICE_BUYER);
             getIntent().removeExtra(EXTRA_VOICE_KG);
-            getWindow().getDecorView().post(() -> applyVoiceEntry(voiceKg, voiceSold, voiceBuyer));
+            getWindow().getDecorView().post(() -> {
+                applyVoiceEntry(voiceKg, voiceSold, voiceBuyer);
+                // Sohbet sürsün: asistan elek ekranında konuşmaya devam eder ("Başka numara var mı?"), "evet"le kaydeder.
+                if (selectedGardenId > 0) voiceSession().start("Yazdım. Başka numara var mı? Bitince bitti de.");
+            });
+        } else if (savedInstanceState == null && getIntent() != null && getIntent().getBooleanExtra(EXTRA_VOICE_START, false)) {
+            // "Elek gireceğim": boş formda sesli elek hemen başlar.
+            getIntent().removeExtra(EXTRA_VOICE_START);
+            getWindow().getDecorView().post(() -> { if (selectedGardenId > 0) voiceSession().start(); else showGardenPicker(); });
         }
     }
+
+    public static final String EXTRA_VOICE_START = "voice_start";
 
     // ============================================================ SESLİ ELEK (konuşma penceresi)
     private ElekVoiceSession voice;

@@ -175,6 +175,27 @@ public class BrineActivity extends Activity {
 
 
         refreshScreen();
+        // Asistandan ("50 kilo salamura bastım"): yeni parti penceresi sesle söylenenlerle dolu açılır.
+        if (savedInstanceState == null && getIntent() != null && getIntent().hasExtra(EXTRA_VOICE_OLIVE_KG)) {
+            getWindow().getDecorView().post(this::showNewBatchDialog);
+        }
+    }
+
+    public static final String EXTRA_VOICE_OLIVE_KG = "voice_olive_kg", EXTRA_VOICE_SALT_KG = "voice_salt_kg",
+            EXTRA_VOICE_WATER_L = "voice_water_l", EXTRA_VOICE_VARIETY = "voice_variety";
+    private boolean voiceApplied;
+
+    private void applyVoiceToBatch(EditText olive, EditText salt, EditText water, EditText variety) {
+        if (voiceApplied || getIntent() == null || !getIntent().hasExtra(EXTRA_VOICE_OLIVE_KG)) return;
+        voiceApplied = true;
+        double o = getIntent().getDoubleExtra(EXTRA_VOICE_OLIVE_KG, 0), sa = getIntent().getDoubleExtra(EXTRA_VOICE_SALT_KG, 0),
+                w = getIntent().getDoubleExtra(EXTRA_VOICE_WATER_L, 0);
+        String v = getIntent().getStringExtra(EXTRA_VOICE_VARIETY);
+        if (o > 0) olive.setText(TezgahQr.field(o));
+        if (sa > 0) salt.setText(TezgahQr.field(sa));
+        if (w > 0) water.setText(TezgahQr.field(w));
+        if (v != null && !v.isEmpty()) variety.setText(v);
+        android.widget.Toast.makeText(this, "Sesle dolduruldu · kontrol edip kaydet", android.widget.Toast.LENGTH_LONG).show();
     }
 
 
@@ -1623,6 +1644,7 @@ public class BrineActivity extends Activity {
                         6
                 )
         );
+        applyVoiceToBatch(etOliveKg, etSaltKg, etWaterLiter, etVariety);
 
 
         // ========================================================

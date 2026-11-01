@@ -6729,6 +6729,48 @@ public class ProducerFeedActivity extends Activity {
                                 }
 
                                 @Override
+                                public void openElekVoice(long gardenId) {
+                                    Intent intent = new Intent(ProducerFeedActivity.this, ElekActivity.class);
+                                    if (gardenId > 0) intent.putExtra("garden_id", gardenId);
+                                    intent.putExtra(ElekActivity.EXTRA_VOICE_START, true);
+                                    startActivity(intent);
+                                }
+
+                                @Override
+                                public void openRecordForm(VoiceRecordDialog d, long gardenId) {
+                                    Intent intent;
+                                    switch (d.kind) {
+                                        case HARVEST:
+                                            intent = new Intent(ProducerFeedActivity.this, HarvestActivity.class);
+                                            if (d.grades() != null) intent.putExtra(HarvestActivity.EXTRA_VOICE_KG, d.grades());
+                                            intent.putExtra(HarvestActivity.EXTRA_VOICE_TOTAL, d.number("kg"));
+                                            intent.putExtra(HarvestActivity.EXTRA_VOICE_DAY_OFFSET, d.dayOffset());
+                                            intent.putExtra(HarvestActivity.EXTRA_VOICE_LABOR, d.number("labor"));
+                                            intent.putExtra(HarvestActivity.EXTRA_VOICE_TRANSPORT, d.number("transport"));
+                                            break;
+                                        case BRINE:
+                                            intent = new Intent(ProducerFeedActivity.this, BrineActivity.class);
+                                            intent.putExtra(BrineActivity.EXTRA_VOICE_OLIVE_KG, d.number("olive"));
+                                            intent.putExtra(BrineActivity.EXTRA_VOICE_SALT_KG, d.number("salt"));
+                                            intent.putExtra(BrineActivity.EXTRA_VOICE_WATER_L, d.number("water"));
+                                            intent.putExtra(BrineActivity.EXTRA_VOICE_VARIETY, d.text("variety"));
+                                            break;
+                                        case GARDEN:
+                                            intent = new Intent(ProducerFeedActivity.this, AddGardenActivity.class);
+                                            intent.putExtra(AddGardenActivity.EXTRA_VOICE_NAME, d.text("name"));
+                                            intent.putExtra(AddGardenActivity.EXTRA_VOICE_TREES, d.number("trees"));
+                                            intent.putExtra(AddGardenActivity.EXTRA_VOICE_VARIETY, d.text("variety"));
+                                            intent.putExtra(AddGardenActivity.EXTRA_VOICE_AREA, d.number("area"));
+                                            break;
+                                        default:
+                                            intent = new Intent(ProducerFeedActivity.this, CreatePostActivity.class);
+                                            intent.putExtra("draft_content", d.text("text"));
+                                    }
+                                    if (gardenId > 0) intent.putExtra("garden_id", gardenId);
+                                    startActivity(intent);
+                                }
+
+                                @Override
                                 public long saveOperation(long gardenId, String type, String date, double quantity, String unit, double cost, String note) {
                                     long id;
                                     try { id = db.addOperation((int) gardenId, type, date, quantity, unit, cost, note); }

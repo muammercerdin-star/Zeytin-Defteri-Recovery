@@ -64,7 +64,10 @@ final class ElekVoiceSession {
     ElekVoiceSession(Activity activity, Host host, android.view.ViewGroup button) { this.a = activity; this.host = host; this.button = button; }
 
     /** Düğmeye basılınca. İzin yoksa ister; izin gelince Activity yeniden start() çağırır. */
-    void start() {
+    void start() { start(null); }
+
+    /** greeting: ilk söz (asistandan devam ederken "Yazdım. Başka numara var mı?"); null ise varsayılan. */
+    void start(String greeting) {
         if (a.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             a.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, MIC_REQUEST);
             return;
@@ -94,7 +97,7 @@ final class ElekVoiceSession {
             });
             if (pendingSpeech != null) { String s = pendingSpeech; pendingSpeech = null; say(s, pendingListen); }
         }));
-        say(ElekVoiceDialog.greeting(), true);
+        say(greeting != null ? greeting : ElekVoiceDialog.greeting(), true);
     }
 
     /** Telefondaki Türkçe seslerden en kalitelisini seçer (yüklü olan; eşitlikte internetsiz olan). */

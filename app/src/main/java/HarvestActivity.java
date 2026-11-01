@@ -49,7 +49,8 @@ public class HarvestActivity extends Activity {
 
     private final Calendar selectedDate = Calendar.getInstance();
     /** Asistandan ("Girelli'den 300 kilo topladık"): boy boy kilo, toplam, tarih kaydırması. Form dolu açılır, kaydetmez. */
-    public static final String EXTRA_VOICE_KG = "voice_kg", EXTRA_VOICE_TOTAL = "voice_total", EXTRA_VOICE_DAY_OFFSET = "voice_day_offset";
+    public static final String EXTRA_VOICE_KG = "voice_kg", EXTRA_VOICE_TOTAL = "voice_total", EXTRA_VOICE_DAY_OFFSET = "voice_day_offset",
+            EXTRA_VOICE_LABOR = "voice_labor", EXTRA_VOICE_TRANSPORT = "voice_transport";
     private final Locale TR = new Locale("tr", "TR");
     private boolean costsOpen = true;
     /** Seçili bahçenin bu sezonki hasat kayıtları (silmek için); formun altında. */
@@ -92,6 +93,9 @@ public class HarvestActivity extends Activity {
     private void applyVoice() {
         double[] kg = getIntent().getDoubleArrayExtra(EXTRA_VOICE_KG);
         double total = getIntent().getDoubleExtra(EXTRA_VOICE_TOTAL, 0);
+        double labor = getIntent().getDoubleExtra(EXTRA_VOICE_LABOR, 0), transport = getIntent().getDoubleExtra(EXTRA_VOICE_TRANSPORT, 0);
+        if (labor > 0) etLaborCost.setText(GradeFormModel.number(labor));
+        if (transport > 0) etTransportCost.setText(GradeFormModel.number(transport));
         boolean graded = false;
         if (kg != null) for (int i = 0; i < kg.length && i < kgFields.length; i++) {
             if (kg[i] > 0) { kgFields[i].setText(GradeFormModel.number(kg[i])); graded = true; }

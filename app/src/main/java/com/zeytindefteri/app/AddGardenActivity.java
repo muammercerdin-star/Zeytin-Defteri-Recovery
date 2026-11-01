@@ -107,6 +107,7 @@ public class AddGardenActivity extends Activity {
         updatePhotoRow();
         setupButtons();
         if (state == null) animateEntrance();
+        if (state == null && mode != GardenFormModel.Mode.EDIT) applyVoice();
     }
 
     @Override
@@ -147,6 +148,22 @@ public class AddGardenActivity extends Activity {
                     .setNegativeButton("Vazgeç", null)
                     .show();
         });
+    }
+
+    /** Asistandan ("Yeni bahçe ekle" sohbeti): ad, ağaç, cins, dönüm yazılı açılır; konum ve kayıt kullanıcıda. */
+    public static final String EXTRA_VOICE_NAME = "voice_name", EXTRA_VOICE_TREES = "voice_trees",
+            EXTRA_VOICE_VARIETY = "voice_variety", EXTRA_VOICE_AREA = "voice_area";
+
+    private void applyVoice() {
+        String name = getIntent().getStringExtra(EXTRA_VOICE_NAME);
+        if (name == null || name.isEmpty()) return;
+        if (etGardenName != null) etGardenName.setText(name);
+        double trees = getIntent().getDoubleExtra(EXTRA_VOICE_TREES, 0), area = getIntent().getDoubleExtra(EXTRA_VOICE_AREA, 0);
+        String variety = getIntent().getStringExtra(EXTRA_VOICE_VARIETY);
+        if (trees > 0 && etTreeCount != null) etTreeCount.setText(String.valueOf(Math.round(trees)));
+        if (area > 0 && etAreaDecare != null) etAreaDecare.setText(TezgahQr.field(area));
+        if (variety != null && !variety.isEmpty() && etVariety != null) etVariety.setText(variety);
+        android.widget.Toast.makeText(this, "Sesle dolduruldu · konumu seçip kaydet", android.widget.Toast.LENGTH_LONG).show();
     }
 
     private void findViews() {

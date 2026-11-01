@@ -48,7 +48,8 @@ public class AssistantTextTest {
                 // Asistan önce sesli kayıt/alacak yollarına bakar (elek, hasat, işlem, alacak); sonra soru kalıplarına.
                 check(ZeytinAssistantCommand.parse(group[i]).kind != ZeytinAssistantCommand.Kind.UNKNOWN
                         || ElekVoiceEntry.parse(group[i]) != null || HarvestVoiceEntry.parse(group[i]) != null
-                        || OperationVoiceEntry.parse(group[i]) != null || AssistantReceivables.asks(group[i]),
+                        || OperationVoiceEntry.parse(group[i]) != null || AssistantReceivables.asks(group[i])
+                        || VoiceRecordDialog.detect(group[i]) != null,
                         "örnek soru anlaşılmıyor: " + group[i]);
         for (String q : ZeytinAssistantText.followUps(ZeytinAssistantCommand.Kind.UNKNOWN, ""))
             check(ZeytinAssistantCommand.parse(q).kind != ZeytinAssistantCommand.Kind.UNKNOWN, "öneri anlaşılmıyor: " + q);

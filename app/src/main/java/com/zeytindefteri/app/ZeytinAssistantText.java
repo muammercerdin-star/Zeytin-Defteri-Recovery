@@ -116,6 +116,7 @@ public final class ZeytinAssistantText {
             {"SESLE ELEK GİR", "3 numara 120 kilo sattım", "Double 20, 1 numara 90 kilo"},
             {"SESLE BAHÇE İŞİ", "Bugün Girelli'yi ilaçladım", "Dün 2 saat su verdim", "Mazot aldım 500 lira"},
             {"HASAT VE ALACAK", "Girelli'den 300 kilo topladık", "Ahmet'ten ne kadar alacağım var?", "Kim bana borçlu?"},
+            {"SOHBETLE KAYIT", "Elek gireceğim", "50 kilo salamura bastım", "Yeni bahçe ekle", "Meydan'a yaz: yağmur başladı"},
             {"BAHÇE KAYITLARI", "Son sulama ne zaman?", "Son ilaçlama ne zaman?", "Hangi bahçe daha çok verdi?"},
             {"PARA VE SATIŞ", "Bu sezon masrafım kaç?", "Toplam satışım ne?"},
             {"HAVA VE EKRANLAR", "Yarın rüzgâr kaç?", "Elek aç", "Salamura stoğum"},
