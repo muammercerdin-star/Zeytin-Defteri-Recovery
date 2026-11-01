@@ -6729,6 +6729,16 @@ public class ProducerFeedActivity extends Activity {
                                 }
 
                                 @Override
+                                public void openHarvestEntry(long gardenId, HarvestVoiceEntry entry) {
+                                    Intent intent = new Intent(ProducerFeedActivity.this, HarvestActivity.class);
+                                    if (gardenId > 0) intent.putExtra("garden_id", gardenId);
+                                    intent.putExtra(HarvestActivity.EXTRA_VOICE_KG, entry.kg);
+                                    intent.putExtra(HarvestActivity.EXTRA_VOICE_TOTAL, entry.total);
+                                    intent.putExtra(HarvestActivity.EXTRA_VOICE_DAY_OFFSET, entry.dayOffset);
+                                    startActivity(intent);
+                                }
+
+                                @Override
                                 public void openOperationEntry(long gardenId, OperationVoiceEntry entry) {
                                     Intent intent = new Intent(ProducerFeedActivity.this, NewOperationActivity.class);
                                     if (gardenId > 0) intent.putExtra("garden_id", gardenId);

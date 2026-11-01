@@ -41,6 +41,8 @@ public final class ZeytinAssistantController {
         default void openElekEntry(long gardenId,ElekVoiceEntry entry){navigate("ELEK",gardenId);}
         /** "Bugün Girelli'yi ilaçladım": işlem formunu dolu aç (kaydetmez; kullanıcı Kaydet'e basar). */
         default void openOperationEntry(long gardenId,OperationVoiceEntry entry){navigate("OPERATION",gardenId);}
+        /** "Girelli'den 300 kilo topladık": hasat formunu dolu aç (kaydetmez). */
+        default void openHarvestEntry(long gardenId,HarvestVoiceEntry entry){navigate("GARDENS",gardenId);}
         void weather(Garden garden,WeatherRepository.ForecastCallback callback);
     }
     private final Activity activity;
@@ -472,6 +474,20 @@ public final class ZeytinAssistantController {
                 Resolution resolution=pick!=null?pick.resolve(gardens):ZeytinAssistantCommand.resolve(raw,gardens,active,cmd.kind==Kind.MARKET);
                 String gardenName=resolution.garden==null?"":resolution.garden.name;
                 // "Bugün 3 numara 120 kilo (sattım)": cevap yerine elek formu dolu açılır; kayıt kullanıcının onayıyla.
+                // "Girelli'den 300 kilo topladık": hasat (elekten önce: boy söylense de "topladık" hasattır).
+                final HarvestVoiceEntry harvest=pick==null?HarvestVoiceEntry.parse(raw):null;
+                if(harvest!=null){
+                    final long hid=resolution.garden==null?0:resolution.garden.id;
+                    final String where=resolution.garden==null?"":resolution.garden.name+", ";
+                    main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Hasat formunu dolduruyorum…");haptic();
+                        Toast.makeText(activity,"Hasat formu açılıyor: "+where+ElekVoiceDialog.num(harvest.total)+" kilo. Kontrol edip Kaydet'e bas.",Toast.LENGTH_LONG).show();dialog.dismiss();host.openHarvestEntry(hid,harvest);}});
+                    return;
+                }
+                // "Ahmet'ten ne kadar alacağım var?", "Kim bana borçlu?": alıcı listesindeki açık alacaklardan.
+                if(pick==null&&AssistantReceivables.asks(raw)){
+                    post(token,owner,season,active,cmd,true,"","Alıcılar · açık alacaklar",AssistantReceivables.answer(raw,data.receivables()));
+                    return;
+                }
                 final ElekVoiceEntry voice=pick==null?ElekVoiceEntry.parse(raw):null;
                 if(voice!=null){
                     final long gid=resolution.garden==null?0:resolution.garden.id;

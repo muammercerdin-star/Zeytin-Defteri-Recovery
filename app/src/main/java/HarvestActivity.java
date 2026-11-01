@@ -48,6 +48,8 @@ public class HarvestActivity extends Activity {
     private final TextView[] valueViews = new TextView[GradeFormModel.CODES.length];
 
     private final Calendar selectedDate = Calendar.getInstance();
+    /** Asistandan ("Girelli'den 300 kilo topladık"): boy boy kilo, toplam, tarih kaydırması. Form dolu açılır, kaydetmez. */
+    public static final String EXTRA_VOICE_KG = "voice_kg", EXTRA_VOICE_TOTAL = "voice_total", EXTRA_VOICE_DAY_OFFSET = "voice_day_offset";
     private final Locale TR = new Locale("tr", "TR");
     private boolean costsOpen = true;
     /** Seçili bahçenin bu sezonki hasat kayıtları (silmek için); formun altında. */
@@ -71,8 +73,12 @@ public class HarvestActivity extends Activity {
         } else {
             loadLastPrices();
         }
+        if (savedInstanceState == null && getIntent().hasExtra(EXTRA_VOICE_DAY_OFFSET)) {
+            selectedDate.add(Calendar.DAY_OF_MONTH, getIntent().getIntExtra(EXTRA_VOICE_DAY_OFFSET, 0));
+        }
         updateDateText();
         setupWatchers();
+        if (savedInstanceState == null) applyVoice();
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         btnSaveHarvest.setOnClickListener(v -> saveHarvest());
@@ -80,6 +86,22 @@ public class HarvestActivity extends Activity {
         findViewById(R.id.btnToggleCosts).setOnClickListener(v -> { costsOpen = !costsOpen; updateTotals(); });
         updateTotals();
         setupPastHarvests();
+    }
+
+    /** Sesle söylenen hasat: boy söylendiyse kutulara; yalnız toplam söylendiyse not + "boylara ayır" uyarısı. */
+    private void applyVoice() {
+        double[] kg = getIntent().getDoubleArrayExtra(EXTRA_VOICE_KG);
+        double total = getIntent().getDoubleExtra(EXTRA_VOICE_TOTAL, 0);
+        boolean graded = false;
+        if (kg != null) for (int i = 0; i < kg.length && i < kgFields.length; i++) {
+            if (kg[i] > 0) { kgFields[i].setText(GradeFormModel.number(kg[i])); graded = true; }
+        }
+        if (graded) {
+            Toast.makeText(this, "Sesle dolduruldu · kontrol edip Kaydet'e bas", Toast.LENGTH_LONG).show();
+        } else if (total > 0) {
+            etHarvestNote.setText("Toplam " + GradeFormModel.number(total) + " kg (sesle)");
+            Toast.makeText(this, "Toplam " + GradeFormModel.number(total) + " kg not edildi · boylara ayırıp Kaydet'e bas", Toast.LENGTH_LONG).show();
+        }
     }
 
     // ------------------------------------------------------------ bu sezonun hasat kayıtları (sil)
