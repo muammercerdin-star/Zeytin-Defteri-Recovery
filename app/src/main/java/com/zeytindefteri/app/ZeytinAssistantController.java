@@ -601,7 +601,7 @@ public final class ZeytinAssistantController {
                     String named=resolution.explicit && resolution.garden!=null?resolution.garden.name:"";
                     if(ZeytinAssistantHints.chatOnly(raw)){
                         // Konusu olmayan sohbet: soğuk "bilmiyorum + kartlar" yerine dostça cevap, sohbet sürer.
-                        final String line=persona().fallback();
+                        final String line=persona().fallback(raw);
                         main.post(()->{if(current(token,owner,season,active))postDialog(new OperationVoiceDialog.Reply(line,OperationVoiceDialog.Action.ASK),"Zeytin · sohbet");});
                         return;
                     }

@@ -120,6 +120,7 @@ public final class ZeytinAssistantText {
             {"BAHÇE KAYITLARI", "Son sulama ne zaman?", "Son ilaçlama ne zaman?", "Hangi bahçe daha çok verdi?"},
             {"PARA VE SATIŞ", "Bu sezon masrafım kaç?", "Toplam satışım ne?"},
             {"HAVA VE EKRANLAR", "Yarın rüzgâr kaç?", "Elek aç", "Salamura stoğum"},
+            {"SOHBET VE ZEYTİN BİLGİSİ", "Bu ay ne yapılır?", "Budama ne zaman yapılır?", "Bilmece sor", "Fıkra anlat"},
     };
 
     private static final String[] FOLLOW_UPS = {
