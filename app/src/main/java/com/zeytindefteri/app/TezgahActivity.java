@@ -250,9 +250,8 @@ public final class TezgahActivity extends Activity {
             voiceBar.setPadding(dp(12), 0, dp(10), 0);
             voiceBar.setBackgroundResource(R.drawable.elek_voice_premium);
             body.addView(voiceBar, margins(-1, dp(64), 6));
-            body.addView(gradeRow(), margins(-1, -2, 8));
-            body.addView(entryCard(), margins(-1, -2, 8));
-            body.addView(weighingsCard(), margins(-1, -2, 8));
+            // Sade: yalnız büyük özet (numara · kilo · fiyat · tutar) ve alttaki toplam. Satıra dokununca
+            // o numaranın tartımları elle düzeltilir; sesli tartım sürer.
             body.addView(summaryCard(), margins(-1, -2, 8));
             setContentView(root);
             refreshTotals();
@@ -643,13 +642,16 @@ public final class TezgahActivity extends Activity {
     }
 
     private View summaryCard() {
-        if (model.isEmpty()) return priceStrip();
+        if (model.isEmpty() && !voiceMode) return priceStrip();
+        // Sesle tartımda büyük ve okunaklı (tezgâhta, uzaktan, güneşte); elle düzenleme satıra dokunarak.
+        final boolean big = voiceMode;
+        final int nameSp = big ? 20 : 14, kgSp = big ? 21 : 14, subSp = big ? 14 : 11, priceSp = big ? 18 : 14, amtSp = big ? 21 : 15;
         LinearLayout box = card();
         summaryBox = box;
         box.setPadding(dp(12), dp(6), dp(12), dp(8));
         LinearLayout headRow = new LinearLayout(this);
         headRow.setGravity(Gravity.CENTER_VERTICAL);
-        TextView head = text("ÖZET · fiyata dokun, değiştir", 12, MUTED, true);
+        TextView head = text(big ? "ÖZET · numaraya dokun, düzelt" : "ÖZET · fiyata dokun, değiştir", big ? 14 : 12, MUTED, true);
         head.setLetterSpacing(0.05f);
         headRow.addView(head, new LinearLayout.LayoutParams(0, -2, 1));
         headRow.addView(tareLink());
@@ -667,20 +669,20 @@ public final class TezgahActivity extends Activity {
             boolean on = g == grade;
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setMinimumHeight(dp(34));
+            row.setMinimumHeight(dp(big ? 64 : 34));
             row.setPadding(dp(6), 0, dp(6), 0);
             // Seçili numaranın satırı vurgulu; satıra dokununca o numara seçilir (kilo kutusu ona yazar).
             if (on) row.setBackground(round(GREEN_DIM, GREEN, 10));
-            row.setOnClickListener(v -> selectGrade(index));
-            TextView name = text((on ? "▸ " : "") + TezgahModel.LABELS[g], 14, net > 0 || on ? TEXT : MUTED, true);
+            row.setOnClickListener(v -> { if (voiceMode) editGrade(index); else selectGrade(index); });
+            TextView name = text((on ? "▸ " : "") + TezgahModel.LABELS[g], nameSp, net > 0 || on ? TEXT : MUTED, true);
             row.addView(name, new LinearLayout.LayoutParams(0, -2, 1.1f));
             // "48 kg ×" · [110 ₺] · "= 5.280 ₺": üretici hesabı satırdan okur; pay yüzdesi kilonun altında.
             LinearLayout kgCol = new LinearLayout(this);
             kgCol.setOrientation(LinearLayout.VERTICAL);
-            kgCol.addView(text(net > 0 ? shortKg(net) + "  ×" : "—", 14, net > 0 ? TEXT : MUTED, net > 0));
-            if (net > 0) kgCol.addView(text(TezgahModel.percent(model.share(g)) + " · " + model.gradeKasa(g) + " kasa", 11, MUTED, false));
+            kgCol.addView(text(net > 0 ? shortKg(net) + "  ×" : "—", kgSp, net > 0 ? TEXT : MUTED, net > 0));
+            if (net > 0) kgCol.addView(text(big ? model.gradeKasa(g) + " kasa" : TezgahModel.percent(model.share(g)) + " · " + model.gradeKasa(g) + " kasa", subSp, MUTED, false));
             row.addView(kgCol, new LinearLayout.LayoutParams(0, -2, 1.2f));
-            TextView price = text(model.price(g) > 0 ? TezgahModel.money(model.price(g)) : "fiyat?", 14,
+            TextView price = text(model.price(g) > 0 ? TezgahModel.money(model.price(g)) : "fiyat?", priceSp,
                     model.price(g) > 0 ? TEXT : AMBER, true);
             price.setGravity(Gravity.CENTER);
             price.setPadding(dp(8), dp(3), dp(8), dp(3));
@@ -688,7 +690,7 @@ public final class TezgahActivity extends Activity {
             price.setContentDescription(TezgahModel.LABELS[g] + " fiyatını değiştir");
             price.setOnClickListener(v -> askPrice(index));
             row.addView(price, new LinearLayout.LayoutParams(-2, -2));
-            TextView amount = text(net > 0 ? "= " + TezgahModel.tl(model.gradeAmount(g)) : "", 15, TEXT, true);
+            TextView amount = text(net > 0 ? "= " + TezgahModel.tl(model.gradeAmount(g)) : "", amtSp, TEXT, true);
             amount.setGravity(Gravity.END);
             row.addView(amount, new LinearLayout.LayoutParams(0, -2, 1.2f));
             row.setContentDescription(TezgahModel.LABELS[g] + (net > 0 ? ", " + TezgahModel.kg(net) + " çarpı "
@@ -700,11 +702,11 @@ public final class TezgahActivity extends Activity {
         LinearLayout foot = new LinearLayout(this);
         foot.setGravity(Gravity.CENTER_VERTICAL);
         TextView totals = text(model.totalKasa() + " kasa · brüt " + TezgahModel.kg(model.totalGross())
-                + " · dara " + TezgahModel.kg(model.totalTare()), 13, MUTED, false);
+                + " · dara " + TezgahModel.kg(model.totalTare()), big ? 15 : 13, MUTED, false);
         totals.setSingleLine(true);
         totals.setEllipsize(android.text.TextUtils.TruncateAt.END);
         foot.addView(totals, new LinearLayout.LayoutParams(0, -2, 1));
-        foot.addView(text("Net " + TezgahModel.kg(model.totalNet()), 16, TEXT, true));
+        foot.addView(text("Net " + TezgahModel.kg(model.totalNet()), big ? 22 : 16, TEXT, true));
         box.addView(foot, margins(-1, -2, 6));
         return box;
     }
@@ -1636,7 +1638,10 @@ public final class TezgahActivity extends Activity {
         catch (RuntimeException e) { return 0; }
     }
 
-    private boolean savePurchase(double paid, boolean qr) {
+    private boolean savePurchase(double paid, boolean qr) { return savePurchase(paid, qr, true); }
+
+    /** share=false: kaydedip hiçbir pencere açmaz (sesli tartım); fiş "Son fiş" kartında QR / WhatsApp / Yazdır ile durur. */
+    private boolean savePurchase(double paid, boolean qr, boolean share) {
         // Elle "Bitir" ile kaydedilirse açık sesli tartım kapanır (eski tartımları ikinci kez kaydetmeye kalkmasın).
         if (voice != null && voice.isOpen()) voice.close();
         if (model.firstMissingPrice() >= 0) { toast("Fiyatı girilmemiş numara var; önce fiyatı gir."); return false; }
@@ -1666,6 +1671,7 @@ public final class TezgahActivity extends Activity {
         saveDraft();
         build();
         toast("Alım kaydedildi ✓ Sıradaki üretici için tezgah hazır.");
+        if (!share) return true;
         if (qr) showQr(saved, today(), savedSeller, paid, text, phone);
         else shareText(text, phone);
         return true;
@@ -1757,7 +1763,7 @@ public final class TezgahActivity extends Activity {
             }
             @Override public boolean save(double paid) {
                 if (wizard != null) wizard.dismiss();
-                return savePurchase(paid, true);
+                return savePurchase(paid, false, false);
             }
             @Override public void show(TezgahVoiceDialog d) { showVoiceStep(d); }
             @Override public void setPrice(int g, double price) {
@@ -1808,11 +1814,89 @@ public final class TezgahActivity extends Activity {
         if (focus != null && im != null) im.hideSoftInputFromWindow(focus.getWindowToken(), 0);
     }
 
+    // ================================================================== sesle tartımda elle düzeltme
+
+    /** Bir numaranın tartımları büyük yazıyla: her biri Düzelt / Sil; altta "Tartım ekle". Sesli tartım sürer. */
+    private void editGrade(final int g) {
+        final List<Integer> idx = new ArrayList<>();
+        List<TezgahModel.Weighing> items = model.items();
+        for (int i = 0; i < items.size(); i++) if (items.get(i).grade == g) idx.add(i);
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        list.setPadding(dp(20), dp(8), dp(20), 0);
+        final AlertDialog[] dlg = new AlertDialog[1];
+        if (idx.isEmpty()) list.addView(dialogLabel("Bu numarada tartım yok.", 19, false));
+        for (final int i : idx) {
+            TezgahModel.Weighing w = items.get(i);
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.addView(dialogLabel((w.kasa > 0 ? w.kasa + " kasa" : "kasasız") + " · " + TezgahModel.kg(w.kg)
+                    + "\nnet " + TezgahModel.kg(TezgahModel.net(w.kasa, w.kg, model.tare())), 20, true),
+                    new LinearLayout.LayoutParams(0, -2, 1));
+            android.widget.Button fix = new android.widget.Button(this);
+            fix.setText("Düzelt"); fix.setTextSize(17);
+            fix.setOnClickListener(v -> { if (dlg[0] != null) dlg[0].dismiss(); askWeighing(g, i); });
+            row.addView(fix);
+            android.widget.Button del = new android.widget.Button(this);
+            del.setText("Sil"); del.setTextSize(17);
+            del.setOnClickListener(v -> {
+                if (dlg[0] != null) dlg[0].dismiss();
+                if (model.remove(i)) { saveDraft(); voiceRefresh(); toast(TezgahModel.LABELS[g] + " tartımı silindi"); }
+            });
+            row.addView(del);
+            list.addView(row, margins(-1, -2, 10));
+        }
+        ScrollView sc = new ScrollView(this);
+        sc.addView(list);
+        dlg[0] = new AlertDialog.Builder(this)
+                .setTitle(TezgahModel.LABELS[g])
+                .setView(sc)
+                .setPositiveButton("+ Tartım ekle", (d, w) -> askWeighing(g, -1))
+                .setNegativeButton("Kapat", null)
+                .show();
+    }
+
+    /** Elle tartım: index ≥ 0 ise o tartım düzeltilir, -1 ise yeni eklenir. Büyük kasa + kantar kutuları. */
+    private void askWeighing(final int g, final int index) {
+        TezgahModel.Weighing old = index >= 0 && index < model.items().size() ? model.items().get(index) : null;
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(20), dp(8), dp(20), 0);
+        form.addView(dialogLabel("Kasa", 16, true));
+        final EditText k = dialogInput(old != null ? String.valueOf(old.kasa) : "1", "kasa", InputType.TYPE_CLASS_NUMBER);
+        k.setTextSize(26);
+        form.addView(k);
+        form.addView(dialogLabel("Kantar (kg)", 16, true), margins(-1, -2, 10));
+        final EditText kg = dialogInput(old != null ? TezgahQr.field(old.kg) : "", "kg",
+                InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        kg.setTextSize(26);
+        form.addView(kg);
+        new AlertDialog.Builder(this)
+                .setTitle(TezgahModel.LABELS[g] + (old != null ? " · düzelt" : " · tartım ekle"))
+                .setView(form)
+                .setPositiveButton("Kaydet", (d, w) -> {
+                    int kasaN = (int) Math.max(0, Math.min(TezgahModel.MAX_KASA, TezgahModel.parse(k.getText().toString())));
+                    double kgV = TezgahModel.parse(kg.getText().toString());
+                    String err = TezgahModel.addError(kasaN, kgV, model.tare());
+                    if (!err.isEmpty()) { toast(err); return; }
+                    if (old != null && !model.remove(index)) return;
+                    if (!model.add(g, kasaN, kgV)) { toast(TezgahModel.addError(kasaN, kgV, model.tare())); return; }
+                    saveDraft();
+                    voiceRefresh();
+                    String hint = TezgahModel.kasaHint(kasaN, kgV, model.tare());
+                    toast(hint.isEmpty() ? TezgahModel.LABELS[g] + ": net " + TezgahModel.kg(TezgahModel.net(kasaN, kgV, model.tare())) : hint);
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+        showKeyboard(kg);
+    }
+
     /** Sesle tartım ekranı: konuşulan numaranın sekmesi seçili, son tartım kilo kutusunun altında yeşil yazar. */
     private void showVoiceGrade(TezgahVoiceDialog d) {
         TezgahVoiceDialog.Phase ph = d.phase();
         boolean weighing = ph == TezgahVoiceDialog.Phase.WEIGH || ph == TezgahVoiceDialog.Phase.KASA_CHECK;
-        if (weighing && d.grade() != grade) selectGrade(d.grade());
+        if (weighing && d.grade() != grade) { grade = d.grade(); replaceSummary(); }
+        if (voiceMode) return;   // sade ekran: kilo kutusu yok
         if (netPreview == null) return;
         List<TezgahModel.Weighing> items = model.items();
         if (!weighing) {
