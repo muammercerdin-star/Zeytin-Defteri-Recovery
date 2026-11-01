@@ -11,7 +11,7 @@ public class ElekVoiceDialogTest {
         check(r.action == ElekVoiceDialog.Action.FILL && d.kg[3] == 120 && r.listen, "ilk kilo yazılır");
         check(r.speech.equals("Tamam, 3 numara 120 kilo. Diğerlerini bekliyorum."), "ilk cevap: " + r.speech);
         r = d.handle("2 numara 80, double 20");
-        check(d.kg[2] == 80 && d.kg[0] == 20 && r.speech.equals("Aldım, double 20, 2 numara 80. Başka?"), "ikinci cevap: " + r.speech);
+        check(d.kg[2] == 80 && d.kg[0] == 20 && r.speech.equals("Aldım, duble 20, 2 numara 80. Başka?"), "ikinci cevap: " + r.speech);
         r = d.handle("3 numara yanlış 100 olacak");
         check(r.speech.equals("Yazdım, 3 numara 100. Bitince bitti demen yeterli."), "üçüncü cevap değişir: " + r.speech);
         r = d.handle("geri al");
@@ -20,7 +20,7 @@ public class ElekVoiceDialogTest {
         r = d.handle("geri al");
         check(d.kg[3] == 120 && r.action == ElekVoiceDialog.Action.FILL, "geri al");
         r = d.handle("oku");
-        check(r.speech.contains("Double 20, 2 numara 80, 3 numara 120") && r.speech.contains("Toplam 220 kilo"), "oku: " + r.speech);
+        check(r.speech.contains("Duble 20, 2 numara 80, 3 numara 120") && r.speech.contains("Toplam 220 kilo"), "oku: " + r.speech);
         check(r.speech.contains("13.000 lira"), "tutar fiyatlarla: " + r.speech);   // 20*130+80*70+120*40 = 2600+5600+4800
         r = d.handle("3 numara kaç");
         check(r.action == ElekVoiceDialog.Action.NONE && r.speech.startsWith("Burada sadece kilo"), "soru: " + r.speech);

@@ -81,9 +81,14 @@ public final class TezgahVoiceDialog {
     }
     public TezgahModel model() { return model; }
 
+    /** Her numarada önce "Duble var mı?" sorulur: kilo söylenir ya da "yok / geç / devam et" ile sıradakine geçilir. */
+    private boolean askedHas;
+
+    private String hasQuestion(int g) { askedHas = true; return label(g) + " var mı?"; }
+
     public String greeting() {
-        if (model.isEmpty()) return label(grade) + " kantarda. Kaç kilo?";
-        return "Devam ediyoruz. " + label(grade) + ", kaç kilo?";
+        if (model.isEmpty()) return hasQuestion(grade);
+        return "Devam ediyoruz. " + hasQuestion(grade);
     }
 
     /** Kasa söylenmezse: bir kasa ~25 kg zeytin + dara; kiloya uymuyorsa modelin önerisi. "15" → 1, "55" → 2. */
@@ -164,18 +169,23 @@ public final class TezgahVoiceDialog {
         Said said = parse(raw);
         if (!Double.isNaN(said.kg) && said.net) return addNet(said.grade >= 0 ? said.grade : grade, said.kasa, said.kg, said.grade >= 0 && said.grade != grade);
         if (!Double.isNaN(said.kg)) return add(said.grade >= 0 ? said.grade : grade, said.kasa, said.kg, said.grade >= 0 && said.grade != grade);
-        if (said.grade >= 0) { grade = said.grade; return ask(label(grade) + ", kaç kilo?"); }
+        if (said.grade >= 0) { grade = said.grade; return ask(hasQuestion(grade)); }
         if (said.kasa >= 0) return fixKasa(said.kasa);
+        // "Duble var mı?" sorusuna "hayır" = yok, sıradaki numara.
+        if (askedHas && has(s, "hayir|yoktur|cikmadi")) return nextGrade();
+        if (has(s, "var|evet|varr")) { askedHas = false; return ask("Kaç kilo?"); }
         if (has(s, "hayir|yanlis|olmadi")) {
             // Tek başına "hayır/yanlış": numarayı atlamaz, ne yapılacağını sorar.
             return ask(added.isEmpty() ? "Kantardaki kiloyu söyle." : "Kasa sayısını söyle ya da geri al de.");
         }
-        if (has(s, "yok|gec|sonraki|atla|bos|cikmadi|tamam|baska yok|devam")) {
-            if (grade >= TezgahModel.GRADES.length - 1) return finish();
-            grade++;
-            return ask(label(grade) + ", kaç kilo?");
-        }
-        return ask("Anlamadım. Kantardaki kiloyu söyle, yoksa yok de.");
+        if (has(s, "yok|gec|gecelim|sonraki|atla|bos|cikmadi|tamam|baska yok|devam|devam et|ilerle")) return nextGrade();
+        return ask("Anlamadım. Kiloyu söyle, yoksa geç de.");
+    }
+
+    private Reply nextGrade() {
+        if (grade >= TezgahModel.GRADES.length - 1) return finish();
+        grade++;
+        return ask(hasQuestion(grade));
     }
 
     private Reply add(int g, int kasa, double kg, boolean named) {
@@ -226,6 +236,7 @@ public final class TezgahVoiceDialog {
         if (!model.add(g, k, kg)) return ask("Bu tartımı ekleyemedim. Kiloyu yeniden söyle.");
         added.add(model.items().size() - 1);
         addedNet.add(netSaid);
+        askedHas = false;
         grade = g;
         phase = Phase.WEIGH;
         Reply r = new Reply(lead + num(TezgahModel.net(k, kg, model.tare())) + " net.", Action.ADD, true);
@@ -461,13 +472,14 @@ public final class TezgahVoiceDialog {
             case PAY: return "Tamamı mı, bir kısmı mı, sonra mı?";
             case PRICE: return label(priceGrade) + " kilo fiyatı kaç lira?";
             case CONFIRM: return "Kaydedeyim mi?";
-            default: return label(grade) + ", kaç kilo?";
+            default: return hasQuestion(grade);
         }
     }
 
     private static Reply ask(String speech) { return new Reply(speech, Action.NONE, true); }
 
-    static String label(int g) { return g == 0 ? "Double" : g == TezgahModel.GRADES.length - 1 ? "Yağlık" : g + " numara"; }
+    /** Sesli okuma: "Duble" (Türkçe okunuşu; İngilizce "dabıl" gibi okunmasın). */
+    static String label(int g) { return g == 0 ? "Duble" : g == TezgahModel.GRADES.length - 1 ? "Yağlık" : g + " numara"; }
 
     /** Konuşma için sayı: 51 → "51", 51.5 → "51,5". */
     static String num(double v) {

@@ -20,7 +20,7 @@ public final class ElekVoiceDialog {
         Reply(String speech, Action action, boolean listen) { this.speech = speech; this.action = action; this.listen = listen; }
     }
 
-    private static final String[] SPOKEN = {"double", "1 numara", "2 numara", "3 numara", "4 numara", "yağlık"};
+    private static final String[] SPOKEN = {"duble", "1 numara", "2 numara", "3 numara", "4 numara", "yağlık"};
     private static final Locale TR = new Locale("tr", "TR");
 
     public final double[] kg = new double[6];

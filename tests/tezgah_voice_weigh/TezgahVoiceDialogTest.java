@@ -22,12 +22,12 @@ public class TezgahVoiceDialogTest {
         check(TezgahVoiceDialog.estimateKasa(80, 2) == 3, "80 kg → 3 kasa");
 
         TezgahVoiceDialog d = new TezgahVoiceDialog(model(), "", Arrays.asList("Mehmet Yılmaz", "Ahmet Kaya", "Ahmet Demir"));
-        check(d.greeting().equals("Double kantarda. Kaç kilo?"), "karşılama: " + d.greeting());
+        check(d.greeting().equals("Duble var mı?"), "karşılama: " + d.greeting());
         TezgahVoiceDialog.Reply r = d.handle("15 kilo 1 kasa");
         check(r.action == TezgahVoiceDialog.Action.ADD && r.grade == 0 && r.kasa == 1 && r.kg == 15, "15 → Double 1 kasa");
         check(r.speech.equals("13 net."), "15 kilo 1 kasa → yalnız 13 net: " + r.speech);
         r = d.handle("yok");
-        check(d.grade() == 1 && r.speech.equals("1 numara, kaç kilo?"), "yok → 1 numara: " + r.speech);
+        check(d.grade() == 1 && r.speech.equals("1 numara var mı?"), "yok → 1 numara: " + r.speech);
         r = d.handle("55 kilo");
         check(r.grade == 1 && r.kasa == 2 && r.speech.equals("2 kasa, 51 net."), "kasa söylenmezse tahmini kasa + net: " + r.speech);
         r = d.handle("elli beş iki kasa");
@@ -46,7 +46,7 @@ public class TezgahVoiceDialogTest {
         r = d.handle("kantarda 2 kilo");
         check(r.action == TezgahVoiceDialog.Action.NONE && d.model().items().size() == 4, "dara kadar kilo eklenmez: " + r.speech);
         r = d.handle("oku");
-        check(r.speech.startsWith("Double 13 kilo, 1 numara 87 kilo, 3 numara 74 kilo. Toplam net 174 kilo, 8 kasa"), "oku: " + r.speech);
+        check(r.speech.startsWith("Duble 13 kilo, 1 numara 87 kilo, 3 numara 74 kilo. Toplam net 174 kilo, 8 kasa"), "oku: " + r.speech);
         r = d.handle("bitti");
         check(d.phase() == TezgahVoiceDialog.Phase.SELLER && r.speech.endsWith("Kimden aldın?"), "bitti → kimden: " + r.speech);
         // 13*130 + 87*100 + 74*40 = 1690 + 8700 + 2960 = 13350
@@ -103,12 +103,12 @@ public class TezgahVoiceDialogTest {
         TezgahVoiceDialog z = new TezgahVoiceDialog(new TezgahModel(), "", Arrays.asList());
         z.handle("27");
         r = z.handle("bitti");
-        check(z.phase() == TezgahVoiceDialog.Phase.PRICE && r.speech.equals("Double için fiyat girilmemiş. Kilo fiyatı kaç lira?"), "fiyatsız numara: fiyat sorulur: " + r.speech);
+        check(z.phase() == TezgahVoiceDialog.Phase.PRICE && r.speech.equals("Duble için fiyat girilmemiş. Kilo fiyatı kaç lira?"), "fiyatsız numara: fiyat sorulur: " + r.speech);
         r = z.handle("şey");
         check(z.phase() == TezgahVoiceDialog.Phase.PRICE && r.action == TezgahVoiceDialog.Action.NONE, "fiyat anlaşılmazsa yeniden sorar");
         r = z.handle("yüz kırk");
         check(r.action == TezgahVoiceDialog.Action.PRICE && r.grade == 0 && r.kg == 140 && z.phase() == TezgahVoiceDialog.Phase.SELLER
-                && r.speech.startsWith("Tamam, Double 140 lira. Tartım bitti. Toplam net 25 kilo. Tutar 3500 lira."), "fiyat söylenince devam eder: " + r.speech);
+                && r.speech.startsWith("Tamam, Duble 140 lira. Tartım bitti. Toplam net 25 kilo. Tutar 3500 lira."), "fiyat söylenince devam eder: " + r.speech);
 
         // Net söylenirse dara düşülmez
         TezgahVoiceDialog nt = new TezgahVoiceDialog(model(), "", Arrays.asList());
@@ -164,6 +164,22 @@ public class TezgahVoiceDialogTest {
         // Fiyat penceresi: ekranda "120 ₺" (bölünmez boşluklu) yazısı geri okununca 0 olmamalı
         check(TezgahModel.parse(TezgahModel.money(120)) == 120 && TezgahModel.parse(TezgahModel.money(12.5)) == 12.5
                 && TezgahModel.parse("1.250\u202f₺") == 1250, "biçimli fiyat geri okunur (0'a düşmez)");
+
+        // "Duble var mı?" akışı
+        TezgahVoiceDialog vm = new TezgahVoiceDialog(model(), "", Arrays.asList());
+        vm.greeting();
+        r = vm.handle("hayır");
+        check(vm.grade() == 1 && r.speech.equals("1 numara var mı?"), "'var mı?' sorusuna hayır → sıradaki: " + r.speech);
+        r = vm.handle("devam et");
+        check(vm.grade() == 2 && r.speech.equals("2 numara var mı?"), "'devam et' → sıradaki: " + r.speech);
+        r = vm.handle("var");
+        check(r.speech.equals("Kaç kilo?") && vm.grade() == 2, "'var' → kaç kilo: " + r.speech);
+        r = vm.handle("27");
+        check(r.action == TezgahVoiceDialog.Action.ADD && r.grade == 2, "kilo yazılır");
+        r = vm.handle("hayır");
+        check(vm.grade() == 2 && r.action == TezgahVoiceDialog.Action.NONE, "tartımdan sonra 'hayır' numarayı atlamaz");
+        r = vm.handle("geç");
+        check(vm.grade() == 3 && r.speech.equals("3 numara var mı?"), "'geç' → sıradaki: " + r.speech);
 
         // Ayrıştırma
         TezgahVoiceDialog.Said s = TezgahVoiceDialog.parse("1 numara 40, 2 kasa");
