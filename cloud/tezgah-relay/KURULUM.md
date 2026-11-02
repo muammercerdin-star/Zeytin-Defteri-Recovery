@@ -1,98 +1,112 @@
-# Tezgâh Relay — telefondan kurulum
+# Tezgâh aktarıcısı — yalnız telefonla Cloudflare kurulumu
 
-Bu klasör ayrı bir Worker'dır. **`cloud/zeytin-ai` üzerinde değişiklik yapmayın.** Adım 3a'da Android telefon tarafı eklendi; çalışan web sayfası 3b'dedir. Android derlemesi SDK olmadığı için yapılmadı. Dosyalar hazırlanıp host testlerinden geçirilmiştir; canlı Cloudflare dağıtımı **doğrulanmadı**.
+Bu Worker ayrıdır: **`cloud/zeytin-ai` dosyalarına ve yayınına dokunmayın.** Kaynak depo `muammercerdin-star/Zeytin-Defteri-Recovery`, dal **`work/web-baglanti`**, Worker kökü **`cloud/tezgah-relay`**. Bilgisayar/yerel Node gerekmez; telefondaki tarayıcıda Cloudflare ve GitHub kullanılır. Panel dar görünürse tarayıcı menüsünden “Masaüstü sitesi” açılabilir.
 
-## Önce bilinmesi gerekenler
+Kaynaklar 2 Kasım 2026 tarihinde kontrol edildi. GitHub bağlantılı Workers Builds Free planda var: **3.000 build dakikası/ay, aynı anda 1 build, 20 dakika/build**. SQLite-backed Durable Objects Free planda kullanılabilir. Bu, ücretsiz kotasız hizmet demek değildir. Ücretli plan/eklenti açmayın; kota dolarsa bekleyin. [Build kotası](https://developers.cloudflare.com/workers/ci-cd/builds/limits-and-pricing/), [DO fiyatlandırması](https://developers.cloudflare.com/durable-objects/platform/pricing/).
 
-- Cloudflare **Workers Free** kullanılacak. Paid/Pro/ücretli eklenti açmayın. DO namespace **SQLite** olmalı; `new_classes` değil `new_sqlite_classes` migration'ı var. Yeni dokümanlarda görülen `exports` deklarasyonunu bununla birlikte eklemeyin.
-- **Üretimde özel alan adı şartı:** Bu projede `*.workers.dev` adresinin Türk mobil operatör bağlantısında zaman aşımına uğradığı bildirildi; bu yüzden AI servisinde Supabase proxy kullanılmıştı. Relay için bu proxy'yi otomatik çözüm saymayın: normal HTTP proxy WebSocket tüneli değildir. Üretim adresini örneğin `https://relay.zeytindefteri.com` / `wss://relay.zeytindefteri.com` olarak kurun. `workers.dev` yalnız geliştirme içindir; telefonda mobil veriyle çalışacağı varsayılmaz.
-- Özel alan adının zaten size ait ve DNS bölgesinin Cloudflare'de aktif olduğu varsayılıyor; sahiplik/DNS erişimi **doğrulanmadı**. Yeni domain satın almak ücretsiz değildir. Mevcut alan adı yoksa bu varsayım ayrıca çözülmeli.
-- Hiçbir service-role, private key, Firebase belgesi veya API sırrı gerekli değil. GitHub bağlantısı Cloudflare'nin kendi yetkilendirme ekranıyla yapılır; token'ı dosyaya yapıştırmayın.
-- Anahtarlar yalnız tarayıcı ve telefonda üretilir. Relay yalnız rastgele oda ve token hash'i/süre/sayaç metadata'sı tutar; içerik ve ciphertext saklamaz. IP başlığı okunmaz. Platformun ağ bağlantı metaverisini görebilmesi engellenmiş sayılmaz.
+**Doğrulama sınırı:** Workers Builds'in `wrangler deploy` çalıştırması ve Wrangler'ın `new_sqlite_classes` migration'ını uygulaması resmî belgelerde doğrulandı. Bu nedenle aşağıdaki yol desteklenen parçaların birleşimidir. Bu hesaba giriş yapıp canlı dağıtım ve iki cihaz testi **yapılmadı / doğrulanmadı**. Paneldeki menü adları değişebilir.
 
-## 1. Telefonda kaynak ayarlarını kontrol et
+## 1. Ücretsiz deneme adreslerini belirleyin
 
-GitHub uygulamasından veya tarayıcıdan `muammercerdin-star/Zeytin-Defteri-Recovery` → `work/web-baglanti` → `cloud/tezgah-relay/wrangler.toml` dosyasını aç.
+Önce [web kurulumunun](../../web/tezgah/KURULUM.md) 1. adımıyla Pages projesini oluşturup ücretsiz `https://PROJE.pages.dev` adresini alın. Yapılandırma boşken **“Kurulum gerekiyor”** görmelisiniz; henüz QR çıkmaması beklenir.
 
-| Ayar | Anlamı |
+Ardından Cloudflare → **Workers & Pages** içinde Worker hesabınızın `workers.dev` alt alan adını bulun/oluşturun. Worker adı `tezgah-relay` olunca adres örneği `https://tezgah-relay.HESABINIZ.workers.dev` olur. Bunu tahminle kullanmayın: yayımdan sonra panelin gösterdiği gerçek adresle karşılaştırın.
+
+GitHub mobil uygulamasında veya tarayıcıda ilgili dalda `cloud/tezgah-relay/wrangler.toml` dosyasını düzenleyin:
+
+```toml
+workers_dev = true
+
+[vars]
+RELAY_URL = "https://tezgah-relay.HESABINIZ.workers.dev"
+ALLOWED_ORIGINS = '["https://PROJE.pages.dev"]'
+```
+
+Bunlar **örnektir**; kendi gerçek adreslerinizi yazın. Dosyadaki diğer `[vars]` değerlerini, binding ve migration bölümünü koruyun. `[vars]` bölümünü ikinci kez eklemeyin. `ALLOWED_ORIGINS` JSON dizidir; `*`, yol veya sonda `/` yok. Preview dağıtım adresi yerine sabit production `PROJE.pages.dev` adresini kullanın.
+
+**Beklenen:** GitHub commit'i doğru dalda görünür. Her iki origin HTTPS'tir. Bu adresler gizli değildir; parola, özel anahtar, Firebase token'ı veya service-role anahtarı gerekmez.
+
+**Bilinen mobil veri sorunu:** Bu projede Türk mobil operatöründen `*.workers.dev` bağlantısında zaman aşımı yaşandı. Önce Wi-Fi'de ücretsiz adreslerle deneyin. Mobil veride zaman aşımını şifreleme hatası sanmayın; üretimde mevcut Cloudflare alan adındaki `relay.zeytindefteri.com` kullanılmalıdır. AI için kullanılan HTTP Supabase proxy'si WebSocket relay yerine otomatik olarak kullanılamaz.
+
+## 2. Worker'ı GitHub bağlantılı derlemeyle yayımlayın
+
+1. Telefonda [Cloudflare paneli](https://dash.cloudflare.com/) → hesabınız → **Workers & Pages → Create application → Worker → Import repository / Connect GitHub** yolunu seçin. Panel önce Worker oluşturmanızı isterse oluşturduktan sonra **Settings → Builds → Connect** ile depoyu bağlayın. **Pages projesini burada seçmeyin.**
+2. Cloudflare'nin resmî GitHub yetkilendirme ekranında yalnız gereken depoya erişim verin. Ekranın yönettiği kimlik doğrulamayı kullanın; token'ı dosyaya yapıştırmayın.
+3. Depo: `muammercerdin-star/Zeytin-Defteri-Recovery`; production branch: **`work/web-baglanti`**; Worker adı: **`tezgah-relay`**. Worker adı `wrangler.toml` içindeki `name` ile aynı olmalı.
+4. **Root directory:** `cloud/tezgah-relay`.
+5. **Build command:** boş. **Deploy command:** `npx --yes wrangler@4 deploy`. Sürüm yüklemesi Cloudflare'nin build ortamında yapılır. Telefona Node/Wrangler kurulmaz. İlk migration'da `versions upload` veya gradual deployment kullanmayın.
+6. Preview/non-production branch dağıtımlarını kapatın. Build watch paths seçeneği varsa `cloud/tezgah-relay/**` ile sınırlandırın; Android veya web değişikliği gereksiz Worker build'i açmasın.
+7. **Save / Deploy** seçin. **Beklenen:** build durumu Success; deploy çıktısında `TezgahRelay` için migration kabul edilir. İlk defa çalıştığı için migration çıktısı görünür; sonraki dağıtımlarda tekrar migration üretmeyin.
+8. Worker → **Settings → Bindings**: `ROOMS` → `TezgahRelay` görünmeli. Durable Objects bölümünde namespace'in **SQLite** olduğunu kontrol edin. `new_classes` ile eski KV-backed DO oluşturmayın; ücretli plana geçerek çözmeye çalışmayın.
+9. **Settings → Domains & Routes** içinde gerçek `workers.dev` adresini kopyalayın. Git dosyasındaki `RELAY_URL` aynı değilse GitHub'da düzeltip yeniden deploy edin.
+10. Değişkenleri ve **Observability / Logs kapalı** durumunu kontrol edin. Kalıcı uygulama logları `[observability] enabled = false`. Gerçek QR/mesaj/token içeren tail log açmayın. Panelde elle yapılan vars değişiklikleri sonraki Git deploy'unda dosyadaki değerlere dönebilir; kalıcı değişikliği Git üzerinden yapın.
+
+**Neden kod yapıştırma yok?** Durable Object export'u, binding ve migration birlikte dağıtılmalıdır. `worker.js` dosyasını Edit Code ekranına yapıştırmak ilk DO namespace kurulumunu tamamlamaz. Yeni `exports` DO deklarasyonu ile bu projenin legacy `[[migrations]]` tanımını birlikte kullanmayın.
+
+Workers Builds bağlantısı hesap/panel nedeniyle kullanılamıyorsa ücretli plana geçmeyin. Alternatif olarak telefonunuzdaki Termux'ta depoyu alıp bu klasörde Node + Wrangler ile `npx wrangler@4 login` ve `npx wrangler@4 deploy` kullanılabilir; resmî CLI yolu aynı migration'ı uygular. Bu alternatif panelden yapılmaz; Termux/Node kurulumu ve telefondaki OAuth dönüşünün çalışması bu ortamda **doğrulanmadı**. Service-role veya private key gerektirmez. Öncelikli yol yukarıdaki GitHub bağlantılı build'dir.
+
+## 3. Web ve Android'i aynı adrese bağlayın
+
+[Web rehberindeki](../../web/tezgah/KURULUM.md) `config.js` ve `_headers` düzenlemelerini tamamlayın. Üç yapılandırmanın anlamı:
+
+| Yer | Ücretsiz deneme örneği |
 |---|---|
-| `name = "tezgah-relay"` | Cloudflare panelindeki Worker adıyla aynı olmalı. |
-| `RELAY_URL` | Sonunda yol olmayan HTTPS özel alan adı; örneğin `https://relay.zeytindefteri.com`. Bu bilgi gizli değildir. |
-| `ALLOWED_ORIGINS` | JSON dizi olarak izin verilen **tam HTTPS web origin'leri**. Örnek: `["https://web.zeytindefteri.com"]`; `*`, path, sondaki `/` veya http yok. |
-| `workers_dev = false` | Üretim için açık bırakma; yalnız geliştirmede ayrı Worker/config ile true yapılabilir. |
-| `ROOMS / TezgahRelay` | DO binding/class adı; değiştirmeyin. |
-| `new_sqlite_classes` | İlk dağıtımda SQLite namespace'i kurar. Aynı migration tag'ini değiştirmeyin/silmeyin. |
-| `CREATE_PER_MINUTE = "10"` | Worker genelinde dakikada oda oluşturma bütçesi. IP kullanılmaz. |
-| `FRAME_RATE / FRAME_BURST / BYTES_PER_MINUTE` | Varsayılan 20 frame/sn, 60 frame patlama, 4 MiB/dk. Sınırda frame düşer ve en çok saniyede bir şifresiz `hiz_siniri` gider; aralıksız aşım serisi 10 sn sürerse kapanır. |
-| `CREATE_PER_DAY = "1000"` | Worker genelinde günde oda oluşturma bütçesi; UTC gününde yenilenir. Bu uygulama bütçesi, Cloudflare hesabının kalan kotası değildir. |
-| `[observability] enabled = false` | Worker kalıcı uygulama logları kapalı. |
+| Worker `RELAY_URL` | `https://tezgah-relay.HESABINIZ.workers.dev` |
+| Worker `ALLOWED_ORIGINS` | `["https://PROJE.pages.dev"]` |
+| Web `config.js`: `RELAY_URL` | Aynı HTTPS Worker origin'i |
+| Web `_headers`: `connect-src` | Aynı hostname'in **HTTPS ve WSS** origin'leri |
+| Android `local.properties`: `TEZGAH_RELAY_URL` | Aynı HTTPS Worker origin'i |
 
-Adreslerin gerçek karşılıkları farklıysa yalnız bu ortam ayarlarını düzeltip commit et. Worker koduna adres yazma. `[vars]` Git tabanlı yayının kaynağıdır; panelde tek başına değiştirilen değerler sonraki Git dağıtımında eski değere dönebilir.
+Android proje kökündeki git dışı `local.properties` dosyasına şunu ekleyin:
 
-## 2. Cloudflare panelinden GitHub'a bağla ve yayımla
+```properties
+TEZGAH_RELAY_URL=https://tezgah-relay.HESABINIZ.workers.dev
+```
 
-[Cloudflare panelini aç](https://dash.cloudflare.com/) → hesabını seç → **Workers & Pages**.
+Termux'ta repo kökünden `bash gradlew :app:assembleRelease` ile yeniden derleyip mevcut imza düzeniyle kurun. **Beklenen:** Tezgâh ana ekranında “Bilgisayara bağlan” satırı görünür. URL boş/geçersizse satır gizlidir. QR içinden relay hedefi alınmaz; hedef BuildConfig'teki adrestir. OkHttp **4.12.1 JVM JAR** kullanılır; compileSdk **36**, AGP **8.10.0**, minSdk **24** korunur. Bu ortamda Android SDK yok; gerçek APK derlemesi ve boyutu **ölçülmedi / doğrulanmadı**.
 
-1. **Create application / Create Worker** yolundan **GitHub repository import/connect** seçeneğini aç. Arayüzde isimler farklı görünürse Worker içinde **Settings → Builds → Connect** yolu kullanılabilir. Git tabanlı Worker oluşturmayı seç; Pages statik site projesi seçme.
-2. GitHub hesabını Cloudflare'nin resmî ekranında yetkilendir. Yalnız gerekli Recovery deposuna erişim ver; token veya parola dosyaya yazma.
-3. Depo: `muammercerdin-star/Zeytin-Defteri-Recovery`; production branch: **`work/web-baglanti`**. `main` veya AI projesinin ayarlarını değiştirme.
-4. Worker adı: **`tezgah-relay`**.
-5. Gelişmiş build ayarlarında **Root directory**: `cloud/tezgah-relay`.
-6. **Build command** boş; **Deploy command**: `npx --yes wrangler@4 deploy`. Bu, Cloudflare'nin build ortamında Wrangler çalıştırır; telefona Node/Docker kurman gerekmez. Migration/binding'in Wrangler tarafından uygulanması gerekir; sadece Edit Code ekranına worker.js yapıştırmak ilk DO kurulumunu tamamlamaz.
-7. Non-production/preview branch otomatik dağıtımlarını kapat; bu Worker için yalnız belirtilen dalı yayımla. Build watch paths destekleniyorsa `cloud/tezgah-relay/**` ile sınırla. Böylece Android veya AI değişikliği gereksiz build tetiklemez.
-8. **Deploy** seç. Logda `new_sqlite_classes` migration'ının ve `TezgahRelay` export'unun kabul edildiğini kontrol et. Namespace'in SQLite olması önemli; ücretli plana geçerek hata çözmeye çalışma.
-9. Worker → **Settings / Bindings** bölümünde `ROOMS` → `TezgahRelay` görünmeli. Workers & Pages → Durable Objects bölümünde namespace ve storage türünü kontrol et.
-10. Değişkenler bölümünde `RELAY_URL`, `ALLOWED_ORIGINS` ve bütçeleri; Observability bölümünde kalıcı logların kapalı olduğunu doğrula. Log tail açıp gerçek QR/token/mesaj dökümü toplama.
+## 4. Özel alan adına geçin
 
-**Sınır:** Bu panel akışı resmî Git integration ve DO migration belgelerine dayanıyor. Bu hesaptaki panel, Free build kotası ve dağıtım sonucu **doğrulanmadı**. Ücretsiz build kotası biterse yayını beklet; ücretli plana yükseltme yapma. Hata ekranı çıkarsa gizli bilgi içermeyen hata kodu ile teşhis yapılmalı.
+Mevcut alan adının size ait olduğu ve DNS bölgesinin Cloudflare'de aktif olduğu varsayılır. Yeni alan adı satın almak ücretsiz değildir; bu görev domain satın almaz.
 
-## 3. Özel alan adı bağla
+1. Worker → **Settings → Domains & Routes → Add → Custom Domain** → `relay.zeytindefteri.com`. Şema/yol yazmayın. Cloudflare'nin DNS/TLS kurulumunu tamamlayın. **Beklenen:** Domain Active, HTTPS sertifikası etkin.
+2. Pages projesi → **Custom domains → Set up a custom domain** → `web.zeytindefteri.com`. Aynı hostname'in mevcut DNS kayıtlarını kontrol edin; AI/diğer servislerin kayıtlarını silmeyin. **Beklenen:** Domain Active.
+3. GitHub'dan Worker vars'ı `RELAY_URL = "https://relay.zeytindefteri.com"`, `ALLOWED_ORIGINS = '["https://web.zeytindefteri.com"]'` yapın; `workers_dev = false` üretim varsayılanına dönsün. Binding/migration değişmez.
+4. Web `config.js` adresini ve `_headers` içindeki HTTPS/WSS origin'lerini değiştirin. Pages/Worker Git dağıtımlarının başarıyla bittiğini bekleyin. Eski ücretsiz web origin'ini izin listesinden çıkarın; iki origin'in geçici birlikte kabulü gerekiyorsa açıkça ikisini JSON diziye yazın, `*` kullanmayın.
+5. Android `TEZGAH_RELAY_URL=https://relay.zeytindefteri.com` yapıp tekrar derleyin. Açık eski oturumları kapatıp yeni QR ile eşleşin.
+6. [Gerçek demo listesini](../../docs/web-baglanti/DEMO.md) Wi-Fi ve mobil veride uygulayın. Özel domain de mobil veride ayrıca doğrulanmalıdır; çalışan kabul edilmedi.
 
-Worker → **Settings → Domains & Routes → Add → Custom Domain** yolunu aç.
+## 5. Sık hatalar ve beklenen ekranlar
 
-1. Alan adını yaz: örneğin **`relay.zeytindefteri.com`**. URL şeması veya `/v1/socket` yolu yazma.
-2. Domain'in DNS bölgesinin aynı Cloudflare hesabında aktif olduğunu doğrula. Custom Domain kurulumunun oluşturduğu DNS/kayıt/TLS adımlarını panelden tamamla; aynı hostname için çakışan eski A/CNAME kayıtlarını kontrol et. Diğer uygulama/AI adreslerini silme.
-3. Sertifika etkinleşene kadar bekle. HTTPS çalışmadan `wss://` kullanılamaz. Sertifika kontrolünü istemcide kapatma.
-4. `wrangler.toml` içindeki `RELAY_URL` ile paneldeki alan adının birebir aynı olduğuna bak. Kaynak dal üzerinden yeni bir dağıtım tetikle.
-5. Web istemcisinin adresi relay adresinden farklıdır: `web...` HTML/JS'yi sunacak, `relay...` yalnız WSS/HTTP aktarıcıdır. Web sayfası adım 3b'de hazırlanacak; bu Worker'ı açınca QR ekranı görmemen normal.
-
-**Tarayıcıdan `/v1/rooms` adresini açmak GET gönderir ve 404 verir; kurulum bozuk demek değildir.** Endpoint yalnız izinli origin'den JSON POST kabul eder. `/v1/socket?room=<oda>` WebSocket upgrade ister. Canlı doğrulama adım 3'ün iki cihazlı demosunda yapılacak.
-
-## 4. Ortam adresleri ve ileride Android
-
-Worker yalnız `[vars].RELAY_URL` ve `[vars].ALLOWED_ORIGINS` kullanır; URL token taşımaz. Oda kimliği URL'de olabilir, **capability ilk socket frame'inde** gider. URL'ye S, hesap UID'si veya Firebase token'ı koyma.
-
-Android için proje kökündeki git dışı `local.properties` dosyasında **`TEZGAH_RELAY_URL=https://relay...`** ayarı okunacak. Mevcut `ZEYTIN_AI_URL` / `zdBuildString` deseniyle BuildConfig alanı üretilecek. BuildConfig alanı Gradle'a eklendi; boş/geçersiz HTTPS adresinde özellik gizlidir. Yalnız OkHttp 5.5.1 doğrudan bağımlılığı eklendi. QR'dan gelen serbest bir relay URL'sine bağlanılmayacak; optik QR yalnız odanın/kriptonun girdisi, gerçek hedef dağıtım ayarıdır.
-
-## 5. Endpoint / süre özeti
-
-| İşlem | Kural |
+| Belirti | Kontrol |
 |---|---|
-| `POST /v1/rooms` | İzinli Origin, JSON `{}`; rastgele room/cb/cp ve expiresAt döner. S/B/nb relaya gönderilmez. |
-| `/v1/socket?room=...` | WSS; ilk frame `{v:1,type:"auth",room,role,capability}`; 5 sn içinde auth yoksa kapanır. |
-| Pending oda | 90 sn; 1 phone + 1 browser; en fazla 4 auth-bekleyen/toplam açık socket; geçerli aynı rol capability'si yeni sokete eski soketi kapattırarak yer açar; oda upgrade sınırı 20/dk. |
-| Eşleşme | Phone `phone_hello`, browser `web_finished`; açık telefon onayından sonra **phone** `consume{session}` yollar. Tek tüketim ve iki rol token'ı rotasyonu. |
-| Consume / onay | Relay phone rolüne güvenir; kullanıcı onayının kendisini göremez. Adım 3, gerçek UI onayını zorunlu kılmalı. `consumed` E2EE onayı değildir. |
-| Veri | Active durumda `encrypted` zarfı; yalnız karşı uca; alıcı yoksa atılır. |
-| Boyut / hız | Frame ≤64 KiB; bağlantı başına 20 frame/sn, 60 frame burst, 4 MiB/dk; binary mesaj kabul edilmez. |
-| Kalp atışı | `{v:1,type:"ping"}` → pong; client 30 sn'de gönderir. 60 sn etkinlik yoksa socket kapanır. |
-| Kopma | İlk kopmada 5 dk sabit pencere; active rol capability'siyle yeniden socket auth, ardından iki uçta E2EE resume doğrulaması. Phone `resume_complete` ile pencereyi kapatır. |
-| Süre / çıkış | Active oda en çok 8 saat; `close` iki rol için de odayı bitirir. Alarm metadata'yı temizler. Browser/phone RAM anahtarlarını da silmeli. |
+| Worker adresini açınca 404 | Normal: kökte HTML yok. `/v1/rooms` yalnız JSON POST kabul eder; adres çubuğu GET gönderir. QR web sayfasındadır. |
+| 403 / `ORIGIN_403` / tarayıcıda genel ağ hatası | Web'in **tam** origin'i `ALLOWED_ORIGINS` içinde mi? `pages.dev` ile preview/custom domain farklıdır. CORS 403 yanıtını tarayıcı JS'inden saklayabilir; Network ekranında 403 görünür. |
+| 503 `YAPILANDIRILMADI` | Worker vars JSON'u, HTTPS origin biçimi, `RELAY_URL` ile istek yapılan gerçek hostname aynı mı? Binding/migration başarılı mı? |
+| Sayfada “Kurulum gerekiyor” | `config.js` boş; düzenleyip Pages deploy'unun bitmesini bekleyin. |
+| CSP bağlantıyı engelliyor | `_headers` içindeki `relay.example.invalid` yer tutucularını gerçek HTTPS **ve** WSS origin'leriyle değiştirin. `connect-src` için wildcard açmayın. |
+| QR değişti / telefon “süresi dolmuş” diyor | QR 90 saniye yaşar; otomatik yenisi gelir. Yeni QR'ı okutun; telefon/tarayıcı saatlerini kontrol edin. |
+| Telefonda satır yok | `local.properties` satırı + **yeniden APK derleme** gerekir. HTTPS dışında adres kullanmayın. |
+| Wi-Fi çalışıyor, mobil veri timeout | Bilinen `workers.dev` erişim sorunu; özel domain'e geçip tekrar deneyin. TLS doğrulamasını kapatmayın. |
+| Migration veya ad hatası | Root directory ve Worker adı doğru mu? `new_sqlite_classes = ["TezgahRelay"]` ve export/binding aynı mı? İlk migration tag'ini silmeyin. |
+| 429 | Uygulama oda bütçesi/dakika veya gün sınırı dolmuş olabilir. Yenilemeyi durdurup bekleyin. Free plan kotası ayrıca paylaşılır. |
 
-Alarm 5 sn ve 90 sn gibi eşikleri uygular; gerçek platform alarmı gecikirse gelen her auth/mesajda saat kontrolü de yapılır. Hibernation sırasında sayaç/rol/deadline attachment'ları korunur; mesajlar korunmaz. DO'nun kalıcı metadata'sında yalnız capability hash'i, oda/session, süre/sayaç durur.
+## 6. Protokol ve test sınırları
 
-## 6. Yerel testler ve doğrulama sınırı
+- QR 90 sn, ilk socket auth 5 sn, oda başına 1 telefon + 1 browser. Geçerli aynı rol capability'siyle yeni soket eskisinin yerini alır.
+- Aktarıcı token hash'i ve süre/sayaç metadata'sı tutar; içerik, ciphertext veya IP uygulama tarafından saklanmaz/loglanmaz. Cloudflare ağ metaverisini görebilir. Anahtarlar uçlarda RAM'dedir.
+- Frame ≤64 KiB; varsayılan 20 frame/sn, 60 burst, 4 MiB/dk. Aşımda frame düşer/`hiz_siniri` bildirimi; aralıksız 10 sn aşımda kapanır. Telefon 10 frame/sn ve yaklaşık 1,9 MiB/dk tempoludur.
+- Resume penceresi 5 dk; yeni epoch/noncelar ve iki yön HMAC ile yeni anahtarlar; eski epoch kabul edilmez. Active oda en çok 8 saat. Tarayıcı 5 dk kullanıcı hareketsizliğinde veriyi/anahtarları siler ve yeni QR üretir.
+- `close` iki ucu kapatır. Ağ yokken close ulaşamayabilir: pending oda 90 sn sunucu TTL'siyle, active oda kopma süresiyle temizlenir. Tarayıcıda veri/anahtar temizleme ağdan bağımsızdır.
+- `bash tests/web_relay/run.sh` Node mock testidir; gerçek edge hibernation veya canlı iki cihaz denemesi değildir. Yeni sayfa ve gerçek Java/SQLite host simülasyonu `bash tests/web_page/run.sh` içindedir.
 
-Repo kökünde `bash tests/web_crypto/run.sh` ve `bash tests/web_relay/run.sh` çalışır. Node WebCrypto, Java 8 uyumlu host derlemesi gerekir. Python yalnız ortak JSON fixture'ını Java Properties girdisine çevirir; üretim bağımlılığı değildir.
+## Resmî kaynaklar
 
-Relay testleri Cloudflare çalışma ortamını **Node mock** ile taklit eder. Gerçek `workerd`, canlı WebSocket, edge hibernation, mobil veri/TLS ve 10 saatlik kota/pil ölçümü **yapılmadı**. Bu adımda test sonucu olan “PASS” bu canlı davranışların onayı değildir.
-
-Resmî belgeler: [Workers Git bağlantısı](https://developers.cloudflare.com/workers/ci-cd/builds/), [DO SQLite başlangıcı](https://developers.cloudflare.com/durable-objects/get-started/), [DO legacy migration](https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/), [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/), [Hibernation](https://developers.cloudflare.com/durable-objects/best-practices/websockets/), [Alarms](https://developers.cloudflare.com/durable-objects/api/alarms/), [ücretsiz DO kotaları](https://developers.cloudflare.com/durable-objects/platform/pricing/).
-
-## 7. Adım 3a telefon istemcisi
-
-`TEZGAH_RELAY_URL` yerel ayarıyla derlenince Tezgâh ana ekranında “Bilgisayara bağlan” görünür. QR okuma → açık telefon onayı/ad → foreground service. Service yalnız açık dönem ve takvim günü alımlarını okur; hiçbir web yazma komutu yoktur. Tek aktif bilgisayar desteklenir; isim/tarih/durum metadata'sı noBackupFilesDir içindedir.
-
-Telefon gönderim temposu 10 frame/sn ve yaklaşık 1,9 MiB/dk; kuyruk en fazla 128 frame/2 MiB. Relay vars değerlerini bu temponun altına indirirsen cevaplar düşebilir; browser 3b salt okuma isteklerine timeout/tekrar eklemeli. `peer_joined` ve `peer_left` şifresiz bağlantı ipuçlarıdır, kimlik/telefon onayı yerine geçmez; browser yeniden katılınca yeni epoch resume gerekir.
-
-APK boyutu **ölçülmedi**; gerçek Android/OkHttp derlemesi **derlenmedi (SDK yok)**. Termux'ta mevcut imza ayarlarıyla `bash gradlew :app:assembleRelease` kullanılacak. API listesi ve doğrulama sınırları [Adım 3a raporunda](../../docs/web-baglanti/ADIM3A-RAPOR.md).
+- [Workers Builds / Git bağlantısı ve deploy komutu](https://developers.cloudflare.com/workers/ci-cd/builds/)
+- [Build yapılandırması / root directory](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+- [Workers Builds Free limitleri](https://developers.cloudflare.com/workers/ci-cd/builds/limits-and-pricing/)
+- [DO migration: `new_sqlite_classes` ve `wrangler deploy`](https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/)
+- [SQLite DO Free fiyatlandırması](https://developers.cloudflare.com/durable-objects/platform/pricing/)
+- [Worker Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+- [Pages Git bağlantısı](https://developers.cloudflare.com/pages/get-started/git-integration/)
+- [Pages custom domains](https://developers.cloudflare.com/pages/configuration/custom-domains/)

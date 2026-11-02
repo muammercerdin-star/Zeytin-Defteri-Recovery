@@ -124,9 +124,9 @@ A4 için HTML tarayıcıda basılır; sunucuda PDF üretimi/büyük bitmap aktar
 
 ### 4.1 WebSocket
 
-3a seçimi: **`com.squareup.okhttp3:okhttp:5.5.1`**, resmî güncel sürüm belgelerinden doğrulandı (3 Kasım 2026). Java çağrı arayüzü, WSS, ping/close ve yeniden bağlantı olaylarını yönetmek için; Android platformunda uygulamaların kullanabildiği yerleşik genel bir `java.net.http.WebSocket` çözümü minSdk 24 için temel alınmaz. Supabase SDK'sını sırf bu özellik için eklemeyiz.
+3b düzeltmesi: **`com.squareup.okhttp3:okhttp:4.12.1`** JVM JAR seçildi. 3a'daki 5.5.1 Android AAR varyantı gerçek Termux derlemesinde compileSdk 37 istedi; proje compileSdk 36 / AGP 8.10.0 / minSdk 24'te kalır. Kullanıcı onayı olmadan SDK/AGP yükseltilmez. Yeni AAR bağımlılıklarının minCompileSdk ve minimum AGP metadata'sı kontrol edilir; kural repo kökündeki AGENTS.md'de kalıcıdır.
 
-Resmî güncel kaynak [OkHttp overview](https://lysine.dev/okhttp/) Android 21+ ve Java 8+, Okio/Kotlin stdlib transitif bağımlılıklarını ve AndroidX Startup başlangıcını belgeliyor. [5.5.1 changelog](https://lysine.dev/okhttp/changelogs/changelog/) 22 Ekim 2026 sürümünü gösteriyor. Java 8 compileOptions korunur; Kotlin plugin veya core-library desugaring bağımlılığı eklenmedi. Gradle Android varyantını seçer; Startup initializer kaldırılmadı. Bu projedeki tam transitif sürüm çözümü/D8 sonucu SDK olmadığı için **doğrulanmadı**.
+[Resmî 4.x changelog](https://lysine.dev/okhttp/changelogs/changelog_4x/) 4.12.1 sürümünü doğrular. [Yayımlanmış 4.12.1 POM](https://repo.maven.apache.org/maven2/com/squareup/okhttp3/okhttp/4.12.1/okhttp-4.12.1.pom) doğrudan Okio 3.6.0 ve kotlin-stdlib-jdk8 1.8.21 belirtir. [Sürüm etiketindeki README](https://github.com/lysine-dev/okhttp/blob/parent-4.12.1/README.md) Android 21+ / Java 8+ desteğini belirtir. İndirilen JAR ve yayımlanmış Okio/Kotlin JAR'larıyla gerçek TezgahWebClient host'ta `--release 8` derlendi; kullanılan tüm callback/zaman aşımı imzaları bytecode'da doğrulandı. JAR'da Android AAR metadata'sı yoktur. Kotlin plugin/desugaring/Startup eklenmez. Projenin tam Gradle transitif çözümü, D8 ve APK boyutu **doğrulanmadı**; Gradle wrapper DNS hatasıyla başlayamadı ve Android SDK yok. Ayrıntı [3b raporunda](ADIM3B-RAPOR.md).
 
 APK boyut etkisi **ölçülmedi**; önceki 0,7–2 MB tahmini ölçüm değildir. Doğrudan yalnız bir implementation eklendi; APK öncesi/sonrası derleme Termux'ta ölçülecek.
 
@@ -356,7 +356,7 @@ Yeni kod yazılan her adımda **tests/ altındaki bütün run.sh ve check*.py ko
 4. connectedDevice ağ üzerinden eşli bilgisayar kullanımına uygun öneridir; bu özel relay senaryosunun Play kabulü doğrulanmadı. dataSync geri dönüşünün altı saat sınırı ürün açısından kabul edilecek mi? Karar yayın öncesi gerekli; bu belge sınırsız servis vaat etmez.
 5. Sekme yenilemede QR, beş dakika hareketsizlikte çıkış, sekiz saat azami oturum ve iki bilgisayar sınırı ürün varsayımlarıdır. Güvenli ilk varsayılan olarak seçildi; kullanıcı tercihiyle değişebilir.
 6. Trafik, GB-s, APK artışı ve iş süreleri **tahmindir**; benchmark, APK veya gerçek kullanıcı ölçümü yapılmadı. Heartbeat maliyeti ve DO hibernation overhead'i ölçülmeden kapasite sözü verilmez.
-7. OkHttp 5.5.1 resmî sürüm olarak doğrulandı; bu projede Gradle/Android 24 derlemesi ve transitif APK boyutu doğrulanmadı. Ayrıntı 3a raporundadır.
+7. OkHttp 3b düzeltmesiyle 4.12.1 JVM JAR oldu; imzalar/paket/Java 8 host uyumu doğrulandı. Tam Gradle/Android 24 derlemesi ve APK boyutu doğrulanmadı. Ayrıntı 3b raporundadır; 3a raporu tarihsel seçim kaydıdır.
 8. E2EE çekirdeği uygulanıp Java↔Node WebCrypto host testleri yapıldı; bağımsız denetim ve gerçek API24↔Chrome/Edge/Firefox/Safari uyumu doğrulanmadı. Hostta resume/replay yarışları test edildi; gerçek soket lifecycle'ı adım 3'te doğrulanacak. Geçici anahtarları Java/JS yönetilen belleğinden fiziksel olarak tamamen sıfırlama garanti edilemez; referanslar sonlandırılır ve kalıcı depolama engellenir.
 9. Mevcut üretici ad eşleştirmesinin adaşları ayırması mümkün değil; kalıcı üretici kimliği ayrı veri modeli çalışması olur. Kapsamda ad temelli mevcut davranış korunur.
 10. KVKK açısından yurtdışı aktarıcı ve platform bağlantı metaverisinin hukuki şartları doğrulanmadı. İçerik şifrelemesi hukuki incelemenin yerine geçmez.
@@ -381,3 +381,7 @@ Kontrol tarihi: 2 Kasım 2026. Dokümandan doğrulanan kurallar ile bu belgenin 
 - **[K12]** Android API: [KeyAgreement](https://developer.android.com/reference/javax/crypto/KeyAgreement), [Cipher](https://developer.android.com/reference/javax/crypto/Cipher).
 - **[K13]** [Maven Central OkHttp 4.12.0](https://central.sonatype.com/artifact/com.squareup.okhttp3/okhttp/4.12.0) — artefakt arama sonucu doğrulandı; doğrudan sayfa erişimi timeout verdi. [Square kaynak README](https://github.com/square/okhttp/blob/master/README.md) — Java/Kotlin ve Android desteği için resmî kaynak arama sonucu; seçilen sürümün tam doğrulamasının yerine geçmez.
 - **[K14]** [W3C Web Cryptography API](https://www.w3.org/TR/webcrypto-1/) — ECDH/P-256, HKDF, AES-GCM.
+
+## Adım 3b uygulama durumu
+
+Bağımlılıksız Pages sayfası, yerel lisanslı QR, telefon onayı sonrası alım görüntüleme, açık dönem/takvim ayrımı, cursor sayfalama, değişiklikte yenileme, kopma/resume ve 5 dk idle kilidi eklendi. Config varsayılanı boştur; yalnız kurulumda düzenlenir. CSP relay origin'i `_headers` içinde ayrıca ayarlanır. Telefon DTO'su alım saati sağlamadığından yalnız gerçek alım tarihi gösterilir. Canlı dağıtım/iki cihaz demo **yapılmadı**; [DEMO.md](DEMO.md) kullanıcı kabul listesidir. Ayrıntılar [ADIM3B-RAPOR.md](ADIM3B-RAPOR.md).

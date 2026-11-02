@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0B1D28">
+  <title>Tezgâh · Zeytin Defteri</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Zeytin Defteri başlangıç">
+        <span class="brand-mark" aria-hidden="true">Z</span>
+        <span>ZEYTİN DEFTERİ <small>TEZGÂH BAĞLANTISI</small></span>
+      </a>
+      <div class="connection">
+        <span class="status" id="status" role="status" aria-live="polite">Bağlanıyor</span>
+        <button class="quiet" id="disconnect" type="button">Bağlantıyı kes</button>
+      </div>
+    </header>
+    <main>
+      <section class="heading">
+        <div><p class="eyebrow">BİLGİSAYARDA TEZGÂHINIZ</p>
+          <h1>Tezgâh <span class="separator">·</span> <span id="period">Açık dönem</span></h1>
+          <p class="subtitle">Veriler doğrudan telefonunuzdan gelir.</p>
+        </div>
+        <div class="filters">
+          <button id="open-period" class="quiet" type="button">Açık dönem</button>
+          <label for="day">Takvim günü<input id="day" type="date"></label>
+        </div>
+      </section>
+      <p id="message" class="message" role="status"></p>
+      <section id="pairing" class="pairing card">
+        <div class="pair-copy">
+          <span class="step-label">TELEFONUNUZLA BAĞLANIN</span>
+          <h2>Tezgâhınız, büyük ekranda.</h2>
+          <p>Telefonunuzdaki Zeytin Defteri’nde <strong>Tezgâh → Bilgisayara bağlan</strong> yolunu açın.</p>
+          <ol>
+            <li>QR kodunu telefonunuzla okutun.</li>
+            <li>Bilgisayarınıza bir ad verin ve telefonda onaylayın.</li>
+            <li>Alımları bu ekranda canlı görüntüleyin.</li>
+          </ol>
+          <p class="privacy">Uçtan uca şifreli · Yalnız görüntüleme<br>Bu bilgisayarda veri saklanmaz.</p>
+          <button id="retry" type="button" class="primary">Yeni QR oluştur</button>
+        </div>
+        <div class="qr-wrap">
+          <canvas id="qr" width="420" height="420" aria-label="Telefonla okutulacak tek kullanımlık eşleşme QR kodu" hidden></canvas>
+          <p id="seconds" class="countdown"></p>
+          <p class="qr-note">QR’ı paylaşmayın.<br>Yalnız kendi telefonunuzla okutun.</p>
+        </div>
+      </section>
+      <section id="ledger" hidden>
+        <div id="stale" class="offline" role="alert" hidden>Telefon bağlantısı koptu · Son alınan veriler gösteriliyor.</div>
+        <div class="stats">
+          <article class="card stat"><p>Alım sayısı</p><strong id="count">—</strong><small>Seçili kapsamın toplamı</small></article>
+          <article class="card stat"><p>Net ağırlık</p><strong id="weight">—</strong><small>Dara sonrası</small></article>
+          <article class="card stat"><p>Toplam tutar</p><strong id="amount">—</strong><small>Alım bedeli</small></article>
+          <article class="card stat"><p>Ödenen</p><strong id="paid">—</strong><small>Sonraki ödemeler dahil</small></article>
+          <article class="card stat remaining"><p>Kalan</p><strong id="remaining">—</strong><small>Ödenecek bakiye</small></article>
+        </div>
+        <section class="card purchases">
+          <div class="table-heading">
+            <div><h2>Alımlar</h2><p id="updated"></p></div>
+            <div class="table-actions"><span id="loading" hidden>Güncelleniyor…</span><button id="refresh" class="quiet" type="button">Yenile</button></div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Tarih</th><th>Üretici</th><th>Net kg</th><th>Kasa</th><th>Tutar</th><th>Ödenen</th><th>Kalan</th></tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <p id="empty" class="empty" hidden>Bu kapsamda alım bulunmuyor.</p>
+          <div class="pagination"><span id="page">Sayfa 1</span><div><button id="previous" class="quiet" type="button">← Önceki</button><button id="next" class="quiet" type="button">Sonraki →</button></div></div>
+        </section>
+        <p class="footnote">Açık dönem, Z ile kapanmamış alımları gösterir; tek bir takvim günüyle sınırlı değildir. Alım saati mevcut telefon verisinde bulunmaz.</p>
+      </section>
+    </main>
+    <footer><span>Zeytin Defteri</span><span>5 dakika işlem yapılmazsa bağlantı güvenliğiniz için kapanır.</span></footer>
+  </div>
+</body>
+</html>

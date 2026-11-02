@@ -238,7 +238,6 @@ public final class TezgahHomeActivity extends Activity {
     private boolean ttsReady;
     private AlertDialog askDialog;
 
-    /** "Sor" penceresi: yaz ya da mikrofona bas; örnek sorulara dokununca hemen cevaplanır. */
     private void webConnect() {
         if (!TezgahWebClient.configured() || !owner.equals(new SessionManager(this).getUserUid())) return;
         if (TezgahWebService.running(owner)) { webComputers(); return; }
@@ -272,6 +271,7 @@ public final class TezgahHomeActivity extends Activity {
                 .setNegativeButton("Kapat", null).show();
     }
 
+    /** "Sor" penceresi: yaz ya da mikrofona bas; örnek sorulara dokununca hemen cevaplanır. */
     private void askQuestion() {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
