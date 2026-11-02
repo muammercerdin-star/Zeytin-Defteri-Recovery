@@ -1781,13 +1781,7 @@ public class ProducerFeedActivity extends Activity {
 
         body.addView(hero);
 
-        // Hasat döneminde en çok iş: bugünün eleği (yaz / defterden oku) ve son kayıtlar, en üstte.
-        View todayElek = buildHomeTodayElek(garden);
-        if (todayElek != null) {
-            LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-1, -2);
-            tp.setMargins(dp(16), dp(12), dp(16), 0);
-            body.addView(todayElek, tp);
-        }
+        // "Bugünün eleği" kartı ana ekrandan kaldırıldı (Elek sekmesi aynı işi yapıyor; ana ekran sadeleşti).
 
         View leagueCard = buildHomeLeagueCard();
         LinearLayout.LayoutParams lcp = new LinearLayout.LayoutParams(-1, -2);
@@ -1986,6 +1980,7 @@ public class ProducerFeedActivity extends Activity {
      * "Bugünün eleği" kartı: bugün yazıldıysa kilo ve tutar, yazılmadıysa "Eleği yaz" ve "Defterden oku";
      * altında son 3 elek kaydı. Hasat döneminde (Ekim–Ocak) ya da bugün kayıt varsa görünür.
      */
+    @SuppressWarnings("unused") // ana ekrandan kaldırıldı; geri istenirse çağrısı eklenir
     private View buildHomeTodayElek(HomeGardenSnapshot garden) {
         Calendar cal = Calendar.getInstance();
         String todayIso = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new java.util.Date());
