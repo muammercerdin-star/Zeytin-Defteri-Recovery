@@ -106,7 +106,7 @@ tasks.matching { it.name == 'bundleRelease' || it.name == 'assembleRelease' }.co
 }
 
 dependencies {
-    implementation 'com.squareup.okhttp3:okhttp:5.5.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.1'
     implementation 'com.google.firebase:firebase-messaging:24.1.2'
     implementation 'com.google.firebase:firebase-auth:24.2.0'
     implementation 'com.google.firebase:firebase-firestore:26.0.1'
