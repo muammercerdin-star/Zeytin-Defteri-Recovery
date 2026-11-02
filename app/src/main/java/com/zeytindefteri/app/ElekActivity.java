@@ -978,6 +978,7 @@ public class ElekActivity extends Activity {
                     | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
             window.setWindowAnimations(R.style.ElekPricePopupAnimation);
         }
+        prefillMarketIntoDialog();
         dialog.show();
         if (window != null) {
             int width = Math.round(getResources().getDisplayMetrics().widthPixels * 0.92f);
@@ -3362,11 +3363,53 @@ public class ElekActivity extends Activity {
             renderPriceSource();
             return;
         }
+        seedSettingsFromMarket(region);
         marketRegion = region;
         marketChoice = CurrentPrices.choose(region, own, savedPrices());
         marketPricesActive = true;
         applyMarketOverlay();
         calculateAll();
+    }
+
+    /**
+     * Fiyatları Düzenle açılınca: bölgenin güncel fiyatı olan elekler alanlara yazılır (kaydedince varsayılan olur).
+     * Bölge verisi olmayan elekte kendi kayıtlı fiyatın kalır. "Hep kendi fiyat ayarım" seçiliyse dokunulmaz.
+     */
+    private void prefillMarketIntoDialog() {
+        if (!marketPricesActive || marketChoice == null || qrPricesActive) return;
+        EditText[] fields = priceFields();
+        int filled = 0, minW = Integer.MAX_VALUE, maxW = 0;
+        for (int i = 0; i < fields.length; i++) {
+            if (marketChoice.source[i] != CurrentPrices.REGION || fields[i] == null) continue;
+            fields[i].setText(plainNumber(marketChoice.price[i]));
+            filled++;
+            minW = Math.min(minW, marketChoice.region[i].windowDays);
+            maxW = Math.max(maxW, marketChoice.region[i].windowDays);
+        }
+        if (filled > 0 && tvPriceLastUpdate != null) {
+            String place = marketRegionName == null || marketRegionName.isEmpty() ? "Bölge" : marketRegionName;
+            tvPriceLastUpdate.setText(place + " piyasasından dolduruldu · "
+                    + (minW == maxW ? CurrentPrices.window(minW) : "son " + minW + "–" + maxW + " gün")
+                    + ". Kaydedersen varsayılan olur.");
+        }
+    }
+
+    /**
+     * Yeni kurulum: fiyat ayarı hiç kaydedilmemişse (uygulamanın 100/90/70… tahminleri duruyorsa)
+     * bölgenin güncel fiyatı ilk geldiğinde fiyat ayarı olarak kaydedilir. Bir kez kaydedilmiş ayara dokunulmaz.
+     */
+    private void seedSettingsFromMarket(CurrentPrices.Entry[] region) {
+        if (!CurrentPrices.any(region)) return;
+        String last = preferences.getString(KEY_LAST_UPDATE, "");
+        if (last != null && !last.trim().isEmpty()) return;
+        String[] keys = {KEY_PRICE_DOUBLE, KEY_PRICE_1, KEY_PRICE_2, KEY_PRICE_3, KEY_PRICE_4, KEY_PRICE_OIL};
+        SharedPreferences.Editor edit = preferences.edit();
+        for (int i = 0; i < keys.length; i++) {
+            if (region[i] != null && region[i].price > 0) edit.putString(keys[i], String.valueOf(region[i].price));
+        }
+        String place = marketRegionName == null || marketRegionName.isEmpty() ? "bölge" : marketRegionName;
+        edit.putString(KEY_LAST_UPDATE, new SimpleDateFormat("d MMM yyyy", turkishLocale).format(new Date())
+                + " · " + place + " piyasası").apply();
     }
 
     private static boolean anyPositive(double[] v) {

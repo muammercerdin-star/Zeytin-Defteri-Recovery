@@ -14,12 +14,14 @@ lay = open(os.path.join(ROOT, "app/src/main/res/layout/activity_elek.xml"), enco
 checks = [
     ("RPC adı SQL ile aynı", "\"market_region_current_prices\"" in rep and "market_region_current_prices(" in open(os.path.join(ROOT, "supabase/ZEYTIN-LIGI-GUNCEL-FIYAT-V1.sql"), encoding="utf-8").read()),
     ("bahçe seçilince güncel fiyat yüklenir", "refreshElekInsights();\n        refreshMarketPrices();" in e),
-    ("fiyat ayarları değişmez (bölge fiyatı yazılmaz)", "putString(KEY_PRICE_DOUBLE" not in e.split("GÜNCEL FİYAT")[1]),
+    ("kayıtlı fiyat ayarı ezilmez (yalnız hiç kaydedilmemişse)", e.split("GÜNCEL FİYAT")[1].count("putString(keys[i]") == 1),
     ("QR fişi önce gelir", "!qrPricesActive" in e.split("private void applyMarketOverlay")[1][:300]),
     ("elle girilen fiyat önce gelir", "marketPricesActive = false;\n        renderPriceSource();" in e),
     ("kayıtlı fiyat yüklenince bindirme", "updatePriceLabels();\n        applyMarketOverlay();" in e),
     ("sesli elek formdaki fiyatı kullanır", "prices() { return new double[]{priceDouble, price1" in e),
     ("formda kaynak notu", "tvElekPriceSource" in lay),
+    ("Fiyatları Düzenle bölge fiyatıyla dolar", "prefillMarketIntoDialog();\n        dialog.show();" in e),
+    ("yeni kurulumda ayar bir kez bölgeden yazılır", "seedSettingsFromMarket(region);" in e and "if (last != null && !last.trim().isEmpty()) return;" in e),
     ("bölge raporu kutularında güncel fiyat", "current(grade.grade)" in r("ZeytinLeagueRegionReportDialog.java") and "loadCurrentPrices();" in r("ZeytinLeagueRegionReportDialog.java")),
     ("Piyasa kartında güncel satır", "setCurrentPrice(" in m and "loadCurrentPrice(year, cloud.regionId" in lc),
 ]
