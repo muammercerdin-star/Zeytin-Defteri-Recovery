@@ -2280,8 +2280,25 @@ public class ProducerFeedActivity extends Activity {
             } else showPanel.run();
         });
         state.expandForecast=showPanel;
-        state.weatherCard=weatherCard;
-        hero.addView(weatherCard,homeCardParams(12));
+        // Kartın arkasında havaya göre hafif animasyon (yağmur, kar, bulut, güneş…); yazılar üstte kalır.
+        final WeatherSkyView sky=new WeatherSkyView(this);
+        android.widget.FrameLayout weatherHolder=new android.widget.FrameLayout(this);
+        weatherHolder.setBackground(weatherCard.getBackground());
+        weatherCard.setBackground(null);
+        weatherHolder.setClipToOutline(true);
+        weatherHolder.addView(sky,new android.widget.FrameLayout.LayoutParams(-1,-1));
+        weatherHolder.addView(weatherCard,new android.widget.FrameLayout.LayoutParams(-1,-2));
+        // Önizleme: dereceye uzun basınca animasyonlar sırayla görünür (bir sonraki güncellemede gerçek havaya döner).
+        final int[] previewCodes={63,95,73,53,45,0,2,3};
+        final int[] previewAt={0};
+        temp.setOnLongClickListener(v -> {
+            int code=previewCodes[previewAt[0]++%previewCodes.length];
+            sky.setWeather(code,true,20);
+            android.widget.Toast.makeText(this,"Önizleme: "+WeatherSky.describe(WeatherSky.kind(code)),android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        state.weatherCard=weatherHolder;
+        hero.addView(weatherHolder,homeCardParams(12));
 
         state.refresh=() -> {
             if(!weatherStateCurrent(state) || garden.id<=0 || weatherRepository==null)return;
@@ -2332,6 +2349,7 @@ public class ProducerFeedActivity extends Activity {
                                     state.current=w;state.today.current=w;
                                     state.coordinates=weatherCoordinates(garden.id);
                                     temp.setText(w.icon+" "+Math.round(w.temperatureC)+"°");
+                                    sky.setWeather(w.weatherCode,w.isDay,w.windKmh);
                                     String detail=w.condition;
                                     if(!Double.isNaN(w.windKmh)&&w.windKmh>=1)detail+=" · rüzgâr "+Math.round(w.windKmh)+" km/s";
                                     weatherStatus.setText(detail);
