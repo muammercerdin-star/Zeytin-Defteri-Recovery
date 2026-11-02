@@ -279,6 +279,7 @@ public final class ZeytinLeagueContainerView extends LinearLayout {
         marketView.setSourceCaption(
                 "Senin elek kayıtların · bölge verisi yükleniyor"
         );
+        marketView.setCurrentPrice("");
 
         if (marketCloudRepository == null
                 || !marketCloudRepository.canUseCloud()) {
@@ -322,8 +323,23 @@ public final class ZeytinLeagueContainerView extends LinearLayout {
                     }
                     lastMarketState = published;
                     marketView.bindState(published);
+                    loadCurrentPrice(year, cloud.regionId, published.grade, request);
                 }
         );
+    }
+
+    /** Piyasa kartının "Güncel fiyat" satırı: seçili elek için bölgenin son 3 (yoksa 7/30) gününün ortadaki fiyatı. */
+    private void loadCurrentPrice(int year, String regionKey, String grade, int request) {
+        if (marketCloudRepository == null || regionKey == null || regionKey.isEmpty()) return;
+        final int at = CurrentPrices.index(grade);
+        if (at < 0) return;
+        String cached = CurrentPriceStore.cached(getContext(), regionKey);
+        if (cached != null) marketView.setCurrentPrice(CurrentPrices.marketLine(CurrentPrices.parse(cached)[at]));
+        marketCloudRepository.loadCurrentPrices(year, regionKey, (json, error) -> {
+            if (request != marketRequestSerial || json == null) return;
+            CurrentPriceStore.save(getContext(), regionKey, json);
+            marketView.setCurrentPrice(CurrentPrices.marketLine(CurrentPrices.parse(json)[at]));
+        });
     }
 
     private void ensureRegionAvailable() {

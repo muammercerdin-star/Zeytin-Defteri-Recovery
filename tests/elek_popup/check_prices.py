@@ -13,6 +13,8 @@ Prefs preferences=new Prefs();
 '''
 for key,default in [('DOUBLE',100),('1',90),('2',70),('3',55),('4',40),('OIL',32)]:code+=f'static final String KEY_PRICE_{key}="price_{key}";static final double DEFAULT_PRICE_{key}={default};\n'
 code+='static final String KEY_LAST_UPDATE="last_update";\n'
+# Güncel fiyat (bölge piyasası) bindirmesi: bu testte etkin değil; yalnız çağrıların derlenmesi için.
+code+='boolean marketPricesActive;void renderPriceSource(){}void applyMarketOverlay(){}\n'
 for name in ['updatePrices','updatePriceLabels','moneyUnit','loadSavedPrices','readSavedPrice','plainNumber']:code+=v['method'](name)+'\n'
 code+='''public static void main(String[] a){ElekMathTest t=new ElekMathTest();t.setupNumberFormat();t.loadSavedPrices();
 t.etKgDouble.setText("2");t.etKg1.setText("15");t.etKg2.setText("30");

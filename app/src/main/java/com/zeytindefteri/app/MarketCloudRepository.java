@@ -65,6 +65,11 @@ public final class MarketCloudRepository {
         void onComplete(List<LeagueRegionStat> regions, Exception error);
     }
 
+    public interface CurrentPricesCallback {
+        /** json: sunucunun ham cevabı (elek başına güncel fiyat dizisi); hata olursa null. */
+        void onComplete(String json, Exception error);
+    }
+
     public interface LeagueRegionReportCallback {
         void onComplete(LeagueRegionReport report, Exception error);
     }
@@ -584,6 +589,41 @@ public final class MarketCloudRepository {
             });
         });
 
+        syncContributionsIfNeeded(year, proceed);
+    }
+
+    /**
+     * Bölgenin güncel elek fiyatı: bölgedeki tüm üreticilerin son 3 gün (yoksa 7, 30 gün) satışlarının
+     * ortadaki fiyatı. Sunucu bölgede 5 üretici yoksa boş döner. Yalnız elek başına fiyat gelir; kimlik ya da kg gelmez.
+     */
+    public void loadCurrentPrices(int year, String regionKey, CurrentPricesCallback callback) {
+        final String key = safe(regionKey);
+        if (!canUseCloud() || key.isEmpty()) {
+            if (callback != null) callback.onComplete(null, new IllegalStateException("Bölgesel bağlantı hazır değil"));
+            return;
+        }
+        SyncCallback proceed = ignored -> withFirebaseToken((token, tokenError) -> {
+            if (tokenError != null || token.isEmpty()) {
+                if (callback != null) callback.onComplete(null, tokenError);
+                return;
+            }
+            networkExecutor.execute(() -> {
+                String json = null;
+                Exception failure = null;
+                try {
+                    JSONObject body = new JSONObject();
+                    put(body, "p_season_year", year);
+                    put(body, "p_region_key", key);
+                    json = requestRpcArray("market_region_current_prices", body, token).toString();
+                } catch (Exception error) {
+                    failure = error;
+                    Log.w(TAG, "market_region_current_prices RPC failed", error);
+                }
+                final String finalJson = json;
+                final Exception finalFailure = failure;
+                postToMain(() -> { if (callback != null) callback.onComplete(finalJson, finalFailure); });
+            });
+        });
         syncContributionsIfNeeded(year, proceed);
     }
 
@@ -1717,7 +1757,16 @@ public final class MarketCloudRepository {
         return d + " / " + p;
     }
 
-    private String foldRegionPart(String value) {
+    /** Bahçenin ilçe + ilinden sunucudaki bölge anahtarı ("manisa_alasehir"); eksikse "". */
+    static String regionKeyOf(String district, String province) {
+        String d = foldRegionPart(district);
+        String p = foldRegionPart(province);
+        if (d.isEmpty() || p.isEmpty()) return "";
+        String key = p + "_" + d;
+        return key.length() <= 80 ? key : "";
+    }
+
+    private static String foldRegionPart(String value) {
         String text = safe(value)
                 .toLowerCase(new Locale("tr", "TR"))
                 .replace('ı', 'i');

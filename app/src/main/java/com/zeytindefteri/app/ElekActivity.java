@@ -198,6 +198,7 @@ public class ElekActivity extends Activity {
     private EditText etPriceOil;
 
     private TextView tvPriceLastUpdate;
+    private TextView tvElekPriceSource;
 
     private TextView btnUpdateElekPrices;
     private TextView btnSaveElek;
@@ -835,6 +836,9 @@ public class ElekActivity extends Activity {
                 );
 
 
+        tvElekPriceSource = findViewById(R.id.tvElekPriceSource);
+        if (tvElekPriceSource != null) tvElekPriceSource.setOnClickListener(v -> showPriceSourceDialog());
+
         tvPriceLastUpdate =
                 findViewById(
                         R.id.tvPriceLastUpdate
@@ -1228,6 +1232,7 @@ public class ElekActivity extends Activity {
         );
 
         refreshElekInsights();
+        refreshMarketPrices();
     }
 
 
@@ -1346,6 +1351,7 @@ public class ElekActivity extends Activity {
 
 
         updatePriceLabels();
+        applyMarketOverlay();
     }
 
 
@@ -2324,6 +2330,9 @@ public class ElekActivity extends Activity {
         calculateAll();
 
 
+        // Elle girilen fiyat bu kayıtta piyasanın önüne geçer.
+        marketPricesActive = false;
+        renderPriceSource();
         Toast.makeText(
                 this,
                 "Elek fiyatları güncellendi ✓",
@@ -3249,6 +3258,7 @@ public class ElekActivity extends Activity {
         priceOil = slip.price[5];
         qrPricesActive = true;
         updatePriceLabels();
+        renderPriceSource();
         EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
         for (int i = 0; i < kg.length; i++) kg[i].setText(TezgahQr.field(slip.kg[i]));
         saleOnSave = true;
@@ -3301,6 +3311,131 @@ public class ElekActivity extends Activity {
         Toast.makeText(this, "Defterden aktarıldı: " + TezgahModel.kg(total)
                 + (priceChanged ? " · fiyatlar bu kayıt için defterden alındı" : "")
                 + ". Kontrol edip Kaydet'e bas.", Toast.LENGTH_LONG).show();
+    }
+
+    // ============================================================ GÜNCEL FİYAT (bölge piyasası)
+    // Zincir, her elek için: bölgenin son 3 gün (yoksa 7, 30 gün) ortadaki fiyatı → senin son 3 satışın → fiyat ayarın.
+    // Fiyat ayarların değişmez; bölge fiyatı yalnız bu formdaki öneridir. QR fişi ve elle girilen fiyat önce gelir.
+    private static final String KEY_PRICE_SOURCE = "price_source"; // "own" = hep kendi fiyat ayarım
+    private CurrentPrices.Choice marketChoice;
+    private CurrentPrices.Entry[] marketRegion;
+    private String marketRegionName = "";
+    private boolean marketPricesActive;
+    private int marketRequest;
+
+    private boolean ownPricesPreferred() {
+        return "own".equals(preferences.getString(KEY_PRICE_SOURCE, ""));
+    }
+
+    private void refreshMarketPrices() {
+        final int request = ++marketRequest;
+        boolean wasActive = marketPricesActive;
+        marketChoice = null;
+        marketRegion = null;
+        marketPricesActive = false;
+        if (wasActive) { loadSavedPrices(); calculateAll(); } // önceki bahçenin bölge fiyatı kalmasın
+        if (selectedGardenId <= 0 || databaseHelper == null || ownPricesPreferred()) {
+            renderPriceSource();
+            return;
+        }
+        String[] place = CurrentPriceStore.gardenRegion(databaseHelper.getReadableDatabase(), selectedGardenId);
+        final String regionKey = MarketCloudRepository.regionKeyOf(place[0], place[1]);
+        marketRegionName = place[0];
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        final String uid = user == null ? "" : user.getUid();
+        final double[] own = CurrentPriceStore.ownRecent(databaseHelper.getReadableDatabase(), uid);
+        // Önce telefondaki son bölge fiyatı (internetsiz açılışta da öneri olsun), sonra sunucudan tazesi.
+        useMarket(CurrentPrices.parse(CurrentPriceStore.cached(this, regionKey)), own);
+        if (regionKey.isEmpty() || user == null) return;
+        MarketCloudRepository repo = new MarketCloudRepository(databaseHelper, uid);
+        if (!repo.canUseCloud()) return;
+        repo.loadCurrentPrices(databaseHelper.getActiveSeasonYear(), regionKey, (json, error) -> {
+            if (request != marketRequest || isFinishing() || isDestroyed() || json == null) return;
+            CurrentPriceStore.save(this, regionKey, json);
+            useMarket(CurrentPrices.parse(json), own);
+        });
+    }
+
+    private void useMarket(CurrentPrices.Entry[] region, double[] own) {
+        if (!CurrentPrices.any(region) && !anyPositive(own)) {
+            if (marketPricesActive) { marketPricesActive = false; marketChoice = null; loadSavedPrices(); calculateAll(); }
+            renderPriceSource();
+            return;
+        }
+        marketRegion = region;
+        marketChoice = CurrentPrices.choose(region, own, savedPrices());
+        marketPricesActive = true;
+        applyMarketOverlay();
+        calculateAll();
+    }
+
+    private static boolean anyPositive(double[] v) {
+        if (v == null) return false;
+        for (double d : v) if (d > 0) return true;
+        return false;
+    }
+
+    private double[] savedPrices() {
+        return new double[]{
+                readSavedPrice(KEY_PRICE_DOUBLE, DEFAULT_PRICE_DOUBLE), readSavedPrice(KEY_PRICE_1, DEFAULT_PRICE_1),
+                readSavedPrice(KEY_PRICE_2, DEFAULT_PRICE_2), readSavedPrice(KEY_PRICE_3, DEFAULT_PRICE_3),
+                readSavedPrice(KEY_PRICE_4, DEFAULT_PRICE_4), readSavedPrice(KEY_PRICE_OIL, DEFAULT_PRICE_OIL)};
+    }
+
+    /** Kayıtlı fiyatlar yüklendikten sonra çağrılır: güncel fiyat etkinse yalnız formdaki fiyatları değiştirir. */
+    private void applyMarketOverlay() {
+        if (marketPricesActive && marketChoice != null && !qrPricesActive) {
+            double[] p = marketChoice.price;
+            if (p[0] > 0) priceDouble = p[0];
+            if (p[1] > 0) price1 = p[1];
+            if (p[2] > 0) price2 = p[2];
+            if (p[3] > 0) price3 = p[3];
+            if (p[4] > 0) price4 = p[4];
+            if (p[5] > 0) priceOil = p[5];
+            updatePriceLabels();
+        }
+        renderPriceSource();
+    }
+
+    private void renderPriceSource() {
+        if (tvElekPriceSource == null) return;
+        String text = null;
+        if (qrPricesActive) text = null;
+        else if (marketPricesActive && marketChoice != null) {
+            text = CurrentPrices.note(marketChoice, marketRegionName);
+            if (text == null) text = "Fiyatlar: senin son satışların  ›";
+        } else if (selectedGardenId > 0 && ownPricesPreferred()) text = "Fiyatlar: senin fiyat ayarın · piyasa fiyatına geç  ›";
+        else if (marketChoice != null) text = "Fiyatlar: senin girdiğin fiyatlar · piyasa fiyatına dön  ›";
+        tvElekPriceSource.setText(text == null ? "" : text);
+        tvElekPriceSource.setVisibility(text == null ? android.view.View.GONE : android.view.View.VISIBLE);
+    }
+
+    private void showPriceSourceDialog() {
+        AlertDialog.Builder b = new AlertDialog.Builder(this).setTitle("Fiyatlar nereden geliyor?");
+        if (marketPricesActive && marketChoice != null) {
+            b.setMessage(CurrentPrices.detail(marketChoice)
+                    + "\n\nBölge fiyatı: bölgedeki üreticilerin son satışlarının ortadaki fiyatı (isim ve kilo görünmez). "
+                    + "Fiyat ayarların değişmedi; istersen bu kayıtta fiyata dokunup değiştirebilirsin.")
+                    .setPositiveButton("Tamam", null)
+                    .setNegativeButton("Hep kendi fiyat ayarım", (d, w) -> {
+                        preferences.edit().putString(KEY_PRICE_SOURCE, "own").apply();
+                        marketPricesActive = false;
+                        loadSavedPrices();
+                        calculateAll();
+                    });
+        } else {
+            b.setMessage("Bölgedeki son satışların ortadaki fiyatı forma kendiliğinden yazılsın mı? "
+                    + "Bölge verisi yoksa senin son satışların, o da yoksa fiyat ayarın kullanılır.")
+                    .setPositiveButton("Piyasa fiyatını kullan", (d, w) -> {
+                        preferences.edit().remove(KEY_PRICE_SOURCE).apply();
+                        refreshMarketPrices();
+                        if (!marketPricesActive) {
+                            Toast.makeText(this, "Bölge fiyatı yükleniyor…", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .setNegativeButton("Vazgeç", null);
+        }
+        b.show();
     }
 
     private void openPriceEditor(int index) {

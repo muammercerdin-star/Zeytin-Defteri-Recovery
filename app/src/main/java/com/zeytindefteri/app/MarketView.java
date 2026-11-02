@@ -175,7 +175,7 @@ public final class MarketView extends ScrollView {
     /** Grafiğin üstündeki satır: Son / Yüksek / Düşük / Değişim; altındaki kaynak notu. */
     private LinearLayout chartStatsRow;
     /** Kahraman kartı: fiyat yanındaki değişim rozeti, aralık çubuğu, "senin fiyatın" satırı. */
-    private TextView heroBadgeText, ownLineText;
+    private TextView heroBadgeText, ownLineText, currentLineText;
     private RangeBarView rangeBar;
     /** Grafik kartındaki dönem sekmeleri. */
     private final java.util.List<TextView> periodTabs = new java.util.ArrayList<>();
@@ -433,6 +433,14 @@ public final class MarketView extends ScrollView {
         );
     }
 
+
+    /** Seçili elek için "Güncel fiyat · son 3 gün: 125 TL (4 satış)"; boşsa satır gizlenir. */
+    public void setCurrentPrice(String line) {
+        if (currentLineText == null) return;
+        String value = line == null ? "" : line.trim();
+        currentLineText.setText(value);
+        currentLineText.setVisibility(value.isEmpty() ? View.GONE : View.VISIBLE);
+    }
 
     public void setSourceCaption(String value) {
         if (subtitleText == null) return;
@@ -1334,6 +1342,10 @@ public final class MarketView extends ScrollView {
                         0
                 )
         );
+        // Güncel fiyat: bölgedeki herkesin son 3 gün (yoksa 7/30 gün) satışlarının ortadaki fiyatı.
+        currentLineText = label("", 14f, green, true);
+        currentLineText.setVisibility(View.GONE);
+        content.addView(currentLineText, matchWrap(4, 0));
 
 
         // ========================================================
