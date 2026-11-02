@@ -1925,7 +1925,8 @@ public class ProducerFeedActivity extends Activity {
                 body,
                 HomeSummaryModel.season(db.getSeasonHarvestKgWithElek(),
                         db.getTotalExpenses(), db.getTotalSalesRevenue()),
-                HomeSummaryModel.top(loadOwnGradePrices(), 2),
+                HomeSummaryModel.withData(loadOwnGradePrices()),
+                homeRegionPrices(garden),
                 new HomeLowerSections.Actions() {
                     @Override public void operation(String type) { openOperationForGarden(type, garden.id); }
                     @Override public void harvest() { openHarvestForGarden(garden.id); }
@@ -4806,6 +4807,28 @@ public class ProducerFeedActivity extends Activity {
         return "İyi akşamlar";
     }
 
+
+    /**
+     * Aktif bahçenin bölgesinin güncel elek fiyatı (son 3/7/30 gün ortadaki fiyat; telefondaki önbellekten).
+     * Önbellek yoksa ya da eskiyse arka planda yenilenir; karşılaştırma bir sonraki açılışta görünür.
+     */
+    private double[] homeRegionPrices(HomeGardenSnapshot garden) {
+        String key = MarketCloudRepository.regionKeyOf(garden.district, garden.province);
+        if (key.isEmpty()) return null;
+        String cached = CurrentPriceStore.cached(this, key);
+        if (cached == null) {
+            try {
+                FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+                if (u != null) new MarketCloudRepository(db, u.getUid()).loadCurrentPrices(db.getActiveSeasonYear(), key,
+                        (json, error) -> { if (json != null) CurrentPriceStore.save(this, key, json); });
+            } catch (RuntimeException ignored) { }
+            return null;
+        }
+        CurrentPrices.Entry[] e = CurrentPrices.parse(cached);
+        double[] out = new double[6];
+        for (int i = 0; i < 6; i++) out[i] = e[i] == null ? 0 : e[i].price;
+        return out;
+    }
 
     /** Kullanıcının kendi elek kayıtlarından sınıf sınıf kg, tutar ve kayıt sayısı (bu sezon, bu hesap). */
     private List<HomeSummaryModel.GradePrice> loadOwnGradePrices() {

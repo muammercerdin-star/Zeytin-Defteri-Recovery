@@ -54,6 +54,42 @@ public final class HomeSummaryModel {
         return list.size() > n ? new ArrayList<>(list.subList(0, n)) : list;
     }
 
+    /** Fiyatlı elek kaydı olan bütün sınıflar, elek sırasıyla (Double, 1 No … Yağlık). */
+    public static List<GradePrice> withData(List<GradePrice> all) {
+        List<GradePrice> list = new ArrayList<>();
+        for (GradePrice g : all) if (g != null && g.kg > 0 && g.revenue > 0) list.add(g);
+        return list;
+    }
+
+    /**
+     * Bölgenin güncel fiyatıyla karşılaştırma: "Bölge 35 · +3,8 TL" (senin ortalaman yüksekse +, düşükse −).
+     * Bölge fiyatı yoksa "". Fark 0,5 TL'den azsa "Bölge 35 · aynı".
+     */
+    public static String compareLine(double own, double region) {
+        if (!(region > 0) || !(own > 0)) return "";
+        NumberFormat nf = NumberFormat.getNumberInstance(TR);
+        nf.setMinimumFractionDigits(0);
+        nf.setMaximumFractionDigits(1);
+        double diff = own - region;
+        String head = "Bölge " + nf.format(region);
+        if (Math.abs(diff) < 0.5) return head + " · aynı";
+        return head + " · " + (diff > 0 ? "+" : "−") + nf.format(Math.abs(diff)) + " TL";
+    }
+
+    /** -1 bölgenin altında, 0 aynı / bilinmiyor, 1 üstünde (renk için). */
+    public static int compareTone(double own, double region) {
+        if (!(region > 0) || !(own > 0) || Math.abs(own - region) < 0.5) return 0;
+        return own > region ? 1 : -1;
+    }
+
+    /** Sadece rakam: "38,8" (birim ayrı yazılır). */
+    public static String priceNumber(double v) {
+        NumberFormat nf = NumberFormat.getNumberInstance(TR);
+        nf.setMinimumFractionDigits(0);
+        nf.setMaximumFractionDigits(1);
+        return nf.format(Math.max(0, v));
+    }
+
     public static String priceLine(GradePrice g) { return price(g.average()); }
 
     public static String detailLine(GradePrice g) {

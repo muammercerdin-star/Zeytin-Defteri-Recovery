@@ -20,9 +20,20 @@ public final class HomeSummaryModelTest {
         eq(HomeSummaryModel.season(0, 0, 0).get(2).tone, HomeSummaryModel.Tone.WARNING, "no sales warns");
         for (HomeSummaryModel.Metric x : m) if ("Elek".equals(x.label)) throw new AssertionError("no separate elek column");
 
+        eq(HomeSummaryModel.compareLine(38.8, 35), "Bölge 35 · +3,8 TL", "above region");
+        eq(HomeSummaryModel.compareLine(60, 66.5), "Bölge 66,5 · −6,5 TL", "below region");
+        eq(HomeSummaryModel.compareLine(35.2, 35), "Bölge 35 · aynı", "same");
+        eq(HomeSummaryModel.compareLine(38.8, 0), "", "no region data");
+        eq(HomeSummaryModel.compareTone(38.8, 35), 1, "tone up");
+        eq(HomeSummaryModel.compareTone(30, 35), -1, "tone down");
+        eq(HomeSummaryModel.priceNumber(38.79), "38,8", "number only");
+
         List<HomeSummaryModel.GradePrice> all = Arrays.asList(
                 g("Double", 10, 1200, 2), g("1 No", 0, 0, 0), g("2 No", 235, 14100, 11),
                 g("3 No", 120, 6000, 5), g("4 No", 50, 0, 1), g("Yağlık", 5, 50, 1));
+        List<HomeSummaryModel.GradePrice> rows = HomeSummaryModel.withData(all);
+        eq(rows.size(), 4, "graded rows with price (1 No empty, 4 No without revenue skipped)");
+        eq(rows.get(0).label, "Double", "elek order kept");
         List<HomeSummaryModel.GradePrice> top = HomeSummaryModel.top(all, 2);
         eq(top.size(), 2, "top two");
         eq(top.get(0).label, "2 No", "largest kg first");

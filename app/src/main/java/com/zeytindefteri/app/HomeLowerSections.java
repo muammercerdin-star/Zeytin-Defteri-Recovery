@@ -38,12 +38,17 @@ public final class HomeLowerSections {
     /** body'ye sırasıyla ekler: hızlı işlemler, Bu Sezon, Senin elek fiyatların. */
     public void addTo(LinearLayout body, List<HomeSummaryModel.Metric> season,
                       List<HomeSummaryModel.GradePrice> prices, Actions actions) {
+        addTo(body, season, prices, null, actions);
+    }
+
+    /** @param region bölgenin güncel fiyatı (CurrentPrices sırasıyla 6 elek; yoksa null) */
+    public void addTo(LinearLayout body, List<HomeSummaryModel.Metric> season,
+                      List<HomeSummaryModel.GradePrice> prices, double[] region, Actions actions) {
         body.addView(overline("HIZLI İŞLEM", null, null), sectionParams(18));
+        // Tek kayıt düzeni: hasat ve satış elekten oluşur; hızlı işlemde yalnız İşlem ekle ve Elek.
         LinearLayout quick = new LinearLayout(c);
-        quick.addView(tile(R.drawable.ic_leaf, "İşlem ekle", v -> pickOperation(actions)), weight(0));
-        quick.addView(tile(R.drawable.ic_olive, "Hasat", v -> actions.harvest()), weight(8));
-        quick.addView(tile(R.drawable.ic_elek_nav, "Elek", v -> actions.elek()), weight(8));
-        quick.addView(tile(R.drawable.ic_tag, "Satış", v -> actions.sale()), weight(8));
+        quick.addView(wideTile(R.drawable.ic_leaf, "İşlem ekle", "İlaç, gübre, sulama", v -> pickOperation(actions)), weight(0));
+        quick.addView(wideTile(R.drawable.ic_elek_nav, "Elek kaydı", "Kilo, fiyat, satış", v -> actions.elek()), weight(10));
         body.addView(quick, sideParams(8));
 
         body.addView(overline("BU SEZON", "Sezon Raporum  ›", v -> actions.seasonReport()), sectionParams(20));
@@ -81,25 +86,118 @@ public final class HomeLowerSections {
             empty.addView(label(HomeSummaryModel.emptyPrices(), 13, soft, false));
             body.addView(empty, sideParams(8));
         } else {
-            LinearLayout grid = new LinearLayout(c);
-            for (int i = 0; i < prices.size(); i++) {
-                HomeSummaryModel.GradePrice g = prices.get(i);
-                LinearLayout box = cardColumn();
-                box.addView(label(g.label + " ortalaman", 12, muted, false));
-                TextView price = label(HomeSummaryModel.priceLine(g), 20, text, true);
-                price.setPadding(0, dp(4), 0, dp(2));
-                box.addView(price);
-                box.addView(label(HomeSummaryModel.detailLine(g), 12, muted, false));
-                box.setContentDescription(g.label + " ortalaman " + HomeSummaryModel.priceLine(g) + ", " + HomeSummaryModel.detailLine(g));
-                box.setOnClickListener(v -> actions.elek());
-                grid.addView(box, weight(i == 0 ? 0 : 8));
-            }
-            if (prices.size() == 1) grid.addView(new View(c), weight(8));
-            body.addView(grid, sideParams(8));
+            body.addView(priceCard(prices, region, actions), sideParams(8));
         }
-        TextView note = label("Yalnızca senin elek kayıtların; bölge piyasası değildir.", 11, muted, false);
+        boolean anyRegion = false;
+        if (region != null) for (double r : region) if (r > 0) anyRegion = true;
+        TextView note = label(anyRegion
+                ? "Ortalaman: yalnız senin elek kayıtların. Bölge: son günlerin ortadaki fiyatı."
+                : "Yalnızca senin elek kayıtların; bölge piyasası değildir.", 11, muted, false);
         note.setPadding(dp(18), dp(6), dp(18), 0);
         body.addView(note);
+    }
+
+    /** Elek rozet renkleri (elek formundakiyle aynı): Double mavi, 1 yeşil, 2 sarı, 3 turuncu, 4 kırmızı, Yağlık gri. */
+    private static final int[] BADGE = {0xFF3D7DD8, 0xFF7BC045, 0xFFE7B93A, 0xFFE0904A, 0xFFD0434A, 0xFFC9D1D3};
+    private static final String[] BADGE_TEXT = {"★", "1", "2", "3", "4", "Y"};
+
+    /**
+     * Senin elek fiyatların: her sınıf bir satır. Solda renkli rozet, sınıf adı, kilo ve kayıt sayısı;
+     * sağda ortalaman (büyük) ve bölgenin güncel fiyatıyla farkı (yeşil üstünde, kırmızı altında).
+     * Altında sınıfın kilo payını gösteren ince çubuk.
+     */
+    private View priceCard(List<HomeSummaryModel.GradePrice> prices, double[] region, Actions actions) {
+        LinearLayout box = new LinearLayout(c);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(14), dp(6), dp(14), dp(10));
+        box.setBackground(round(card, border, 20));
+        double maxKg = 0;
+        for (HomeSummaryModel.GradePrice g : prices) maxKg = Math.max(maxKg, g.kg);
+        int danger = GreenTheme.color(R.color.zd_danger);
+        for (int n = 0; n < prices.size(); n++) {
+            HomeSummaryModel.GradePrice g = prices.get(n);
+            int at = CurrentPrices.index(g.label);
+            double reg = region != null && at >= 0 && at < region.length ? region[at] : 0;
+            LinearLayout row = new LinearLayout(c);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(0, dp(10), 0, dp(4));
+            TextView badge = label(at >= 0 ? BADGE_TEXT[at] : "•", 13, 0xFF0B1D28, true);
+            badge.setGravity(Gravity.CENTER);
+            GradientDrawable disc = new GradientDrawable();
+            disc.setShape(GradientDrawable.OVAL);
+            disc.setColor(at >= 0 ? BADGE[at] : soft);
+            badge.setBackground(disc);
+            row.addView(badge, new LinearLayout.LayoutParams(dp(30), dp(30)));
+            LinearLayout words = new LinearLayout(c);
+            words.setOrientation(LinearLayout.VERTICAL);
+            words.setPadding(dp(12), 0, dp(8), 0);
+            words.addView(label(g.label, 15, text, true));
+            words.addView(label(HomeSummaryModel.kg(g.kg) + " · " + g.records + " kayıt", 12, muted, false));
+            row.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
+            LinearLayout nums = new LinearLayout(c);
+            nums.setOrientation(LinearLayout.VERTICAL);
+            nums.setGravity(Gravity.END);
+            LinearLayout priceRow = new LinearLayout(c);
+            priceRow.setGravity(Gravity.BOTTOM);
+            priceRow.addView(label(HomeSummaryModel.priceNumber(g.average()), 19, text, true));
+            TextView unit = label(" TL/kg", 11, muted, false);
+            unit.setPadding(0, 0, 0, dp(2));
+            priceRow.addView(unit);
+            nums.addView(priceRow);
+            String cmp = HomeSummaryModel.compareLine(g.average(), reg);
+            if (!cmp.isEmpty()) {
+                int tone = HomeSummaryModel.compareTone(g.average(), reg);
+                TextView cl = label(cmp, 11, tone > 0 ? green : tone < 0 ? danger : muted, tone != 0);
+                cl.setGravity(Gravity.END);
+                nums.addView(cl);
+            }
+            row.addView(nums, new LinearLayout.LayoutParams(-2, -2));
+            box.addView(row);
+            // kilo payı çubuğu
+            LinearLayout bar = new LinearLayout(c);
+            bar.setPadding(dp(42), 0, 0, 0);
+            float share = maxKg > 0 ? (float) (g.kg / maxKg) : 0f;
+            View fill = new View(c);
+            fill.setBackground(round(at >= 0 ? (BADGE[at] & 0x00FFFFFF) | 0x99000000 : soft, 0x00000000, 2));
+            bar.addView(fill, new LinearLayout.LayoutParams(0, dp(3), Math.max(0.02f, share)));
+            bar.addView(new View(c), new LinearLayout.LayoutParams(0, dp(3), Math.max(0f, 1f - share)));
+            box.addView(bar, new LinearLayout.LayoutParams(-1, -2));
+            row.setContentDescription(g.label + ": ortalaman " + HomeSummaryModel.priceLine(g) + ", "
+                    + HomeSummaryModel.kg(g.kg) + ", " + g.records + " kayıt" + (cmp.isEmpty() ? "" : ". " + cmp));
+        }
+        box.setOnClickListener(v -> actions.market());
+        return box;
+    }
+
+    /** Geniş hızlı işlem: solda ikon, yanında başlık ve kısa açıklama. */
+    private View wideTile(int icon, String title, String sub, View.OnClickListener click) {
+        LinearLayout t = new LinearLayout(c);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPadding(dp(14), dp(14), dp(10), dp(14));
+        t.setMinimumHeight(dp(72));
+        t.setBackground(round(card, border, 18));
+        FrameLayout disc = new FrameLayout(c);
+        disc.setBackground(round(GreenTheme.color(R.color.zd_green_soft), GreenTheme.color(R.color.zd_green_soft), 18));
+        ImageView glyph = new ImageView(c);
+        glyph.setImageResource(icon);
+        glyph.setColorFilter(green);
+        glyph.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        disc.addView(glyph, new FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER));
+        t.addView(disc, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        LinearLayout words = new LinearLayout(c);
+        words.setOrientation(LinearLayout.VERTICAL);
+        words.setPadding(dp(10), 0, 0, 0);
+        TextView name = label(title, 15, text, true);
+        name.setMaxLines(1);
+        words.addView(name);
+        TextView s = label(sub, 11, muted, false);
+        s.setMaxLines(1);
+        s.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        words.addView(s);
+        t.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
+        t.setContentDescription(title + ": " + sub);
+        t.setOnClickListener(click);
+        return t;
     }
 
     private void pickOperation(Actions actions) {
