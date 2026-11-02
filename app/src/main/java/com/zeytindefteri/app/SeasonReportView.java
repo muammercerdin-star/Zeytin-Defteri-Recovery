@@ -79,25 +79,28 @@ public final class SeasonReportView extends ScrollView {
             body.addView(line, rp);
         }
 
-        // Sezon nerede?
-        LinearLayout where = section(body, "SEZON NEREDE?");
-        for (SeasonReportModel.Bar b : SeasonReportModel.chain(d)) {
-            LinearLayout head = row(); head.setPadding(0, dp(8), 0, dp(4));
-            head.addView(label(b.label, 13, text, true), new LinearLayout.LayoutParams(0, -2, 1));
-            head.addView(label(b.value, 13, b.tone == SeasonReportModel.Tone.WARNING ? gold : text, true));
-            where.addView(head);
-            FrameLayout track = new FrameLayout(getContext()); track.setBackground(round(surface, surface, 4));
-            View fill = new View(getContext());
-            int barColor = b.tone == SeasonReportModel.Tone.WARNING ? gold : b.tone == SeasonReportModel.Tone.POSITIVE ? green : harvestColor;
-            fill.setBackground(round(barColor, barColor, 4));
-            track.addView(fill, new FrameLayout.LayoutParams(0, -1));
-            final int percent = b.percent;
-            track.addOnLayoutChangeListener((v, l, t, rr, bb, ol, ot, or, ob) -> {
-                int w = Math.round((rr - l) * percent / 100f);
-                if (fill.getLayoutParams().width != w) { fill.getLayoutParams().width = w; fill.requestLayout(); }
-            });
-            track.setContentDescription(b.label + " " + b.value);
-            where.addView(track, new LinearLayout.LayoutParams(-1, dp(8)));
+        // Kilo başına: ortalama satış fiyatı, kilo başı masraf, kilo başı net
+        LinearLayout where = section(body, "KİLO BAŞINA");
+        List<SeasonReportModel.Tile> perKg = SeasonReportModel.perKg(d);
+        for (int i = 0; i < perKg.size(); i++) {
+            SeasonReportModel.Tile t = perKg.get(i);
+            LinearLayout r = row(); r.setPadding(0, dp(10), 0, dp(10));
+            LinearLayout words = column();
+            words.addView(label(t.label, 14, text, false));
+            words.addView(label(t.note, 11, muted, false));
+            r.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
+            r.addView(label(t.value, 17, color(t.tone, text), true));
+            r.setContentDescription(t.label + ": " + t.value);
+            where.addView(r);
+            if (i < perKg.size() - 1) {
+                View line = new View(getContext()); line.setBackgroundColor(border);
+                where.addView(line, new LinearLayout.LayoutParams(-1, dp(1)));
+            }
+        }
+        if (perKg.isEmpty()) {
+            TextView none = label("Hasat ya da elek girdikçe kilo başına fiyat, masraf ve kâr burada görünür.", 12, soft, false);
+            none.setPadding(0, dp(8), 0, 0);
+            where.addView(none);
         }
         String[] missing = SeasonReportModel.missingLink(d);
         if (missing != null) {
@@ -119,18 +122,28 @@ public final class SeasonReportView extends ScrollView {
             LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, dp(44)); bp.topMargin = dp(10);
             where.addView(action, bp);
         }
-        String harvestNote = SeasonReportModel.harvestNote(d);
-        if (!harvestNote.isEmpty()) {
-            TextView note = label(harvestNote, 11, muted, false); note.setPadding(0, dp(10), 0, 0);
-            where.addView(note);
-        }
-
         // Para
         LinearLayout money = section(body, "PARA");
         moneyRow(money, "Masraf", "işlem, hasat ve salamura masrafları", SeasonReportModel.tl(d.expenses), text, true);
         moneyRow(money, "Satış geliri", "gerçek satış kayıtları", SeasonReportModel.tl(d.salesRevenue), text, true);
         moneyRow(money, "Tahsil edilen / açık alacak", d.realSaleCount + " gerçek satış",
                 SeasonReportModel.tl(d.received) + " / " + SeasonReportModel.tl(d.openReceivable), text, true);
+        String collected = SeasonReportModel.collectedText(d);
+        if (collected != null) {
+            final int percent = SeasonReportModel.collectedPercent(d);
+            FrameLayout track = new FrameLayout(getContext()); track.setBackground(round(surface, surface, 4));
+            View fill = new View(getContext()); fill.setBackground(round(green, green, 4));
+            track.addView(fill, new FrameLayout.LayoutParams(0, -1));
+            track.addOnLayoutChangeListener((v, l, t, rr, bb, ol, ot, or, ob) -> {
+                int w = Math.round((rr - l) * percent / 100f);
+                if (fill.getLayoutParams().width != w) { fill.getLayoutParams().width = w; fill.requestLayout(); }
+            });
+            LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-1, dp(6)); tp.topMargin = dp(2);
+            money.addView(track, tp);
+            TextView ct = label(collected, 12, d.openReceivable > 0.5 ? gold : green, true);
+            ct.setPadding(0, dp(6), 0, dp(6));
+            money.addView(ct);
+        }
         SeasonReportModel.Tile net = SeasonReportModel.net(d);
         moneyRow(money, net.label, net.note, net.value, color(net.tone, text), false);
 

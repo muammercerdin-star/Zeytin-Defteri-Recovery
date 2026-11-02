@@ -6551,7 +6551,7 @@ public class ProducerFeedActivity extends Activity {
         SeasonReportModel.Data d = new SeasonReportModel.Data();
         d.season = db.getActiveSeasonYear();
         d.expenses = db.getTotalExpenses();
-        d.harvestKg = db.getTotalHarvestKg();
+        d.harvestKg = db.getSeasonHarvestKgWithElek();   // elek dahil, ana ekranla aynı rakam
         d.salesRevenue = db.getTotalSalesRevenue();
         d.soldKg = db.getTotalSoldKg();
         d.realSaleCount = db.getRealSaleCount();
@@ -6585,7 +6585,7 @@ public class ProducerFeedActivity extends Activity {
                 SeasonReportModel.Garden g = new SeasonReportModel.Garden();
                 g.name = getString(c, "name", "Bahçe");
                 g.operationCost = getDouble(c, "total_cost");
-                g.harvestKg = getDouble(c, "total_harvest");
+                g.harvestKg = getDouble(c, "harvest_with_elek");
                 Double kg = elekByGarden.get(g.name);
                 g.elekKg = kg == null ? 0 : kg;
                 d.gardens.add(g);
