@@ -151,6 +151,6 @@ end;
 $$;
 
 revoke all on function public.market_region_current_prices(integer, text) from public;
-grant execute on function public.market_region_current_prices(integer, text) to authenticated;
+grant execute on function public.market_region_current_prices(integer, text) to anon, authenticated;
 
 commit;
