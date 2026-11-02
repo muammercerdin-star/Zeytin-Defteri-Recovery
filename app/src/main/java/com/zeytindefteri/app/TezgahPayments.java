@@ -51,6 +51,7 @@ public final class TezgahPayments {
         double left = Math.max(0, gross - paid);
         double v = Math.min(amount, left);
         if (amount <= 0.009 || v <= 0.009) return false;
+        boolean committed = false;
         db.beginTransaction();
         try {
             ContentValues row = new ContentValues();
@@ -64,12 +65,12 @@ public final class TezgahPayments {
             u.put("amount_paid", Math.min(gross, Math.round((paid + v) * 100) / 100.0));
             if (db.update(TezgahPurchases.TABLE, u, "id=? AND COALESCE(owner_uid,'')=?",
                     new String[]{String.valueOf(purchaseId), o}) <= 0) return false;
-            db.setTransactionSuccessful();
+            db.setTransactionSuccessful(); committed = true;
             return true;
         } catch (RuntimeException e) {
             return false;
         } finally {
-            db.endTransaction();
+            db.endTransaction(); if (committed) TezgahPurchases.webSignal(db, owner, "committed");
         }
     }
 

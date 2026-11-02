@@ -55,6 +55,7 @@ android {
         buildConfigField 'String', 'SUPABASE_PUBLISHABLE_KEY', zdBuildString('SUPABASE_PUBLISHABLE_KEY')
         // İnternet yardımcısı (cloud/zeytin-ai Worker adresi; gizli değil). Boşsa özellik kapalı.
         buildConfigField 'String', 'ZEYTIN_AI_URL', zdBuildString('ZEYTIN_AI_URL')
+        buildConfigField 'String', 'TEZGAH_RELAY_URL', zdBuildString('TEZGAH_RELAY_URL')
     }
 
     buildFeatures {
@@ -105,6 +106,7 @@ tasks.matching { it.name == 'bundleRelease' || it.name == 'assembleRelease' }.co
 }
 
 dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:5.5.1'
     implementation 'com.google.firebase:firebase-messaging:24.1.2'
     implementation 'com.google.firebase:firebase-auth:24.2.0'
     implementation 'com.google.firebase:firebase-firestore:26.0.1'

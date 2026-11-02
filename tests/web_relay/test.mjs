@@ -60,8 +60,8 @@ try {
  ok(p.phone.ws.attachment.role==='phone'&&p.web.ws.attachment.role==='browser','role auth');
  const timeoutRoom=await room(e),timeout=await socket(e,timeoutRoom,'phone',null,false);now+=5000;await alarm(timeout.entry);eq(timeout.ws.reason,'ZAMAN_ASIMI','5 sec auth timeout');
  const lateRoom=await room(e),late=await socket(e,lateRoom,'phone',null,false);now+=5000;await message(late,{v:1,type:'auth',room:lateRoom.room,role:'phone',capability:lateRoom.phoneCapability});eq(late.ws.readyState,3,'late auth refused even delayed alarm');
- e=environment();p=await pair(e);const bad=await socket(e,p.r,'phone',p.r.browserCapability);eq(bad.ws.readyState,3,'wrong role capability');
- const duplicate=await socket(e,p.r,'phone');eq(duplicate.ws.readyState,3,'one phone per room');
+ e=environment();p=await pair(e);const bad=await socket(e,p.r,'phone',p.r.browserCapability);eq(bad.ws.readyState,3,'wrong role capability');eq(p.phone.ws.readyState,1,'wrong capability cannot evict original');
+ const duplicate=await socket(e,p.r,'phone');eq(duplicate.ws.readyState,1,'new valid phone replaces');eq(p.phone.ws.reason,'BAGLANTI_YENILENDI','old phone closed');p.phone=duplicate;
  const noOrigin=await socket(e,p.r,'phone',p.r.browserCapability,false);await message(noOrigin,{v:1,type:'auth',room:p.r.room,role:'browser',capability:p.r.browserCapability});eq(noOrigin.ws.reason,'ROL_RED','browser requires origin');
  const noRoom=e.ROOMS.objects.size;const forbidden=await worker.fetch(new Request(base+'/v1/socket?room='+p.r.room,{headers:{Upgrade:'websocket',Origin:'https://evil.test'}}),e);eq(forbidden.status,403,'evil origin');eq(e.ROOMS.objects.size,noRoom,'no DO access on evil origin');
  eq((await worker.fetch(new Request('https://other.test/v1/rooms',{method:'POST'}),e)).status,503,'environment relay host');
@@ -98,11 +98,19 @@ try {
  e=environment();let r=await room(e);now+=90000;const expired=await socket(e,r);eq(expired.res.status,410,'expired QR upgrade refused');ok(!e.ROOMS.objects.get(r.room).ctx.data.has('meta'),'expired room deleted');
  e=environment();p=await pair(e);await consume(p);now+=1100;await message(p.phone,'a'.repeat(65537));eq(p.phone.ws.reason,'BOYUT_SINIRI','64KiB cap');
  e=environment();p=await pair(e);await consume(p);now+=1100;await p.phone.entry.obj.webSocketMessage(p.phone.ws,new ArrayBuffer(20));eq(p.phone.ws.reason,'GECERSIZ_ZARF','binary rejected');
- e=environment();p=await pair(e);await consume(p);now+=1100;for(let i=0;i<6;i++)await message(p.phone,{v:1,type:'ping'});eq(p.phone.ws.reason,'HIZ_SINIRI','5 frames/sec');
- e=environment();p=await pair(e);await consume(p);now+=1100;
- // Aynı dakikada 1MiB: her saniyede 5 frame altındayız.
- now=Math.ceil(now/60000)*60000+1000;const large={...encrypted(),ct:b64(32784,8)};for(let i=0;i<25&&p.phone.ws.readyState===1;i++){now+=1100;await message(p.phone,large);}
- eq(p.phone.ws.reason,'HIZ_SINIRI','1MiB/min byte limit');
+ e=environment();p=await pair(e);const activeCaps=await consume(p);now+=1100;
+ for(let i=0;i<50;i++)await message(p.phone,{v:1,type:'ping'});eq(p.phone.ws.readyState,1,'short burst survives');
+ for(let i=0;i<20;i++)await message(p.phone,{v:1,type:'ping'});
+ ok(p.phone.client.received.some(x=>JSON.parse(x).type==='hiz_siniri'),'drop sends rate notice');eq(p.phone.ws.readyState,1,'first rate excess not closed');
+ // Sürekli 20/sn üzeri, araya kabul edilen frame girse de aşım serisi 10 sn sürer.
+ for(let t=0;t<110 && p.phone.ws.readyState===1;t++){now+=100;for(let i=0;i<10;i++)await message(p.phone,{v:1,type:'ping'});}
+ eq(p.phone.ws.reason,'HIZ_SINIRI','sustained excess closes');
+ e=environment({BYTES_PER_MINUTE:'65536'});p=await pair(e);await consume(p);now=Math.ceil(now/60000)*60000+1000;
+ const large={...encrypted(),ct:b64(32784,8)};await message(p.phone,large);await message(p.phone,large);
+ eq(p.phone.ws.readyState,1,'byte budget drops without immediate close');ok(p.phone.client.received.some(x=>JSON.parse(x).type==='hiz_siniri'),'byte rate notice');
+ e=environment();p=await pair(e);const rotated=await consume(p),oldWeb=p.web;const replacement=await socket(e,p.r,'browser',rotated.browser);
+ eq(oldWeb.ws.reason,'BAGLANTI_YENILENDI','active old browser closed');now+=1100;await message(p.phone,encrypted());eq(JSON.parse(replacement.client.received.at(-1)).type,'encrypted','frames go to new socket');
+ await oldWeb.entry.obj.webSocketClose(oldWeb.ws);eq(oldWeb.entry.ctx.data.get('meta').reconnectUntil,0,'stale close does not break replacement');
  e=environment();p=await pair(e);await consume(p);now+=1100;await message(p.phone,encrypted('1','w2p'));eq(p.phone.ws.reason,'GECERSIZ_ZARF','wrong sender direction');
  e=environment({CREATE_PER_MINUTE:'1'});await room(e);eq((await create(e)).status,429,'global creation budget');
  e=environment();r=await room(e);const pending=[];for(let i=0;i<4;i++)pending.push(await socket(e,r,'phone',null,false));eq((await socket(e,r,'phone',null,false)).res.status,429,'pending socket bound');

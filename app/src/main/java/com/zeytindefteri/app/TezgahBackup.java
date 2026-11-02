@@ -263,6 +263,7 @@ public final class TezgahBackup {
         ensureAll(db);
         String o = owner == null ? "" : owner;
         int written = 0;
+        boolean committed = false;
         db.beginTransaction();
         try {
             for (String t : TABLES) {
@@ -283,12 +284,12 @@ public final class TezgahBackup {
                     written++;
                 }
             }
-            db.setTransactionSuccessful();
+            db.setTransactionSuccessful(); committed = true;
             return written;
         } catch (RuntimeException e) {
             return -1;
         } finally {
-            db.endTransaction();
+            db.endTransaction(); if (committed) TezgahPurchases.webSignal(db, owner, "restored");
         }
     }
 

@@ -38,6 +38,9 @@
     <!-- Reklam yok: kütüphanelerden gelebilecek reklam kimliği izni kaldırılır (Play "Reklam kimliği" = Hayır). -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <application
         android:name=".ZeytinApplication"
         android:allowBackup="true"
@@ -55,6 +58,8 @@
         android:enableOnBackInvokedCallback="true"
 
         android:theme="@style/Theme.App">
+        <service android:name=".TezgahWebService" android:exported="false" android:foregroundServiceType="connectedDevice" />
+
 
 
         <!-- ===================================================== -->

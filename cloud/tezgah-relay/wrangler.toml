@@ -10,6 +10,9 @@ RELAY_URL = "https://relay.zeytindefteri.com"
 ALLOWED_ORIGINS = '["https://web.zeytindefteri.com"]'
 CREATE_PER_MINUTE = "10"
 CREATE_PER_DAY = "1000"
+FRAME_RATE = "20"
+FRAME_BURST = "60"
+BYTES_PER_MINUTE = "4194304"
 
 [[durable_objects.bindings]]
 name = "ROOMS"

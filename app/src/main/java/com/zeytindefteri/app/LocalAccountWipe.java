@@ -23,6 +23,7 @@ public final class LocalAccountWipe {
     /** Silinen satır sayısını döndürür. uid boşsa misafir (sahipsiz) veri silinir. */
     public static int wipe(SQLiteDatabase db, String uid) {
         String owner = uid == null ? "" : uid.trim();
+        try { Class.forName("com.zeytindefteri.app.TezgahWebChanges").getMethod("reset", String.class).invoke(null, owner); } catch (Exception | LinkageError ignored) { }
         String userKey = "firebase:" + owner;
         int deleted = 0;
         db.beginTransaction();

@@ -1,6 +1,6 @@
 # Tezgâh Relay — telefondan kurulum
 
-Bu klasör ayrı bir Worker'dır. **`cloud/zeytin-ai` üzerinde değişiklik yapmayın.** Bu adımda Android Gradle/manifest, telefon ekranları ve çalışan bir web sayfası eklenmedi. Dosyalar hazırlanıp host testlerinden geçirilmiştir; canlı Cloudflare dağıtımı **doğrulanmadı**.
+Bu klasör ayrı bir Worker'dır. **`cloud/zeytin-ai` üzerinde değişiklik yapmayın.** Adım 3a'da Android telefon tarafı eklendi; çalışan web sayfası 3b'dedir. Android derlemesi SDK olmadığı için yapılmadı. Dosyalar hazırlanıp host testlerinden geçirilmiştir; canlı Cloudflare dağıtımı **doğrulanmadı**.
 
 ## Önce bilinmesi gerekenler
 
@@ -23,6 +23,7 @@ GitHub uygulamasından veya tarayıcıdan `muammercerdin-star/Zeytin-Defteri-Rec
 | `ROOMS / TezgahRelay` | DO binding/class adı; değiştirmeyin. |
 | `new_sqlite_classes` | İlk dağıtımda SQLite namespace'i kurar. Aynı migration tag'ini değiştirmeyin/silmeyin. |
 | `CREATE_PER_MINUTE = "10"` | Worker genelinde dakikada oda oluşturma bütçesi. IP kullanılmaz. |
+| `FRAME_RATE / FRAME_BURST / BYTES_PER_MINUTE` | Varsayılan 20 frame/sn, 60 frame patlama, 4 MiB/dk. Sınırda frame düşer ve en çok saniyede bir şifresiz `hiz_siniri` gider; aralıksız aşım serisi 10 sn sürerse kapanır. |
 | `CREATE_PER_DAY = "1000"` | Worker genelinde günde oda oluşturma bütçesi; UTC gününde yenilenir. Bu uygulama bütçesi, Cloudflare hesabının kalan kotası değildir. |
 | `[observability] enabled = false` | Worker kalıcı uygulama logları kapalı. |
 
@@ -53,7 +54,7 @@ Worker → **Settings → Domains & Routes → Add → Custom Domain** yolunu a�
 2. Domain'in DNS bölgesinin aynı Cloudflare hesabında aktif olduğunu doğrula. Custom Domain kurulumunun oluşturduğu DNS/kayıt/TLS adımlarını panelden tamamla; aynı hostname için çakışan eski A/CNAME kayıtlarını kontrol et. Diğer uygulama/AI adreslerini silme.
 3. Sertifika etkinleşene kadar bekle. HTTPS çalışmadan `wss://` kullanılamaz. Sertifika kontrolünü istemcide kapatma.
 4. `wrangler.toml` içindeki `RELAY_URL` ile paneldeki alan adının birebir aynı olduğuna bak. Kaynak dal üzerinden yeni bir dağıtım tetikle.
-5. Web istemcisinin adresi relay adresinden farklıdır: `web...` HTML/JS'yi sunacak, `relay...` yalnız WSS/HTTP aktarıcıdır. Web sayfası adım 3'te hazırlanacak; bu Worker'ı açınca QR ekranı görmemen normal.
+5. Web istemcisinin adresi relay adresinden farklıdır: `web...` HTML/JS'yi sunacak, `relay...` yalnız WSS/HTTP aktarıcıdır. Web sayfası adım 3b'de hazırlanacak; bu Worker'ı açınca QR ekranı görmemen normal.
 
 **Tarayıcıdan `/v1/rooms` adresini açmak GET gönderir ve 404 verir; kurulum bozuk demek değildir.** Endpoint yalnız izinli origin'den JSON POST kabul eder. `/v1/socket?room=<oda>` WebSocket upgrade ister. Canlı doğrulama adım 3'ün iki cihazlı demosunda yapılacak.
 
@@ -61,7 +62,7 @@ Worker → **Settings → Domains & Routes → Add → Custom Domain** yolunu a�
 
 Worker yalnız `[vars].RELAY_URL` ve `[vars].ALLOWED_ORIGINS` kullanır; URL token taşımaz. Oda kimliği URL'de olabilir, **capability ilk socket frame'inde** gider. URL'ye S, hesap UID'si veya Firebase token'ı koyma.
 
-Adım 3'te Android için proje kökündeki git dışı `local.properties` dosyasında **`TEZGAH_RELAY_URL=https://relay...`** ayarı okunacak. Mevcut `ZEYTIN_AI_URL` / `zdBuildString` deseniyle BuildConfig alanı üretilecek. Bu adımda Gradle'a bu alan **eklenmedi**. QR'dan gelen serbest bir relay URL'sine bağlanılmayacak; optik QR yalnız odanın/kriptonun girdisi, gerçek hedef dağıtım ayarıdır.
+Android için proje kökündeki git dışı `local.properties` dosyasında **`TEZGAH_RELAY_URL=https://relay...`** ayarı okunacak. Mevcut `ZEYTIN_AI_URL` / `zdBuildString` deseniyle BuildConfig alanı üretilecek. BuildConfig alanı Gradle'a eklendi; boş/geçersiz HTTPS adresinde özellik gizlidir. Yalnız OkHttp 5.5.1 doğrudan bağımlılığı eklendi. QR'dan gelen serbest bir relay URL'sine bağlanılmayacak; optik QR yalnız odanın/kriptonun girdisi, gerçek hedef dağıtım ayarıdır.
 
 ## 5. Endpoint / süre özeti
 
@@ -69,11 +70,11 @@ Adım 3'te Android için proje kökündeki git dışı `local.properties` dosyas
 |---|---|
 | `POST /v1/rooms` | İzinli Origin, JSON `{}`; rastgele room/cb/cp ve expiresAt döner. S/B/nb relaya gönderilmez. |
 | `/v1/socket?room=...` | WSS; ilk frame `{v:1,type:"auth",room,role,capability}`; 5 sn içinde auth yoksa kapanır. |
-| Pending oda | 90 sn; 1 phone + 1 browser; en fazla 4 auth-bekleyen/toplam açık socket; oda upgrade sınırı 20/dk. |
+| Pending oda | 90 sn; 1 phone + 1 browser; en fazla 4 auth-bekleyen/toplam açık socket; geçerli aynı rol capability'si yeni sokete eski soketi kapattırarak yer açar; oda upgrade sınırı 20/dk. |
 | Eşleşme | Phone `phone_hello`, browser `web_finished`; açık telefon onayından sonra **phone** `consume{session}` yollar. Tek tüketim ve iki rol token'ı rotasyonu. |
 | Consume / onay | Relay phone rolüne güvenir; kullanıcı onayının kendisini göremez. Adım 3, gerçek UI onayını zorunlu kılmalı. `consumed` E2EE onayı değildir. |
 | Veri | Active durumda `encrypted` zarfı; yalnız karşı uca; alıcı yoksa atılır. |
-| Boyut / hız | Frame ≤64 KiB; bağlantı başına 5 frame/sn, 1 MiB/dk; binary mesaj kabul edilmez. |
+| Boyut / hız | Frame ≤64 KiB; bağlantı başına 20 frame/sn, 60 frame burst, 4 MiB/dk; binary mesaj kabul edilmez. |
 | Kalp atışı | `{v:1,type:"ping"}` → pong; client 30 sn'de gönderir. 60 sn etkinlik yoksa socket kapanır. |
 | Kopma | İlk kopmada 5 dk sabit pencere; active rol capability'siyle yeniden socket auth, ardından iki uçta E2EE resume doğrulaması. Phone `resume_complete` ile pencereyi kapatır. |
 | Süre / çıkış | Active oda en çok 8 saat; `close` iki rol için de odayı bitirir. Alarm metadata'yı temizler. Browser/phone RAM anahtarlarını da silmeli. |
@@ -87,3 +88,11 @@ Repo kökünde `bash tests/web_crypto/run.sh` ve `bash tests/web_relay/run.sh` �
 Relay testleri Cloudflare çalışma ortamını **Node mock** ile taklit eder. Gerçek `workerd`, canlı WebSocket, edge hibernation, mobil veri/TLS ve 10 saatlik kota/pil ölçümü **yapılmadı**. Bu adımda test sonucu olan “PASS” bu canlı davranışların onayı değildir.
 
 Resmî belgeler: [Workers Git bağlantısı](https://developers.cloudflare.com/workers/ci-cd/builds/), [DO SQLite başlangıcı](https://developers.cloudflare.com/durable-objects/get-started/), [DO legacy migration](https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/), [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/), [Hibernation](https://developers.cloudflare.com/durable-objects/best-practices/websockets/), [Alarms](https://developers.cloudflare.com/durable-objects/api/alarms/), [ücretsiz DO kotaları](https://developers.cloudflare.com/durable-objects/platform/pricing/).
+
+## 7. Adım 3a telefon istemcisi
+
+`TEZGAH_RELAY_URL` yerel ayarıyla derlenince Tezgâh ana ekranında “Bilgisayara bağlan” görünür. QR okuma → açık telefon onayı/ad → foreground service. Service yalnız açık dönem ve takvim günü alımlarını okur; hiçbir web yazma komutu yoktur. Tek aktif bilgisayar desteklenir; isim/tarih/durum metadata'sı noBackupFilesDir içindedir.
+
+Telefon gönderim temposu 10 frame/sn ve yaklaşık 1,9 MiB/dk; kuyruk en fazla 128 frame/2 MiB. Relay vars değerlerini bu temponun altına indirirsen cevaplar düşebilir; browser 3b salt okuma isteklerine timeout/tekrar eklemeli. `peer_joined` ve `peer_left` şifresiz bağlantı ipuçlarıdır, kimlik/telefon onayı yerine geçmez; browser yeniden katılınca yeni epoch resume gerekir.
+
+APK boyutu **ölçülmedi**; gerçek Android/OkHttp derlemesi **derlenmedi (SDK yok)**. Termux'ta mevcut imza ayarlarıyla `bash gradlew :app:assembleRelease` kullanılacak. API listesi ve doğrulama sınırları [Adım 3a raporunda](../../docs/web-baglanti/ADIM3A-RAPOR.md).

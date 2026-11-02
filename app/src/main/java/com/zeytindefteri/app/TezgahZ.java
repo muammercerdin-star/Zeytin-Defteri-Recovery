@@ -67,6 +67,7 @@ public final class TezgahZ {
         long first = Long.MAX_VALUE, last = 0;
         for (TezgahPurchases.Purchase p : open) { first = Math.min(first, p.createdAt); last = Math.max(last, p.createdAt); }
 
+        boolean committed = false;
         db.beginTransaction();
         try {
             int number = nextNumber(db, o);
@@ -92,12 +93,12 @@ public final class TezgahZ {
             int moved = db.update(TezgahPurchases.TABLE, z, "COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0", new String[]{o});
             if (moved != open.size()) return -1;
             db.delete(TezgahClosing.TABLE, "COALESCE(owner_uid,'')=? AND record_date=?", new String[]{o, OPEN_KEY});
-            db.setTransactionSuccessful();
+            db.setTransactionSuccessful(); committed = true;
             return id;
         } catch (RuntimeException e) {
             return -1;
         } finally {
-            db.endTransaction();
+            db.endTransaction(); if (committed) TezgahPurchases.webSignal(db, owner, "committed");
         }
     }
 

@@ -28,6 +28,7 @@ public class SessionManager {
     }
 
     public void startGuestSession() {
+        webReset();
         synchronized (LocalReminderScheduler.LOCK) {
             LocalReminderScheduler.beforeSessionChange(appContext);
 
@@ -60,6 +61,7 @@ public class SessionManager {
             String email,
             String uid
     ) {
+        webReset();
         synchronized (LocalReminderScheduler.LOCK) {
             LocalReminderScheduler.beforeSessionChange(appContext);
 
@@ -142,6 +144,7 @@ public class SessionManager {
     }
 
     public void logout() {
+        webReset();
         synchronized (LocalReminderScheduler.LOCK) {
             LocalReminderScheduler.beforeSessionChange(appContext);
 
@@ -152,6 +155,11 @@ public class SessionManager {
     
         }
         LocalReminderScheduler.requestReschedule(appContext);
+    }
+
+    private void webReset() {
+        try { Class.forName("com.zeytindefteri.app.TezgahWebChanges").getMethod("reset", String.class).invoke(null, (String)null); }
+        catch (Exception | LinkageError ignored) { }
     }
 
     private String safe(String value) {

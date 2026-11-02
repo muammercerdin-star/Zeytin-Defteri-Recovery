@@ -86,7 +86,7 @@ public final class TezgahPurchases {
         v.put("amount_paid", Math.max(0, Math.min(gross, paid)));
         v.put("data", model.encode());
         v.put("created_at", now);
-        return db.insert(TABLE, null, v);
+        long saved = db.insert(TABLE, null, v); if (saved > 0) webSignal(db, owner, "committed"); return saved;
     }
 
     private static final String COLS = "SELECT id, record_date, seller_name, seller_phone, total_kg, total_kasa, gross_total, "
@@ -178,14 +178,16 @@ public final class TezgahPurchases {
         }
         ContentValues v = new ContentValues();
         v.put("amount_paid", Math.max(0, Math.min(gross, paid)));
-        return db.update(TABLE, v, "id=? AND COALESCE(owner_uid,'')=?",
+        boolean changed = db.update(TABLE, v, "id=? AND COALESCE(owner_uid,'')=?",
                 new String[]{String.valueOf(id), owner == null ? "" : owner}) > 0;
+        if (changed) webSignal(db, owner, "committed"); return changed;
     }
 
     /** Yalnız açık dönemdeki alım silinir; gün sonu alınmış (Z'li) alım kilitlidir. */
     public static boolean delete(SQLiteDatabase db, String owner, long id) {
         ensure(db);
         // Tek işlem: alım, ödemeleri ve kasa hareketleri birlikte silinir ya da hiçbiri silinmez.
+        boolean committed = false;
         db.beginTransaction();
         try {
             boolean ok = db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0",
@@ -193,11 +195,11 @@ public final class TezgahPurchases {
             if (ok) {
                 TezgahPayments.deleteFor(db, owner, id);
                 TezgahCrates.deleteFor(db, owner, id);
-                db.setTransactionSuccessful();
+                db.setTransactionSuccessful(); committed = true;
             }
             return ok;
         } finally {
-            db.endTransaction();
+            db.endTransaction(); if (committed) webSignal(db, owner, "committed");
         }
     }
 
@@ -207,6 +209,12 @@ public final class TezgahPurchases {
         String s = d.count + " alım · " + TezgahModel.kg(d.kg) + " · " + TezgahModel.tl(d.gross);
         if (d.remaining() > 0.5) s += " · " + TezgahModel.tl(d.remaining()) + " borç";
         return s;
+    }
+
+    /** Bağımsız host derlemeleriyle uyumlu opsiyonel hook; hata yazma işlemini değiştirmez. Minify kapalı. */
+    static void webSignal(Object db, String owner, String method) {
+        try { Class.forName("com.zeytindefteri.app.TezgahWebChanges").getMethod(method, Object.class, String.class).invoke(null, db, owner); }
+        catch (Exception | LinkageError ignored) { }
     }
 
     private static String nz(String s) { return s == null ? "" : s; }

@@ -141,17 +141,30 @@ export class TezgahRelay {
     if(typeof message!=='string'){close(ws,'GECERSIZ_ZARF');return;}
     const size=encoder.encode(message).length;
     if(size>MAX_FRAME){close(ws,'BOYUT_SINIRI');return;}
-    const second=Math.floor(now/1000),minute=Math.floor(now/60000);
-    if(a.second!==second){a.second=second;a.count=0;}if(a.minute!==minute){a.minute=minute;a.bytes=0;}
-    if(++a.count>5||(a.bytes+=size)>1048576){close(ws,'HIZ_SINIRI');return;}
+    const rate=limit(this.env.FRAME_RATE,20,1,1000),burst=limit(this.env.FRAME_BURST,60,1,3000);
+    const bytesPerMinute=limit(this.env.BYTES_PER_MINUTE,4194304,65536,16777216);
+    const minute=Math.floor(now/60000);
+    a.tokens=Math.min(burst,(a.tokens??burst)+Math.max(0,now-(a.tokenAt??now))*rate/1000);a.tokenAt=now;
+    if(a.minute!==minute){a.minute=minute;a.bytes=0;}
+    if(a.tokens<1||a.bytes+size>bytesPerMinute){
+      if(a.excessSince==null)a.excessSince=now;
+      if(a.excessLast!=null&&now-a.excessLast>1000)a.excessSince=now;
+      a.excessLast=now;a.lastSeen=now;
+      if(a.warnAt==null||now-a.warnAt>=1000){send(ws,{v:1,type:'hiz_siniri'});a.warnAt=now;}
+      ws.serializeAttachment(a);
+      if(now-a.excessSince>=10000)close(ws,'HIZ_SINIRI');
+      await this.schedule();return;
+    }
+    a.tokens-=1;a.bytes+=size;if(a.excessLast!=null&&now-a.excessLast>1000){a.excessSince=null;a.excessLast=null;}
     a.lastSeen=now;ws.serializeAttachment(a);
     const f=JSON.parse(message);
     if(!a.role) {
       if(now>=a.authDeadline||!exact(f,'v,type,room,role,capability')||f.v!==1||f.type!=='auth'||f.room!==m.room||!['browser','phone'].includes(f.role)||!token(f.capability,32)) {close(ws,'AUTH_RED');return;}
       if((f.role==='browser'&&!origins(this.env).includes(a.origin))||(f.role==='phone'&&a.origin)){close(ws,'ROL_RED');return;}
-      if(this.role(f.role)||await hash(f.capability)!==m[f.role+'Hash']){close(ws,'AUTH_RED');return;}
+      if(await hash(f.capability)!==m[f.role+'Hash']){close(ws,'AUTH_RED');return;}
+      const old=this.role(f.role);if(old){const oldA=this.attachment(old);oldA.replaced=true;old.serializeAttachment(oldA);close(old,'BAGLANTI_YENILENDI');}
       a.role=f.role;delete a.origin;delete a.authDeadline;ws.serializeAttachment(a);
-      send(ws,{v:1,type:'auth_ok',stage:m.stage});await this.schedule();return;
+      send(ws,{v:1,type:'auth_ok',stage:m.stage});const other=this.role(f.role==='phone'?'browser':'phone');if(other)send(other,{v:1,type:'peer_joined',role:f.role});await this.schedule();return;
     }
     const peer=this.role(a.role==='phone'?'browser':'phone');
     if(exact(f,'v,type')&&f.v===1&&f.type==='ping'){send(ws,{v:1,type:'pong'});await this.schedule();return;}
@@ -184,7 +197,8 @@ export class TezgahRelay {
   async disconnected(ws) {
     return this.ctx.blockConcurrencyWhile(async()=>{
       const a=this.attachment(ws);close(ws);
-      if(this.meta?.stage==='active'&&a.role&&!this.meta.reconnectUntil){this.meta.reconnectUntil=Date.now()+RESUME_MS;await this.save();}
+      if(this.meta?.stage==='active'&&a.role&&!a.replaced&&!this.role(a.role)&&!this.meta.reconnectUntil){this.meta.reconnectUntil=Date.now()+RESUME_MS;await this.save();}
+      if(a.role&&!a.replaced&&!this.role(a.role)){const other=this.role(a.role==='phone'?'browser':'phone');if(other)send(other,{v:1,type:'peer_left',role:a.role});}
       await this.schedule();
     });
   }

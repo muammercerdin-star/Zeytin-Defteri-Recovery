@@ -215,7 +215,7 @@ public final class TezgahStatementActivity extends Activity {
                     } catch (RuntimeException e) {
                         ok = false;
                     } finally {
-                        w2.endTransaction();
+                        w2.endTransaction(); if (ok && done > 0) TezgahWebChanges.committed(w2, owner);
                     }
                     toast(!ok || done == 0 ? "Ödeme kaydedilemedi; hiçbir şey değişmedi." : TezgahModel.tl(v) + " · " + done + " alıma dağıtıldı ✓");
                     render();
