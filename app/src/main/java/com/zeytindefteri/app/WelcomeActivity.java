@@ -73,6 +73,21 @@ public class WelcomeActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(0);
 
 
+        // Açılış animasyonu (obilet tarzı, ~1,6 sn, dokununca geçer); bitince her zamanki yönlendirme.
+        if (savedInstanceState == null && SplashIntroView.enabled(this)) {
+            setContentView(new SplashIntroView(this, this::route));
+            return;
+        }
+        route();
+    }
+
+    private boolean routed;
+
+    /** Oturum açıksa ana ekran, karşılama görüldüyse giriş, ilk kurulumsa karşılama ekranı. */
+    private void route() {
+        if (routed || isFinishing() || isDestroyed()) return;
+        routed = true;
+
         // =========================================================
         // FIREBASE AUTH
         // =========================================================
@@ -692,6 +707,9 @@ public class WelcomeActivity extends Activity {
                 intent
         );
 
+
+        // Açılış animasyonundan ana ekrana yumuşak geçiş.
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
 
         finish();
 

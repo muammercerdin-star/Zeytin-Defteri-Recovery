@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Yalnız Android 12+ için Theme.Welcome (values/themes.xml ile aynı + açılış ekranı ayarları). -->
+<resources>
+    <style name="Theme.Welcome" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/zd_green</item>
+        <item name="android:colorPrimaryDark">@color/zd_bg</item>
+        <item name="android:colorAccent">@color/zd_green</item>
+        <item name="android:statusBarColor">@color/zd_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/zd_bg</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">@color/zd_bg</item>
+        <!-- Android 12+: sistemin kendi açılış ekranı (soluk ikon + ad) yerine düz zemin; animasyonu SplashIntroView oynatır. -->
+        <item name="android:windowSplashScreenBackground">@color/zd_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/zd_bg</item>
+        <item name="android:textColorPrimary">@color/zd_text</item>
+        <item name="android:textColorSecondary">@color/zd_muted</item>
+        <item name="android:textColorHint">@color/zd_muted</item>
+    </style>
+</resources>

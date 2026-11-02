@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ ve gece modu: values-night/themes.xml Theme.Welcome + düz sistem açılış ekranı (animasyonu SplashIntroView oynatır). -->
+<resources>
+    <style name="Theme.Welcome" parent="android:Theme.Material.NoActionBar"><item name="android:windowBackground">@color/zd_bg</item><item name="android:windowSplashScreenBackground">@color/zd_bg</item><item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item><item name="android:windowSplashScreenIconBackgroundColor">@color/zd_bg</item><item name="android:statusBarColor">@color/zd_bg</item><item name="android:navigationBarColor">@color/zd_bg</item><item name="android:windowLightStatusBar">false</item><item name="android:windowLightNavigationBar">false</item><item name="android:textColorPrimary">@color/zd_text</item><item name="android:textColorSecondary">@color/zd_muted</item><item name="android:textColorHint">@color/zd_muted</item></style>
+</resources>
