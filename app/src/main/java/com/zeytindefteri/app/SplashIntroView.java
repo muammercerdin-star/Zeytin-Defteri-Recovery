@@ -16,11 +16,11 @@ import android.view.View;
  *  1) Dönen yeşil yay içinde işler sırayla belirir: ağaç → sulama → hasat → elek.
  *  2) Halka küçülüp zeytin logosuna dönüşür.
  *  3) Logo sola kayar, "Zeytin Defteri" soldan sağa yazılır, altında slogan belirir.
- * Toplam ~1,6 sn; dokununca atlanır. Telefonda animasyonlar kapalıysa hiç oynamaz.
+ * Toplam ~4 sn (her ikon yarım saniye); dokununca atlanır. Telefonda animasyonlar kapalıysa hiç oynamaz.
  * Bitiş yalnız ekran çizilirken tetiklenir: arka plana alınırsa yönlendirme geri dönünce yapılır.
  */
 public final class SplashIntroView extends View {
-    static final long ICONS_END = 800, MORPH_END = 1050, TEXT_END = 1450, TOTAL = 1650;
+    static final long ICONS_END = 2000, MORPH_END = 2550, TEXT_END = 3300, TOTAL = 4000;
 
     private final Runnable done;
     private boolean finished;
@@ -105,17 +105,17 @@ public final class SplashIntroView extends View {
             float m = ease((t - ICONS_END) / (float) (MORPH_END - ICONS_END)); // 0..1 halka küçülmesi
             float r = R + (logoR - R) * m;
             float sweep = 90f + 270f * clamp(t / (float) ICONS_END);           // yay büyüyerek kapanır
-            float rot = (t / 1000f) * 360f * 1.2f - 90f;
+            float rot = (t / 1000f) * 360f * 0.8f - 90f;
             arc.set(cx - r, cy - r, cx + r, cy + r);
             if (m > 0f) { fill.setAlpha((int) (255 * m)); c.drawCircle(cx, cy, r, fill); }
             ring.setAlpha((int) (255 * (1f - m)));
             c.drawArc(arc, rot, sweep, false, ring);
 
-            if (t < ICONS_END + 120) {
+            if (t < ICONS_END + 200) {
                 long slot = ICONS_END / icons.length;
                 int i = (int) Math.min(icons.length - 1, t / slot);
                 float local = (t - i * slot) / (float) slot;
-                float s = pop(local * 2.2f) * (1f - ease((t - ICONS_END) / 120f));
+                float s = pop(local * 2.2f) * (1f - ease((t - ICONS_END) / 200f));
                 int half = (int) (16 * d * s);
                 Drawable icon = icons[i];
                 icon.setAlpha((int) (255 * clamp(local * 4f)));
@@ -138,7 +138,7 @@ public final class SplashIntroView extends View {
             c.drawText(NAME, textX, baseline, title);
             c.restore();
 
-            float sk = ease((t - TEXT_END + 150) / 250f);
+            float sk = ease((t - TEXT_END + 200) / 450f);
             if (sk > 0f) {
                 slogan.setAlpha((int) (255 * sk));
                 float sw = slogan.measureText(SLOGAN);

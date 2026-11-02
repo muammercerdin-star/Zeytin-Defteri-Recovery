@@ -10,7 +10,7 @@ checks = [
     ("yeniden oluşturulunca animasyon tekrar oynamaz", "savedInstanceState == null && SplashIntroView.enabled(this)" in w),
     ("dokununca geçer", "ACTION_UP) finish();" in v),
     ("animasyonlar kapalıysa oynamaz", "ANIMATOR_DURATION_SCALE" in v),
-    ("kısa (≤ 2 sn)", "TOTAL = 1650" in v),
+    ("yaklaşık 4 sn", "TOTAL = 4000" in v),
     ("Android 12+ düz sistem ekranı (gündüz + gece)", all("windowSplashScreenAnimatedIcon" in res(f) for f in ["values-v31/themes.xml", "values-night-v31/themes.xml"])),
 ]
 bad = 0
