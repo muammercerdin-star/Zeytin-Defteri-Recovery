@@ -182,15 +182,20 @@ public final class WeatherSkyView extends View {
         }
     }
 
+    /**
+     * Gece yıldızları yalnız kartın sağ üst şeridinde: derece, "Saatlik ›" ve satırların üstüne düşüp
+     * nokta işareti gibi görünmesinler.
+     */
     private void drawStars(Canvas c, int w, int h, float t) {
         dot.setColor(0xFFF4F7F4);
-        int n = 18;
+        int n = 12;
+        float top = 6 * d, band = 20 * d;
         for (int i = 0; i < n; i++) {
-            float x = (pl[i] * 0.97f + 0.015f) * w;
-            float y = ((ps[i] - 0.6f) / 0.8f) * h * 0.45f + 6 * d;
+            float x = (0.42f + pl[i] * 0.54f) * w;
+            float y = top + ((ps[i] - 0.6f) / 0.8f) * band;
             float tw = 0.5f + 0.5f * (float) Math.sin(t * (1.2f + pl[i]) + i);
-            dot.setAlpha((int) (40 + 110 * tw));
-            c.drawCircle(x, y, (0.8f + 0.7f * tw) * d, dot);
+            dot.setAlpha((int) (30 + 100 * tw));
+            c.drawCircle(x, y, (0.6f + 0.6f * tw) * d, dot);
         }
     }
 
