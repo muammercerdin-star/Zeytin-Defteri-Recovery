@@ -38,6 +38,8 @@ public final class ZeytinLeagueRegionReportDialog {
     private final TextView detailButton;
     private MarketCloudRepository.LeagueRegionReport currentReport;
     private List<MarketCloudRepository.LeagueGradeReport> currentGrades = new ArrayList<>();
+    /** Güncel fiyat (bölgedeki herkesin son 3/7/30 gün satışlarının ortadaki fiyatı); gelene kadar null. */
+    private CurrentPrices.Entry[] currentPrices;
     private final NumberFormat number = NumberFormat.getNumberInstance(new Locale("tr", "TR"));
 
     private final int bg = GreenTheme.color(R.color.zd_bg);
@@ -166,6 +168,7 @@ public final class ZeytinLeagueRegionReportDialog {
             return;
         }
 
+        loadCurrentPrices();
         cloudRepository.loadLeagueRegionReport(
                 year,
                 region.id,
@@ -176,6 +179,23 @@ public final class ZeytinLeagueRegionReportDialog {
                     bindReport(report);
                 }
         );
+    }
+
+    private void loadCurrentPrices() {
+        String key = region.id == null ? "" : region.id;
+        String cached = CurrentPriceStore.cached(context, key);
+        if (cached != null) currentPrices = CurrentPrices.parse(cached);
+        cloudRepository.loadCurrentPrices(year, key, (json, error) -> {
+            if (json == null || !dialog.isShowing()) return;
+            CurrentPriceStore.save(context, key, json);
+            currentPrices = CurrentPrices.parse(json);
+            if (currentReport != null) bindReport(currentReport);
+        });
+    }
+
+    private CurrentPrices.Entry current(String grade) {
+        int at = CurrentPrices.index(grade);
+        return currentPrices == null || at < 0 ? null : currentPrices[at];
     }
 
     private LinearLayout buildHeader() {
@@ -226,8 +246,11 @@ public final class ZeytinLeagueRegionReportDialog {
 
         // Elek fiyatları: her elek için bölgedeki medyan kg fiyatı (5 üretici eşiğiyle).
         LinearLayout priceSection = box();
-        priceSection.addView(label("Elek fiyatları • medyan", 12, text, true));
-        TextView priceSub = label(year + " sezonu • TL/kg • her üretici bir kez sayılır", 8.5f, muted, false);
+        boolean live = CurrentPrices.any(currentPrices);
+        priceSection.addView(label(live ? "Elek fiyatları • güncel" : "Elek fiyatları • medyan", 12, text, true));
+        TextView priceSub = label(live
+                ? "Bölgedeki tüm satışların son 3 günü • ortadaki fiyat • TL/kg"
+                : year + " sezonu • TL/kg • her üretici bir kez sayılır", 8.5f, muted, false);
         priceSub.setPadding(0, dp(1), 0, 0);
         priceSection.addView(priceSub);
         for (int start = 0; start < grades.size(); start += 3) {
@@ -324,8 +347,11 @@ public final class ZeytinLeagueRegionReportDialog {
         name.setGravity(Gravity.CENTER);
         box.addView(name);
 
-        TextView price = label(RegionGradePrice.priceText(grade.producerCount, grade.medianPrice, grade.averagePrice),
-                17, shown ? text : muted, true);
+        CurrentPrices.Entry now = current(grade.grade);
+        String seasonPrice = RegionGradePrice.priceText(grade.producerCount, grade.medianPrice, grade.averagePrice);
+        boolean live = now != null && now.price > 0d;
+        TextView price = label(live ? RegionGradePrice.format(now.price) : seasonPrice,
+                17, shown || live ? text : muted, true);
         price.setGravity(Gravity.CENTER);
         price.setSingleLine(true);
         box.addView(price);
@@ -334,6 +360,20 @@ public final class ZeytinLeagueRegionReportDialog {
         unit.setGravity(Gravity.CENTER);
         box.addView(unit);
 
+        if (live) {
+            // Güncel fiyat: hangi pencereden geldiği yeşil, sezonun ortadaki fiyatı altında soluk.
+            TextView when = label(CurrentPrices.window(now.windowDays), 8.5f, green, true);
+            when.setGravity(Gravity.CENTER);
+            when.setPadding(0, dp(2), 0, 0);
+            box.addView(when);
+            if (!RegionGradePrice.NO_VALUE.equals(seasonPrice)) {
+                TextView season = label("sezon " + seasonPrice, 8f, muted, false);
+                season.setGravity(Gravity.CENTER);
+                box.addView(season);
+            }
+            box.setContentDescription(grade.grade + " güncel " + price.getText() + " TL/kg, " + when.getText());
+            return box;
+        }
         int direction = RegionGradePrice.trendDirection(grade.producerCount, grade.trendAvailable, grade.trendPct);
         TextView foot = label(RegionGradePrice.footText(grade.producerCount, grade.trendAvailable, grade.trendPct),
                 8.5f, direction > 0 ? green : direction < 0 ? danger : muted, direction != 0);

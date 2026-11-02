@@ -20,6 +20,7 @@ checks = [
     ("kayıtlı fiyat yüklenince bindirme", "updatePriceLabels();\n        applyMarketOverlay();" in e),
     ("sesli elek formdaki fiyatı kullanır", "prices() { return new double[]{priceDouble, price1" in e),
     ("formda kaynak notu", "tvElekPriceSource" in lay),
+    ("bölge raporu kutularında güncel fiyat", "current(grade.grade)" in r("ZeytinLeagueRegionReportDialog.java") and "loadCurrentPrices();" in r("ZeytinLeagueRegionReportDialog.java")),
     ("Piyasa kartında güncel satır", "setCurrentPrice(" in m and "loadCurrentPrice(year, cloud.regionId" in lc),
 ]
 bad = 0
