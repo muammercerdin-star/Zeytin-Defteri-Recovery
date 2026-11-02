@@ -34,6 +34,43 @@ public final class HomeDashboardModel {
         return 5;
     }
 
+    /** Her dönemin başladığı ve bittiği ay (Calendar.MONTH, dahil). */
+    static final int[][] PHASE_RANGE = {{0, 2}, {3, 4}, {5, 5}, {6, 7}, {8, 8}, {9, 11}};
+
+    /** Dönem içindeki yer: kaçıncı hafta, kabaca kaç hafta kaldı, 0..1 ilerleme. */
+    public static final class PhaseProgress {
+        public int week, weeksLeft;
+        public float fraction;
+    }
+
+    public static PhaseProgress phaseProgress(Calendar now) {
+        int phase = seasonPhase(now.get(Calendar.MONTH));
+        Calendar start = (Calendar) now.clone();
+        start.set(Calendar.MONTH, PHASE_RANGE[phase][0]);
+        start.set(Calendar.DAY_OF_MONTH, 1);
+        Calendar end = (Calendar) start.clone();
+        end.set(Calendar.MONTH, PHASE_RANGE[phase][1]);
+        end.set(Calendar.DAY_OF_MONTH, end.getActualMaximum(Calendar.DAY_OF_MONTH));
+        int total = end.get(Calendar.DAY_OF_YEAR) - start.get(Calendar.DAY_OF_YEAR) + 1;
+        int passed = now.get(Calendar.DAY_OF_YEAR) - start.get(Calendar.DAY_OF_YEAR);   // bugün hariç geçen gün
+        int left = total - passed - 1;                                                  // bugünden sonra kalan gün
+        PhaseProgress p = new PhaseProgress();
+        p.week = passed / 7 + 1;
+        p.weeksLeft = Math.max(0, (int) Math.ceil(left / 7.0));
+        p.fraction = Math.max(0f, Math.min(1f, (passed + 1) / (float) total));
+        return p;
+    }
+
+    /** "Hasadın 5. haftası · yaklaşık 9 hafta kaldı". */
+    public static String phaseProgressText(int phase, PhaseProgress p) {
+        String[] owners = {"Budamanın", "Çiçeklenmenin", "Meyve tutumunun", "Çekirdek sertleşmesinin", "Yağlanmanın", "Hasadın"};
+        String owner = owners[Math.max(0, Math.min(owners.length - 1, phase))];
+        String head = owner + " " + p.week + ". haftası";
+        if (p.weeksLeft <= 0) return head + " · son günler";
+        if (p.weeksLeft == 1) return head + " · bir haftadan az kaldı";
+        return head + " · yaklaşık " + p.weeksLeft + " hafta kaldı";
+    }
+
     public static String phaseTitle(int phase) {
         switch (phase) {
             case 0: return "Budama dönemi";

@@ -2674,12 +2674,42 @@ public class ProducerFeedActivity extends Activity {
             long d=daysSince(r.date);
             if(d>=0 && (lastHarvest<0 || d<lastHarvest))lastHarvest=d;
         }
-        TextView harvest=text(today.scope.garden>0 ? HomeDashboardModel.lastHarvestText(lastHarvest) : "",12,MUTED,false);
+        TextView harvest=text(today.scope.garden>0 ? HomeDashboardModel.lastHarvestText(lastHarvest)+"  ›" : "",12,
+                lastHarvest<0 ? GREEN : MUTED,lastHarvest<0);
         harvest.setGravity(Gravity.RIGHT);
+        if(today.scope.garden>0){
+            // Dokununca bu bahçe için hasat kaydı açılır.
+            final long harvestGarden=today.scope.garden;
+            harvest.setMinHeight(dp(36));
+            harvest.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);
+            harvest.setClickable(true);
+            harvest.setFocusable(true);
+            harvest.setContentDescription(HomeDashboardModel.lastHarvestText(lastHarvest)+". Hasat kaydı eklemek için dokun.");
+            harvest.setOnClickListener(v -> openHarvestForGarden(harvestGarden));
+        }
         head.addView(harvest,new LinearLayout.LayoutParams(-2,-2));
         card.addView(head);
 
+        // Dönemin içinde neredeyiz: "Hasadın 5. haftası · yaklaşık 9 hafta kaldı" + ince ilerleme çubuğu.
+        HomeDashboardModel.PhaseProgress progress=HomeDashboardModel.phaseProgress(Calendar.getInstance());
+        TextView progressText=text(HomeDashboardModel.phaseProgressText(phase,progress),12,TEXT,false);
+        progressText.setPadding(0,dp(6),0,0);
+        card.addView(progressText);
+        LinearLayout bar=new LinearLayout(this);
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        bar.setBackground(round(BORDER,3,BORDER));
+        final View barFill=new View(this);
+        barFill.setBackground(round(gold,3,gold));
+        bar.addView(barFill,new LinearLayout.LayoutParams(0,-1,progress.fraction));
+        bar.addView(new View(this),new LinearLayout.LayoutParams(0,-1,1f-progress.fraction));
+        LinearLayout.LayoutParams barLp=new LinearLayout.LayoutParams(-1,dp(4));
+        barLp.setMargins(0,dp(6),0,0);
+        card.addView(bar,barLp);
+
         LinearLayout track=row();
+        track.setClipChildren(false);
+        List<View> dots=new ArrayList<>(), segments=new ArrayList<>();
+        View halo=null;
         track.setGravity(Gravity.TOP);
         int line=BORDER;
         StringBuilder description=new StringBuilder("Genel zeytin takvimi. Şu an: ")
@@ -2689,19 +2719,36 @@ public class ProducerFeedActivity extends Activity {
             column.setOrientation(LinearLayout.VERTICAL);
             LinearLayout marker=row();
             View dot=new View(this);
+            dots.add(dot);
             GradientDrawable dotShape=new GradientDrawable();
             dotShape.setShape(GradientDrawable.OVAL);
             dotShape.setColor(i==phase ? gold : i<phase ? GREEN : line);
             int size=dp(i==phase ? 12 : 8);
             if(i==phase)dotShape.setStroke(dp(3),(gold & 0x00FFFFFF)|0x40000000);
             dot.setBackground(dotShape);
-            marker.addView(dot,new LinearLayout.LayoutParams(size,size));
+            if(i==phase){
+                // "Buradasın": altın noktanın arkasında yavaşça büyüyüp sönen halka.
+                android.widget.FrameLayout here=new android.widget.FrameLayout(this);
+                here.setClipChildren(false);
+                halo=new View(this);
+                GradientDrawable haloShape=new GradientDrawable();
+                haloShape.setShape(GradientDrawable.OVAL);
+                haloShape.setColor(gold);
+                halo.setBackground(haloShape);
+                halo.setAlpha(0f);
+                here.addView(halo,new android.widget.FrameLayout.LayoutParams(size,size,Gravity.CENTER));
+                here.addView(dot,new android.widget.FrameLayout.LayoutParams(size,size,Gravity.CENTER));
+                marker.addView(here,new LinearLayout.LayoutParams(size,size));
+            } else marker.addView(dot,new LinearLayout.LayoutParams(size,size));
             View segment=new View(this);
+            segments.add(segment);
             segment.setBackgroundColor(i<phase ? GREEN : i==HomeDashboardModel.PHASE_NAMES.length-1 ? Color.TRANSPARENT : line);
             LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(0,dp(2),1);
             sp.setMargins(dp(3),0,dp(3),0);
             marker.addView(segment,sp);
             marker.setMinimumHeight(dp(16));
+            marker.setClipChildren(false);
+            column.setClipChildren(false);
             column.addView(marker,new LinearLayout.LayoutParams(-1,dp(16)));
             TextView name=text(HomeDashboardModel.PHASE_NAMES[i]+"\n"+HomeDashboardModel.PHASE_MONTHS[i],10,
                     i==phase ? TEXT : MUTED,i==phase);
@@ -2716,10 +2763,54 @@ public class ProducerFeedActivity extends Activity {
         tp.setMargins(0,dp(14),0,0);
         card.addView(track,tp);
 
+        animateSeasonTrack(dots,segments,halo,barFill,phase);
+
         TextView note=text("Genel takvim; bölgene ve yıla göre değişebilir.",11,MUTED,false);
         note.setPadding(0,dp(10),0,0);
         card.addView(note);
         return card;
+    }
+
+    /** Takvim şeridi bu açılışta bir kez dolsun (her ana ekran yenilemesinde tekrar oynamasın). */
+    private static boolean seasonTrackPlayed;
+
+    /**
+     * Zeytin takvimi animasyonu: açılışta çizgi soldan sağa dolar, noktalar sırayla belirir, ilerleme çubuğu dolar;
+     * ardından yalnız "buradasın" halkası yavaşça nefes alır (ekrandan çıkınca durur).
+     */
+    private void animateSeasonTrack(List<View> dots,List<View> segments,View halo,View barFill,int phase) {
+        boolean play=!seasonTrackPlayed;
+        seasonTrackPlayed=true;
+        long step=140;
+        if(play){
+            android.view.animation.OvershootInterpolator pop=new android.view.animation.OvershootInterpolator(2f);
+            for(int i=0;i<dots.size();i++){
+                View dot=dots.get(i);
+                dot.setScaleX(0f);dot.setScaleY(0f);
+                dot.animate().scaleX(1f).scaleY(1f).setStartDelay(150+i*step).setDuration(240).setInterpolator(pop).start();
+            }
+            for(int i=0;i<segments.size();i++){
+                View segment=segments.get(i);
+                segment.setPivotX(0f);segment.setScaleX(0f);
+                segment.animate().scaleX(1f).setStartDelay(150+i*step+90).setDuration(170).start();
+            }
+            barFill.setPivotX(0f);barFill.setScaleX(0f);
+            barFill.animate().scaleX(1f).setStartDelay(150+(phase+1)*step).setDuration(600)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+        }
+        if(halo==null)return;
+        final android.animation.ObjectAnimator breathe=android.animation.ObjectAnimator.ofPropertyValuesHolder(halo,
+                android.animation.PropertyValuesHolder.ofFloat(View.SCALE_X,1f,2.3f),
+                android.animation.PropertyValuesHolder.ofFloat(View.SCALE_Y,1f,2.3f),
+                android.animation.PropertyValuesHolder.ofFloat(View.ALPHA,0.55f,0f));
+        breathe.setDuration(1900);
+        breathe.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+        breathe.setStartDelay(play ? 150+(phase+1)*step+300 : 0);
+        halo.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener(){
+            @Override public void onViewAttachedToWindow(View v){ if(!breathe.isStarted())breathe.start(); }
+            @Override public void onViewDetachedFromWindow(View v){ breathe.cancel(); }
+        });
+        if(halo.isAttachedToWindow())breathe.start();
     }
 
     private void renderHomeConditions(LinearLayout container,HomeWeatherState state) {
