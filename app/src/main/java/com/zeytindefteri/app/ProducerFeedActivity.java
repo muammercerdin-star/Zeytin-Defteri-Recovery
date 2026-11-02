@@ -2182,25 +2182,37 @@ public class ProducerFeedActivity extends Activity {
         top.addView(avatar,avatarParams);
         hero.addView(top);
 
-        // 2) Bahçe seçici
-        TextView place=text(
-                garden.id>0
-                        ? garden.name+"  ·  "+db.getActiveSeasonYear()+"   ▾"
-                        : "Bahçe seç   ▾",
-                14,TEXT,true);
-        place.setSingleLine(true);
-        place.setEllipsize(TextUtils.TruncateAt.END);
+        // 2) Bahçe seçici: tam genişlik; solda bahçe adı (ve köyü), sağda sezon. Satırın sağı boş kalmasın.
+        LinearLayout place=row();
         place.setGravity(Gravity.CENTER_VERTICAL);
-        place.setMinHeight(dp(44));
-        place.setPadding(dp(16),0,dp(16),0);
-        place.setBackground(round(CARD,22,BORDER));
+        place.setMinimumHeight(dp(48));
+        place.setPadding(dp(16),dp(6),dp(14),dp(6));
+        place.setBackground(round(CARD,24,BORDER));
         place.setClickable(true);
         place.setFocusable(true);
+        LinearLayout placeTexts=new LinearLayout(this);
+        placeTexts.setOrientation(LinearLayout.VERTICAL);
+        TextView placeName=text(garden.id>0 ? garden.name : "Bahçe seç",15,TEXT,true);
+        placeName.setSingleLine(true);
+        placeName.setEllipsize(TextUtils.TruncateAt.END);
+        placeTexts.addView(placeName);
+        String where=garden.id>0 ? (safe(garden.neighborhood,"").isEmpty() ? safe(garden.district,"")
+                : garden.neighborhood.trim()+(safe(garden.district,"").isEmpty() ? "" : ", "+garden.district.trim())) : "";
+        if(!where.isEmpty()){
+            TextView placeWhere=text(where,11,MUTED,false);
+            placeWhere.setSingleLine(true);
+            placeWhere.setEllipsize(TextUtils.TruncateAt.END);
+            placeTexts.addView(placeWhere);
+        }
+        place.addView(placeTexts,new LinearLayout.LayoutParams(0,-2,1));
+        TextView placeSeason=text(garden.id>0 ? db.getActiveSeasonYear()+" sezonu  ▾" : "▾",13,GREEN,true);
+        placeSeason.setPadding(dp(10),0,0,0);
+        place.addView(placeSeason,new LinearLayout.LayoutParams(-2,-2));
         place.setContentDescription(garden.id>0
                 ? "Aktif bahçe: "+garden.name+". Değiştirmek için dokun."
                 : "Aktif bahçe seç");
         place.setOnClickListener(v -> showHomeGardenPicker(garden.id));
-        LinearLayout.LayoutParams placeParams=new LinearLayout.LayoutParams(-2,-2);
+        LinearLayout.LayoutParams placeParams=new LinearLayout.LayoutParams(-1,-2);
         placeParams.setMargins(0,dp(14),0,0);
         hero.addView(place,placeParams);
 
