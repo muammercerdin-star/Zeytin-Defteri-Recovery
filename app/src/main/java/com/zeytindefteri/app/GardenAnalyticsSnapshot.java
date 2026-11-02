@@ -82,6 +82,8 @@ public final class GardenAnalyticsSnapshot {
     // ============================================================
 
     public final double harvestKg;
+    /** Hasat, elek kayıtları dahil (bahçe/gün başına hasat ile elekten büyüğü): verim ve maliyet bununla. */
+    public final double harvestWithElekKg;
     public final double expense;
 
 
@@ -187,6 +189,10 @@ public final class GardenAnalyticsSnapshot {
         harvestKg =
                 finite(
                         builder.harvest
+                );
+        harvestWithElekKg =
+                finite(
+                        Math.max(builder.harvest, builder.harvestWithElek)
                 );
 
 
@@ -312,7 +318,7 @@ public final class GardenAnalyticsSnapshot {
 
 
         return ratio(
-                harvestKg,
+                harvestWithElekKg,
                 trees
         );
     }
@@ -327,7 +333,7 @@ public final class GardenAnalyticsSnapshot {
 
 
         return ratio(
-                harvestKg,
+                harvestWithElekKg,
                 area
         );
     }
@@ -341,7 +347,7 @@ public final class GardenAnalyticsSnapshot {
 
         return ratio(
                 expense,
-                harvestKg
+                harvestWithElekKg
         );
     }
 
@@ -735,6 +741,7 @@ public final class GardenAnalyticsSnapshot {
         double area;
 
         double harvest;
+        double harvestWithElek;
         double expense;
 
         double revenue;
@@ -814,6 +821,10 @@ public final class GardenAnalyticsSnapshot {
 
             harvest +=
                     other.harvest;
+
+
+            harvestWithElek +=
+                    Math.max(other.harvest, other.harvestWithElek);
 
 
             expense +=

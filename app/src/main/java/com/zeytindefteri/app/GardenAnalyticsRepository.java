@@ -55,6 +55,18 @@ public final class GardenAnalyticsRepository {
                 +q.scope("h","harvest_date")+" GROUP BY h.garden_id")) {
             while(c.moveToNext()) {Builder b=values.get(lng(c,"garden_id"));b.harvest=num(c,"kg");b.harvestRecords=(int)lng(c,"records");b.expense+=num(c,"cost");b.expenseRecords+=b.harvestRecords;}
         }
+        // Hasat, elek dahil: bahçe ve gün başına hasat ile elekten BÜYÜĞÜ (ana ekran ve Sezon Raporum'la aynı kural).
+        q=new Query(uid,year);
+        String hd=iso("h.harvest_date"), ed=iso("e.record_date");
+        try(Cursor c=q.run(db,"SELECT dk.gid AS garden_id,SUM(MAX(dk.hk,dk.ek)) AS kg FROM ("
+                +"SELECT u.gid,u.d,SUM(u.hk) AS hk,SUM(u.ek) AS ek FROM ("
+                +"SELECT h.garden_id AS gid,"+hd+" AS d,COALESCE(h.total_kg,0) AS hk,0 AS ek FROM harvests h "
+                +"INNER JOIN gardens g ON g.id=h.garden_id WHERE "+q.scope("h","harvest_date")+" "
+                +"UNION ALL SELECT e.garden_id AS gid,"+ed+" AS d,0 AS hk,COALESCE(e.total_kg,0) AS ek FROM elek_records e "
+                +"INNER JOIN gardens g ON g.id=e.garden_id WHERE "+q.scope("e","record_date")
+                +") u GROUP BY u.gid,u.d) dk GROUP BY dk.gid")) {
+            while(c.moveToNext()) {Builder b=values.get(lng(c,"garden_id"));if(b!=null)b.harvestWithElek=num(c,"kg");}
+        }
         q=new Query(uid,year);
         try(Cursor c=q.run(db,"SELECT b.garden_id,COUNT(*) AS records,SUM(COALESCE(b.salt_cost,0)+COALESCE(b.packaging_cost,0)+COALESCE(b.other_cost,0)) AS cost,"
                 +"SUM(COALESCE(b.olive_kg,0)) AS olives,SUM(COALESCE(b.ready_kg,0)) AS ready,SUM(CASE WHEN b.status='ACTIVE' THEN 1 ELSE 0 END) AS active "
@@ -126,6 +138,12 @@ public final class GardenAnalyticsRepository {
         if(!Double.isFinite(value)) throw new IllegalArgumentException("Geçersiz sayısal kayıt: "+col);return value;
     }
     private static long lng(Cursor c,String col) {return c.getLong(c.getColumnIndexOrThrow(col));}
+    /** "02.11.2026" ya da "2026-11-02" → "2026-11-02" (gün eşleştirmek için). */
+    private static String iso(String col) {
+        return "(CASE WHEN substr(TRIM("+col+"),3,1) IN ('.','/') THEN substr(TRIM("+col+"),7,4)||'-'||substr(TRIM("+col+"),4,2)||'-'||substr(TRIM("+col+"),1,2) "
+                +"ELSE substr(TRIM("+col+"),1,10) END)";
+    }
+
     private static final class Query {
         final String uid;final int year;final ArrayList<String> args=new ArrayList<>();
         Query(String uid,int year) {this.uid=uid;this.year=year;}

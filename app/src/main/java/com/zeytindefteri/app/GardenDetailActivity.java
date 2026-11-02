@@ -119,9 +119,10 @@ public class GardenDetailActivity extends Activity {
         findViewById(R.id.btnAddNoteInline).setOnClickListener(v -> showAddNote(""));
 
         actionTile(R.id.btnAddOperation, "add", "İşlem", v -> openForGarden(NewOperationActivity.class));
-        actionTile(R.id.btnAddHarvest, "basket", "Hasat", v -> openForGarden(HarvestActivity.class));
+        // Hasat ve satış elekten oluşur (tek kayıt): bahçe ekranında İşlem, Elek, Not.
+        findViewById(R.id.btnAddHarvest).setVisibility(View.GONE);
+        findViewById(R.id.btnAddSale).setVisibility(View.GONE);
         actionTile(R.id.btnAddElek, "elek", "Elek", v -> openForGarden(ElekActivity.class));
-        actionTile(R.id.btnAddSale, "tag", "Satış", v -> openForGarden(SaleActivity.class));
         actionTile(R.id.btnAddNote, "note", "Not", v -> showAddNote(""));
     }
 
@@ -278,11 +279,14 @@ public class GardenDetailActivity extends Activity {
         });
     }
 
-    /** Bahçe Karnesi ile aynı değerler: masraf, hasat, elek boy toplamı, gerçek satış geliri. */
+    /** Bahçe Karnesi ile aynı değerler: masraf, hasat (elek dahil), net kâr, gerçek satış geliri. */
     private void applyGardenSummary(GardenAnalyticsSnapshot s) {
         tvGardenCost.setText(formatMoney(s.expense));
-        tvGardenHarvest.setText(formatKg(s.harvestKg));
-        tvGardenElek.setText(formatKg(s.totalGradeKg()));
+        // Tek kayıt: hasat elek dahil (ana ekran ve Sezon Raporum ile aynı rakam); ayrı elek yerine net kâr.
+        tvGardenHarvest.setText(formatKg(s.harvestWithElekKg));
+        double net = s.revenue - s.expense;
+        tvGardenElek.setText((net < -0.5 ? "−" : "") + formatMoney(Math.abs(net)));
+        tvGardenElek.setTextColor(GreenTheme.color(net < -0.5 ? R.color.zd_danger : R.color.zd_green));
         tvGardenSale.setText(formatMoney(s.revenue));
         Double kgPerTree = s.kgPerTree();
         tvKgPerTree.setText(kgPerTree == null || !Double.isFinite(kgPerTree) ? "—" : formatKg(kgPerTree));

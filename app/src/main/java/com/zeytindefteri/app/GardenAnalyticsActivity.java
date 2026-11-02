@@ -224,7 +224,7 @@ public final class GardenAnalyticsActivity extends Activity {
                 + "Kaydetmediğin emek, kira, amortisman veya vergi hesapta yoktur.", 12, soft, false));
         LinearLayout row = new LinearLayout(this);
         row.setPadding(0, dp(12), 0, 0);
-        row.addView(metric("Hasat", GardenReportModel.format(s.harvestKg, "kg"), text), weight(0));
+        row.addView(metric("Hasat", GardenReportModel.format(s.harvestWithElekKg, "kg"), text), weight(0));   // elek dahil
         row.addView(metric("Masraf", GardenReportModel.format(s.expense, "TL"), text), weight(8));
         row.addView(metric("Satış geliri", GardenReportModel.format(s.revenue, "TL"), text), weight(8));
         View line = new View(this);
@@ -360,7 +360,8 @@ public final class GardenAnalyticsActivity extends Activity {
         if (none) {
             card.addView(small("Önceki sezonda karşılaştırılabilir kayıt yok."));
         } else {
-            compare(card, "Hasat", current.harvestKg, previous.harvestKg, current.harvestRecords > 0, previous.harvestRecords > 0, "kg", true);
+            compare(card, "Hasat", current.harvestWithElekKg, previous.harvestWithElekKg,
+                    current.harvestRecords > 0 || current.elekRecords > 0, previous.harvestRecords > 0 || previous.elekRecords > 0, "kg", true);
             compare(card, "Masraf", current.expense, previous.expense, current.expenseRecords > 0, previous.expenseRecords > 0, "TL", false);
             compare(card, "Satış geliri", current.revenue, previous.revenue, current.saleRecords > 0, previous.saleRecords > 0, "TL", true);
             compare(card, "Ağaç başı verim", current.kgPerTree(), previous.kgPerTree(), current.harvestRecords > 0, previous.harvestRecords > 0, "kg/ağaç", true);

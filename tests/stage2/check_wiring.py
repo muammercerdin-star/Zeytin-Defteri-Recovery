@@ -51,10 +51,11 @@ for key in set(re.findall(r'return "(\w+)";', kinds)):
 # Bahçe detayı: eski emoji ikon fonksiyonu ve eski kutular gitti, özet aynı kaynaktan
 gd = (APP / 'GardenDetailActivity.java').read_text(encoding='utf8')
 check('getOperationIcon' not in gd, 'eski getOperationIcon kaldı')
-check('GardenAnalyticsRepository' in gd and 'totalGradeKg()' in gd and 's.revenue' in gd, 'sezon özeti Bahçe Karnesi kaynağını kullanmıyor')
+check('GardenAnalyticsRepository' in gd and 's.harvestWithElekKg' in gd and 's.revenue' in gd, 'sezon özeti Bahçe Karnesi kaynağını kullanmıyor (hasat elek dahil)')
+check('findViewById(R.id.btnAddHarvest).setVisibility(View.GONE)' in gd and 'findViewById(R.id.btnAddSale).setVisibility(View.GONE)' in gd, 'bahçe ekranında hasat/satış düğmesi gizli (tek kayıt)')
 check('getGardenOperations(gardenId, 0)' in gd, 'uyarı için sezonun tüm işlemleri taranmıyor')
 check('note_draft' in gd and 'screen_owner' in gd, 'not taslağı / sahip durumu saklanmıyor')
-for target in ['NewOperationActivity', 'HarvestActivity', 'ElekActivity', 'SaleActivity', 'AddGardenActivity',
+for target in ['NewOperationActivity', 'ElekActivity', 'AddGardenActivity',
                'GardenAnalyticsActivity', 'OperationHistoryActivity']:
     check(f'openForGarden({target}.class)' in gd, f'{target} bahçe kimliğiyle açılmıyor')
 layout = (RES / 'layout/activity_garden_detail.xml').read_text(encoding='utf8')

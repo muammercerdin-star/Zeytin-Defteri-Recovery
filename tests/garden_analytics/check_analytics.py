@@ -136,7 +136,7 @@ with tempfile.TemporaryDirectory(prefix='zeytin-analytics-') as folder:
  check(a['expense']==18450 and a['net']==49550,'cost components; harvest operation not counted twice; net')
  check(a['collected']==11000 and a['balance']==57000,'sales and mirrored receivables counted once')
  check(a['dominant']=='1 No' and [g[(1,2026,i)] for i in range(6)]==[100,900,500,200,100,50],'actual six Elek grades and dominant')
- check(x['Q']==['15'],'fixed 15 queries for two seasons; no per-garden queries')
+ check(x['Q']==['17'],'fixed 17 queries for two seasons (incl. harvest-with-elek); no per-garden queries')
  check(x['P']==['null'],'no fake percentage without previous data')
  check(r[(2,2026)]['perKg'] is None and r[(2,2026)]['perArea'] is None and r[(2,2026)]['avg'] is None,'empty garden zero/area/sales safety')
  check(t['perArea'] is None,'all-garden yield not fabricated from partial area')
@@ -176,15 +176,24 @@ with tempfile.TemporaryDirectory(prefix='zeytin-analytics-') as folder:
  check(t['expense']==a['expense']+30 and t['unassignedCost']==30,'unassigned brine counted once in season only')
  check(t['balance']==a['balance']+80 and t['unassignedBalance']==80,'standalone receivable by creation year, not garden or sales revenue')
  check(x['R'][1]=='18.200 TL' and x['R'][2]=='67.990 TL','actual ReportActivity uses corrected NULL/owner totals too')
- check(x['Q']==['15'],'query count unchanged after adding gardens/children')
+ check(x['Q']==['17'],'query count unchanged after adding gardens/children')
  db.execute("UPDATE elek_grades SET kg=900 WHERE elek_id=? AND grade='DOUBLE'",(e,))
  check(run()[0][(1,2026)]['dominant']=='Double','deterministic grade tie: Double before 1 No')
  guest=run(owner='')[0]
  check(guest[(-1,2026)]['gardenCount']==1 and guest[(-1,2026)]['harvest']==0 and guest[(4,2026)]['perTree'] is None,'guest isolation and zero trees')
  check(run(owner='missing')[0][(-1,2026)]['gardenCount']==0,'empty user supported')
  check(not db.execute('PRAGMA foreign_key_check').fetchall(),'foreign keys intact')
+ # Tek kayıt: bahçe 2'de (10 ağaç) daha önce 100 kg hasat var; başka bir gün 640 kg elek girildi.
+ # Verim elek dahil (100 + 640 = 740 kg → 74 kg/ağaç); aynı gün hem hasat hem elek çift sayılmaz.
+ insert('elek_records',garden_id=2,owner_uid='a',season_year=2026,record_date='2026-11-01',created_at=2,total_kg=640)
+ r2=run()[0][(2,2026)]
+ check(r2['harvest']==100 and near(r2['perTree'],74),'yield includes elek-only days: (100+640)/10 = 74; raw harvest stays 100')
+ harvest(2,'a',2026,600)
+ db.execute("UPDATE harvests SET harvest_date='01.11.2026' WHERE garden_id=2 AND total_kg=600")
+ r3=run()[0][(2,2026)]
+ check(near(r3['perTree'],74),'same day harvest 600 + elek 640 counted once as 640 (dd.MM.yyyy vs ISO matched)')
  for i in range(400):insert('operations',garden_id=2,owner_uid='a',season_year=2026,operation_date='2026-09-09',created_at=i+1,type='Sulama',cost=1)
- r,g,x=run();check(r[(2,2026)]['expense']==400 and x['Q']==['15'],'400 extra operations, same query budget')
+ r,g,x=run();check(r[(2,2026)]['expense']==400 and x['Q']==['17'],'400 extra operations, same query budget')
  check(all(value is None or isinstance(value,str) or math.isfinite(value) for row in r.values() for value in row.values()),'all emitted values finite or explicitly missing')
  check(run(owner="a' OR 1=1 --")[0][(-1,2026)]['gardenCount']==0,'bound owner parameter resists SQL-shaped input')
  insert('gardens',id=5,name='Null Guest',owner_uid=None,tree_count=10,area_decare=1)
