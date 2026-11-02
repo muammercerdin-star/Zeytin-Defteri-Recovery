@@ -2182,6 +2182,20 @@ public class ProducerFeedActivity extends Activity {
         top.addView(avatar,avatarParams);
         hero.addView(top);
 
+        // Selamlamanın altında tek satır namaz bilgisi (bahçenin konumundan; Ayarlar'dan kapatılabilir)
+        final PrayerLineView prayer=new PrayerLineView(this);
+        final String prayerPlace=(!TextUtils.isEmpty(garden.neighborhood) ? garden.neighborhood.trim() : safe(garden.district,""))
+                .replaceAll("(?iu)\\s+(mahallesi|mah\\.?|köyü)$","");
+        if(garden.id>0 && PrayerLineView.enabled(this)){
+            String[] geo=weatherCoordinates(garden.id).split("\\|",-1);
+            try{
+                if(geo.length==2 && !geo[0].isEmpty() && !geo[1].isEmpty())
+                    prayer.setLocation(Double.parseDouble(geo[0]),Double.parseDouble(geo[1]),prayerPlace);
+            }catch(NumberFormatException ignored){ }
+            prayer.setPadding(0,dp(6),0,dp(2));
+            hero.addView(prayer,new LinearLayout.LayoutParams(-1,-2));
+        }
+
         // 2) Bahçe seçici: tam genişlik; solda bahçe adı (ve köyü), sağda sezon. Satırın sağı boş kalmasın.
         LinearLayout place=row();
         place.setGravity(Gravity.CENTER_VERTICAL);
@@ -2216,20 +2230,6 @@ public class ProducerFeedActivity extends Activity {
         placeParams.setMargins(0,dp(14),0,0);
         hero.addView(place,placeParams);
 
-        // 2b) Namaz vakitleri şeridi (bahçenin konumundan hesaplanır; Ayarlar'dan kapatılabilir)
-        final PrayerStripView prayer=new PrayerStripView(this);
-        final String prayerPlace=(!TextUtils.isEmpty(garden.neighborhood) ? garden.neighborhood.trim() : safe(garden.district,""))
-                .replaceAll("(?iu)\\s+(mahallesi|mah\\.?|köyü)$","");
-        prayer.setBackground(round(CARD,20,BORDER));
-        prayer.setVisibility(View.GONE);
-        if(garden.id>0 && PrayerStripView.enabled(this)){
-            String[] geo=weatherCoordinates(garden.id).split("\\|",-1);
-            try{
-                if(geo.length==2 && !geo[0].isEmpty() && !geo[1].isEmpty())
-                    prayer.setLocation(Double.parseDouble(geo[0]),Double.parseDouble(geo[1]),prayerPlace);
-            }catch(NumberFormatException ignored){ }
-            hero.addView(prayer,homeCardParams(12));
-        }
 
         // 3) Zeytin takvimi
         hero.addView(buildHomeSeasonCard(today,gold),homeCardParams(14));
@@ -2377,7 +2377,7 @@ public class ProducerFeedActivity extends Activity {
                                     state.coordinates=weatherCoordinates(garden.id);
                                     temp.setText(w.icon+" "+Math.round(w.temperatureC)+"°");
                                     sky.setWeather(w.weatherCode,w.isDay,w.windKmh);
-                                    if(PrayerStripView.enabled(ProducerFeedActivity.this) && prayer.getVisibility()!=View.VISIBLE
+                                    if(PrayerLineView.enabled(ProducerFeedActivity.this) && prayer.getVisibility()!=View.VISIBLE
                                             && w.latitude!=0 && w.longitude!=0)
                                         prayer.setLocation(w.latitude,w.longitude,prayerPlace);
                                     String detail=w.condition;

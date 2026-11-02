@@ -153,10 +153,10 @@ final class SettingsView extends ScrollView {
         final TextView[] value = new TextView[1];
         View row = row(activity, R.drawable.ic_archive_calendar, "Namaz vakitleri",
                 "Ana ekranda bahçenin konumuna göre vakitler",
-                PrayerStripView.enabled(activity) ? "Açık" : "Kapalı",
+                PrayerLineView.enabled(activity) ? "Açık" : "Kapalı",
                 () -> {
-                    boolean on = !PrayerStripView.enabled(activity);
-                    PrayerStripView.setEnabled(activity, on);
+                    boolean on = !PrayerLineView.enabled(activity);
+                    PrayerLineView.setEnabled(activity, on);
                     if (value[0] != null) value[0].setText(on ? "Açık" : "Kapalı");
                 });
         value[0] = (TextView) ((LinearLayout) row).getChildAt(2);
