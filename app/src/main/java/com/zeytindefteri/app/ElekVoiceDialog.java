@@ -73,6 +73,10 @@ public final class ElekVoiceDialog {
                 phase = Phase.LISTENING;
                 return new Reply("Tamam, düzeltmeyi söyle. Örneğin: 3 numara 100 olacak.", Action.NONE, true);
             }
+            if (yes(s) && isSold() && buyer.isEmpty()) {
+                phase = Phase.ASK_BUYER;
+                return new Reply(NEED_BUYER, Action.NONE, true);
+            }
             if (yes(s)) {
                 phase = Phase.DONE;
                 return new Reply(isSold() ? "Kaydediyorum, fişi hazırlıyorum." : "Kaydediyorum.", Action.SAVE, false);
@@ -108,7 +112,7 @@ public final class ElekVoiceDialog {
         if (finish) {
             if (total() <= 0) return new Reply("Henüz kilo söylemedin. Örneğin: 3 numara 120 kilo.", Action.NONE, true);
             String lead = said.length() > 0 ? "Tamam, " + said + ". " : "";
-            if (isSold() && buyer.isEmpty() && (!buyerAsked || !buyerChoices.isEmpty())) {
+            if (isSold() && buyer.isEmpty()) {
                 buyerAsked = true; phase = Phase.ASK_BUYER;
                 return new Reply(lead + (buyerChoices.isEmpty() ? "Kime sattın?" : which(buyerChoices)), Action.FILL, true);
             }
@@ -175,24 +179,27 @@ public final class ElekVoiceDialog {
     }
 
     /** "Kime sattın?" cevabı: listedeyse onu, birden çoksa hangisi, yoksa yeni alıcı. */
+    static final String NEED_BUYER = "Satışta alıcı gerekli. Kime sattın? Satmadıysan satmadım de.";
+
     private Reply answerBuyer(String raw, String s) {
         if (!buyerChoices.isEmpty()) {
             String picked = ElekVoiceBuyer.pick(raw, buyerChoices);
             buyerChoices = new java.util.ArrayList<>();
             if (picked != null) { buyer = picked; buyerNew = false; return askConfirm("Tamam, " + picked + ". "); }
         }
-        if (has(s, "gec", "yok", "bilmiyorum", "sonra", "kimse", "bos", "bosver", "atla")) {
-            buyer = ""; buyerNew = false;
-            return askConfirm("Alıcısız kaydediyorum. ");
-        }
+        // Önce "satmadım": satış kapanır, alıcı gerekmez.
         if (Boolean.FALSE.equals(ElekVoiceEntry.soldIn(raw))) { sold = false; return askConfirm("Tamam, satış olmadan. "); }
+        // Satışta alıcı zorunlu (fiş ve alacak alıcısız eksik kalır): geçmeye izin yok.
+        if (has(s, "gec", "yok", "bilmiyorum", "sonra", "kimse", "bos", "bosver", "atla")) {
+            return new Reply(NEED_BUYER, Action.NONE, true);
+        }
         ElekVoiceBuyer.Match m = ElekVoiceBuyer.match(raw, buyers);
         switch (m.kind) {
             case EXISTING: buyer = m.name; buyerNew = false; return askConfirm("Tamam, " + m.name + ". ");
             case AMBIGUOUS: buyerChoices = m.candidates; return new Reply(which(m.candidates), Action.NONE, true);
             case NEW: buyer = m.name; buyerNew = true;
                 return askConfirm(m.name + " listende yok, yeni alıcı olarak ekleyeceğim. ");
-            default: return new Reply("Adını anlayamadım. Alıcının adını söyle, yoksa geç de.", Action.NONE, true);
+            default: return new Reply("Adını anlayamadım. Alıcının adını söyle; satmadıysan satmadım de.", Action.NONE, true);
         }
     }
 

@@ -42,7 +42,12 @@ public class ElekVoiceBuyerTest {
 
         ElekVoiceDialog f = new ElekVoiceDialog(new double[6], P, true, LIST);
         f.handle("1 numara 10"); f.handle("bitti"); r = f.handle("geç");
-        check(f.buyer.isEmpty() && f.phase() == ElekVoiceDialog.Phase.CONFIRM && r.speech.startsWith("Alıcısız"), "geç → alıcısız");
+        check(f.buyer.isEmpty() && f.phase() == ElekVoiceDialog.Phase.ASK_BUYER && r.speech.equals(ElekVoiceDialog.NEED_BUYER),
+                "geç → satışta alıcı gerekli, tekrar sorulur: " + r.speech);
+        r = f.handle("satmadım");
+        check(!f.isSold() && f.phase() == ElekVoiceDialog.Phase.CONFIRM, "satmadım → satışsız onaya geçer: " + r.speech);
+        r = f.handle("evet");
+        check(r.action == ElekVoiceDialog.Action.SAVE, "satışsız kayıt alıcı istemez");
 
         ElekVoiceDialog g = new ElekVoiceDialog(new double[6], P, true, LIST);
         r = g.handle("3 numara 40 kilo Özer'e sattım bitti");

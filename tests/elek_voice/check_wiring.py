@@ -1,3 +1,4 @@
+import os
 """Asistan → elek formu bağlantısı: soru yolundan önce, yalnız yeni soruda; form kaydetmeden doldurur."""
 import re, sys
 from pathlib import Path
@@ -28,4 +29,7 @@ check('FLAG_KEEP_SCREEN_ON' in v, 'konuşma sırasında ekran kararmaz')
 check('button.addView(row' in v and 'new Dialog(' not in v and 'android.R.id.content' not in v, '"Sesle doldur" düğmesi ses dalgasına dönüşür (formun üstünde yüzen bir şey yok)')
 check('setVisibility(android.view.View.VISIBLE)' in v[v.index('void close()'):], 'kapatınca düğme eski hâline döner')
 check('if (!ttsReady) status.setText(' in v, 'Türkçe ses yoksa cevap yazıyla gösterilir')
+_e = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'app/src/main/java/com/zeytindefteri/app/ElekActivity.java'), encoding='utf-8').read()
+check('if (wantSale && buyer.trim().isEmpty())' in _e, 'satış açıkken alıcı yazılmadan elek kaydedilmez')
+check('"Alıcı belirtme", name ->' not in _e, 'alıcı seçicide "alıcı belirtme" yok')
 print('elek_voice wiring:', 'PASS' if not fails else f'{len(fails)} FAIL'); sys.exit(1 if fails else 0)

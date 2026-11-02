@@ -2490,6 +2490,15 @@ public class ElekActivity extends Activity {
         final String buyer = etSaleBuyer == null ? "" : etSaleBuyer.getText().toString();
         final String due = pay == ElekSaleModel.PAY_ALL ? "" : saleDue;
         final boolean remind = saleRemind;
+        // Satış açıkken alıcı zorunlu: fiş, alacak ve Alıcılarım alıcısız eksik kalır.
+        if (wantSale && buyer.trim().isEmpty()) {
+            Toast.makeText(this, "Kime sattığını seç; alıcı yazılmadan satış kaydedilmez.", Toast.LENGTH_LONG).show();
+            if (etSaleBuyer != null) {
+                etSaleBuyer.setError("Alıcı gerekli");
+                etSaleBuyer.performClick();   // alıcı seçiciyi aç
+            }
+            return;
+        }
         if (wantSale) {
             double gross = 0;
             for (int i = 0; i < kilograms.length; i++) gross += Math.max(0, kilograms[i]) * Math.max(0, prices[i]);
@@ -2655,7 +2664,7 @@ public class ElekActivity extends Activity {
 
         salePanel = new android.widget.LinearLayout(this);
         salePanel.setOrientation(android.widget.LinearLayout.VERTICAL);
-        salePanel.setPadding(Math.round(14 * d), Math.round(10 * d), Math.round(14 * d), Math.round(10 * d));
+        salePanel.setPadding(Math.round(14 * d), Math.round(8 * d), Math.round(14 * d), Math.round(8 * d));
         salePanel.setBackground(roundRect(getResources().getColor(R.color.zd_surface, null),
                 getResources().getColor(R.color.zd_border, null), 18 * d));
         TextView question = new TextView(this);
@@ -2672,7 +2681,7 @@ public class ElekActivity extends Activity {
             chip.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
             chip.setGravity(android.view.Gravity.CENTER);
             chip.setOnClickListener(v -> { salePay = option; renderSaleOnSave(); });
-            android.widget.LinearLayout.LayoutParams cp = new android.widget.LinearLayout.LayoutParams(0, Math.round(36 * d), 1);
+            android.widget.LinearLayout.LayoutParams cp = new android.widget.LinearLayout.LayoutParams(0, Math.round(34 * d), 1);
             if (i > 0) cp.leftMargin = Math.round(6 * d);
             chips.addView(chip, cp);
             salePayChips[i] = chip;
@@ -2691,9 +2700,9 @@ public class ElekActivity extends Activity {
         // Alıcı yazılmaz, rehberden seçilir (yeni alıcı da pencereden eklenir): aynı kişi iki kez oluşmaz.
         etSaleBuyer.setFocusable(false);
         etSaleBuyer.setLongClickable(false);
-        etSaleBuyer.setContentDescription("Alıcı seç, isteğe bağlı");
+        etSaleBuyer.setContentDescription("Alıcı seç, satışta zorunlu");
         etSaleBuyer.setOnClickListener(v -> BuyerPicker.show(this, databaseHelper, etSaleBuyer.getText().toString(),
-                "Alıcı belirtme", name -> etSaleBuyer.setText(name)));
+                null, name -> { etSaleBuyer.setText(name); etSaleBuyer.setError(null); }));   // satışta alıcı zorunlu: "alıcı belirtme" yok
         fieldRow.addView(etSaleBuyer, new android.widget.LinearLayout.LayoutParams(0, -2, 1.4f));
         salePanel.addView(fieldRow, saleFieldParams(d));
 
