@@ -2204,6 +2204,21 @@ public class ProducerFeedActivity extends Activity {
         placeParams.setMargins(0,dp(14),0,0);
         hero.addView(place,placeParams);
 
+        // 2b) Namaz vakitleri şeridi (bahçenin konumundan hesaplanır; Ayarlar'dan kapatılabilir)
+        final PrayerStripView prayer=new PrayerStripView(this);
+        final String prayerPlace=(!TextUtils.isEmpty(garden.neighborhood) ? garden.neighborhood.trim() : safe(garden.district,""))
+                .replaceAll("(?iu)\\s+(mahallesi|mah\\.?|köyü)$","");
+        prayer.setBackground(round(CARD,20,BORDER));
+        prayer.setVisibility(View.GONE);
+        if(garden.id>0 && PrayerStripView.enabled(this)){
+            String[] geo=weatherCoordinates(garden.id).split("\\|",-1);
+            try{
+                if(geo.length==2 && !geo[0].isEmpty() && !geo[1].isEmpty())
+                    prayer.setLocation(Double.parseDouble(geo[0]),Double.parseDouble(geo[1]),prayerPlace);
+            }catch(NumberFormatException ignored){ }
+            hero.addView(prayer,homeCardParams(12));
+        }
+
         // 3) Zeytin takvimi
         hero.addView(buildHomeSeasonCard(today,gold),homeCardParams(14));
 
@@ -2350,6 +2365,9 @@ public class ProducerFeedActivity extends Activity {
                                     state.coordinates=weatherCoordinates(garden.id);
                                     temp.setText(w.icon+" "+Math.round(w.temperatureC)+"°");
                                     sky.setWeather(w.weatherCode,w.isDay,w.windKmh);
+                                    if(PrayerStripView.enabled(ProducerFeedActivity.this) && prayer.getVisibility()!=View.VISIBLE
+                                            && w.latitude!=0 && w.longitude!=0)
+                                        prayer.setLocation(w.latitude,w.longitude,prayerPlace);
                                     String detail=w.condition;
                                     if(!Double.isNaN(w.windKmh)&&w.windKmh>=1)detail+=" · rüzgâr "+Math.round(w.windKmh)+" km/s";
                                     weatherStatus.setText(detail);

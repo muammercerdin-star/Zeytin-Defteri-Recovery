@@ -96,7 +96,8 @@ final class SettingsView extends ScrollView {
                 leagueNameRow(activity));
         addSection(body, activity, "UYGULAMA",
                 row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant),
-                typingRow(activity));
+                typingRow(activity),
+                prayerRow(activity));
         View management = ModerationAccess.settingsSection(activity, access);
         if (management != null) body.addView(management);
         addSection(body, activity, "DİĞER",
@@ -145,6 +146,21 @@ final class SettingsView extends ScrollView {
         } catch (RuntimeException ignored) { }
         return row(activity, R.drawable.ic_op_cloud, "Yedekle / Geri yükle",
                 "Tezgah, ödeme ve sıkım kayıtlarını dosyaya yedekle", last, () -> open(activity, BackupActivity.class));
+    }
+
+    /** Ana ekranda namaz vakitleri şeridi (açık/kapalı); ana ekran bir sonraki açılışta güncellenir. */
+    private static View prayerRow(Activity activity) {
+        final TextView[] value = new TextView[1];
+        View row = row(activity, R.drawable.ic_archive_calendar, "Namaz vakitleri",
+                "Ana ekranda bahçenin konumuna göre vakitler",
+                PrayerStripView.enabled(activity) ? "Açık" : "Kapalı",
+                () -> {
+                    boolean on = !PrayerStripView.enabled(activity);
+                    PrayerStripView.setEnabled(activity, on);
+                    if (value[0] != null) value[0].setText(on ? "Açık" : "Kapalı");
+                });
+        value[0] = (TextView) ((LinearLayout) row).getChildAt(2);
+        return row;
     }
 
     private static View typingRow(Activity activity) {
