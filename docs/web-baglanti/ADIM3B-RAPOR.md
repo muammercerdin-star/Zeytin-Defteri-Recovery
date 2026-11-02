@@ -64,9 +64,9 @@ Yeni dosyalar:
 
 | Yeni test | Sonuç |
 |---|---:|
-| Sayfa durum makinesi, DOM/XSS, format, idle, QR yenileme, invalidation/sayfalama, CSP, bağımsız QR vektörleri, bağımlılık/Javadoc kontrolleri | **82/82** |
+| Sayfa durum makinesi, DOM/XSS, format, idle, QR yenileme, invalidation/sayfalama, CSP, bağımsız QR vektörleri, bağımlılık/Javadoc kontrolleri | **88/88** |
 | Gerçek Java telefon ↔ üretimdeki JS sayfa mantığı; gerçek SQLite, onay, veri, invalidation, resume, eski epoch/QR ve yanlış kanıt | **24/24** |
-| Toplam yeni assertion | **106/106** |
+| Toplam yeni assertion | **112/112** |
 
 `bash tests/web_page/run.sh` geçici type=module dizinine üretim dosyalarını değiştirmeden kopyalar; Node 20+ ile ES module davranışı korunur. Java köprüsü mevcut `PhoneBridge` ve SQLite test köprüsüdür. Ağ, relay ve DOM'un testte taklit edilen bölümleri canlı cihaz testi sayılmaz. QR fixture'ı bağımsız başka bir kodlayıcıdan elde edilmiştir; yalnız kendi çıktımızla karşılaştırma yapılmaz.
 

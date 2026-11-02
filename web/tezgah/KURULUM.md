@@ -87,7 +87,7 @@ TLS/domain durumları Active olunca eski oturumları kapatıp yeni QR okutun. T�
 | Oturum kapandı | Telefon çıkışı/uzaktan kesme, güvenlik hatası, 5 dk hareketsizlik veya 8 saat sınırı; yeni QR ile yeniden onay gerekir. |
 | Boş alım listesi | Bir hata değildir. Açık dönem/takvim filtresini ve telefondaki hesap/dönemi kontrol edin. |
 
-Anahtarlar, üretici bilgileri ve alımlar localStorage, sessionStorage, IndexedDB, çerez veya service worker'a yazılmaz. Sekmeyi yenilemek yeni QR üretir. Beş dakika **kullanıcı işlemi** yoksa son tablo/anahtarlar temizlenir; ağ mesajları/ping süreyi uzatmaz. Arka planda tarayıcı timer'ları gecikebilir; sekme görünür olduğunda süre tekrar kontrol edilir. İşletim sistemi belleğindeki kopyaların fiziksel sıfırlanması JavaScript'te garanti edilemez; uygulama referansları kaldırılır ve erişilebilen byte dizileri sıfırlanır.
+Anahtarlar, üretici bilgileri ve alımlar localStorage, sessionStorage, IndexedDB, çerez veya service worker'a yazılmaz. Sekmeyi yenilemek yeni QR üretir. Beş dakika **kullanıcı işlemi** yoksa son tablo/anahtarlar temizlenir; ağ mesajları/ping süreyi uzatmaz. Arka planda tarayıcı timer'ları gecikebilir; sekme görünür olduğunda süre tekrar kontrol edilir. Uyku sırasında monoton saat durabilen sistemler için duvar saati de denetlenir; saat geriye alınırsa monoton saat koruması sürer. İşletim sistemi belleğindeki kopyaların fiziksel sıfırlanması JavaScript'te garanti edilemez; uygulama referansları kaldırılır ve erişilebilen byte dizileri sıfırlanır.
 
 Ortak bilgisayarda işiniz bitince sağ üstten **Bağlantıyı kes** seçin ve sekmeyi kapatın. QR fotoğrafını paylaşmayın. Sağ üst düğme odayı kapatıp veriyi temizler ve yeni, henüz onaysız QR hazırlar.
 

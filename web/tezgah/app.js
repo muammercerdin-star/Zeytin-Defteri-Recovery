@@ -102,6 +102,7 @@ export class TezgahPage {
     this.cursors = [null];
     this.generation = 0;
     this.lastActivity = this.mono();
+    this.lastActivityWall = this.now();
     this.tail = Promise.resolve();
     this.retryAt = Infinity;
     this.counter = 0;
@@ -148,6 +149,7 @@ export class TezgahPage {
     const generation = ++this.generation;
     this.wipe();
     this.lastActivity = this.mono();
+    this.lastActivityWall = this.now();
     this.publish(reason ? 'kapandi' : 'baglaniyor', reason);
     let secret;
     try {
@@ -335,6 +337,7 @@ export class TezgahPage {
         this.consumed = true;
         this.approvalDeadline = this.mono() + 15000;
         this.startedAt = this.mono();
+        this.startedWall = this.now();
         this.pairing.close();
         this.pairing = this.browser = null;
         this.drawQr(null);
@@ -499,6 +502,7 @@ export class TezgahPage {
     this.filter = day ? { kapsam: 'takvim', tarih: day } : { kapsam: 'acik_donem' };
     this.page = 0;
     this.data = null;
+    this.publish();
     await this.refresh();
   }
 
@@ -516,15 +520,18 @@ export class TezgahPage {
 
   activity() {
     this.lastActivity = this.mono();
+    this.lastActivityWall = this.now();
   }
 
   async tick() {
     const now = this.mono();
-    if (now - this.lastActivity >= IDLE_MS) {
+    if (now - this.lastActivity >= IDLE_MS ||
+      this.now() - this.lastActivityWall >= IDLE_MS) {
       await this.start('5 dakika işlem yapılmadığı için ekran kilitlendi.');
       return;
     }
-    if (this.consumed && now - this.startedAt >= MAX_AGE_MS) {
+    if (this.consumed && (now - this.startedAt >= MAX_AGE_MS ||
+      this.now() - this.startedWall >= MAX_AGE_MS)) {
       await this.start('Oturumun 8 saatlik süresi doldu.');
       return;
     }
@@ -644,6 +651,8 @@ export function boot(document) {
       byId('previous').disabled = state.loading || state.stale || state.page === 0;
       byId('next').disabled = state.loading || state.stale || !state.data || state.data.complete;
       byId('refresh').disabled = state.loading || state.stale;
+      byId('day').disabled = state.stale;
+      byId('open-period').disabled = state.stale;
       byId('page').textContent = 'Sayfa ' + (state.page + 1);
       byId('loading').hidden = !state.loading;
       if (state.data !== previousData) {

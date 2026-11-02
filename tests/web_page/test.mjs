@@ -164,6 +164,9 @@ equal(next.args.kapsam, 'takvim', 'calendar distinct from open period');
 page.disconnected();
 equal(page.state, 'koptu', 'disconnect state');
 check(states.at(-1).stale, 'stale rows on disconnect');
+await page.setFilter('2026-11-01');
+equal(states.at(-1).data, null, 'offline filter cannot leave old rows under a new date');
+equal(page.filter.tarih, '2026-11-01', 'offline selection retained for next connection');
 page.data = data;
 const oldKeys = page.keys;
 clock += 100;
@@ -192,6 +195,33 @@ page.stop();
 equal(page.data, null, 'stop clears data');
 equal(states.at(-1).data, null, 'stop also clears rendered data');
 equal(states.at(-1).state, 'kapandi', 'pagehide closes displayed session');
+
+// Bazı işletim sistemlerinde performance.now uyku sırasında ilerlemez.
+// Duvar saati de kontrol edilir; geriye alınırsa monoton saat koruması sürer.
+let sleeperWall = Date.now();
+let sleeperRooms = 0;
+const sleeper = new TezgahPage({
+  relay: 'https://relay.example',
+  mono: () => 0,
+  now: () => sleeperWall,
+  createRoom: async () => {
+    sleeperRooms++;
+    return { v: 1, room: C.base64(C.random(16)),
+      expiresAt: Math.floor(sleeperWall / 1000) + 90,
+      browserCapability: C.base64(C.random(32)), phoneCapability: C.base64(C.random(32)) };
+  },
+  connect: () => ({ readyState: 1, bufferedAmount: 0, send() {}, close() {} })
+});
+await sleeper.start();
+sleeper.consumed = true;
+sleeper.startedAt = 0;
+sleeper.startedWall = sleeperWall;
+sleeper.data = data;
+sleeperWall += 300001;
+await sleeper.tick();
+equal(sleeperRooms, 2, 'sleep time still triggers idle lock');
+equal(sleeper.data, null, 'sleep wake removes stale data');
+sleeper.stop();
 
 let configureCalls = 0;
 const disabled = new TezgahPage({ relay: '', createRoom: () => { configureCalls++; } });
