@@ -1923,7 +1923,7 @@ public class ProducerFeedActivity extends Activity {
         // Alt bölüm: hızlı işlemler, Bu Sezon, Senin elek fiyatların (HomeLowerSections)
         new HomeLowerSections(this).addTo(
                 body,
-                HomeSummaryModel.season(db.getTotalHarvestKg(), homeSeasonElekKg(),
+                HomeSummaryModel.season(db.getSeasonHarvestKgWithElek(),
                         db.getTotalExpenses(), db.getTotalSalesRevenue()),
                 HomeSummaryModel.top(loadOwnGradePrices(), 2),
                 new HomeLowerSections.Actions() {
@@ -4806,19 +4806,6 @@ public class ProducerFeedActivity extends Activity {
         return "İyi akşamlar";
     }
 
-
-    private double homeSeasonElekKg() {
-        String uid = db.getActiveOwnerUid() == null ? "" : db.getActiveOwnerUid();
-        Cursor c = null;
-        try {
-            c = new ElekRepository(db).getArchiveSummary(db.getActiveSeasonYear(), uid);
-            return c != null && c.moveToFirst() ? getDouble(c, "total_kg") : 0;
-        } catch (RuntimeException e) {
-            return 0;
-        } finally {
-            if (c != null) c.close();
-        }
-    }
 
     /** Kullanıcının kendi elek kayıtlarından sınıf sınıf kg, tutar ve kayıt sayısı (bu sezon, bu hesap). */
     private List<HomeSummaryModel.GradePrice> loadOwnGradePrices() {

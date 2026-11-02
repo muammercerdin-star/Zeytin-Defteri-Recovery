@@ -10,15 +10,15 @@ public final class HomeSummaryModelTest {
         HomeSummaryModel.GradePrice x = new HomeSummaryModel.GradePrice(); x.label = label; x.kg = kg; x.revenue = revenue; x.records = records; return x;
     }
     public static void main(String[] args) {
-        // Yayıncının ekranı: hasat 190 kg, masraf 6.610 TL, satış 4.250 TL, elek 1.247 kg.
-        List<HomeSummaryModel.Metric> m = HomeSummaryModel.season(190, 1247, 6610, 4250);
-        eq(m.size(), 4, "four metrics");
-        eq(m.get(0).label + "=" + m.get(0).value, "Hasat=190 kg", "harvest");
-        eq(m.get(1).label + "=" + m.get(1).value, "Elek=1.247 kg", "elek added");
-        eq(m.get(2).value, "6.610 TL", "expenses");
-        eq(m.get(2).tone, HomeSummaryModel.Tone.NORMAL, "expenses not alarm red");
-        eq(m.get(3).tone, HomeSummaryModel.Tone.POSITIVE, "sales positive");
-        eq(HomeSummaryModel.season(0, 0, 0, 0).get(3).tone, HomeSummaryModel.Tone.WARNING, "no sales warns");
+        // Hasat elek dahil (1.307 kg), masraf 22.960 TL, satış 62.825 TL; ayrı "Elek" sütunu yok.
+        List<HomeSummaryModel.Metric> m = HomeSummaryModel.season(1307, 22960, 62825);
+        eq(m.size(), 3, "three metrics");
+        eq(m.get(0).label + "=" + m.get(0).value, "Hasat=1.307 kg", "harvest includes elek");
+        eq(m.get(1).value, "22.960 TL", "expenses");
+        eq(m.get(1).tone, HomeSummaryModel.Tone.NORMAL, "expenses not alarm red");
+        eq(m.get(2).tone, HomeSummaryModel.Tone.POSITIVE, "sales positive");
+        eq(HomeSummaryModel.season(0, 0, 0).get(2).tone, HomeSummaryModel.Tone.WARNING, "no sales warns");
+        for (HomeSummaryModel.Metric x : m) if ("Elek".equals(x.label)) throw new AssertionError("no separate elek column");
 
         List<HomeSummaryModel.GradePrice> all = Arrays.asList(
                 g("Double", 10, 1200, 2), g("1 No", 0, 0, 0), g("2 No", 235, 14100, 11),

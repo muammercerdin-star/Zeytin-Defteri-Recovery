@@ -2504,6 +2504,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
+    /**
+     * Bu sezonun hasadı, elek kayıtları dahil (tek kayıt: üretici çoğu zaman yalnız elek girer).
+     * Bahçe ve gün başına hasat ile elek kilosundan BÜYÜĞÜ alınır; aynı günün zeytini hem hasat hem
+     * elek girildiyse çift sayılmaz (Bahçelerim'deki kuralın aynısı).
+     */
+    public double getSeasonHarvestKgWithElek() {
+        String[] owner = activeOwnerArgs();
+        String[] args = owner == null ? null : new String[]{owner[0], owner[0]};
+        return getDoubleValue(
+                "SELECT COALESCE(SUM(MAX(dk.hk, dk.ek)), 0) FROM (" +
+                        "SELECT u.gid, u.d, SUM(u.hk) AS hk, SUM(u.ek) AS ek FROM (" +
+                        "SELECT h.garden_id AS gid, " + ISO_H + " AS d, COALESCE(h.total_kg, 0) AS hk, 0 AS ek " +
+                        "FROM harvests h INNER JOIN gardens g ON g.id = h.garden_id " +
+                        "WHERE " + activeOwnerCondition("g.owner_uid") + " AND " + activeSeasonCondition("h", "harvest_date") + " " +
+                        "UNION ALL " +
+                        "SELECT e.garden_id AS gid, " + ISO_E + " AS d, 0 AS hk, COALESCE(e.total_kg, 0) AS ek " +
+                        "FROM elek_records e INNER JOIN gardens g ON g.id = e.garden_id " +
+                        "WHERE " + activeOwnerCondition("g.owner_uid") + " AND " + activeSeasonCondition("e", "record_date") +
+                        ") u GROUP BY u.gid, u.d) dk",
+                args
+        );
+    }
+
+
     public double getTotalHarvestCost() {
 
 

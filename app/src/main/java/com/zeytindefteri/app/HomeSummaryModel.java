@@ -34,11 +34,13 @@ public final class HomeSummaryModel {
         public double average() { return kg > 0 ? revenue / kg : 0; }
     }
 
-    /** Hasat · Elek · Masraf · Satış. Masraf nötr (alarm rengi değil); satış yoksa uyarı tonu. */
-    public static List<Metric> season(double harvestKg, double elekKg, double expenses, double revenue) {
+    /**
+     * Hasat · Masraf · Satış. Hasat elek kayıtlarını da içerir (ayrı "Elek" sütunu yok: tek kayıt).
+     * Masraf nötr (alarm rengi değil); satış yoksa uyarı tonu.
+     */
+    public static List<Metric> season(double harvestKg, double expenses, double revenue) {
         List<Metric> out = new ArrayList<>();
         out.add(new Metric("Hasat", kg(harvestKg), Tone.NORMAL));
-        out.add(new Metric("Elek", kg(elekKg), Tone.NORMAL));
         out.add(new Metric("Masraf", tl(expenses), Tone.NORMAL));
         out.add(new Metric("Satış", tl(revenue), revenue > 0 ? Tone.POSITIVE : Tone.WARNING));
         return out;
