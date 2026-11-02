@@ -2684,8 +2684,9 @@ public class ProducerFeedActivity extends Activity {
             harvest.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);
             harvest.setClickable(true);
             harvest.setFocusable(true);
-            harvest.setContentDescription(HomeDashboardModel.lastHarvestText(lastHarvest)+". Hasat kaydı eklemek için dokun.");
-            harvest.setOnClickListener(v -> openHarvestForGarden(harvestGarden));
+            harvest.setContentDescription(HomeDashboardModel.lastHarvestText(lastHarvest)+". Elek kaydı girmek için dokun.");
+            // Tek kayıt: elek kaydı hasat ve satış olarak da sayılır; buradan elek formu açılır.
+            harvest.setOnClickListener(v -> startActivity(new Intent(this, ElekActivity.class).putExtra("garden_id",harvestGarden)));
         }
         head.addView(harvest,new LinearLayout.LayoutParams(-2,-2));
         card.addView(head);
@@ -3915,6 +3916,16 @@ public class ProducerFeedActivity extends Activity {
         } catch (Exception e) {
             state.historyAvailable =
                     false;
+        }
+
+        // Elek kaydı da hasattır: üretici çoğu zaman yalnız elek girer, hasadı ayrıca girmez.
+        try (Cursor elek = db.getGardenElekRecords(garden.id)) {
+            while (elek != null && elek.moveToNext()) {
+                state.records.add(new GardenTodayAdvisor.Record(state.scope, "Hasat",
+                        getString(elek, "record_date", "")));
+            }
+        } catch (Exception ignored) {
+            // Elek okunamazsa yalnız hasat kayıtlarıyla devam edilir.
         }
 
         return state;

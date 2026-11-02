@@ -140,7 +140,8 @@ public class HarvestActivity extends Activity {
         TextView head = label("BU SEZONUN HASAT KAYITLARI", 11, muted, true);
         head.setLetterSpacing(0.08f);
         pastList.addView(head);
-        TextView hint = label("Elek kayıtları burada görünmez, silinmez. Yanlış ya da elekle çift girilen hasadı buradan sil.",
+        TextView hint = label("Elek kaydı girdiysen hasadı ayrıca girmene gerek yok: elek kayıtların aşağıda hasat olarak "
+                + "kendiliğinden görünür (satış da elekten oluşur). Elek kayıtlarını Elek → Geçmiş'ten düzenlersin.",
                 12, muted, false);
         hint.setPadding(0, dp(4), 0, dp(4));
         pastList.addView(hint);
@@ -182,6 +183,28 @@ public class HarvestActivity extends Activity {
         } catch (RuntimeException e) {
             pastList.addView(label("Hasat kayıtları okunamadı.", 13, muted, false));
             return;
+        }
+        // Elekten gelen hasat (otomatik; burada silinmez).
+        int green = GreenTheme.color(R.color.zd_green);
+        try (Cursor e = databaseHelper.getGardenElekRecords(gardenId)) {
+            while (e != null && e.moveToNext()) {
+                count++;
+                String date = e.getString(e.getColumnIndexOrThrow("record_date"));
+                double kg = e.getDouble(e.getColumnIndexOrThrow("total_kg"));
+                LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.VERTICAL);
+                row.setBackgroundResource(R.drawable.bg_card);
+                row.setPadding(dp(14), dp(10), dp(14), dp(10));
+                row.addView(label(GradeFormModel.displayDate(date) + "  ·  " + GradeFormModel.kg(kg), 15, text, true));
+                row.addView(label("Elek kaydından · otomatik", 12, green, false));
+                row.setContentDescription(GradeFormModel.displayDate(date) + " tarihli " + GradeFormModel.kg(kg)
+                        + " elek kaydı, hasat olarak sayılır");
+                LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
+                rp.topMargin = dp(8);
+                pastList.addView(row, rp);
+            }
+        } catch (RuntimeException ignored) {
+            // Elek okunamazsa yalnız hasat kayıtları görünür.
         }
         if (count == 0) {
             TextView none = label("Bu bahçede bu sezon hasat kaydı yok.", 13, muted, false);

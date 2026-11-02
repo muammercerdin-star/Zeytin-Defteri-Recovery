@@ -293,7 +293,7 @@ public class SaleActivity extends Activity {
         cardMarketConsent.setVisibility(visibility);
         if (!realSale) checkMarketConsent.setChecked(false);
         tvSaleKindInfo.setText(realSale
-                ? "Gerçek satış seçili sezondaki gelir ve tahsilat hesabına eklenir. İzin verirsen fiyatlar anonim piyasa verisine katılır."
+                ? "Elek kaydında satış kendiliğinden oluşur; burayı yalnız elek dışı satışlar için kullan. İzin verirsen fiyatlar anonim piyasa verisine katılır."
                 : "Fiyat teklifi gelir ve alacak hesabına eklenmez; yalnızca karşılaştırma kaydı olarak saklanır.");
         ((TextView) findViewById(R.id.tvScreenTitle)).setText(realSale ? "Satış kaydı" : "Fiyat teklifi");
         btnSaveSale.setText(realSale ? "Satışı Kaydet" : "Teklifi Kaydet");

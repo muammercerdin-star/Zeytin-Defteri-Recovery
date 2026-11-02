@@ -54,6 +54,13 @@ public final class GradeFormModel {
         return number(value) + " TL";
     }
 
+    /** "2026-11-02" → "02.11.2026" (hasat listesiyle aynı görünüm); başka biçim olduğu gibi kalır. */
+    public static String displayDate(String raw) {
+        String v = raw == null ? "" : raw.trim();
+        if (v.matches("\\d{4}-\\d{2}-\\d{2}.*")) return v.substring(8, 10) + "." + v.substring(5, 7) + "." + v.substring(0, 4);
+        return v;
+    }
+
     public static String kg(double value) {
         return number(value) + " kg";
     }
