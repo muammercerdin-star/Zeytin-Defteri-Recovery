@@ -110,6 +110,9 @@ public class ProducerFeedActivity extends Activity {
     }
 
     private ZeytinAssistantController zeytinAssistant;
+    /** Alt menüdeki asistan düğmesinin yazısı ve panelin açık olup olmadığı (Siri tarzı canlanma). */
+    private TextView assistantNavLabel;
+    private boolean assistantOpen;
     private FirebaseAuth firebaseAuth;
 
     private LinearLayout contentHost;
@@ -6510,6 +6513,7 @@ public class ProducerFeedActivity extends Activity {
         plus.setElevation(dp(8));
         assistantItem.addView(plus, new LinearLayout.LayoutParams(dp(60), dp(60)));
         TextView assistantLabel = text("ASİSTAN", 10, TEXT, true);
+        assistantNavLabel = assistantLabel;
         assistantLabel.setGravity(Gravity.CENTER);
         assistantLabel.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         assistantItem.addView(assistantLabel, new LinearLayout.LayoutParams(-1, -2));
@@ -6600,6 +6604,27 @@ public class ProducerFeedActivity extends Activity {
         }
     }
 
+    /** Alt menüdeki asistan yazısı: kapalıyken "ASİSTAN", açıkken durumu (Siri gibi). */
+    private void assistantNavLabel(ZeytinAssistantConversation.State state) {
+        if (assistantNavLabel == null) {
+            return;
+        }
+        String label;
+        if (state == null) {
+            label = "ASİSTAN";
+        } else {
+            switch (state) {
+                case LISTENING: label = "DİNLİYOR"; break;
+                case PROCESSING: label = "DÜŞÜNÜYOR"; break;
+                case ANSWERING: label = "KONUŞUYOR"; break;
+                case ERROR: label = "TEKRAR DENE"; break;
+                default: label = "DOKUN"; break;
+            }
+        }
+        assistantNavLabel.setText(label);
+        assistantNavLabel.setTextColor(state == null ? TEXT : GREEN);
+    }
+
     private void openZeytinAssistant() {
         ensureZeytinAssistant();
         zeytinAssistant.show();
@@ -6621,6 +6646,34 @@ public class ProducerFeedActivity extends Activity {
                                                 state
                                         );
                                     }
+                                    if (assistantOpen) {
+                                        assistantNavLabel(state);
+                                    }
+                                }
+
+                                public int navTopOnScreen() {
+                                    if (bottomNav == null || bottomNav.getHeight() == 0 || !bottomNav.isShown()) {
+                                        return -1;
+                                    }
+                                    int[] at = new int[2];
+                                    bottomNav.getLocationOnScreen(at);
+                                    return at[1];
+                                }
+
+                                public void opened(boolean open) {
+                                    assistantOpen = open;
+                                    if (assistantOrb != null) {
+                                        assistantOrb.open(open);
+                                        // Siri gibi: düğme yerinde büyür ve canlanır; kapanınca eski hâline döner.
+                                        assistantOrb.animate()
+                                                .scaleX(open ? 1.16f : 1f)
+                                                .scaleY(open ? 1.16f : 1f)
+                                                .translationY(open ? -dp(4) : 0)
+                                                .setDuration(open ? 380 : 260)
+                                                .setInterpolator(new android.view.animation.OvershootInterpolator(open ? 1.4f : 0f))
+                                                .start();
+                                    }
+                                    assistantNavLabel(open ? ZeytinAssistantConversation.State.LISTENING : null);
                                 }
 
                                 public void rms(

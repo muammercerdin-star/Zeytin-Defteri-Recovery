@@ -16,10 +16,16 @@ public final class ZeytinAssistantOrbView extends View {
     private State state=State.IDLE;
     private float morph,from,target,level,rms;
     private long changed,lastRms;
+    /** Asistan paneli açık: beklerken de mikrofon yerine küre görünür (Siri gibi). */
+    private boolean open;
+    public void open(boolean on){
+        if(open==on)return;
+        open=on;from=morph;target=(open||state!=State.IDLE)?1:0;changed=SystemClock.uptimeMillis();invalidate();
+    }
     public ZeytinAssistantOrbView(Context context){super(context);setFocusable(true);setClickable(true);describe();}
     public void state(State next){
         if(state==next)return;
-        state=next;from=morph;target=next==State.IDLE?0:1;changed=SystemClock.uptimeMillis();
+        state=next;from=morph;target=(next==State.IDLE&&!open)?0:1;changed=SystemClock.uptimeMillis();
         if(next!=State.LISTENING){rms=0;level=0;}describe();invalidate();
     }
     public void rms(float value){rms=ZeytinAssistantConversation.level(value);lastRms=SystemClock.uptimeMillis();invalidate();}
@@ -48,6 +54,6 @@ public final class ZeytinAssistantOrbView extends View {
         c.restore();
         if(isAttachedToWindow() && getWindowVisibility()==VISIBLE && (fraction<1 || (state!=State.IDLE && state!=State.ERROR)))postInvalidateDelayed(32);
     }
-    public void suspend(){state(State.IDLE);morph=from=target=0;invalidate();}
+    public void suspend(){open=false;state(State.IDLE);morph=from=target=0;invalidate();}
     @Override protected void onDetachedFromWindow(){suspend();super.onDetachedFromWindow();}
 }

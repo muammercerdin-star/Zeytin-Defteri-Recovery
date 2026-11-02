@@ -36,6 +36,10 @@ public final class ZeytinAssistantController {
         String owner(); int season(); long activeGarden();
         default void visual(State state) {}
         default void rms(float level) {}
+        /** Alt menünün ekrandaki üst kenarı (px); -1 ise alt menü yok (eski ayrı küre kullanılır). */
+        default int navTopOnScreen() {return -1;}
+        /** Asistan açıldı / kapandı: alt menüdeki asistan düğmesi canlanır (Siri gibi), yazısı durumu gösterir. */
+        default void opened(boolean open) {}
         void navigate(String target,long gardenId);
         /** Sesle söylenen elek kilolarıyla elek formunu dolu aç (kaydetmez; kullanıcı onaylar). */
         default void openElekEntry(long gardenId,ElekVoiceEntry entry){navigate("ELEK",gardenId);}
@@ -108,6 +112,10 @@ public final class ZeytinAssistantController {
     private final int bg,surface,card,border,text,soft,muted,green,greenSoft,warning,warningSoft,danger;
     /** Yüzen yeşil küre: dinlerken sesle büyür, düşünürken döner, konuşurken nefes alır. */
     private ElekVoiceOrbView orb;
+    /** Siri tarzı: ayrı küre yok; alt menüdeki düğme canlanır, ekran kenarı ışır, karartma alt menüye inmez. */
+    private boolean navMode;
+    private AssistantEdgeGlowView glow;
+    private android.widget.FrameLayout frame;
     /** Küre boyu ve alt menünün üstünde bıraktığı boşluk (menü yazıları örtülmesin). */
     private static final int ORB_DP=112, ORB_LIFT_DP=74;
     private LinearLayout headBox,footBox;
@@ -188,17 +196,25 @@ public final class ZeytinAssistantController {
         if(closed || (dialog!=null && dialog.isShowing()))return;
         final int panel=++session;
         conversation.nextTurn();lastAnswer="";lastQuestion="";ttsReady=false;ttsLanguageMissing=false;typing=false;speaking=false;
+        int navTop=host.navTopOnScreen();
+        navMode=navTop>dp(200);
         View root=buildPanel();
-        dialog=new Dialog(activity);dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);dialog.setContentView(root);
+        frame=new android.widget.FrameLayout(activity);
+        glow=new AssistantEdgeGlowView(activity);
+        frame.addView(glow,new android.widget.FrameLayout.LayoutParams(-1,-1));
+        android.widget.FrameLayout.LayoutParams rp=new android.widget.FrameLayout.LayoutParams(getPanelWidth(),-2,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);
+        rp.bottomMargin=navMode?dp(14):0;
+        frame.addView(root,rp);
+        dialog=new Dialog(activity);dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);dialog.setContentView(frame);
         dialog.setCanceledOnTouchOutside(false);
         dialog.setOnDismissListener(d->releasePanel());dialog.show();root.requestFocus();
         // Alt menüdeki asistan düğmesi büyüyerek küreye dönüşür (aşağıdan, küçükten).
+        host.opened(true);
         if(orb!=null){orb.setScaleX(.4f);orb.setScaleY(.4f);orb.setTranslationY(dp(ORB_LIFT_DP+ORB_DP/2-28));orb.setAlpha(.7f);
             orb.animate().scaleX(1f).scaleY(1f).translationY(0).alpha(1f).setDuration(460).setInterpolator(new android.view.animation.OvershootInterpolator(1.05f)).start();}
         Window window=dialog.getWindow();if(window!=null){
-            window.setBackgroundDrawableResource(android.R.color.transparent);window.setGravity(Gravity.BOTTOM);window.setLayout(getPanelWidth(),-2);
-            WindowManager.LayoutParams wp=window.getAttributes();wp.y=0;wp.dimAmount=.72f;window.setAttributes(wp);
-            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            applyWindow();
             // Alt menüdeki küreye dokunulabilsin (dinlemeyi bitirmek için).
             window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE|WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
@@ -269,9 +285,12 @@ public final class ZeytinAssistantController {
         topBar.addView(close,new LinearLayout.LayoutParams(dp(40),dp(40)));
         root.addView(topBar,new LinearLayout.LayoutParams(-1,-2));
 
-        orb=new ElekVoiceOrbView(activity);
-        orb.setClickable(true);orb.setContentDescription("Zeytin Asistanı. Dinlemek ya da bitirmek için dokun.");
-        orb.setOnClickListener(v->orbTap());
+        orb=null;
+        if(!navMode){   // alt menü yoksa eski ayrı küre
+            orb=new ElekVoiceOrbView(activity);
+            orb.setClickable(true);orb.setContentDescription("Zeytin Asistanı. Dinlemek ya da bitirmek için dokun.");
+            orb.setOnClickListener(v->orbTap());
+        }
 
         LinearLayout head=column();head.setGravity(Gravity.CENTER_HORIZONTAL);headBox=head;
         dot=new View(activity);dot.setVisibility(View.GONE);head.addView(dot,new LinearLayout.LayoutParams(dp(1),dp(1)));
@@ -343,7 +362,7 @@ public final class ZeytinAssistantController {
         // Küre alt menünün hemen üstünde, menü yazılarını (Elek, Zeytin Ligi) örtmeden; açılırken alttaki asistan
         // düğmesinden yukarı doğru büyüyerek çıkar (bkz. açılış animasyonu).
         LinearLayout.LayoutParams op=new LinearLayout.LayoutParams(dp(ORB_DP),dp(ORB_DP));op.gravity=Gravity.CENTER_HORIZONTAL;op.topMargin=dp(4);op.bottomMargin=dp(ORB_LIFT_DP);
-        root.addView(orb,op);
+        if(orb!=null)root.addView(orb,op);
 
         LinearLayout foot=row();
         speaker=icon(R.drawable.ic_op_speaker,text);speaker.setPadding(dp(14),dp(14),dp(14),dp(14));speaker.setBackground(round(0x33FFFFFF,0x00000000,24));
@@ -356,6 +375,30 @@ public final class ZeytinAssistantController {
         footBox=foot;
         root.addView(foot,margins(-1,-2,dp(16),0));
         return root;
+    }
+    /**
+     * Pencere düzeni. Siri tarzında pencere ekranın tepesinden alt menünün üst kenarına kadar uzanır: kendi
+     * karartması ve kenar ışığı vardır, alt menü (canlanan asistan düğmesi) karartılmaz ve dokunulabilir kalır.
+     * Yazarken klavyeye yer açmak için eski düzene (altta, içerik kadar, arka plan karartmalı) geçer.
+     */
+    private void applyWindow(){
+        Window w=dialog==null?null:dialog.getWindow();if(w==null||frame==null)return;
+        WindowManager.LayoutParams wp=w.getAttributes();
+        int navTop=navMode?host.navTopOnScreen():-1;
+        if(navMode&&!typing&&navTop>dp(200)){
+            w.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            w.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN|WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            wp.gravity=Gravity.TOP|Gravity.CENTER_HORIZONTAL;wp.x=0;wp.y=0;wp.width=-1;wp.height=navTop;
+            frame.setBackgroundColor(0xB8000000);
+            if(glow!=null)glow.setVisibility(View.VISIBLE);
+        }else{
+            w.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN|WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);wp.dimAmount=.72f;
+            wp.gravity=Gravity.BOTTOM;wp.x=0;wp.y=0;wp.width=getPanelWidth();wp.height=-2;
+            frame.setBackgroundColor(0x00000000);
+            if(glow!=null)glow.setVisibility(View.GONE);
+        }
+        w.setAttributes(wp);
     }
     private int getPanelWidth(){return Math.min(activity.getResources().getDisplayMetrics().widthPixels,dp(480));}
 
@@ -373,6 +416,7 @@ public final class ZeytinAssistantController {
     }
     private void setTyping(boolean on){
         typing=on;
+        if(navMode)applyWindow();
         if(on){transition(State.IDLE,"Kayıtların, hava ve ekranlar hakkında");input.requestFocus();
             InputMethodManager im=(InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE);
             if(im!=null)input.post(()->im.showSoftInput(input,InputMethodManager.SHOW_IMPLICIT));}
@@ -386,6 +430,7 @@ public final class ZeytinAssistantController {
     /** Panelin durum, başlık, görünürlük ve düğme anlamlarının tek sahibi. */
     private void transition(State next,String message){
         boolean changed=conversation.move(next);host.visual(next);
+        if(glow!=null)glow.state(typing?State.IDLE:next,speaking);
         if(state==null)return;
         if(!message.contentEquals(state.getText()))state.setText(message);
         boolean listening=next==State.LISTENING, processing=next==State.PROCESSING, answering=next==State.ANSWERING;
@@ -504,7 +549,7 @@ public final class ZeytinAssistantController {
                 private boolean valid(){return visible() && version==listenVersion;}
                 public void onReadyForSpeech(Bundle b){if(valid()){transition(State.LISTENING,"Konuş, bitince kendiliğinden anlarım");haptic();log("recognizer ready");}}
                 public void onBeginningOfSpeech(){}
-                public void onRmsChanged(float rms){if(valid() && conversation.state()==State.LISTENING){host.rms(rms);wave.rms(rms);if(orb!=null)orb.rms(rms);}}
+                public void onRmsChanged(float rms){if(valid() && conversation.state()==State.LISTENING){host.rms(rms);wave.rms(rms);if(orb!=null)orb.rms(rms);if(glow!=null)glow.rms(rms);}}
                 public void onBufferReceived(byte[] bytes){}
                 public void onEndOfSpeech(){if(valid())transition(State.PROCESSING,"Söylediklerini kontrol ediyorum…");}
                 public void onError(int error){if(valid()){stopRecognizer();log("speech error="+error);problem(speechFault(error));}}
@@ -1081,6 +1126,7 @@ public final class ZeytinAssistantController {
         session++;conversation.nextTurn();stopRecognizer();stopTts();hideKeyboard();
         if(tagSheet!=null){try{tagSheet.dismiss();}catch(Exception ignored){}tagSheet=null;}
         transition(State.IDLE,"Asistan kapatıldı");if(wave!=null)wave.listening(false);ttsReady=false;typing=false;
+        host.opened(false);
         if(tts!=null){try{tts.shutdown();}catch(Exception ignored){}tts=null;}
     }
     public void pause(){
