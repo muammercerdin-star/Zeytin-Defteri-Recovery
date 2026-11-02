@@ -19,6 +19,8 @@ checks = {
     "Elek quick action opens the form with the active garden": "new Intent(ProducerFeedActivity.this, ElekActivity.class)" in a,
     "Sale quick action passes garden as long": 'i.putExtra("garden_id", (long) garden.id)' in a,
     "own prices come from the scoped own-elek query": "marketRepository.getScopedOwnSalesByGrade(" in a,
+    "Bölge fiyatları opens Zeytin Ligi → Piyasa (not the old local-only screen)": 'if ("MARKET".equals(section)) { openMarketFromChat(); return; }' in a,
+    "tapping a grade row opens Piyasa on that grade": "actions.marketGrade(gradeLabel)" in v and "reportsSectionCache.openMarketTab(grade)" in a,
     "no emoji in the new section": not re.search(r"[\U0001F300-\U0001FAFF]", v),
 }
 for k, ok in checks.items(): print(("PASS " if ok else "FAIL ") + k)

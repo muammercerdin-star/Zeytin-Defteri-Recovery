@@ -25,6 +25,8 @@ public final class HomeLowerSections {
         void market();
         /** "Bu Sezon" kartında Satış rakamına dokunulunca: satışların dökümü. */
         default void salesList() { seasonReport(); }
+        /** "Senin elek fiyatların" satırına dokununca: o elekle Piyasa sekmesi. */
+        default void marketGrade(String grade) { market(); }
     }
 
     private final Context c;
@@ -162,6 +164,8 @@ public final class HomeLowerSections {
             bar.addView(fill, new LinearLayout.LayoutParams(0, dp(3), Math.max(0.02f, share)));
             bar.addView(new View(c), new LinearLayout.LayoutParams(0, dp(3), Math.max(0f, 1f - share)));
             box.addView(bar, new LinearLayout.LayoutParams(-1, -2));
+            final String gradeLabel = g.label;
+            row.setOnClickListener(v -> actions.marketGrade(gradeLabel));
             row.setContentDescription(g.label + ": ortalaman " + HomeSummaryModel.priceLine(g) + ", "
                     + HomeSummaryModel.kg(g.kg) + ", " + g.records + " kayıt" + (cmp.isEmpty() ? "" : ". " + cmp));
         }

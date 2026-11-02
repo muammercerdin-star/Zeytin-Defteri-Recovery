@@ -612,6 +612,12 @@ public final class ZeytinLeagueContainerView extends LinearLayout {
         showMarket();
     }
 
+    /** Piyasa sekmesini belirli elekle aç ("3 No"); ana ekrandaki fiyat satırına dokununca. */
+    public void openMarketTab(String grade) {
+        if (grade != null && !grade.trim().isEmpty()) selectedMarketGrade = grade.trim();
+        if (leagueSelected) showMarket(); else refreshMarketData();
+    }
+
     private void showMarket() {
         if (!leagueSelected) {
             return;

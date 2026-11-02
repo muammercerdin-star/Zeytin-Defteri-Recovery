@@ -549,6 +549,9 @@ public class ProducerFeedActivity extends Activity {
     }
 
     private void showSection(String section) {
+        // Eski, yalnız kendi kayıtlarını gösteren piyasa ekranı yerine her yol (ana ekran "Bölge fiyatları",
+        // asistanın "piyasayı aç"ı) Zeytin Ligi → Piyasa sekmesine gider: bölgenin güncel fiyatı orada.
+        if ("MARKET".equals(section)) { openMarketFromChat(); return; }
         if ("PROFILE".equals(section) && "PROFILE".equals(currentSection)
                 && settingsContent != null && settingsContent.getParent() == contentHost) {
             settingsContent.refreshContent();
@@ -1942,6 +1945,10 @@ public class ProducerFeedActivity extends Activity {
                     }
                     @Override public void seasonReport() { showSection("REPORTS"); openSeasonReport(); }
                     @Override public void market() { showSection("MARKET"); }
+                    @Override public void marketGrade(String grade) {
+                        showSection("REPORTS");
+                        if (reportsSectionCache != null) reportsSectionCache.openMarketTab(grade);
+                    }
                     @Override public void salesList() { showSeasonSales(); }
                 });
 
