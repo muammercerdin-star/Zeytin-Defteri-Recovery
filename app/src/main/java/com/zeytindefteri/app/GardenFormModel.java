@@ -98,17 +98,18 @@ public final class GardenFormModel {
 
     /**
      * Konum kuralı:
-     * - İlk bahçede il/ilçe/mahalle listeden seçilmiş olmalı (PICK_REQUIRED).
+     * - Yeni bahçe (ilk ya da sonraki) konumsuz kaydedilmez: il/ilçe/mahalle listeden seçilmiş olmalı (PICK_REQUIRED).
+     *   Bölge raporu, güncel fiyat ve lig bahçenin ilçesine göre çalışır; konumsuz bahçe bunların dışında kalır.
      * - Herhangi bir parça doluysa üçü de listeden seçilmiş olmalı (PICK_AGAIN);
      *   düzenlemede kayıtlı konum hiç değişmediyse kimlik aranmaz (eski kayıtlarda kimlik yoktur).
-     * - Konum tamamen boşsa (ilk bahçe hariç) kabul edilir.
+     * - Düzenlemede eski, konumsuz bahçe olduğu gibi kaydedilebilir (konum sonradan eklenebilir).
      */
     public static LocationCheck checkLocation(Mode mode, String province, String district, String settlement,
                                               int provinceId, int districtId, int settlementId,
                                               boolean unchangedFromSaved) {
         boolean picked = provinceId > 0 && districtId > 0 && settlementId > 0;
-        if (mode == Mode.FIRST) return picked ? LocationCheck.OK : LocationCheck.PICK_REQUIRED;
         boolean any = !blank(province) || !blank(district) || !blank(settlement);
+        if (mode != Mode.EDIT) return picked ? LocationCheck.OK : any ? LocationCheck.PICK_AGAIN : LocationCheck.PICK_REQUIRED;
         if (!any || picked) return LocationCheck.OK;
         if (mode == Mode.EDIT && unchangedFromSaved) return LocationCheck.OK;
         return LocationCheck.PICK_AGAIN;

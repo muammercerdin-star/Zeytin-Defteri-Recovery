@@ -417,7 +417,7 @@ public class AddGardenActivity extends Activity {
         boolean empty = GardenFormModel.blank(province) && GardenFormModel.blank(district) && GardenFormModel.blank(settlement);
         tvLocationAction.setText(empty ? "Seç" : "Değiştir");
         ((TextView) ((LinearLayout) findViewById(R.id.cardLocation)).getChildAt(0))
-                .setText(mode == GardenFormModel.Mode.FIRST ? "KONUM *" : "KONUM");
+                .setText(mode == GardenFormModel.Mode.EDIT ? "KONUM" : "KONUM *");
         findViewById(R.id.btnLocation).setContentDescription("Konum: "
                 + GardenFormModel.locationTitle(province, district, settlement) + (sub.isEmpty() ? "" : ", " + sub)
                 + ". " + (empty ? "Seç" : "Değiştir"));
@@ -535,7 +535,7 @@ public class AddGardenActivity extends Activity {
         switch (GardenFormModel.checkLocation(mode, province, district, settlement,
                 provinceId, districtId, settlementId, locationUnchanged())) {
             case PICK_REQUIRED:
-                Toast.makeText(this, "İlk bahçenin konumunu seçelim", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Konum seçmeden bahçe kaydedilmez. İl, ilçe ve köyü seç.", Toast.LENGTH_LONG).show();
                 openLocationPicker();
                 return;
             case PICK_AGAIN:

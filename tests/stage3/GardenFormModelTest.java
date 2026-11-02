@@ -46,7 +46,9 @@ public final class GardenFormModelTest {
                 AGAIN = GardenFormModel.LocationCheck.PICK_AGAIN;
         eq(REQ, GardenFormModel.checkLocation(F, "", "", "", 0, 0, 0, false), "ilk bahçe konumsuz");
         eq(OK, GardenFormModel.checkLocation(F, "Balıkesir", "Edremit", "Girelli", 10, 20, 30, false), "ilk bahçe seçili");
-        eq(OK, GardenFormModel.checkLocation(A, "", "", "", 0, 0, 0, false), "eklemede boş konum serbest");
+        eq(REQ, GardenFormModel.checkLocation(A, "", "", "", 0, 0, 0, false), "yeni bahçe konumsuz kaydedilmez");
+        eq(OK, GardenFormModel.checkLocation(A, "Manisa", "Alaşehir", "Girelli", 1, 2, 3, false), "yeni bahçe seçili konum");
+        eq(OK, GardenFormModel.checkLocation(E, "", "", "", 0, 0, 0, true), "eski konumsuz bahçe düzenlenebilir");
         eq(AGAIN, GardenFormModel.checkLocation(A, "Balıkesir", "", "", 0, 0, 0, false), "yarım konum");
         eq(OK, GardenFormModel.checkLocation(E, "Balıkesir", "Edremit", "", 0, 0, 0, true), "düzenlemede değişmeyen eski konum");
         eq(AGAIN, GardenFormModel.checkLocation(E, "Balıkesir", "Edremit", "", 0, 0, 0, false), "düzenlemede değişmiş kimliksiz konum");
