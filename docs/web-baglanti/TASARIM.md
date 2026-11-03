@@ -1,8 +1,90 @@
 # Zeytin Defteri — Web bağlantısı tasarımı
 
-Tarih: **3 Kasım 2026**. Durum: **adım 2 onaylandı; 3a telefon tarafı uygulandı/host testli; 3b web sayfası bekliyor. Android derlemesi ve canlı dağıtım doğrulanmadı**.
+Tarih: **3 Kasım 2026**. Durum: **Adım 4 canlıda kullanıcı tarafından doğrulandı (eşleşme ve Tam kullanım formları). Adım 5 aşağıdaki sözleşmeyle uygulanacak; henüz uygulanmış/test edilmiş sayılmaz.**
 
 İlk tasarım `ce48c0c` commitinde onaylandı. Adım 2: ayrı relay Worker, saf Java/ES module kripto-protokol yardımcıları ve host testleri eklendi. 3a'da telefon onayı, ekran/servis/OkHttp, salt alım görünümü ve mutasyon bildirimleri eklendi. Gradle/manifest 3a için güncellendi; `cloud/zeytin-ai` değişmedi. [3a raporu](ADIM3A-RAPOR.md) derleme/API/test sınırlarını içerir. Kurulum: [KURULUM.md](../../cloud/tezgah-relay/KURULUM.md); test kayıtları: [ADIM2-TEST-SONUCLARI.md](ADIM2-TEST-SONUCLARI.md).
+
+## Adım 5 — kolay bağlantı ve kayıtlı tarayıcı (önceki kurallara güncelleme)
+
+Bu bölüm önceki kısa ömürlü/salt okunur aşama kararlarını belirtilen noktalarda değiştirir. İş verisinin tek kaynağı telefon SQLite'tır. Adım 4 komut doğrulaması, idempotency ve silme/Z/toplu ödeme onayı korunur. Canlı URL'ler, `wrangler.toml` vars, `config.js`, `_headers`, SDK/AGP ve bağımlılıklar değişmez. Yeni sürüm route'ları eklenebilir. Ana dal değiştirilmez.
+
+### 5.1 Kısa QR: optik anahtar sabitlemesini kaybetmeden 68 karakter
+
+`QR = "ZD1." || base64url(room[16] || S[32])` → **4 + 64 = 68 ASCII karakter**. S her QR'da yeni CSPRNG 32 bayttır. Buradaki room rastgele seçilmiş tarayıcı P-256 ECDH anahtarına bağlanır:
+
+```
+room = SHA256(UTF8("zd-web/compact-room/v1\n") || DER-SPKI(B))[0..16)
+Kcap  = HKDF-SHA256(salt=room, IKM=S, info="zd-web/compact-phone-cap/v1", 32)
+Kmeta = HKDF-SHA256(salt=room, IKM=S, info="zd-web/compact-bootstrap/v1", 32)
+phoneCapability = base64url(Kcap)
+M = UTF8("zd-web/compact-bootstrap/v1\n" + roomB64 + "\n" +
+         expiresAtDecimal + "\n" + browserPublicKeyB64 + "\n" + nbB64)
+mac = base64url(HMAC-SHA256(Kmeta, M))
+```
+
+`POST /v2/rooms` room ve telefon capability hash'ini alır; tarayıcı capability'sini ve sunucunun 90 saniyelik son kullanma zamanını verir. Tarayıcı kendi rol capability'siyle metadata'yı oda soketine gönderir. Metadata yalnız B, nb, expiresAt, mac içerir; S aktarılmaz. Telefon kendi türettiği capability ile bağlanır ve metadata ister; tarayıcı tekrar gönderebilir. Metadata/ciphertext DO storage'a veya socket attachment'a yazılmaz. Metadata alınamaması süreli hata olur.
+
+Telefon B'nin geçerli P-256 SPKI olduğunu, **room özetinin QR'daki room ile eşleştiğini**, M'nin HMAC'ini ve kalan sürenin en az 30 saniye olduğunu doğrular. Bundan sonra mevcut P-256 ECDH/HKDF/AES-GCM el sıkışması kullanılır. T, B ve nb dahil mevcut alanları bağlar; yön anahtarları/IV/AAD/seq kuralları değişmez.
+
+**Neden yalnız HMAC yetmez?** QR fotoğrafını çalan kişi S'yi de öğrenir ve metadata HMAC'i üretebilir. room rastgele ve B'den bağımsız olsaydı kendi B'sini yerleştirerek telefonu kendisiyle eşleştirebilirdi; eski güvenlik iddiası yanlış olurdu. room'un B özetine bağlanması bunu 128 bit hedef-özet saldırısına indirger. Fotoğrafı bilen kişi gerçek B'nin özel anahtarını bilmeden telefon verisini çözemez; eski tasarımdaki gibi eşleşmeyi bozma veya tarayıcıya sahte telefon verisi gösterme riski kalır. Bu sabitleme HMAC kontrolüne **ek olarak** zorunludur.
+
+Geçişte v1 JSON QR okuyabilme korunabilir; yeni web yalnız kompakt QR üretir. Bozuk/kısa/fazladan bayt içeren ZD1 reddedilir. Endpoint, QR veya metadata relay host seçemez; host uygulamanın BuildConfig ayarıdır.
+
+### 5.2 QR çizimi ve kamera
+
+Web H hata düzeltmeli QR üretir. Siyah modüller/beyaz arka plan; dört modül sessiz bölge; gerçek canvas en az 320 px ve tam sayı modül ölçeği. Merkezde beyaz kenarlı, yeşil daire içinde beyaz Z. Logo eni kod eninin yaklaşık %18'i (alanı %20'nin çok altında) ile sınırlanır; çözümleme testi geçmeden daha büyük yapılmaz. Kısa ve uzun ASCII/test vektörlerinin **logolu raster çıktısı**, üretici JavaScript kodundan bağımsız decoder ile doğrulanır. Decoder yalnız host test aracıdır; APK/web bağımlılığı eklenmez.
+
+İncelenen mevcut `TezgahQrUi.scan` Google Code Scanner kullanıyor; bu uygulamanın yönettiği bir kamera önizlemesi değildir. Google API'si otomatik yakınlaştırmayı destekler, dokunma odağı/feneri uygulamaya açan kontrolü sağlamaz. Bu nedenle istenen kesin kontroller için yalnız web eşleşmesine ait, Android kamera API'si ve projede zaten bulunan ZXing core ile küçük bir tarayıcı gerekir: sürekli odak (desteklenen mod), dokununca odak, destekleniyorsa fener düğmesi, runtime kamera izni; yeni kitaplık yok. Diğer fiş QR akışları korunur. Kamera/fenerin cihazda çalışması host testinden ayrı kabul testidir.
+
+Resmî API açıklaması: https://developers.google.com/ml-kit/vision/barcode-scanning/code-scanner
+
+### 5.3 Kayıtlı tarayıcı kimliği: anahtar, yönlendirme, telefon sabitlemesi
+
+“Bu tarayıcıda oturumum açık kalsın” varsayılan işaretlidir. İşaretli eşleşmede tarayıcı **ECDSA P-256**, private `extractable:false` bir cihaz anahtar çifti üretir. Kayıt cihaz anahtarı, eşleşmenin geçici ECDH anahtarından ayrıdır. Tarayıcı bu anahtarı ancak şifreli ve telefon onaylı kanalda kayıt ettirebilir.
+
+IndexedDB'de tek kimlik kaydı: **CryptoKey anahtar çifti + cihaz kimliği tanımlayıcısı**. Tanımlayıcı rastgele cihaz/oda kimliğini ve ilk güvenli eşleşmede öğrenilen telefon kimlik anahtarı özetini içerir; bu yönlendirme ve telefon sabitlemesi için zorunludur. İş verisi, üretici adı, hesap adı, tutar, yetki, S, geçici ECDH/AES anahtarları, komut içerikleri/sonuçları burada tutulmaz. Anahtar çiftinin public kısmı açık anahtardır; private kısmı export edilemez. IndexedDB kullanılamazsa sessizce kalıcıymış gibi davranılmaz: kullanıcıya geçici bağlantı açıklanır.
+
+Telefon cihaz adı, device/room id, tarayıcı açık anahtarı, yetki, oluşturulma/son kullanım, iptal ve telefon anahtar alias'ını owner kapsamlı **noBackupFilesDir** metadata'sında tutar. Telefonun cihaz kimlik özel anahtarı Android Keystore ECDSA P-256 SIGN/VERIFY anahtarıdır (API 24 ile uyumlu); repoya/yedeğe girmez. ECDH oturum özel anahtarları yalnız RAM'dedir. Android Keystore ECDH'nin eski API'lerdeki sınırlaması nedeniyle kalıcı kimlik anahtarı ECDSA seçilmiştir; her bağlantının ECDH'si ayrıdır.
+
+Relay kalıcı odada yalnız oda/rol açık anahtar özetlerini, sürüm, süre ve hız sayaçlarını saklar. Ad, owner, yetki, açık anahtar gövdesi veya iş verisi saklanmaz. Tarayıcı ve telefon rol doğrulamasında taze sunucu challenge'ını imzalar; açık anahtarını o karede gönderir, relay hash ve ECDSA imzasını denetler. Challenge tek kullanımlık, role ve room'a bağlı, ilk auth süresi 5 saniyedir. Room ID bilmek bağlantı yetkisi değildir. Kullanıcı cihaz anahtarı Worker'ın gizli sunucu anahtarı değildir; Worker'da private key/service role/FCM anahtarı bulunmaz.
+
+Kayıtlı odada her **yeni bağlantı** için iki uç yeni 32 bayt nonce + geçici P-256 ECDH anahtarı oluşturur. Telefon/tarayıcı cihaz imzaları aynı uzunluk önekli transcript'i (sürüm, room/device, roller, iki nonce, iki geçici public key) kapsar. Sabitlenmiş karşı uç kimliği doğrulanmadan veri kanalı açılmaz. HKDF transcript özetine bağlanır; AES yön anahtarları, session/epoch her bağlantıda yenidir. Eski handshake veya şifreli kare yeni bağlantıda kabul edilmez. 5 dakika içindeki aynı sekme kopması mevcut resume protokolünü kullanabilir; sekme kapat-aç yeni ECDH yapar.
+
+Yetki telefondaki kayıttan okunur; tarayıcı/relay belirleyemez. Düşürme hemen uygulanır; yükseltme yalnız telefon arayüzünden açık seçimle yapılabilir. Silme/Z/toplu ödeme/geçmiş tarih düzenleme onayı değişmez. Cihazdan çıkış yerel kaydı/anahtarı iptal eder ve relay'e oda iptalini gönderir. Ağ kesikken karşı ekrana anında bildirim ulaştırmak mümkün değildir; telefon yerelde hemen reddeder, karşı uç ilk haberleşmede iptali öğrenir. 30 gün kullanılmayan kimlik hem telefonda hem relay'de düşer. Yalnız telefonun hazır beklemesi veya ping 30 günlük kullanımı yenilemez; başarılı kullanıcı cihaz bağlantısı yeniler.
+
+### 5.4 Hazır servis, idle ve ömür
+
+Kayıtlı cihaz bulunan aktif owner için uygulama görünür olarak açılınca `connectedDevice` ön plan servisi başlar; “Bilgisayarlar için hazır” bildirimi vardır. Bildirimden durdurma çalışır; START_NOT_STICKY ve hesap/geri yükleme güvenlik sınırları korunur. FCM/push/boot'tan gizli servis başlatma yoktur. Android'in süreç öldürmesini veya üretici pil kısıtlarını aşma garantisi verilmez; web “Telefonunda Zeytin Defteri'ni aç” gösterir.
+
+Kayıtlı cihazlara ait hazır soketler hibernation kullanır. Hareketsiz keepalive için DO `setWebSocketAutoResponse` planlanır; cihaz kullanım süresi ping ile yenilenmez. Her ping'de metadata yazma ve 60 saniyelik alarm kurma yapılmamalı; aksi durumda kayıtlı cihaz sayısında ücretsiz yazma kotası gereksiz tükenir. Yeni auth süreleri alarm gerektirir; kalıcı odanın temizlik alarmı 30 günlük son kullanım içindir. Uygulama standard WebSocket accept veya açık timer ile DO'yu uyanık tutmaz.
+
+Kalıcı bağlantıda 30 dakika kullanıcı etkinliği yoksa tablo, formlar, sonuçlar ve iş verisi RAM referansları temizlenir/gizlenir; **cihaz kimliği ve hazır bağlantı korunur**. Ekrana tıklayınca telefondan yeniden veri alınır. Oturum anahtarı gerektiğinde yeni el sıkışmasıyla kurulur. İşaretsiz eşleşmede mevcut 5 dakika sonunda tam kapatma/yeni QR davranışı korunur. Telefon yokken iş verisi gösterilmez. Arka plan sekmesinden dönüşte 5 dakika dolmamış geçici oturum hemen resume dener; dolmuş kalıcı oturum cihaz kimliğiyle QR'sız yeniden el sıkışır.
+
+### 5.5 Canlı hata düzeltmeleri ve durum sözleşmesi
+
+- Ad/yetki kamera açılmadan alınır. QR okunduğunda tekrar kullanıcı formu beklenmez; metadata doğrulanıp bağlantı başlar. Kalan süre <30 sn ise yenisi istenir.
+- Beklemenin sebebi Türkçe gösterilir; QR süresi, tarayıcının kapatması, arka plan/kopma ve relay ulaşılamaması ayrıdır. Bekleme sırasında “Yeni QR okut” eski geçici oturumu kapatarak kamerayı açabilir.
+- Relay kapanış kontrolü kesen tarafı karşı uca bildirir; tarayıcı kesmesi telefonda sonsuz yeniden bağlantıya dönüşmez. Kalıcı cihazı unutma ile yalnız mevcut bağlantıyı kesme ayrı niyetlerdir.
+- Service kapanış işi capture edilen generation ve `startId` ile kontrol edilir. Eski `end()` kuyruğu yeni oturumu durduramaz; bildirim temizliği de aynı nesle bağlıdır.
+- Onay satırı yalnız canlı, süresi dolmamış istek varsa gösterilir. Kayıtlı cihazlar + açık oturum + son üç kapanmış kayıt gösterilir; “Geçmişi temizle” kayıtlı cihazları silmez.
+- Tanı satırı yalnız güvenli hata kodu/HTTP statüsü ve Türkçe açıklamadır; exception URL'si, QR, capability, anahtar, frame veya iş verisi gösterilmez/loglanmaz.
+- Yeni QR durumunda eski kopma yazısı temizlenir. “Telefon bağlantıyı kapattı” ve “Bağlantıyı kestiniz” ayrıdır.
+
+### 5.6 Ücretsiz kota hesabı (3 Kasım 2026 resmî doğrulama)
+
+Workers Free: 100.000 HTTP istek/gün. SQLite DO Free: 100.000 ölçümlenen istek/gün, 13.000 GB-s/gün; SQLite 5 milyon okunan satır/gün, 100.000 yazılan satır/gün, toplam 5 GB. WS gelen mesajlarında ücret/kota hesabında 20:1 oranı vardır; çıkan mesaj ve protocol ping ücretlenmez. Auto-response hibernation süresini uyandırmaz. KV `put` ve `setAlarm` da SQLite yazma tüketir. Ücretsiz sınır aşımında hata alınır; otomatik ücretli plana geçiş eklenmez.
+
+Kaynaklar: https://developers.cloudflare.com/workers/platform/pricing/ ; https://developers.cloudflare.com/durable-objects/platform/pricing/ ; https://developers.cloudflare.com/durable-objects/concepts/durable-object-lifecycle/
+
+Örnek **tahmin**: bir tezgâh + bir kayıtlı bilgisayar, günde 8 saat kullanım, 500 komut/değişiklik, toplam 10.000 iş/denetim WS mesajı → yaklaşık 500 ölçümlenen DO isteği + upgrade/auth/temizlik. 24 saat telefon/8 saat web, 60 saniyelik uygulama keepalive → 1.920 mesaj ≈96 ek istek; auto-response ile ek aktif süre hedefi sıfırdır. 10.000 olayın her biri ortalama 10 ms aktif çalışırsa 100 sn ×0,128 GB = **12,8 GB-s/gün**; bu ölçülmüş değer değildir. Kalıcı beklemede ping başına storage yazmama zorunludur. Gerçek aktif işleme süresi, alarm/yeniden bağlantı, aynı hesaptaki diğer Worker'lar ve cihaz sayısı ortak kotayı etkiler; kapasite garantisi verilmez. “Düşük pil” gerçek telefonda ölçülmeden doğrulanmış sayılmaz.
+
+### 5.7 Test / teslim sırası
+
+1. Bu tasarım commit/push. 2. Kompakt QR/bootstrap ve çizim + bağımsız decoder. 3. Canlı durum/servis/kamera düzeltmeleri. 4. Kalıcı cihaz kayıt/kimlik doğrulama/servis/web uyandırma. 5. Aynı süreçte en az beş eşleşme/ayrılma döngüsü, farklı kapanma nedenleri, yavaş kullanıcı, QR süreleri; cihaz unutma, 30 gün, yenilenmede QR'sız bağlanma; tüm eski testler. Her parça ayrı commit/push.
+
+Adım 4 son host taraması: 110 test giriş noktası, 108 geçti, 2 PostgreSQL testi çalıştırılmadı. Bu Adım 5 testi değildir. Android Gradle denemesi `services.gradle.org` DNS hatasıyla başlayamadı. Kullanıcı Adım 4 canlı eşleşme/Tam kullanım görünümünü doğruladı; bütün cihaz/kamera/arka plan koşulları doğrulanmış sayılmaz.
+
+---
 
 ## 1. İncelenen kaynak ve kapsam
 
