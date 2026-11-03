@@ -42,6 +42,9 @@ public final class TezgahPurchases {
     private TezgahPurchases() {}
 
     public static void ensure(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS tezgah_producers (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "owner_uid TEXT NOT NULL, name TEXT NOT NULL, name_key TEXT NOT NULL, phone TEXT DEFAULT '', "
+                + "created_at INTEGER DEFAULT 0, UNIQUE(owner_uid,name_key))");
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE + " ("
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "owner_uid TEXT DEFAULT '', "
@@ -201,6 +204,59 @@ public final class TezgahPurchases {
         } finally {
             db.endTransaction(); if (committed) webSignal(db, owner, "committed");
         }
+    }
+
+    /** Owner kapsamlı tek kayıt; web ve telefon düzenleme yolu aynı satırı kullanır. */
+    public static Purchase get(SQLiteDatabase db, String owner, long id) {
+        ensure(db);
+        List<Purchase> rows = query(db, COLS + " WHERE id=? AND COALESCE(owner_uid,'')=?",
+                new String[]{Long.toString(id), nz(owner)});
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    /** Ödeneni ve ödeme geçmişini korur; Z kilidi onayla da aşılamaz. */
+    public static boolean update(SQLiteDatabase db, String owner, long id, String date,
+                                 String seller, String phone, TezgahModel model) {
+        if (model == null || model.totalNet() <= 0 || !Double.isFinite(model.total())
+                || date == null || date.trim().isEmpty()) return false;
+        ensure(db);
+        boolean committed = false;
+        db.beginTransaction();
+        try {
+            Purchase before = get(db, owner, id);
+            if (before == null || before.zId > 0 || model.total() + 0.005 < before.paid) return false;
+            ContentValues v = new ContentValues();
+            v.put("record_date", date);
+            v.put("seller_name", nz(seller).trim());
+            v.put("seller_phone", nz(phone).trim());
+            v.put("total_kg", model.totalNet());
+            v.put("total_kasa", model.totalKasa());
+            v.put("gross_total", model.total());
+            v.put("data", model.encode());
+            if (db.update(TABLE, v, "id=? AND COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0",
+                    new String[]{Long.toString(id), nz(owner)}) != 1) return false;
+            db.setTransactionSuccessful();
+            committed = true;
+            return true;
+        } finally {
+            db.endTransaction();
+            if (committed) webSignal(db, owner, "committed");
+        }
+    }
+
+    /** Eskiden yeniye alımlar için ortak kuruş bazlı ödeme dağıtımı. */
+    public static List<long[]> allocatePayments(List<Purchase> rows, double amount) {
+        List<long[]> out = new ArrayList<>();
+        double left = amount;
+        for (Purchase p : rows) {
+            if (left <= 0.009) break;
+            double owe = p.remaining();
+            if (owe <= 0.5) continue;
+            double take = Math.min(owe, left);
+            out.add(new long[]{p.id, Math.round(take * 100)});
+            left -= take;
+        }
+        return out;
     }
 
     /** Gün özeti satırı: "3 alım · 1.240 kg · 98.500 ₺ · 12.000 ₺ borç". */

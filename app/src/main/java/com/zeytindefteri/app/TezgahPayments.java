@@ -38,22 +38,22 @@ public final class TezgahPayments {
         TezgahPurchases.ensure(db);
         ensure(db);
         String o = owner == null ? "" : owner;
-        Cursor c = db.rawQuery("SELECT gross_total, amount_paid FROM " + TezgahPurchases.TABLE
-                + " WHERE id=? AND COALESCE(owner_uid,'')=?", new String[]{String.valueOf(purchaseId), o});
-        double gross, paid;
-        try {
-            if (!c.moveToFirst()) return false;
-            gross = c.getDouble(0);
-            paid = c.getDouble(1);
-        } finally {
-            c.close();
-        }
-        double left = Math.max(0, gross - paid);
-        double v = Math.min(amount, left);
-        if (amount <= 0.009 || v <= 0.009) return false;
         boolean committed = false;
         db.beginTransaction();
         try {
+            Cursor c = db.rawQuery("SELECT gross_total, amount_paid FROM " + TezgahPurchases.TABLE
+                    + " WHERE id=? AND COALESCE(owner_uid,'')=?", new String[]{String.valueOf(purchaseId), o});
+            double gross, paid;
+            try {
+                if (!c.moveToFirst()) return false;
+                gross = c.getDouble(0);
+                paid = c.getDouble(1);
+            } finally {
+                c.close();
+            }
+            double left = Math.max(0, gross - paid);
+            double v = Math.min(amount, left);
+            if (amount <= 0.009 || v <= 0.009) return false;
             ContentValues row = new ContentValues();
             row.put("purchase_id", purchaseId);
             row.put("amount", Math.round(v * 100) / 100.0);
@@ -71,6 +71,42 @@ public final class TezgahPayments {
             return false;
         } finally {
             db.endTransaction(); if (committed) TezgahPurchases.webSignal(db, owner, "committed");
+        }
+    }
+
+    /** UI ve web: yeni bakiyeyi transaction içinde okur, eski borçtan atomik dağıtır. */
+    public static int payBulk(SQLiteDatabase db, String owner, String seller, double amount,
+                              String today, long now) {
+        TezgahPurchases.ensure(db);
+        ensure(db);
+        if (!Double.isFinite(amount) || amount <= 0.009) return 0;
+        boolean committed = false;
+        db.beginTransaction();
+        try {
+            List<TezgahPurchases.Purchase> rows = new ArrayList<>();
+            String key = TezgahSearch.fold(seller);
+            List<TezgahPurchases.Purchase> all = TezgahPurchases.all(db, owner, 1000000);
+            double remaining = 0;
+            for (int i = all.size() - 1; i >= 0; i--) {
+                TezgahPurchases.Purchase p = all.get(i);
+                if (TezgahSearch.fold(p.seller).equals(key)) {
+                    rows.add(p);
+                    remaining += p.remaining();
+                }
+            }
+            if (amount > remaining + 0.5) return 0;
+            int done = 0;
+            for (long[] part : TezgahPurchases.allocatePayments(rows, amount)) {
+                if (!pay(db, owner, part[0], part[1] / 100.0, today, now + done)) return 0;
+                done++;
+            }
+            if (done == 0) return 0;
+            db.setTransactionSuccessful();
+            committed = true;
+            return done;
+        } finally {
+            db.endTransaction();
+            if (committed) TezgahPurchases.webSignal(db, owner, "committed");
         }
     }
 

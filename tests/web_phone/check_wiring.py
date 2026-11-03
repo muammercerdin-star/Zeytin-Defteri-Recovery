@@ -24,7 +24,7 @@ check('START_NOT_STICKY' in svc and 'SDK_INT>=26' in svc and 'else activity.star
 check('getNoBackupFilesDir' in (p/'TezgahWebSessions.java').read_text() and 'tezgah_web' not in (p/'TezgahBackup.java').read_text(),'metadata excluded backup')
 for name in ['TezgahPurchases','TezgahPayments','TezgahClosing','TezgahZ']:
  check('webSignal' in (p/(name+'.java')).read_text(),name+' mutation hook')
-check('w2.endTransaction(); if (ok && done > 0) TezgahWebChanges.committed' in (p/'TezgahStatementActivity.java').read_text(),'outer payment commit')
+check('TezgahPayments.payBulk(' in (p/'TezgahStatementActivity.java').read_text() and 'if (committed)' in (p/'TezgahPayments.java').read_text(), 'shared atomic bulk payment path')
 check('now-lastSent<100' in client and 'queue.size()>=128' in client and '2*1024*1024' in client,'bounded pacing independent of scheduler catchup')
 check('p.generation!=TezgahWebChanges.resetGeneration()' in svc,'pending approval invalidated by account reset')
 print(f'PASS {n}/{n} web phone wiring (static, not Android runtime)')

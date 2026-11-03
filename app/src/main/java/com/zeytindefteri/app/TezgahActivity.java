@@ -1401,6 +1401,17 @@ public final class TezgahActivity extends Activity {
         List<String> names = new ArrayList<>();
         try { for (TezgahPurchases.Purchase p : TezgahPurchases.open(db.getWritableDatabase(), owner)) names.add(p.seller); }
         catch (RuntimeException ignored) { }
+        for (TezgahProducers.Producer producer : TezgahProducers.search(db.getWritableDatabase(), owner, "", 200)) {
+            names.add(producer.name);
+        }
+        TextView addProducer = text("Üretici kartı oluştur", 16, GREEN, true);
+        addProducer.setPadding(0, dp(14), 0, dp(14));
+        addProducer.setOnClickListener(view -> {
+            long id = TezgahProducers.add(db.getWritableDatabase(), owner, name.getText().toString().trim(),
+                    phone.getText().toString().trim(), System.currentTimeMillis());
+            toast(id > 0 ? "Üretici kartı hazır." : "Üretici adı ve telefonunu kontrol et.");
+        });
+        wizardBox.addView(addProducer);
         List<String> recent = TezgahWizardFlow.recent(names, 4);
         if (!recent.isEmpty()) {
             wizardBox.addView(text("Son gelenler", 12, MUTED, true), margins(-1, -2, 12));

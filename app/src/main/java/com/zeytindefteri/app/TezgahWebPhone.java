@@ -6,6 +6,50 @@ import java.util.function.Consumer;
 
 /** Android'siz gerçek telefon protokol motoru. Tek istemci executor'ından çağrılır. */
 public final class TezgahWebPhone implements AutoCloseable {
+    public interface Commands {
+        void output(Consumer<JSONObject> listener);
+        boolean writable();
+        JSONObject submit(JSONObject request);
+        JSONObject read(String operation, JSONObject args) throws Exception;
+        void downgrade();
+        void decide(String id, boolean approve);
+        void tick();
+        void backupDone(String id, boolean ok, String message);
+        void close();
+    }
+
+    private Commands commands;
+
+    public void commands(Commands handler) {
+        if (active) throw new IllegalStateException("Oturum zaten başladı.");
+        commands = handler;
+        handler.output(this::send);
+    }
+
+    private JSONArray permissions() {
+        JSONArray result = new JSONArray().put("tezgah.read");
+        if (commands != null && commands.writable()) result.put("tezgah.write");
+        return result;
+    }
+
+    public void downgrade() {
+        if (commands == null) return;
+        commands.downgrade();
+        send(TezgahWebDto.json("v", 1, "type", "olay", "event", "yetki_degisti", "permissions", permissions()));
+    }
+
+    public void decide(String id, boolean approve) {
+        if (commands != null) commands.decide(id, approve);
+    }
+
+    public void tick() {
+        if (commands != null) commands.tick();
+    }
+
+    public void backupDone(String id, boolean ok, String message) {
+        if (commands != null) commands.backupDone(id, ok, message);
+    }
+
     public static final class Qr {
         public final String room,capability,secret,browserKey,nb;public final long expiresAt;
         private Qr(JSONObject j)throws Exception{room=j.getString("room");capability=j.getString("phoneCapability");secret=j.getString("secret");browserKey=j.getString("browserPublicKey");nb=j.getString("nb");expiresAt=j.getLong("expiresAt");}
@@ -73,11 +117,17 @@ public final class TezgahWebPhone implements AutoCloseable {
         if(type.equals("encrypted")){
             if(!ready()||!approval.canRead())throw new IllegalArgumentException("ONAY_GEREKLI");
             JSONObject request=new JSONObject(new String(channel.open(TezgahWebProtocol.Frame.parse(raw)),java.nio.charset.StandardCharsets.UTF_8));
+            if ("komut".equals(request.optString("type"))) {
+                if (commands != null) send(commands.submit(request));
+                else send(TezgahWebDto.json("v", 1, "type", "komut_sonucu", "id", request.optString("id"),
+                        "durum", "reddedildi", "hata", "Bu bilgisayar yalnız görüntüleme yetkisine sahip."));
+                return;
+            }
             String id=request.optString("id","");if(!id.matches("[A-Za-z0-9_-]{1,64}")||request.optInt("v")!=1||!request.optString("type").equals("istek"))throw new IllegalArgumentException("GECERSIZ_ISTEK");
             String op=request.optString("op");try{
-                if(!op.equals("bugunun_alimlari"))throw new IllegalArgumentException("SALT_OKUNUR");
+                if(!op.equals("bugunun_alimlari") && commands == null)throw new IllegalArgumentException("SALT_OKUNUR");
                 JSONObject args=request.optJSONObject("args");if(args==null)args=new JSONObject();
-                JSONObject data=repository.read(args,System.currentTimeMillis());send(TezgahWebDto.json("v",1,"type","cevap","id",id,"op",op,"ok",true,"data",data));
+                JSONObject data = op.equals("bugunun_alimlari") ? repository.read(args,System.currentTimeMillis()) : commands.read(op, args);send(TezgahWebDto.json("v",1,"type","cevap","id",id,"op",op,"ok",true,"data",data));
             }catch(Exception e){String code=e instanceof IllegalArgumentException?e.getMessage():"VERI_OKUNAMADI";send(TezgahWebDto.json("v",1,"type","hata","id",id,"code",safeCode(code),"message","Veri okunamadı. Telefonda bağlantıyı kontrol et.","retryable",true));}
             return;
         }
@@ -85,9 +135,9 @@ public final class TezgahWebPhone implements AutoCloseable {
     }
     private String pendingEpoch,pendingNb;
     private static String safeCode(String code){return code!=null&&code.matches("[A-Z_]{1,40}")?code:"VERI_OKUNAMADI";}
-    private void activate(){channel=new TezgahWebCrypto.Channel(keys,session,epoch,"p2w");ready=true;send(TezgahWebDto.json("v",1,"type","onaylandi","session",session,"permissions",new JSONArray().put("tezgah.read"),"maxAgeSeconds",28800,"idleLockSeconds",300));state.accept(true);}
+    private void activate(){channel=new TezgahWebCrypto.Channel(keys,session,epoch,"p2w");ready=true;send(TezgahWebDto.json("v",1,"type","onaylandi","session",session,"permissions",permissions(),"maxAgeSeconds",28800,"idleLockSeconds",300));state.accept(true);}
     private void send(JSONObject payload){if(!ready()||!approval.canRead())return;output.accept(channel.seal(TezgahWebProtocol.utf8(payload.toString())).json());}
     public void changed(long revision){if(ready())send(TezgahWebDto.json("v",1,"type","olay","event","veri_degisti","sourceEpoch",TezgahWebChanges.SOURCE,"revision",Long.toString(revision),"scopes",new JSONArray().put("alimlar")));}
     public boolean expired(long now){return closed||(active&&now-activeAt>=28800000)||(!active&&System.currentTimeMillis()/1000>=qr.expiresAt)||(active&&lost>=0&&now-lost>300000);}
-    public void close(){closed=true;ready=false;approval.close();if(channel!=null)channel.close();if(guard!=null)guard.close();if(keys!=null)keys.close();if(root!=null)Arrays.fill(root,(byte)0);repository.close();hello=null;capability=null;state.accept(false);}
+    public void close(){if(commands!=null)commands.close();closed=true;ready=false;approval.close();if(channel!=null)channel.close();if(guard!=null)guard.close();if(keys!=null)keys.close();if(root!=null)Arrays.fill(root,(byte)0);repository.close();hello=null;capability=null;state.accept(false);}
 }

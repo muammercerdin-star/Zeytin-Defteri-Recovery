@@ -171,6 +171,14 @@ public final class TezgahCloudBackup {
 
     /** Değişiklik varsa yedekler. force=false iken en sık 2 dakikada bir denenir. done null olabilir (ana iş parçacığında çağrılır). */
     public static void backup(Context context, boolean force, Done done) {
+        backup(context, force, done, false);
+    }
+
+    public static void backupForWeb(Context context, Done done) {
+        backup(context, true, done, true);
+    }
+
+    private static void backup(Context context, boolean force, Done done, boolean strict) {
         final Context app = context.getApplicationContext();
         final String uid = uid();
         if (uid.isEmpty()) { post(done, false, "Oturum yok"); return; }
@@ -178,7 +186,10 @@ public final class TezgahCloudBackup {
         long now = System.currentTimeMillis();
         if (!force && now - p.getLong("try_" + uid, 0) < MIN_GAP_MS) { post(done, true, ""); return; }
         if (RUNNING.get() && now - runningSince > STUCK_MS) RUNNING.set(false);
-        if (!RUNNING.compareAndSet(false, true)) { post(done, true, ""); return; }
+        if (!RUNNING.compareAndSet(false, true)) {
+            post(done, !strict, strict ? "Başka bir yedekleme sürüyor. Tamamlandıktan sonra deneyin." : "");
+            return;
+        }
         runningSince = now;
         p.edit().putLong("try_" + uid, now).apply();
         WORKER.execute(() -> {

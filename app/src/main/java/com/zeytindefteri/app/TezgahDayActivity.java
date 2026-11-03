@@ -775,12 +775,8 @@ public final class TezgahDayActivity extends Activity {
                 long now = System.currentTimeMillis();
                 String detail = zLabel + " · teslim " + TezgahModel.kg(c.deliveredKg())
                         + (c.advance > 0 ? " · avans " + TezgahModel.tl(c.advance) + " düşüldü" : "");
-                ok = TezgahLedger.add(w, owner, n, TezgahLedger.SALE, owes, c.deliveredKg(), TezgahLedger.METHOD_DAY,
-                        detail, "", today(), z, now) > 0;
-                if (ok && paid >= 0.01) {
-                    ok = TezgahLedger.add(w, owner, n, refund ? TezgahLedger.PAID : TezgahLedger.RECEIVED, paid, 0, 0,
-                            zLabel, "", today(), 0, now + 1) > 0;
-                }
+                ok = TezgahLedger.recordDay(w, owner, n, owes, c.deliveredKg(), paid,
+                        detail, today(), z, now) > 0;
             } catch (RuntimeException x) { ok = false; }
             if (!ok) { toast("Cari hesaba işlenemedi. Tekrar dene."); return; }
             tp.edit().putString("ledger_trader_" + owner, n).apply();
@@ -1132,6 +1128,7 @@ public final class TezgahDayActivity extends Activity {
         if (TezgahStatement.hasStatement(p.seller)) opts.add("Üretici ekstresi · " + p.seller.trim());
         if (p.remaining() > 0.5) opts.add("Ödeme yap · kalan " + TezgahModel.tl(p.remaining()));
         else if (p.paid > 0.5) opts.add("Ödeme geçmişi");
+        if (p.zId <= 0) opts.add("Düzenle");
         if (p.zId <= 0) opts.add("Sil");   // gün sonu alınmış alım kilitli
         final String[] items = opts.toArray(new String[0]);
         new AlertDialog.Builder(this)
@@ -1148,6 +1145,8 @@ public final class TezgahDayActivity extends Activity {
                                 TezgahQr.encode(m, p.date, TezgahShare.traderName(), p.paid));
                     } else if (a.startsWith("Üretici")) {
                         openStatement(p.seller);
+                    } else if (a.equals("Düzenle")) {
+                        TezgahPurchaseEditUi.show(this, db.getWritableDatabase(), owner, p, this::render);
                     } else if (a.startsWith("Ödeme")) {
                         // Bir kısmı ya da tamamı; Z kilitli alımda da yalnız ödeme işlenir.
                         TezgahPaySheet.show(this, db.getWritableDatabase(), owner, p, this::render);

@@ -469,11 +469,9 @@ public final class TezgahLedgerActivity extends Activity {
             boolean ok;
             try {
                 android.database.sqlite.SQLiteDatabase wdb = db.getWritableDatabase();
-                ok = TezgahLedger.add(wdb, owner, n, TezgahLedger.SALE, amount, result[1], method[0], detail,
-                        note.getText().toString(), today(), 0, now) > 0;
-                if (ok && got >= 0.01) {
-                    ok = TezgahLedger.add(wdb, owner, n, TezgahLedger.RECEIVED, got, 0, 0, "satışta alındı", "", today(), 0, now + 1) > 0;
-                }
+                ok = TezgahLedger.recordSale(wdb, owner, n, values(gKg), values(gPrice),
+                        TezgahModel.parse(sKg.getText().toString()), TezgahModel.parse(sPrice.getText().toString()),
+                        method[0], got, note.getText().toString(), today(), now) > 0;
             } catch (RuntimeException x) { ok = false; }
             if (!ok) { toast("Kaydedilemedi. Tekrar dene."); return; }
             SharedPreferences.Editor ed = prefs.edit().putInt("sale_method_" + owner, method[0]);

@@ -22,6 +22,28 @@ public final class TezgahWebClient implements AutoCloseable {
         core=new TezgahWebPhone(qr,repository,this::enqueue,ready->state.update(ready,ready?"Bilgisayar bağlı":"Yeniden bağlanıyor"));core.approve();
     }
     private static long clock(){return System.nanoTime()/1000000;}
+    private Runnable release = () -> { };
+
+    public void release(Runnable callback) {
+        release = callback;
+    }
+
+    public void commands(TezgahWebPhone.Commands commands) {
+        core.commands(commands);
+    }
+
+    public void decide(String id, boolean approve) {
+        if (!stopped.get()) worker.execute(() -> core.decide(id, approve));
+    }
+
+    public void downgrade() {
+        if (!stopped.get()) worker.execute(core::downgrade);
+    }
+
+    public void backupDone(String id, boolean ok, String message) {
+        if (!stopped.get()) worker.execute(() -> core.backupDone(id, ok, message));
+    }
+
     public void start(){worker.execute(this::connect);worker.scheduleAtFixedRate(this::tick,100,100,TimeUnit.MILLISECONDS);}
     private void enqueue(String frame){if(stopped.get())return;int bytes=TezgahWebProtocol.utf8(frame).length;if(queue.size()>=128||queuedBytes+bytes>2*1024*1024)throw new IllegalStateException("KUYRUK_DOLU");queue.add(frame);queuedBytes+=bytes;}
     private void connect(){if(stopped.get()||!alive.getAsBoolean()){close();return;}opened=false;
@@ -48,6 +70,7 @@ public final class TezgahWebClient implements AutoCloseable {
     }
     private void tick(){try{
         if(stopped.get())return;if(!alive.getAsBoolean()||core.expired(clock())){fail("Bilgisayar bağlantısı kapandı.");return;}
+        core.tick();
         long now=clock();tokens=Math.min(65536,tokens+Math.max(0,now-lastPump)*32.768);lastPump=now;
         if(!opened||socket==null)return;
         if(now-lastReceive>60000){WebSocket old=socket;old.cancel();lost(old);return;}
@@ -59,6 +82,6 @@ public final class TezgahWebClient implements AutoCloseable {
     private void fail(String detail){state.update(false,detail);close();}
     public boolean stopped(){return stopped.get();}
     public void close(){if(!stopped.compareAndSet(false,true))return;WebSocket ws=socket;if(ws!=null){ws.send("{\"v\":1,\"type\":\"close\"}");if(!ws.close(1000,"CIKIS"))ws.cancel();}socket=null;
-        try{worker.execute(()->{queue.clear();queuedBytes=0;core.close();http.dispatcher().executorService().shutdown();http.connectionPool().evictAll();worker.shutdownNow();});}catch(RejectedExecutionException ignored){}
+        try{worker.execute(()->{queue.clear();queuedBytes=0;core.close();release.run();http.dispatcher().executorService().shutdown();http.connectionPool().evictAll();worker.shutdownNow();});}catch(RejectedExecutionException ignored){}
     }
 }

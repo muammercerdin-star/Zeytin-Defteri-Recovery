@@ -105,6 +105,7 @@ public final class TezgahHomeActivity extends Activity {
     /** Tezgâhçı üretici ekranını hiç açmayabilir: bildirim izni (gün sonu, elek hatırlatması) burada da sorulur. */
     @Override protected void onResume() {
         super.onResume();
+        TezgahWebService.review(this, owner);
         if (body != null && TezgahWebClient.configured()) { render(); webHandler.removeCallbacks(webRefresh); webHandler.post(webRefresh); }
         try { PushRegistration.requestPermission(this); } catch (RuntimeException ignored) { }
     }
@@ -158,7 +159,7 @@ public final class TezgahHomeActivity extends Activity {
         ask.setOnClickListener(v -> askQuestion());
         titleRow.addView(ask, new LinearLayout.LayoutParams(-2, dp(42)));
         body.addView(titleRow);
-        if (TezgahWebClient.configured()) body.addView(row(TezgahWebService.connected(owner) ? "1 bilgisayar bağlı ›" : TezgahWebService.running(owner) ? "Bağlantı bekleniyor ›" : "Bilgisayara bağlan", "Yalnız görüntüleme · QR ile güvenli bağlantı", "›", false, v -> webConnect()), margins(-1, -2, 12));
+        if (TezgahWebClient.configured()) body.addView(row(TezgahWebService.connected(owner) ? "1 bilgisayar bağlı ›" : TezgahWebService.running(owner) ? "Bağlantı bekleniyor ›" : "Bilgisayara bağlan", "Yetki telefondan verilir · QR ile güvenli bağlantı", "›", false, v -> webConnect()), margins(-1, -2, 12));
         String cloud = TezgahCloudBackup.statusLine(this);
         if (!cloud.isEmpty()) {
             TextView cl = text(cloud, 12, cloud.contains("bekliyor") || cloud.contains("büyük") ? AMBER : MUTED, false);
@@ -240,35 +241,80 @@ public final class TezgahHomeActivity extends Activity {
 
     private void webConnect() {
         if (!TezgahWebClient.configured() || !owner.equals(new SessionManager(this).getUserUid())) return;
-        if (TezgahWebService.running(owner)) { webComputers(); return; }
+        if (TezgahWebService.running(owner)) {
+            webComputers();
+            return;
+        }
         TezgahQrUi.scan(this, raw -> {
             final TezgahWebPhone.Qr qr;
-            try { qr = TezgahWebPhone.Qr.parse(raw, System.currentTimeMillis() / 1000); }
-            catch (Exception e) { android.widget.Toast.makeText(this, "QR geçersiz veya süresi dolmuş. Bilgisayarda yenile.", android.widget.Toast.LENGTH_LONG).show(); return; }
+            try {
+                qr = TezgahWebPhone.Qr.parse(raw, System.currentTimeMillis() / 1000);
+            } catch (Exception e) {
+                android.widget.Toast.makeText(this, "QR geçersiz veya süresi dolmuş. Bilgisayarda yenile.", android.widget.Toast.LENGTH_LONG).show();
+                return;
+            }
             android.widget.EditText name = new android.widget.EditText(this);
-            name.setHint("Örn. Evdeki bilgisayar"); name.setSingleLine(true);
+            name.setHint("Örn. Ev bilgisayarı");
+            name.setSingleLine(true);
             name.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(40)});
-            LinearLayout form = new LinearLayout(this); form.setPadding(dp(20), dp(8), dp(20), 0); form.addView(name, new LinearLayout.LayoutParams(-1, -2));
-            new AlertDialog.Builder(this).setTitle("Bilgisayarda tezgâh görüntülensin mi?")
-                    .setMessage("Yalnız görüntüleme.\nBu bilgisayara ad ver:").setView(form)
-                    .setPositiveButton("Evet", (d, w) -> {
+            LinearLayout form = new LinearLayout(this);
+            form.setOrientation(LinearLayout.VERTICAL);
+            form.setPadding(dp(20), dp(8), dp(20), 0);
+            form.addView(name, new LinearLayout.LayoutParams(-1, -2));
+            android.widget.RadioGroup permissions = new android.widget.RadioGroup(this);
+            android.widget.RadioButton read = new android.widget.RadioButton(this);
+            read.setId(android.view.View.generateViewId());
+            read.setText("Yalnız görüntüleme");
+            android.widget.RadioButton write = new android.widget.RadioButton(this);
+            write.setId(android.view.View.generateViewId());
+            write.setText("Tam kullanım");
+            permissions.addView(read);
+            permissions.addView(write);
+            permissions.check(read.getId());
+            form.addView(permissions);
+            new AlertDialog.Builder(this).setTitle("Bilgisayar bağlantısı")
+                    .setMessage("Bu bilgisayara ad ve yetki ver. Tam kullanım kayıt ekleme ve ödeme yapmaya izin verir. Silme ve kapanışlar ayrıca telefonda onaylanır.")
+                    .setView(form).setPositiveButton("Bağlan", (dialog, which) -> {
                         if (!owner.equals(new SessionManager(this).getUserUid())) return;
-                        try { TezgahWebPhone.Qr.parse(raw, System.currentTimeMillis() / 1000); String label = name.getText().toString().trim(); TezgahWebService.launch(this, qr, owner, label.isEmpty() ? "Bilgisayar" : label); render(); }
-                        catch (Exception e) { android.widget.Toast.makeText(this, "Bağlantı başlatılamadı. Yeni QR okut.", android.widget.Toast.LENGTH_LONG).show(); }
+                        try {
+                            TezgahWebPhone.Qr.parse(raw, System.currentTimeMillis() / 1000);
+                            String label = name.getText().toString().trim();
+                            TezgahWebService.launch(this, qr, owner, label.isEmpty() ? "Bilgisayar" : label, permissions.getCheckedRadioButtonId() == write.getId());
+                            render();
+                        } catch (Exception e) {
+                            android.widget.Toast.makeText(this, "Bağlantı başlatılamadı. Yeni QR okut.", android.widget.Toast.LENGTH_LONG).show();
+                        }
                     }).setNegativeButton("Vazgeç", null).show();
         }, error -> android.widget.Toast.makeText(this, error, android.widget.Toast.LENGTH_LONG).show());
     }
 
     private void webComputers() {
-        org.json.JSONArray list = TezgahWebSessions.list(this, owner); StringBuilder lines = new StringBuilder();
+        org.json.JSONArray list = TezgahWebSessions.list(this, owner);
+        StringBuilder lines = new StringBuilder();
         for (int i = 0; i < list.length(); i++) {
-            org.json.JSONObject row = list.optJSONObject(i); if (row == null) continue;
-            lines.append(row.optString("ad", "Bilgisayar")).append(" · ").append(TezgahWebService.connected(owner, row.optString("id")) ? "Bağlı" : TezgahWebService.running(owner, row.optString("id")) ? "Bağlantı bekleniyor" : "Kapatıldı").append('\n');
+            org.json.JSONObject row = list.optJSONObject(i);
+            if (row == null) continue;
+            lines.append(row.optString("ad", "Bilgisayar")).append(" · ");
+            lines.append(TezgahWebService.connected(owner, row.optString("id")) ? "Bağlı" : TezgahWebService.running(owner, row.optString("id")) ? "Bağlantı bekleniyor" : "Kapatıldı");
+            lines.append(" · ").append(row.optBoolean("tamKullanim") ? "Tam kullanım" : "Yalnız görüntüleme").append('\n');
         }
-        if (lines.length() == 0) lines.append("Bağlantı kuruluyor…");
-        new AlertDialog.Builder(this).setTitle("Bağlı bilgisayarlar").setMessage(lines.toString())
-                .setPositiveButton("Bağlantıyı kes", (d, w) -> { TezgahWebService.disconnect(this); render(); })
-                .setNegativeButton("Kapat", null).show();
+        lines.append('\n').append(TezgahWebService.lastTrace(owner));
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.VERTICAL);
+        TextView review = text("Bekleyen işlemi onayla / reddet", 16, GREEN, true);
+        review.setPadding(dp(20), dp(18), dp(20), dp(18));
+        review.setOnClickListener(view -> TezgahWebService.review(this, owner));
+        actions.addView(review);
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this).setTitle("Bağlı bilgisayarlar").setMessage(lines.toString()).setView(actions)
+                .setPositiveButton("Bağlantıyı kes", (d, w) -> {
+                    TezgahWebService.disconnect(this);
+                    render();
+                }).setNegativeButton("Kapat", null);
+        if (TezgahWebService.writable(owner)) dialog.setNeutralButton("Yalnız görüntülemeye düşür", (d, w) -> {
+            TezgahWebService.downgrade(owner);
+            render();
+        });
+        dialog.show();
     }
 
     /** "Sor" penceresi: yaz ya da mikrofona bas; örnek sorulara dokununca hemen cevaplanır. */

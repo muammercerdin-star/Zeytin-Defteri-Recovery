@@ -12,8 +12,29 @@ public final class TezgahWebSessions {
     public static void update(Context c,String owner,String id,String name,boolean active){update(c,owner,id,name,active,!active);}
     public static synchronized void update(Context c,String owner,String id,String name,boolean active,boolean revoked){
         JSONArray old=list(c,owner),out=new JSONArray();long began=System.currentTimeMillis();
-        for(int i=0;i<old.length();i++){JSONObject row=old.optJSONObject(i);if(row==null)continue;if(id.equals(row.optString("id")))began=row.optLong("baslangic",began);else if(out.length()<19)out.put(row);}
-        out.put(TezgahWebDto.json("id",id,"ad",name,"baslangic",began,"sonGorulme",System.currentTimeMillis(),"aktif",active,"iptal",revoked));
+        boolean full = false;
+        for(int i=0;i<old.length();i++){JSONObject row=old.optJSONObject(i);if(row==null)continue;if(id.equals(row.optString("id"))){began=row.optLong("baslangic",began);full=row.optBoolean("tamKullanim");}else if(out.length()<19)out.put(row);}
+        out.put(TezgahWebDto.json("id",id,"ad",name,"baslangic",began,"sonGorulme",System.currentTimeMillis(),"aktif",active,"iptal",revoked,"tamKullanim",full));
         AtomicFile f=file(c,owner);FileOutputStream stream=null;try{stream=f.startWrite();stream.write(out.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));f.finishWrite(stream);}catch(IOException e){if(stream!=null)f.failWrite(stream);}
+    }
+    public static synchronized void permission(Context c, String owner, String id, boolean full) {
+        JSONArray rows = list(c, owner);
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.optJSONObject(i);
+            if (row != null && id.equals(row.optString("id"))) {
+                try {
+                    row.put("tamKullanim", full);
+                } catch (JSONException ignored) { }
+            }
+        }
+        AtomicFile f = file(c, owner);
+        FileOutputStream stream = null;
+        try {
+            stream = f.startWrite();
+            stream.write(rows.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            f.finishWrite(stream);
+        } catch (IOException e) {
+            if (stream != null) f.failWrite(stream);
+        }
     }
 }
