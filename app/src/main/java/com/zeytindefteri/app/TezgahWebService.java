@@ -239,6 +239,7 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
 
     private PendingIntent action(String action, int code) {
         Intent intent = new Intent(this, TezgahWebService.class).setAction(action);
+        intent.setData(android.net.Uri.parse("zd-web://approval/" + room + "/" + reviewId + "/" + action));
         intent.putExtra("room", room);
         intent.putExtra("id", reviewId);
         return PendingIntent.getService(this, code, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);

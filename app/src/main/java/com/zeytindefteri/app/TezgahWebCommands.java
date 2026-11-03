@@ -265,10 +265,10 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
         String digest = "";
         boolean transaction = false;
         try {
-            fields(request, "v,type,id,tur,alanlar");
             TezgahWebProtocol.token(id, 16);
-            require(integer(request, "v", 1, 1) == 1 && "komut".equals(request.getString("type")), "Komut sürümü geçersiz.");
             digest = hash(request);
+            fields(request, "v,type,id,tur,alanlar");
+            require(integer(request, "v", 1, 1) == 1 && "komut".equals(request.getString("type")), "Komut sürümü geçersiz.");
             JSONObject old = stored(id);
             if (old != null) {
                 require(digest.equals(old.getString("hash")), "Aynı komut numarası farklı alanlarla kullanılamaz.");
@@ -317,6 +317,7 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
             JSONObject summary = execute(request);
             JSONObject answer = result(id, "tamam", "", summary);
             store(request, digest, "", 0, answer);
+            require(writable(), "İşlem sırasında oturum yetkisi kapatıldı.");
             db.setTransactionSuccessful();
             db.endTransaction();
             transaction = false;
@@ -375,6 +376,7 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
                 JSONObject summary = execute(request);
                 answer = result(id, "tamam", "", summary);
                 store(request, row.getString("hash"), "", 0, answer);
+                require(writable(), "İşlem sırasında oturum yetkisi kapatıldı.");
                 db.setTransactionSuccessful();
                 committed = true;
             } catch (Exception e) {
@@ -589,6 +591,7 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
                 String party = text(a, "kisi", 100, false);
                 require(TezgahLedger.validParty(party), "Alıcının adını yaz.");
                 int method = integer(a, "yontem", 1, 3);
+                fields(a, method == 1 ? "kisi,yontem,kilolar,fiyatlar,alinan,not" : "kisi,yontem,kg,fiyat,alinan,not");
                 double total = method == 1 ? TezgahLedger.gradeAmount(array(a, "kilolar", 2000000, 1), array(a, "fiyatlar", 100000, 2))
                         : TezgahLedger.times(number(a, "kg", 0.1, 2000000, 1), number(a, "fiyat", 0.01, 100000, 2));
                 require(TezgahLedger.amountError(TezgahLedger.SALE, total).isEmpty(), "Satış tutarı geçersiz.");
@@ -719,6 +722,7 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
             }
             case "cari_satis": {
                 int method = integer(a, "yontem", 1, 3);
+                fields(a, method == 1 ? "kisi,yontem,kilolar,fiyatlar,alinan,not" : "kisi,yontem,kg,fiyat,alinan,not");
                 saved = TezgahLedger.recordSale(db, owner, a.getString("kisi"),
                         method == 1 ? array(a, "kilolar", 2000000, 1) : new double[6],
                         method == 1 ? array(a, "fiyatlar", 100000, 2) : new double[6],

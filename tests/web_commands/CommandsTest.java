@@ -58,6 +58,17 @@ public final class CommandsTest {
         check(TezgahProducers.search(db, "A", "", 200).size() == 1, "producer unique");
         check(TezgahProducers.search(db, "B", "", 200).isEmpty(), "producer owner");
         run("uretici_ekle", j("ad", "", "telefon", ""), "reddedildi");
+        for (String invalid : new String[]{"NaN", "Infinity", "-1", "1e9", "1,5", "1.234.5", "100000001"}) {
+            run("cari_tahsilat", j("kisi", "Ali", "tutar", invalid), "reddedildi");
+        }
+        run("kasa_adet_giris", j("kisi", "Ali", "adet", 1.5), "reddedildi");
+        run("kasa_adet_giris", j("kisi", "Ali", "adet", 5001), "reddedildi");
+        run("uretici_ekle", j("ad", String.join("", Collections.nCopies(101, "a"))), "reddedildi");
+        run("uretici_ekle", j("ad", "Ali\nVeli"), "reddedildi");
+        clock.addAndGet(1100);
+        JSONObject wrongVersion = command("uretici_ekle", j("ad", "Ali"));
+        wrongVersion.put("v", 1.5);
+        check(engine.submit(wrongVersion).getString("durum").equals("reddedildi"), "fractional version");
         long id = add(today);
         check(id > 0, "purchase id");
         check(TezgahPurchases.get(db, "A", id).gross == 100, "phone total");
@@ -160,6 +171,19 @@ public final class CommandsTest {
         check(TezgahPurchases.get(db, "A", id) != null, "downgrade cancels pending");
         run("uretici_ekle", j("ad", "Yasak"), "reddedildi");
         check(!engine.writable(), "no permission upgrade");
+        for (String type : new String[]{"uretici_ekle", "alim_ekle", "alim_duzenle", "alim_sil", "odeme", "toplu_odeme",
+                "kasa_giris", "kasa_cikis", "cari_tahsilat", "cari_odeme", "cari_satis", "cari_sil", "kasa_adet_giris",
+                "kasa_adet_cikis", "kasa_adet_sil", "aksam_hesabi", "z_kapat", "donem_kapat", "z_cariye_isle", "yedek_al"}) {
+            check(engine.submit(command(type, j())).getString("hata").contains("yalnız görüntüleme"), "readonly rejects " + type);
+        }
+        TezgahWebCommands recovered = new TezgahWebCommands(db, "A", "room", true, () -> true, host);
+        check(recovered.submit(payment).toString().equals(first.toString()), "durable same result after executor reconstruction");
+        recovered.close();
+        TezgahWebCommands limit = new TezgahWebCommands(db, "limit", "room", true, () -> true, host);
+        db.execSQL("WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<2048) INSERT INTO tezgah_web_commands(id,owner_uid,session_id,hash,request,result,state) SELECT 'old'||x,'limit','room','x','{}','{}','tamam' FROM n");
+        check(limit.submit(command("uretici_ekle", j("ad", "Ali"))).getString("hata").contains("sınırı doldu"), "bounded ids do not evict replay protection");
+        check(TezgahProducers.search(db, "limit", "", 20).isEmpty(), "limit did not write");
+        limit.close();
         engine.close();
         other.close();
         db.close();

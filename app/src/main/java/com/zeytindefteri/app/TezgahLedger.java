@@ -134,7 +134,7 @@ public final class TezgahLedger {
             if (id <= 0) return -1;
             int payKind = amount < 0 ? PAID : RECEIVED;
             if (paid >= 0.01 && add(db, owner, party, payKind, paid, 0, 0,
-                    zId > 0 ? detail : "satışta alındı", "", date, 0, now + 1) <= 0) return -1;
+                    zId > 0 ? detail.split(" · teslim ", 2)[0] : "satışta alındı", "", date, 0, now + 1) <= 0) return -1;
             db.setTransactionSuccessful();
             committed = true;
             return id;
