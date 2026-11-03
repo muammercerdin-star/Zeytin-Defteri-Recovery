@@ -214,6 +214,39 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
                     if (generation == currentGeneration && client != null && client.stopped()) end();
                 });
             });
+            client.enrollment((request, capability) -> {
+                if (!alive.getAsBoolean()) throw new IllegalStateException("Oturum kapandı.");
+                org.json.JSONObject existing = TezgahWebDevices.find(this, p.owner, request.getString("id"));
+                if (existing != null) {
+                    if (!existing.getString("browserKey").equals(request.getString("publicKey"))) throw new IllegalArgumentException("Cihaz anahtarı uyuşmuyor.");
+                    return TezgahWebDto.json("id", existing.getString("id"), "room", existing.getString("room"), "phoneKey", existing.getString("phoneKey"));
+                }
+                org.json.JSONObject device = TezgahWebDevices.create(this, p.owner, p.name, commands.writable(), request);
+                boolean saved = false;
+                okhttp3.OkHttpClient registration = new okhttp3.OkHttpClient.Builder()
+                        .callTimeout(15, java.util.concurrent.TimeUnit.SECONDS).build();
+                try {
+                    org.json.JSONObject body = TezgahWebDto.json("pairRoom", p.qr.room, "room", device.getString("room"),
+                            "browserHash", TezgahWebCrypto.base64(TezgahWebCrypto.sha256(TezgahWebProtocol.utf8(device.getString("browserKey")))),
+                            "phoneHash", TezgahWebCrypto.base64(TezgahWebCrypto.sha256(TezgahWebProtocol.utf8(device.getString("phoneKey")))));
+                    String base = BuildConfig.TEZGAH_RELAY_URL.trim();
+                    while (base.endsWith("/")) base = base.substring(0, base.length() - 1);
+                    okhttp3.Request register = new okhttp3.Request.Builder().url(base + "/v2/devices")
+                            .header("Authorization", "Bearer " + capability)
+                            .post(okhttp3.RequestBody.create(okhttp3.MediaType.get("application/json; charset=utf-8"), body.toString())).build();
+                    try (okhttp3.Response response = registration.newCall(register).execute()) {
+                        if (response.code() != 201 || !alive.getAsBoolean()) throw new IllegalStateException("Cihaz kaydedilemedi.");
+                    }
+                    device.put("tamKullanim", commands.writable());
+                    TezgahWebDevices.save(this, p.owner, device);
+                    saved = true;
+                    return TezgahWebDto.json("id", device.getString("id"), "room", device.getString("room"), "phoneKey", device.getString("phoneKey"));
+                } finally {
+                    if (!saved) TezgahWebDevices.discard(device);
+                    registration.connectionPool().evictAll();
+                    registration.dispatcher().executorService().shutdown();
+                }
+            });
             client.commands(commands);
             client.release(ownedHelper::close);
             TezgahWebSessions.update(this, owner, room, name, false, false);
