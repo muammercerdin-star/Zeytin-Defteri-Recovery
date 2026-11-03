@@ -32,7 +32,8 @@ Bunlar **örnektir**; kendi gerçek adreslerinizi yazın. Dosyadaki diğer `[var
 
 1. Telefonda [Cloudflare paneli](https://dash.cloudflare.com/) → hesabınız → **Workers & Pages → Create application → Worker → Import repository / Connect GitHub** yolunu seçin. Panel önce Worker oluşturmanızı isterse oluşturduktan sonra **Settings → Builds → Connect** ile depoyu bağlayın. **Pages projesini burada seçmeyin.**
 2. Cloudflare'nin resmî GitHub yetkilendirme ekranında yalnız gereken depoya erişim verin. Ekranın yönettiği kimlik doğrulamayı kullanın; token'ı dosyaya yapıştırmayın.
-3. Depo: `muammercerdin-star/Zeytin-Defteri-Recovery`; production branch: **`work/web-baglanti`**; Worker adı: **`tezgah-relay`**. Worker adı `wrangler.toml` içindeki `name` ile aynı olmalı.
+3. (3 Kasım 2026 canlı kurulumda görüldü) Yeni "Continue with GitHub" ekranında dal seçimi yoktur; ilk build `main` dalından alınır ve "root directory not found" ile düşer. Bu beklenir: Worker → **Settings → Builds → Production branch** = `work/web-baglanti` yapıp bu dala yeni bir commit gönderin. API token için mevcut bir token yerine **Create new token** seçin; eski token'da izin eksik uyarısı çıkabilir.
+   Depo: `muammercerdin-star/Zeytin-Defteri-Recovery`; production branch: **`work/web-baglanti`**; Worker adı: **`tezgah-relay`**. Worker adı `wrangler.toml` içindeki `name` ile aynı olmalı.
 4. **Root directory:** `cloud/tezgah-relay`.
 5. **Build command:** boş. **Deploy command:** `npx --yes wrangler@4 deploy`. Sürüm yüklemesi Cloudflare'nin build ortamında yapılır. Telefona Node/Wrangler kurulmaz. İlk migration'da `versions upload` veya gradual deployment kullanmayın.
 6. Preview/non-production branch dağıtımlarını kapatın. Build watch paths seçeneği varsa `cloud/tezgah-relay/**` ile sınırlandırın; Android veya web değişikliği gereksiz Worker build'i açmasın.
