@@ -2,6 +2,7 @@ import * as C from './js/crypto.js';
 import * as P from './js/protocol.js';
 import { RELAY_URL } from './config.js';
 import qrCode from './js/vendor/qrcode.js';
+import { Operations } from './js/operations.js';
 
 const IDLE_MS = 300000;
 const MAX_AGE_MS = 28800000;
@@ -107,17 +108,106 @@ export class TezgahPage {
     this.retryAt = Infinity;
     this.counter = 0;
     this.retryCount = 0;
+    this.permissions = [];
+    this.calls = new Map();
+    this.commands = new Map();
+    this.onCommand = () => {};
+    this.onChange = () => {};
+    this.onWipe = () => {};
   }
 
   publish(state = this.state, message = this.message) {
     this.state = state;
     this.message = message;
-    this.view({ state, message, data: this.data, page: this.page,
+    this.view({ state, message, data: this.data, page: this.page, writable: this.canWrite(), approved: this.approved,
       loading: !!this.pending, stale: !['bagli', 'yeniden'].includes(state),
       seconds: this.room ? Math.max(0, Math.ceil((this.qrDeadline - this.mono()) / 1000)) : 0 });
   }
 
+  canWrite() {
+    return this.approved && this.permissions.includes('tezgah.write');
+  }
+
+  cancelCalls(message) {
+    for (const call of this.calls.values()) {
+      call.reject(new Error(message));
+    }
+    this.calls.clear();
+  }
+
+  async encrypted(payload) {
+    P.require(this.approved && this.channel, 'Telefon bağlantısı açık değil.');
+    const channel = this.channel;
+    const generation = this.generation;
+    const frame = await channel.seal(P.utf8(JSON.stringify(payload)));
+    P.require(generation === this.generation && channel === this.channel && this.approved, 'Telefon bağlantısı koptu.');
+    this.send(frame);
+  }
+
+  operation(op, args = {}) {
+    if (!this.approved || this.calls.size >= 16) {
+      return Promise.reject(new Error('Telefon bağlantısını bekleyin.'));
+    }
+    const id = 'r' + (++this.counter);
+    return new Promise((resolve, reject) => {
+      this.calls.set(id, { resolve, reject, op, deadline: this.mono() + 15000 });
+      void this.encrypted({ v: 1, type: 'istek', id, op, args }).catch(error => {
+        this.calls.delete(id);
+        reject(error);
+      });
+    });
+  }
+
+  async command(tur, alanlar) {
+    P.require(this.canWrite(), 'Bu bilgisayar yalnız görüntüleme yetkisine sahip.');
+    P.require(this.commands.size < 16, 'Bekleyen işlemleri tamamlayın.');
+    const id = C.base64(C.random(16));
+    const request = { v: 1, type: 'komut', id, tur, alanlar };
+    P.require(P.utf8(JSON.stringify(request)).length <= 24000, 'İşlem çok büyük.');
+    this.commands.set(id, { request, checking: false, checkAt: this.mono() + 10000 });
+    try {
+      await this.encrypted(request);
+    } catch {
+      // Sonucun belirsizliği yeni id ile tekrar kayıt yapılmasına yol açmamalı.
+      this.onCommand({ id, durum: 'onaylandi', hata: '', ozet: { mesaj: 'Bağlantı bekleniyor; aynı işlem numarasıyla sonuç kontrol edilecek.' } });
+    }
+    return id;
+  }
+
+  commandResult(result) {
+    if (!this.commands.has(result.id)) return;
+    P.require(['tamam', 'reddedildi', 'onay_bekleniyor', 'onaylandi', 'iptal'].includes(result.durum), 'Geçersiz komut sonucu.');
+    if (['tamam', 'reddedildi', 'iptal'].includes(result.durum)) this.commands.delete(result.id);
+    else this.commands.get(result.id).checkAt = this.mono() + 5000;
+    this.onCommand(result);
+  }
+
+  reconcile() {
+    if (!this.approved) return;
+    for (const [id, command] of this.commands) {
+      if (command.checking || this.mono() < command.checkAt) continue;
+      command.checking = true;
+      void this.operation('komut_sonucu', { id }).then(async result => {
+        if (!this.commands.has(id)) return;
+        if (result.durum === 'bulunamadi') {
+          if (this.canWrite()) await this.encrypted(command.request);
+          else this.commandResult({ id, durum: 'reddedildi', hata: 'Tam kullanım yetkisi kaldırıldı.', ozet: {} });
+        } else {
+          this.commandResult(result);
+        }
+      }).catch(() => {}).finally(() => {
+        command.checking = false;
+        command.checkAt = this.mono() + 5000;
+      });
+      break;
+    }
+  }
+
   wipe(notify = true) {
+    this.cancelCalls('Oturum kapandı.');
+    this.commands.clear();
+    this.permissions = [];
+    this.onWipe();
     this.socketGeneration = (this.socketGeneration ?? 0) + 1;
     if (this.socket) {
       if (notify && this.socket.readyState === 1) {
@@ -258,6 +348,7 @@ export class TezgahPage {
   }
 
   disconnected() {
+    this.cancelCalls('Telefon bağlantısı koptu.');
     if (!this.consumed) {
       this.publish('koptu');
       return;
@@ -418,7 +509,10 @@ export class TezgahPage {
       P.require(payload.session === this.session &&
         Array.isArray(payload.permissions) && payload.permissions.includes('tezgah.read'),
       'GECERSIZ_ONAY');
+      this.permissions = payload.permissions.slice();
       this.approved = true;
+      for (const command of this.commands.values()) command.checkAt = 0;
+      this.reconcile();
       this.approvalDeadline = null;
       this.retryCount = 0;
       this.publish(this.resumed ? 'yeniden' : 'bagli', '');
@@ -426,8 +520,26 @@ export class TezgahPage {
       return;
     }
     P.require(this.approved, 'ONAY_GEREKLI');
+    if (payload.type === 'komut_sonucu') {
+      this.commandResult(payload);
+      return;
+    }
+    if (payload.type === 'olay' && payload.event === 'yetki_degisti') {
+      // Aynı oturumda web mesajıyla yeni yetki kazanılmaz.
+      this.permissions = this.permissions.filter(value => payload.permissions?.includes(value));
+      this.publish();
+      return;
+    }
+    const call = this.calls.get(payload.id);
+    if (call) {
+      this.calls.delete(payload.id);
+      if (payload.type === 'cevap' && payload.ok === true && payload.op === call.op) call.resolve(payload.data);
+      else call.reject(new Error(payload.message || 'Telefon isteği tamamlayamadı.'));
+      return;
+    }
     if (payload.type === 'olay' && payload.event === 'veri_degisti') {
       this.refreshAt = this.mono() + 400;
+      this.onChange();
       return;
     }
     const pending = this.pending;
@@ -580,6 +692,13 @@ export class TezgahPage {
         this.publish(this.state, 'Telefon yanıt vermedi. Yenile düğmesini kullanın.');
       }
     }
+    for (const [id, call] of this.calls) {
+      if (now >= call.deadline) {
+        this.calls.delete(id);
+        call.reject(new Error('Telefon yanıt vermedi. Yeniden deneyin.'));
+      }
+    }
+    this.reconcile();
     this.publish();
   }
 
@@ -590,7 +709,7 @@ export class TezgahPage {
   }
 }
 
-export function renderRows(document, container, items) {
+export function renderRows(document, container, items, action = null) {
   container.replaceChildren();
   for (const item of items) {
     const row = document.createElement('tr');
@@ -599,6 +718,19 @@ export function renderRows(document, container, items) {
     for (const value of values) {
       const cell = document.createElement('td');
       cell.textContent = value;
+      row.append(cell);
+    }
+    if (action) {
+      const cell = document.createElement('td');
+      for (const [label, type] of [['Öde', 'pay'], ['Düzenle', 'edit'], ['Sil', 'delete']]) {
+        if (item.zId && type !== 'pay') continue;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.className = 'quiet row-action';
+        button.addEventListener('click', () => action(type, item));
+        cell.append(button);
+      }
       row.append(cell);
     }
     container.append(row);
@@ -634,6 +766,8 @@ export function boot(document) {
   const byId = id => document.getElementById(id);
   let previousData;
   let updated;
+  let previousPermission;
+  let operations;
   const app = new TezgahPage({
     qr: text => {
       drawCode(byId('qr'), text);
@@ -655,10 +789,13 @@ export function boot(document) {
       byId('open-period').disabled = state.stale;
       byId('page').textContent = 'Sayfa ' + (state.page + 1);
       byId('loading').hidden = !state.loading;
-      if (state.data !== previousData) {
+      operations?.state(state);
+      byId('row-actions').hidden = !state.writable;
+      if (state.data !== previousData || state.writable !== previousPermission) {
+        previousPermission = state.writable;
         previousData = state.data;
         const data = state.data;
-        renderRows(document, byId('rows'), data?.items ?? []);
+        renderRows(document, byId('rows'), data?.items ?? [], state.writable ? (type, item) => operations?.rowAction(type, item) : null);
         for (const [id, value] of Object.entries({
           count: data ? String(data.totals.count) : '—',
           weight: data ? kg(data.totals.netKg) + ' kg' : '—',
@@ -674,6 +811,7 @@ export function boot(document) {
       byId('updated').textContent = updated ? 'Son güncelleme ' + updated : '';
     }
   });
+  operations = new Operations(document, app);
   const safe = promise => promise.catch(() => {
     void app.start('Bağlantı yeniden hazırlanıyor.');
   });

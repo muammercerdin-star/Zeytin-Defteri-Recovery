@@ -103,3 +103,23 @@ footer { border-top: 1px solid #243a44; padding: 24px 0; display: flex; justify-
   footer { flex-direction: column; gap: 8px; }
   th, td { padding: 17px; }
 }
+
+#operations { margin-top: 36px; }
+.write-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.permission-label { color: var(--green); }
+.operation { padding: 20px; margin: 16px 0; }
+.operation summary { cursor: pointer; font-size: 19px; color: var(--text); }
+.operation-form { margin-top: 20px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.operation label { color: var(--muted); font-size: 14px; }
+.operation input, .operation select { width: 100%; }
+select { display: block; padding: 11px; margin-top: 7px; color: var(--text); background: var(--card); border: 1px solid #354b53; border-radius: 9px; font: inherit; }
+.operation button { margin: 4px 8px 4px 0; }
+.weighing { display: grid; grid-template-columns: 2fr 1fr 2fr auto; align-items: end; gap: 12px; padding: 12px 0; }
+.weighings { margin-bottom: 18px; }
+.report-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; }
+.row-action { font-size: 13px; padding: 8px; margin: 0 3px; }
+.maintenance { padding: 18px 0; }
+@media (max-width: 680px) {
+  .weighing { grid-template-columns: 1fr 1fr; }
+}

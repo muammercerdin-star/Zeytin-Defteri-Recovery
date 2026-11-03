@@ -43,7 +43,7 @@
             <li>Bilgisayarınıza bir ad verin ve telefonda onaylayın.</li>
             <li>Alımları bu ekranda canlı görüntüleyin.</li>
           </ol>
-          <p class="privacy">Uçtan uca şifreli · Yalnız görüntüleme<br>Bu bilgisayarda veri saklanmaz.</p>
+          <p class="privacy">Uçtan uca şifreli · Yetki telefondan verilir<br>Bu bilgisayarda veri saklanmaz.</p>
           <button id="retry" type="button" class="primary">Yeni QR oluştur</button>
         </div>
         <div class="qr-wrap">
@@ -68,7 +68,7 @@
           </div>
           <div class="table-scroll">
             <table>
-              <thead><tr><th>Tarih</th><th>Üretici</th><th>Net kg</th><th>Kasa</th><th>Tutar</th><th>Ödenen</th><th>Kalan</th></tr></thead>
+              <thead><tr><th>Tarih</th><th>Üretici</th><th>Net kg</th><th>Kasa</th><th>Tutar</th><th>Ödenen</th><th>Kalan</th><th id="row-actions" hidden>İşlem</th></tr></thead>
               <tbody id="rows"></tbody>
             </table>
           </div>
@@ -77,6 +77,7 @@
         </section>
         <p class="footnote">Açık dönem, Z ile kapanmamış alımları gösterir; tek bir takvim günüyle sınırlı değildir. Alım saati mevcut telefon verisinde bulunmaz.</p>
       </section>
+      <section id="operations" hidden></section>
     </main>
     <footer><span>Zeytin Defteri</span><span>5 dakika işlem yapılmazsa bağlantı güvenliğiniz için kapanır.</span></footer>
   </div>
