@@ -262,9 +262,15 @@ const source = readFileSync('web/tezgah/app.js', 'utf8');
 check(!/innerHTML|localStorage|indexedDB|document\.cookie|sessionStorage/.test(source), 'no unsafe DOM or persistent storage');
 const headers = readFileSync('web/tezgah/_headers', 'utf8');
 for (const rule of ["default-src 'self'", "frame-ancestors 'none'", 'Referrer-Policy: no-referrer',
-  'Cache-Control: no-store', 'wss://relay.example.invalid']) {
+  'Cache-Control: no-store']) {
   check(headers.includes(rule), 'security header ' + rule);
 }
+// connect-src, config.js'teki relay adresiyle aynı olmalı (boşsa yer tutucu kalır).
+const relayConfig = readFileSync('web/tezgah/config.js', 'utf8').match(/RELAY_URL = '([^']*)'/)[1];
+const relayHost = relayConfig ? new URL(relayConfig).host : 'relay.example.invalid';
+check(!relayConfig || relayConfig === 'https://' + relayHost, 'relay config is a bare https origin');
+check(headers.includes('connect-src https://' + relayHost + ' wss://' + relayHost + ';'),
+  'CSP connect-src matches config relay ' + relayHost);
 check(!/connect-src[^;]*\*/.test(headers), 'no wildcard connections');
 check(!/https?:\/\//.test(readFileSync('web/tezgah/index.html', 'utf8')), 'no CDN or remote assets');
 const gradle = readFileSync('app/build.gradle', 'utf8');

@@ -1,13 +1,13 @@
 name = "tezgah-relay"
 main = "worker.js"
 compatibility_date = "2026-11-01"
-# Üretimde özel alan adı kullan. workers.dev yalnız geliştirme içindir.
-workers_dev = false
+# İlk deneme: workers.dev + pages.dev (Wi-Fi). Üretimde relay.zeytindefteri.com'a geçilecek.
+workers_dev = true
 
 [vars]
 # Dağıtımdan önce kendi alan adlarınla değiştir. Bunlar gizli anahtar değildir.
-RELAY_URL = "https://relay.zeytindefteri.com"
-ALLOWED_ORIGINS = '["https://web.zeytindefteri.com"]'
+RELAY_URL = "https://tezgah-relay.muammercerdin.workers.dev"
+ALLOWED_ORIGINS = '["https://zeytin-tezgah.pages.dev"]'
 CREATE_PER_MINUTE = "10"
 CREATE_PER_DAY = "1000"
 FRAME_RATE = "20"
