@@ -245,15 +245,7 @@ public final class TezgahHomeActivity extends Activity {
             webComputers();
             return;
         }
-        TezgahQrUi.scan(this, raw -> {
-            final TezgahWebPhone.Qr qr;
-            try {
-                qr = TezgahWebPhone.Qr.parse(raw, System.currentTimeMillis() / 1000);
-            } catch (Exception e) {
-                android.widget.Toast.makeText(this, "QR geçersiz veya süresi dolmuş. Bilgisayarda yenile.", android.widget.Toast.LENGTH_LONG).show();
-                return;
-            }
-            android.widget.EditText name = new android.widget.EditText(this);
+        android.widget.EditText name = new android.widget.EditText(this);
             name.setHint("Örn. Ev bilgisayarı");
             name.setSingleLine(true);
             name.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(40)});
@@ -276,20 +268,18 @@ public final class TezgahHomeActivity extends Activity {
                     .setMessage("Bu bilgisayara ad ve yetki ver. Tam kullanım kayıt ekleme ve ödeme yapmaya izin verir. Silme ve kapanışlar ayrıca telefonda onaylanır.")
                     .setView(form).setPositiveButton("Bağlan", (dialog, which) -> {
                         if (!owner.equals(new SessionManager(this).getUserUid())) return;
-                        try {
-                            TezgahWebPhone.Qr.parse(raw, System.currentTimeMillis() / 1000);
-                            String label = name.getText().toString().trim();
-                            TezgahWebService.launch(this, qr, owner, label.isEmpty() ? "Bilgisayar" : label, permissions.getCheckedRadioButtonId() == write.getId());
-                            render();
-                        } catch (Exception e) {
-                            android.widget.Toast.makeText(this, "Bağlantı başlatılamadı. Yeni QR okut.", android.widget.Toast.LENGTH_LONG).show();
-                        }
+                        String label = name.getText().toString().trim();
+                        boolean full = permissions.getCheckedRadioButtonId() == write.getId();
+                        Intent scan = new Intent(this, TezgahWebScanActivity.class);
+                        scan.putExtra("name", label.isEmpty() ? "Bilgisayar" : label);
+                        scan.putExtra("owner", owner);
+                        scan.putExtra("full", full);
+                        startActivityForResult(scan, 7315);
                     }).setNegativeButton("Vazgeç", null).show();
-        }, error -> android.widget.Toast.makeText(this, error, android.widget.Toast.LENGTH_LONG).show());
     }
 
     private void webComputers() {
-        org.json.JSONArray list = TezgahWebSessions.list(this, owner);
+        org.json.JSONArray list = TezgahWebSessions.recent(this, owner);
         StringBuilder lines = new StringBuilder();
         for (int i = 0; i < list.length(); i++) {
             org.json.JSONObject row = list.optJSONObject(i);
@@ -297,6 +287,7 @@ public final class TezgahHomeActivity extends Activity {
             lines.append(row.optString("ad", "Bilgisayar")).append(" · ");
             lines.append(TezgahWebService.connected(owner, row.optString("id")) ? "Bağlı" : TezgahWebService.running(owner, row.optString("id")) ? "Bağlantı bekleniyor" : "Kapatıldı");
             lines.append(" · ").append(row.optBoolean("tamKullanim") ? "Tam kullanım" : "Yalnız görüntüleme").append('\n');
+            if (!row.optString("tani").isEmpty()) lines.append(row.optString("tani")).append('\n');
         }
         lines.append('\n').append(TezgahWebService.lastTrace(owner));
         LinearLayout actions = new LinearLayout(this);
@@ -304,7 +295,13 @@ public final class TezgahHomeActivity extends Activity {
         TextView review = text("Bekleyen işlemi onayla / reddet", 16, GREEN, true);
         review.setPadding(dp(20), dp(18), dp(20), dp(18));
         review.setOnClickListener(view -> TezgahWebService.review(this, owner));
-        actions.addView(review);
+        if (TezgahWebService.hasReview(owner)) actions.addView(review);
+        TextView scan = text("Yeni QR okut", 16, GREEN, true);
+        scan.setPadding(dp(20), dp(18), dp(20), dp(18));
+        actions.addView(scan);
+        TextView clear = text("Geçmişi temizle", 16, GREEN, true);
+        clear.setPadding(dp(20), dp(18), dp(20), dp(18));
+        actions.addView(clear);
         AlertDialog.Builder dialog = new AlertDialog.Builder(this).setTitle("Bağlı bilgisayarlar").setMessage(lines.toString()).setView(actions)
                 .setPositiveButton("Bağlantıyı kes", (d, w) -> {
                     TezgahWebService.disconnect(this);
@@ -314,7 +311,17 @@ public final class TezgahHomeActivity extends Activity {
             TezgahWebService.downgrade(owner);
             render();
         });
-        dialog.show();
+        AlertDialog shown = dialog.show();
+        scan.setOnClickListener(view -> {
+            shown.dismiss();
+            TezgahWebService.disconnect(this);
+            webConnect();
+        });
+        clear.setOnClickListener(view -> {
+            TezgahWebSessions.clearHistory(this, owner);
+            shown.dismiss();
+            webComputers();
+        });
     }
 
     /** "Sor" penceresi: yaz ya da mikrofona bas; örnek sorulara dokununca hemen cevaplanır. */
@@ -370,6 +377,18 @@ public final class TezgahHomeActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == 7315) {
+            if (result != RESULT_OK || data == null || !owner.equals(data.getStringExtra("owner")) || !owner.equals(new SessionManager(this).getUserUid())) return;
+            try {
+                TezgahWebPhone.Qr qr = TezgahWebPhone.Qr.parse(data.getStringExtra("qr"), System.currentTimeMillis() / 1000);
+                if (!qr.compact() && qr.expiresAt - System.currentTimeMillis() / 1000 < 30) throw new IllegalArgumentException();
+                TezgahWebService.launch(this, qr, owner, data.getStringExtra("name"), data.getBooleanExtra("full", false));
+                render();
+            } catch (Exception e) {
+                android.widget.Toast.makeText(this, "QR geçersiz veya yenilenmek üzere. Yeni QR okut.", android.widget.Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
         if (request != REQ_SPEECH || result != RESULT_OK || data == null) return;
         ArrayList<String> words = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
         if (words != null && !words.isEmpty()) answer(words.get(0));

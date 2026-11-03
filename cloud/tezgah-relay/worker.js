@@ -97,8 +97,8 @@ export class TezgahRelay {
     const old=await this.ctx.storage.getAlarm();
     if(old===null||old>at)await this.ctx.storage.setAlarm(at);
   }
-  async end() {
-    for(const ws of this.sockets())close(ws);
+  async end(reason = 'OTURUM_IPTAL') {
+    for(const ws of this.sockets())close(ws, reason);
     this.meta=null;await this.ctx.storage.deleteAll();await this.ctx.storage.deleteAlarm();
   }
   async fetch(request) {
@@ -173,7 +173,7 @@ export class TezgahRelay {
     }
     const peer=this.role(a.role==='phone'?'browser':'phone');
     if(exact(f,'v,type')&&f.v===1&&f.type==='ping'){send(ws,{v:1,type:'pong'});await this.schedule();return;}
-    if(exact(f,'v,type')&&f.v===1&&f.type==='close'){await this.end();return;}
+    if(exact(f,'v,type')&&f.v===1&&f.type==='close'){await this.end(a.role === 'phone' ? 'TELEFON_KAPATTI' : 'TARAYICI_KAPATTI');return;}
     if(f.v!==1){close(ws,'SURUM_DESTEKLENMIYOR');return;}
     if(f.type==='consume') {
       if(!exact(f,'v,type,session')||a.role!=='phone'||m.stage!=='pending'||!peer||!token(f.session,16)){close(ws,'TUKETIM_RED');return;}

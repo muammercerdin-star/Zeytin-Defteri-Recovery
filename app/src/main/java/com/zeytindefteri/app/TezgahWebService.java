@@ -39,6 +39,8 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
     private volatile boolean ready;
     private volatile boolean ended;
     private volatile long generation;
+    private int latestStartId;
+    private String diagnosis = "Bağlanıyor";
     private DatabaseHelper helper;
     private TezgahWebClient client;
     private TezgahWebCommands commands;
@@ -97,8 +99,16 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
 
     public static void disconnect(Context context) {
         TezgahWebService s = instance;
-        if (s != null) s.end();
+        if (s != null) {
+            s.diagnosis = "Bağlantı telefondan kapatıldı";
+            s.end();
+        }
         context.stopService(new Intent(context, TezgahWebService.class));
+    }
+
+    public static boolean hasReview(String owner) {
+        TezgahWebService s = instance;
+        return running(owner) && !s.reviewId.isEmpty() && SystemClock.elapsedRealtime() < s.reviewUntil;
     }
 
     public static void review(Activity activity, String owner) {
@@ -123,6 +133,7 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
+        latestStartId = startId;
         String action = intent == null ? "" : intent.getAction();
         if (STOP.equals(action)) {
             end();
@@ -149,6 +160,8 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
         name = p.name;
         room = p.qr.room;
         ended = false;
+        ready = false;
+        diagnosis = "Bağlanıyor";
         if (!sameOwner()) {
             end();
             return START_NOT_STICKY;
@@ -194,9 +207,11 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
             client = new TezgahWebClient(p.qr, new TezgahWebRepository(helper.getWritableDatabase(), owner), alive, (on, detail) -> {
                 if (generation != currentGeneration) return;
                 ready = on;
+                diagnosis = detail;
                 TezgahWebSessions.update(this, owner, room, name, on, ended || (client != null && client.stopped()));
+                TezgahWebSessions.diagnosis(this, owner, room, detail);
                 main.post(() -> {
-                    if (client != null && client.stopped()) end();
+                    if (generation == currentGeneration && client != null && client.stopped()) end();
                 });
             });
             client.commands(commands);
@@ -290,10 +305,15 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
         if (commands != null) commands.revoke();
         if (client != null) client.close();
         if (!room.isEmpty()) TezgahWebSessions.update(this, owner, room, name, false);
+        if (!room.isEmpty()) TezgahWebSessions.diagnosis(this, owner, room, diagnosis);
+        final long endedGeneration = generation;
+        final int endedStartId = latestStartId;
         main.post(() -> {
+            // Önceki bağlantının gecikmiş kapanışı yeni launch'u durduramaz.
+            if (!ended || generation != endedGeneration || latestStartId != endedStartId) return;
             clearReview();
             stopForeground(true);
-            stopSelf();
+            stopSelf(endedStartId);
         });
     }
 

@@ -333,7 +333,8 @@ export class TezgahPage {
       }
       this.socket = null;
       if (event?.code === 1008 && event.reason !== 'ZAMAN_ASIMI') {
-        void this.start('Oturum telefondan veya aktarıcıdan kapatıldı.');
+        void this.start(event.reason === 'TELEFON_KAPATTI' ? 'Telefon bağlantıyı kapattı.' :
+          event.reason === 'TARAYICI_KAPATTI' ? 'Bağlantıyı kestiniz.' : 'Oturum aktarıcıdan kapatıldı.');
         return;
       }
       this.disconnected();
@@ -351,6 +352,25 @@ export class TezgahPage {
     P.require(this.socket?.readyState === 1, 'BAGLANTI_KOPTU');
     P.require(this.socket.bufferedAmount <= 65536, 'GONDERIM_SINIRI');
     this.socket.send(JSON.stringify(frame));
+  }
+
+  async visible() {
+    if (this.consumed && this.lostAt !== null && this.mono() - this.lostAt < 300000) {
+      this.retryAt = Infinity;
+      if (!this.socket || this.socket.readyState !== 1) this.openSocket();
+      else await this.beginResume();
+      return;
+    }
+    if (this.consumed && this.socket && this.mono() - this.lastPong > 30000) {
+      const old = this.socket;
+      this.socketGeneration++;
+      this.socket = null;
+      old.close();
+      this.disconnected();
+      this.openSocket();
+      return;
+    }
+    await this.tick();
   }
 
   disconnected() {
@@ -861,7 +881,9 @@ export function boot(document) {
   for (const name of ['pointerdown', 'keydown', 'wheel']) {
     document.addEventListener(name, () => app.activity(), { passive: true });
   }
-  document.addEventListener('visibilitychange', () => safe(app.tick()));
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) safe(app.visible());
+  });
   let ticking = false;
   const timer = setInterval(async () => {
     if (ticking) {

@@ -19,7 +19,9 @@ public final class TezgahWebClient implements AutoCloseable {
     public TezgahWebClient(TezgahWebPhone.Qr qr,TezgahWebRepository repository,BooleanSupplier alive,State state)throws Exception{
         if(!configured())throw new IllegalArgumentException("YAPILANDIRILMADI");this.alive=alive;this.state=state;
         String base=BuildConfig.TEZGAH_RELAY_URL.trim();while(base.endsWith("/"))base=base.substring(0,base.length()-1);url="wss"+base.substring(5)+"/v1/socket?room="+qr.room;
-        core=new TezgahWebPhone(qr,repository,this::enqueue,ready->state.update(ready,ready?"Bilgisayar bağlı":"Yeniden bağlanıyor"));core.approve();
+        core=new TezgahWebPhone(qr,repository,this::enqueue,ready -> {
+            if (!stopped.get()) state.update(ready, ready ? "Bilgisayar bağlı" : "Bilgisayar bağlantısı bekleniyor");
+        });core.approve();
     }
     private static long clock(){return System.nanoTime()/1000000;}
     private Runnable release = () -> { };
@@ -55,13 +57,34 @@ public final class TezgahWebClient implements AutoCloseable {
                 if(!alive.getAsBoolean()){close();return;}lastReceive=clock();
                 try{org.json.JSONObject control=new org.json.JSONObject(text);String type=control.optString("type");if(type.equals("hiz_siniri"))backoffUntil=clock()+1500;
                     if(core.ready()&&(type.equals("resume_offer")||((type.equals("peer_joined")||type.equals("peer_left"))&&control.optString("role").equals("browser")))){queue.clear();queuedBytes=0;}
-                    core.receive(text,clock());if(core.ready()){attempt=0;if(type.equals("pong"))state.update(true,"Bilgisayar bağlı");}}
-                catch(Exception e){fail("Bağlantı doğrulanamadı. Yeni QR okut.");}
+                    core.receive(text,clock());
+                    if (type.equals("peer_left") && "browser".equals(control.optString("role"))) {
+                        state.update(false, "Bilgisayar ekranı kapandı/arka plana alındı · 5 dk içinde dönerse devam eder");
+                    }
+                    if(core.ready()){attempt=0;if(type.equals("pong"))state.update(true,"Bilgisayar bağlı");}}
+                catch(Exception e){
+                    String code = e.getMessage();
+                    if ("QR_YENILENMEK_UZERE".equals(code)) fail("QR yenilenmek üzere, yenisini okut.");
+                    else if ("QR_SURESI_DOLDU".equals(code)) fail("QR'ın süresi doldu. Yeni QR okut.");
+                    else fail("Bağlantı doğrulanamadı. Yeni QR okut.");
+                }
             });}
             @Override public void onMessage(WebSocket ws,ByteString binary){current=ws;dispatch(()->fail("Geçersiz bağlantı mesajı."));}
-            @Override public void onFailure(WebSocket ws,Throwable error,Response r){current=ws;dispatch(()->lost(ws));}
+            @Override public void onFailure(WebSocket ws,Throwable error,Response r){current=ws;dispatch(() -> {
+                if (r != null && (r.code() == 403 || r.code() == 404 || r.code() == 410)) {
+                    fail((r.code() == 410 ? "QR'ın veya oturumun süresi doldu" : "Bağlantı reddedildi") + " · HTTP " + r.code());
+                } else {
+                    lost(ws);
+                    state.update(false, "Aktarıcıya ulaşılamıyor" + (r == null ? "" : " · HTTP " + r.code()));
+                }
+            });}
             @Override public void onClosing(WebSocket ws,int code,String reason){ws.close(code,reason);onClosed(ws,code,reason);}
-            @Override public void onClosed(WebSocket ws,int code,String reason){current=ws;dispatch(()->{if(reason.equals("AUTH_RED")||reason.equals("ROL_RED")||reason.equals("BAGLANTI_YENILENDI"))fail("Bağlantı kapandı. Yeni QR okut.");else lost(ws);});}
+            @Override public void onClosed(WebSocket ws,int code,String reason){current=ws;dispatch(()->{if (reason.equals("TARAYICI_KAPATTI")) fail("Bilgisayar bağlantıyı kapattı · Relay " + code);
+                else if (code == 1008 && !reason.equals("ZAMAN_ASIMI")) fail("Oturum kapandı. Yeni QR okut · Relay " + code);
+                else {
+                    lost(ws);
+                    state.update(false, "Bilgisayar ekranı kapandı/arka plana alındı · 5 dk içinde dönerse devam eder · Relay " + code);
+                }});}
         });
     }
     private void lost(WebSocket ws){if(socket!=ws||stopped.get())return;socket=null;opened=false;queue.clear();queuedBytes=0;core.disconnected(clock());
