@@ -115,6 +115,24 @@ try {
  e=environment({CREATE_PER_MINUTE:'1'});await room(e);eq((await create(e)).status,429,'global creation budget');
  e=environment();r=await room(e);const pending=[];for(let i=0;i<4;i++)pending.push(await socket(e,r,'phone',null,false));eq((await socket(e,r,'phone',null,false)).res.status,429,'pending socket bound');
  now+=90000;await alarm(pending[0].entry);ok(pending.every(x=>x.ws.readyState===3),'expiry closes all');
+ e=environment();
+ const compactRoom=b64(16,91),compactCap=b64(32,92);
+ const compactHash=Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(compactCap))).toString('base64url');
+ const compactResponse=await worker.fetch(new Request(base+'/v2/rooms',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({room:compactRoom,phoneCapabilityHash:compactHash})}),e);
+ eq(compactResponse.status,201,'compact room route');
+ const compactData=await compactResponse.json();
+ eq(compactData.v,2,'compact version');
+ ok(!('phoneCapability' in compactData),'relay never gets compact phone capability during creation');
+ const compactWeb=await socket(e,compactData,'browser');
+ const compactPhone=await socket(e,compactData,'phone',compactCap);
+ await message(compactPhone,{v:1,type:'bootstrap_request',room:compactRoom});
+ eq(JSON.parse(compactWeb.client.received.at(-1)).type,'bootstrap_request','metadata requested live');
+ const metadata={v:1,type:'bootstrap',room:compactRoom,browserPublicKey:b64(91),nb:b64(32),expiresAt:Math.floor(now/1000)+90,mac:b64(32,5)};
+ await message(compactWeb,metadata);
+ eq(JSON.parse(compactPhone.client.received.at(-1)),metadata,'metadata goes only to authenticated phone');
+ ok(!JSON.stringify(compactPhone.entry.ctx.writes).includes('browserPublicKey'),'metadata not persisted');
+ await message(compactPhone,metadata);
+ eq(compactPhone.ws.reason,'ONAY_GEREKLI','phone cannot inject browser metadata');
  eq(logs,[],'no console call on every tested path');
  // Statik ek denetim: DO log API'si yok, IP/cookie başlığı okunmuyor.
  ok(!/console\s*[.[]|CF-Connecting-IP|X-Forwarded-For|headers\.get\(['"]Cookie/.test(src),'no log/IP/cookie reads');

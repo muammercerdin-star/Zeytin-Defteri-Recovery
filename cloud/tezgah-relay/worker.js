@@ -43,23 +43,28 @@ export default {
     const allowed=origins(env).includes(origin);
     // Tarayıcıdan gelen bütün origin'ler doğrulanır. Origin'siz soket yalnız phone auth kabul eder.
     if(origin && !allowed)return json({error:'YETKI_YOK'},403);
-    if(request.method==='OPTIONS' && url.pathname==='/v1/rooms') {
+    if(request.method==='OPTIONS' && ['/v1/rooms','/v2/rooms'].includes(url.pathname)) {
       if(!allowed)return json({error:'YETKI_YOK'},403);
       return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type','Cache-Control':'no-store',Vary:'Origin'}});
     }
-    if(request.method==='POST' && url.pathname==='/v1/rooms' && !url.search) {
+    if(request.method==='POST' && ['/v1/rooms','/v2/rooms'].includes(url.pathname) && !url.search) {
       if(!allowed)return json({error:'YETKI_YOK'},403);
       if(!request.headers.get('Content-Type')?.toLowerCase().startsWith('application/json'))return json({error:'GECERSIZ_ISTEK'},400,origin);
       try {
-        const input=await smallBody(request);if(!exact(input,''))return json({error:'GECERSIZ_ISTEK'},400,origin);
+        const input = await smallBody(request);
+        const compact = url.pathname === '/v2/rooms';
+        if (compact ? !exact(input, 'room,phoneCapabilityHash') || !token(input.room, 16) || !token(input.phoneCapabilityHash, 32) : !exact(input, '')) {
+          return json({error:'GECERSIZ_ISTEK'},400,origin);
+        }
         const gate=env.ROOMS.get(env.ROOMS.idFromName('creation-budget'));
         const budget=await gate.fetch(new Request('https://internal/gate',{method:'POST'}));
         if(budget.status!==200)return json({error:'HIZ_VEYA_KOTA_SINIRI'},429,origin);
-        const room=rand(16), cb=rand(32), cp=rand(32), now=Date.now();
+        const room = compact ? input.room : rand(16);
+        const cb = rand(32), cp = compact ? null : rand(32), now = Date.now();
         const stub=env.ROOMS.get(env.ROOMS.idFromName(room));
-        const created=await stub.fetch(new Request('https://internal/init',{method:'POST',body:JSON.stringify({room,browserHash:await hash(cb),phoneHash:await hash(cp),expiresAt:now+PENDING_MS})}));
+        const created=await stub.fetch(new Request('https://internal/init',{method:'POST',body:JSON.stringify({room,browserHash:await hash(cb),phoneHash:compact ? input.phoneCapabilityHash : await hash(cp),expiresAt:now+PENDING_MS})}));
         if(created.status!==201)return json({error:'OLUSTURULAMADI'},503,origin);
-        return json({v:1,room,browserCapability:cb,phoneCapability:cp,expiresAt:Math.floor((now+PENDING_MS)/1000),relayUrl:env.RELAY_URL},201,origin);
+        return json({v:compact ? 2 : 1,room,browserCapability:cb,...(compact ? {} : {phoneCapability:cp}),expiresAt:Math.floor((now+PENDING_MS)/1000),relayUrl:env.RELAY_URL},201,origin);
       } catch { return json({error:'GECERSIZ_ISTEK'},400,origin); }
     }
     if(request.method==='GET' && url.pathname==='/v1/socket') {
@@ -222,6 +227,14 @@ function limit(raw,fallback,min,max){const n=Number(raw);return Number.isInteger
 function validSeq(s){return typeof s==='string'&&/^[1-9][0-9]{0,18}$/.test(s)&&BigInt(s)<=9223372036854775807n;}
 function validCt(s){if(typeof s!=='string'||s.length<22||s.length>43712)return false;try{const n=Math.floor(s.length*6/8);return n>=16&&n<=32784&&token(s,n);}catch{return false;}}
 function validPairFrame(f,role) {
+  if (role === 'phone' && f.type === 'bootstrap_request') {
+    return exact(f, 'v,type,room') && token(f.room, 16);
+  }
+  if (role === 'browser' && f.type === 'bootstrap') {
+    return exact(f, 'v,type,room,browserPublicKey,nb,expiresAt,mac') &&
+      token(f.room, 16) && token(f.browserPublicKey, 91) && token(f.nb, 32) &&
+      Number.isSafeInteger(f.expiresAt) && token(f.mac, 32);
+  }
   return role==='phone'?exact(f,'v,type,room,phonePublicKey,np,proof')&&f.type==='phone_hello'&&token(f.room,16)&&token(f.phonePublicKey,91)&&token(f.np,32)&&token(f.proof,32)
     :exact(f,'v,type,room,proof')&&f.type==='web_finished'&&token(f.room,16)&&token(f.proof,32);
 }

@@ -53,8 +53,62 @@ public final class TezgahWebPhone implements AutoCloseable {
     public static final class Qr {
         public final String room,capability,secret,browserKey,nb;public final long expiresAt;
         private Qr(JSONObject j)throws Exception{room=j.getString("room");capability=j.getString("phoneCapability");secret=j.getString("secret");browserKey=j.getString("browserPublicKey");nb=j.getString("nb");expiresAt=j.getLong("expiresAt");}
+        public boolean compact() {
+            return browserKey.isEmpty();
+        }
+
+        private static byte[] derive(String room, String secret, String purpose) {
+            return TezgahWebCrypto.hkdf(TezgahWebCrypto.unbase64(room), TezgahWebCrypto.unbase64(secret),
+                    TezgahWebProtocol.utf8("zd-web/compact-" + purpose + "/v1"), 32);
+        }
+
+        public Qr resolve(JSONObject frame, long seconds) throws Exception {
+            if (!compact() || !room.equals(frame.getString("room"))) throw new IllegalArgumentException("GECERSIZ_ODA");
+            String key = frame.getString("browserPublicKey");
+            TezgahWebCrypto.publicKey(key);
+            byte[] digest = TezgahWebCrypto.sha256(TezgahWebCrypto.concat(
+                    TezgahWebProtocol.utf8("zd-web/compact-room/v1\n"), TezgahWebCrypto.unbase64(key)));
+            if (!java.security.MessageDigest.isEqual(Arrays.copyOf(digest, 16), TezgahWebCrypto.unbase64(room))) {
+                throw new IllegalArgumentException("SABIT_B_UYUSMAZ");
+            }
+            String nonce = frame.getString("nb");
+            TezgahWebProtocol.token(nonce, 32);
+            long expires = frame.getLong("expiresAt");
+            if (!(frame.get("expiresAt") instanceof Number) || ((Number) frame.get("expiresAt")).doubleValue() != expires) {
+                throw new IllegalArgumentException("GECERSIZ_QR");
+            }
+            byte[] keyMac = derive(room, secret, "bootstrap");
+            byte[] message = TezgahWebProtocol.utf8("zd-web/compact-bootstrap/v1\n" + room + "\n" + expires + "\n" + key + "\n" + nonce);
+            try {
+                if (!java.security.MessageDigest.isEqual(TezgahWebCrypto.hmac(keyMac, message), TezgahWebCrypto.unbase64(frame.getString("mac")))) {
+                    throw new IllegalArgumentException("QR_DOGRULANAMADI");
+                }
+            } finally {
+                Arrays.fill(keyMac, (byte) 0);
+            }
+            if (expires <= seconds) throw new IllegalArgumentException("QR_SURESI_DOLDU");
+            if (expires - seconds < 30) throw new IllegalArgumentException("QR_YENILENMEK_UZERE");
+            if (expires > seconds + 90) throw new IllegalArgumentException("GECERSIZ_QR");
+            return new Qr(TezgahWebDto.json("room", room, "phoneCapability", capability, "secret", secret,
+                    "browserPublicKey", key, "nb", nonce, "expiresAt", expires));
+        }
+
         public static Qr parse(String text,long seconds)throws Exception{
             if(text==null||TezgahWebProtocol.utf8(text).length>2048)throw new IllegalArgumentException("GECERSIZ_QR");
+            if (text.startsWith("ZD1.")) {
+                if (text.length() != 68) throw new IllegalArgumentException("GECERSIZ_QR");
+                byte[] bytes = TezgahWebCrypto.unbase64(text.substring(4));
+                String room = TezgahWebCrypto.base64(Arrays.copyOfRange(bytes, 0, 16));
+                String secret = TezgahWebCrypto.base64(Arrays.copyOfRange(bytes, 16, 48));
+                byte[] cap = derive(room, secret, "phone-cap");
+                try {
+                    return new Qr(TezgahWebDto.json("room", room, "phoneCapability", TezgahWebCrypto.base64(cap),
+                            "secret", secret, "browserPublicKey", "", "nb", "", "expiresAt", seconds + 90));
+                } finally {
+                    Arrays.fill(bytes, (byte) 0);
+                    Arrays.fill(cap, (byte) 0);
+                }
+            }
             JSONObject j=new JSONObject(text);Set<String> fields=new HashSet<>(Arrays.asList("kind","v","room","expiresAt","phoneCapability","secret","browserPublicKey","nb"));
             if(j.length()!=fields.size())throw new IllegalArgumentException("GECERSIZ_QR");for(Iterator<String> it=j.keys();it.hasNext();)if(!fields.contains(it.next()))throw new IllegalArgumentException("GECERSIZ_QR");
             if(!"ZD_WEB_PAIR".equals(j.optString("kind"))||!(j.get("v") instanceof Number)||((Number)j.get("v")).doubleValue()!=1.0)throw new IllegalArgumentException("SURUM_DESTEKLENMIYOR");
@@ -63,19 +117,31 @@ public final class TezgahWebPhone implements AutoCloseable {
             TezgahWebProtocol.token(q.room,16);TezgahWebProtocol.token(q.capability,32);TezgahWebProtocol.token(q.secret,32);TezgahWebProtocol.token(q.nb,32);TezgahWebCrypto.publicKey(q.browserKey);return q;
         }
     }
-    private final Qr qr;private final TezgahWebRepository repository;private final Consumer<String> output;private final Consumer<Boolean> state;
+    private Qr qr;private final TezgahWebRepository repository;private final Consumer<String> output;private final Consumer<Boolean> state;
     private TezgahWebCrypto.Keys keys;private TezgahWebCrypto.Channel channel;private TezgahWebCrypto.ResumeGuard guard;
     private final TezgahWebProtocol.Approval approval=new TezgahWebProtocol.Approval();
     private String session,epoch,capability,np;private byte[] resumeTranscript,phoneProof,root;
     private boolean localApproval,peerConfirmed,consuming,active,ready,closed;private long lost=-1,activeAt;
     public TezgahWebPhone(Qr qr,TezgahWebRepository repository,Consumer<String> output,Consumer<Boolean> state)throws Exception{
         this.qr=qr;this.repository=repository;this.output=output;this.state=state;capability=qr.capability;
+        if (!qr.compact()) initializePairing();
+    }
+
+    private void initializePairing() throws Exception {
         np=TezgahWebCrypto.base64(TezgahWebCrypto.random(32));KeyPair p=TezgahWebCrypto.keyPair();
         TezgahWebCrypto.Pairing pairing=new TezgahWebCrypto.Pairing(qr.room,qr.expiresAt,TezgahWebCrypto.unbase64(qr.secret),qr.browserKey,qr.nb);
         try{keys=pairing.phoneKeys(p,np,System.currentTimeMillis()/1000);}finally{pairing.close();}
         session=TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash,0,16));epoch=TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash,16,32));
         hello=TezgahWebDto.json("v",1,"type","phone_hello","room",qr.room,"phonePublicKey",TezgahWebCrypto.base64(p.getPublic().getEncoded()),"np",np,"proof",TezgahWebCrypto.base64(TezgahWebCrypto.proof(keys.confirmation(),"phone-hello",keys.transcriptHash))).toString();
     }
+    private void sendHello() {
+        if (qr.compact()) {
+            output.accept(TezgahWebDto.json("v", 1, "type", "bootstrap_request", "room", qr.room).toString());
+        } else {
+            output.accept(hello);
+        }
+    }
+
     private String hello;
     public String room(){return qr.room;}
     public boolean ready(){return ready&&!closed;}
@@ -88,9 +154,16 @@ public final class TezgahWebPhone implements AutoCloseable {
         if(closed)throw new IllegalArgumentException("OTURUM_IPTAL");
         if(TezgahWebProtocol.utf8(raw).length>65536)throw new IllegalArgumentException("BOYUT_SINIRI");
         JSONObject f=new JSONObject(raw);if(f.optInt("v")!=1)throw new IllegalArgumentException("SURUM_DESTEKLENMIYOR");String type=f.optString("type");
-        if(type.equals("auth_ok")){if(!active&&f.optString("stage").equals("pending"))output.accept(hello);else if(!active)throw new IllegalArgumentException("YENI_QR_GEREKLI");return;}
+        if(type.equals("auth_ok")){if(!active&&f.optString("stage").equals("pending"))sendHello();else if(!active)throw new IllegalArgumentException("YENI_QR_GEREKLI");return;}
         if(type.equals("peer_left")){if(active&&"browser".equals(f.optString("role")))disconnected(now);return;}
-        if(type.equals("peer_joined")){if("browser".equals(f.optString("role"))){if(active)disconnected(now);else output.accept(hello);}return;}
+        if(type.equals("peer_joined")){if("browser".equals(f.optString("role"))){if(active)disconnected(now);else sendHello();}return;}
+        if (type.equals("bootstrap")) {
+            if (active || !qr.compact()) return;
+            qr = qr.resolve(f, System.currentTimeMillis() / 1000);
+            initializePairing();
+            sendHello();
+            return;
+        }
         if(type.equals("pong")||type.equals("hiz_siniri"))return;
         if(!active&&System.currentTimeMillis()/1000>=qr.expiresAt)throw new IllegalArgumentException("QR_SURESI_DOLDU");
         if(type.equals("web_finished")&&active)return;

@@ -1,5 +1,6 @@
 import * as C from './js/crypto.js';
 import * as P from './js/protocol.js';
+import * as Compact from './js/compact.js';
 import { RELAY_URL } from './config.js';
 import qrCode from './js/vendor/qrcode.js';
 import { Operations } from './js/operations.js';
@@ -79,11 +80,11 @@ export class TezgahPage {
     this.mono = mono;
     this.view = view;
     this.drawQr = qr;
-    this.createRoom = createRoom ?? (async origin => {
-      const response = await fetch(origin + '/v1/rooms', {
+    this.createRoom = createRoom ?? (async (origin, input) => {
+      const response = await fetch(origin + '/v2/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: '{}',
+        body: JSON.stringify(input),
         credentials: 'omit',
         cache: 'no-store',
         referrerPolicy: 'no-referrer'
@@ -221,7 +222,7 @@ export class TezgahPage {
     this.pairing?.close();
     this.guard?.close();
     this.channel = this.keys = this.pairing = this.guard = null;
-    this.browser = this.room = this.resumeOffer = null;
+    this.browser = this.room = this.resumeOffer = this.bootstrap = null;
     this.session = this.epoch = this.phoneKey = null;
     this.data = this.pending = null;
     this.refreshAt = null;
@@ -251,15 +252,16 @@ export class TezgahPage {
       const B = C.base64(await crypto.subtle.exportKey('spki', browser.publicKey));
       secret = C.random(32);
       const nb = C.base64(C.random(32));
-      const room = await this.createRoom(this.origin);
+      const compact = await Compact.prepare(B, secret);
+      const room = await this.createRoom(this.origin, { room: compact.room, phoneCapabilityHash: compact.phoneCapabilityHash });
       if (generation !== this.generation) {
         // Oda yalnız 90 sn yaşayabilir; eski async sonuç ekrana/anahtarlara dönmez.
         return;
       }
-      P.require(room.v === 1, 'GECERSIZ_ODA');
+      P.require(room.v === 1 || (room.v === 2 && room.room === compact.room), 'GECERSIZ_ODA');
       P.token(room.room, 16);
       P.token(room.browserCapability, 32);
-      P.token(room.phoneCapability, 32);
+      if (room.v === 1) P.token(room.phoneCapability, 32);
       const remaining = room.expiresAt * 1000 - this.now();
       P.require(Number.isSafeInteger(room.expiresAt) && remaining > 0 &&
         remaining <= 90000, 'QR_SURESI_DOLDU');
@@ -269,7 +271,8 @@ export class TezgahPage {
       this.browser = browser;
       this.qrDeadline = this.mono() + remaining;
       this.pairing = new C.Pairing(room.room, room.expiresAt, secret, B, nb);
-      this.drawQr(JSON.stringify({ kind: 'ZD_WEB_PAIR', v: 1, room: room.room,
+      this.bootstrap = room.v === 2 ? await Compact.bootstrap(room.room, secret, B, nb, room.expiresAt) : null;
+      this.drawQr(room.v === 2 ? compact.text : JSON.stringify({ kind: 'ZD_WEB_PAIR', v: 1, room: room.room,
         expiresAt: room.expiresAt, phoneCapability: room.phoneCapability,
         secret: C.base64(secret), browserPublicKey: B, nb }));
       this.openSocket(generation);
@@ -378,8 +381,11 @@ export class TezgahPage {
           await this.beginResume();
         } else {
           P.require(frame.stage === 'pending', 'ESKI_ODA');
-          this.publish('qr');
+          this.publish('qr', '');
         }
+        break;
+      case 'bootstrap_request':
+        if (!this.consumed && this.bootstrap && frame.room === this.room.room) this.send(this.bootstrap);
         break;
       case 'peer_joined':
         if (frame.role === 'phone' && this.consumed) {
@@ -746,12 +752,12 @@ export function drawCode(canvas, text) {
   if (!text) {
     return;
   }
-  const code = qrCode(0, 'M');
+  const code = qrCode(0, 'H');
   // QR JSON'u ASCII'dir; UTF-8/ECI belirsizliği yoktur.
   code.addData(text, 'Byte');
   code.make();
   const count = code.getModuleCount();
-  const scale = 4;
+  const scale = Math.max(4, Math.ceil(320 / (count + 8)));
   canvas.width = canvas.height = (count + 8) * scale;
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -763,6 +769,26 @@ export function drawCode(canvas, text) {
       }
     }
   }
+  // Logonun çapı kod genişliğinin %18'i: kaplanan alan yaklaşık %2,5.
+  // Piksel dikdörtgenleri sayesinde font/ağ bağımlılığı ve bulanık ölçekleme yok.
+  const center = canvas.width / 2;
+  const radius = Math.floor(count * scale * 0.09);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(center - radius - 2, center - radius - 2, radius * 2 + 4, radius * 2 + 4);
+  ctx.fillStyle = '#36832F';
+  for (let y = -radius; y <= radius; y++) {
+    const half = Math.floor(Math.sqrt(radius * radius - y * y));
+    ctx.fillRect(center - half, center + y, half * 2 + 1, 1);
+  }
+  const unit = Math.max(1, Math.floor(radius / 5));
+  const glyph = ['1111111', '0000011', '0000110', '0001100', '0011000', '0110000', '1111111'];
+  ctx.fillStyle = '#ffffff';
+  for (let y = 0; y < glyph.length; y++) {
+    for (let x = 0; x < glyph[y].length; x++) {
+      if (glyph[y][x] === '1') ctx.fillRect(Math.floor(center - 3.5 * unit) + x * unit, Math.floor(center - 3.5 * unit) + y * unit, unit, unit);
+    }
+  }
+
 }
 
 export function boot(document) {
