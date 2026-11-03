@@ -211,6 +211,10 @@ public final class TezgahWebPhone implements AutoCloseable {
     private void activate(){channel=new TezgahWebCrypto.Channel(keys,session,epoch,"p2w");ready=true;send(TezgahWebDto.json("v",1,"type","onaylandi","session",session,"permissions",permissions(),"maxAgeSeconds",28800,"idleLockSeconds",300));state.accept(true);}
     private void send(JSONObject payload){if(!ready()||!approval.canRead())return;output.accept(channel.seal(TezgahWebProtocol.utf8(payload.toString())).json());}
     public void changed(long revision){if(ready())send(TezgahWebDto.json("v",1,"type","olay","event","veri_degisti","sourceEpoch",TezgahWebChanges.SOURCE,"revision",Long.toString(revision),"scopes",new JSONArray().put("alimlar")));}
+    public String expiryMessage() {
+        return active ? "Yeniden bağlanma veya oturum süresi doldu. Yeni QR okut." : "QR'ın süresi doldu. Yeni QR okut.";
+    }
+
     public boolean expired(long now){return closed||(active&&now-activeAt>=28800000)||(!active&&System.currentTimeMillis()/1000>=qr.expiresAt)||(active&&lost>=0&&now-lost>300000);}
     public void close(){if(commands!=null)commands.close();closed=true;ready=false;approval.close();if(channel!=null)channel.close();if(guard!=null)guard.close();if(keys!=null)keys.close();if(root!=null)Arrays.fill(root,(byte)0);repository.close();hello=null;capability=null;state.accept(false);}
 }

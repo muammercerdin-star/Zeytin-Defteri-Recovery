@@ -13,8 +13,19 @@ public final class TezgahWebSessions {
     public static synchronized void update(Context c,String owner,String id,String name,boolean active,boolean revoked){
         JSONArray old=list(c,owner),out=new JSONArray();long began=System.currentTimeMillis();
         boolean full = false;
-        for(int i=0;i<old.length();i++){JSONObject row=old.optJSONObject(i);if(row==null)continue;if(id.equals(row.optString("id"))){began=row.optLong("baslangic",began);full=row.optBoolean("tamKullanim");}else if(out.length()<19)out.put(row);}
-        out.put(TezgahWebDto.json("id",id,"ad",name,"baslangic",began,"sonGorulme",System.currentTimeMillis(),"aktif",active,"iptal",revoked,"tamKullanim",full));
+        JSONArray others = new JSONArray();
+        String diagnosis = "";
+        for (int i = 0; i < old.length(); i++) {
+            JSONObject row = old.optJSONObject(i);
+            if (row == null) continue;
+            if (id.equals(row.optString("id"))) {
+                began = row.optLong("baslangic", began);
+                full = row.optBoolean("tamKullanim");
+                diagnosis = row.optString("tani");
+            } else others.put(row);
+        }
+        for (int i = Math.max(0, others.length() - 19); i < others.length(); i++) out.put(others.optJSONObject(i));
+        out.put(TezgahWebDto.json("id",id,"ad",name,"baslangic",began,"sonGorulme",System.currentTimeMillis(),"aktif",active,"iptal",revoked,"tamKullanim",full,"tani",diagnosis));
         AtomicFile f=file(c,owner);FileOutputStream stream=null;try{stream=f.startWrite();stream.write(out.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));f.finishWrite(stream);}catch(IOException e){if(stream!=null)f.failWrite(stream);}
     }
     public static synchronized void permission(Context c, String owner, String id, boolean full) {

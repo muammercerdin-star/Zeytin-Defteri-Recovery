@@ -92,7 +92,15 @@ public final class TezgahWebClient implements AutoCloseable {
         long delay=Math.min(30000,1000L<<Math.min(attempt++,5));delay=delay/2+new java.security.SecureRandom().nextInt((int)(delay/2+1));worker.schedule(this::connect,delay,TimeUnit.MILLISECONDS);
     }
     private void tick(){try{
-        if(stopped.get())return;if(!alive.getAsBoolean()||core.expired(clock())){fail("Bilgisayar bağlantısı kapandı.");return;}
+        if(stopped.get())return;
+        if (!alive.getAsBoolean()) {
+            fail("Bilgisayar bağlantısı kapandı.");
+            return;
+        }
+        if (core.expired(clock())) {
+            fail(core.expiryMessage());
+            return;
+        }
         core.tick();
         long now=clock();tokens=Math.min(65536,tokens+Math.max(0,now-lastPump)*32.768);lastPump=now;
         if(!opened||socket==null)return;

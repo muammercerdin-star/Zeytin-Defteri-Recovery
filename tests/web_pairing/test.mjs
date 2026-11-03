@@ -30,7 +30,8 @@ function check(ok, label) {
 let qr;
 let socket;
 let request;
-const app = new TezgahPage({ relay: 'https://relay.example', qr: value => { qr = value; },
+let clock = 0;
+const app = new TezgahPage({ relay: 'https://relay.example', mono: () => clock, qr: value => { qr = value; },
   createRoom: async (origin, input) => {
     request = input;
     return { v: 2, room: input.room, browserCapability: C.base64(C.random(32)), expiresAt: Math.floor(Date.now()/1000) + 85 };
@@ -89,7 +90,41 @@ try {
     reply = await phone(socket.frames.shift());
     await receive(reply.frames[0]);
     check(app.data.items[0].uretici === 'Java Uretici', 'gerçek SQLite veri');
-    app.wipe();
+    if (cycle === 0) {
+      const oldSocket = socket;
+      await app.start('Bağlantıyı kestiniz.');
+      check(oldSocket.frames.at(-1).type === 'close', 'tarayıcı kesince relay kapatma mesajı');
+    } else if (cycle === 1) {
+      const generation = app.generation;
+      socket.onclose({code:1008,reason:'TELEFON_KAPATTI'});
+      for (let wait = 0; wait < 200 && !app.room; wait++) await new Promise(resolve => setTimeout(resolve,1));
+      check(app.generation > generation && !app.approved && app.message.includes('Telefon bağlantıyı kapattı'), 'telefon kapattı nedeni ve yeni QR');
+    } else if (cycle === 2) {
+      app.stop();
+      check(!app.keys && !app.data, 'sayfa kapanınca anahtar/veri temizliği');
+    } else if (cycle === 3) {
+      await call({cmd:'lost'});
+      await receive({v:1,type:'peer_left',role:'phone'});
+      const epoch = app.epoch;
+      await app.visible();
+      reply = await phone(socket.frames.shift());
+      check(reply.frames[0].type === 'resume_answer', 'sekme görünür olunca anında resume');
+      await receive(reply.frames[0]);
+      reply = await phone(socket.frames.shift());
+      await receive(reply.frames[1]);
+      check(app.approved && app.epoch !== epoch, 'arka plan dönüşünde yeni epoch');
+      reply = await phone(socket.frames.shift());
+      await receive(reply.frames[0]);
+      app.stop();
+    } else {
+      clock += 300001;
+      await app.tick();
+      check(!app.keys && !app.data && !app.approved, 'geçici oturumda beş dakika kilidi');
+      const generation = app.generation;
+      app.qrDeadline = clock - 1;
+      await app.tick();
+      check(app.generation > generation, 'süresi dolan QR yenilenir');
+    }
   }
   vectors.push('Z', 'ZD1.' + 'A'.repeat(64), 'ZD1.' + '_'.repeat(64), 'A'.repeat(512));
   const raster = vectors.map(text => {
