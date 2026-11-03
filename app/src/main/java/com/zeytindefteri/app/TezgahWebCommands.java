@@ -78,7 +78,10 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
                 + "session_id TEXT NOT NULL, hash TEXT NOT NULL, request TEXT NOT NULL, result TEXT NOT NULL, "
                 + "state TEXT NOT NULL, scope_hash TEXT DEFAULT '', deadline INTEGER DEFAULT 0, "
                 + "PRIMARY KEY(owner_uid,session_id,id))");
-        db.delete(TABLE, "owner_uid=? AND session_id<>?", new String[]{owner, session});
+        // Kalıcı bilgisayarların günlükleri birbirinden ve geçici oturumdan bağımsızdır.
+        if (!session.startsWith("device:")) {
+            db.delete(TABLE, "owner_uid=? AND session_id<>? AND session_id NOT LIKE 'device:%'", new String[]{owner, session});
+        }
         // Süreç yeniden kurulduysa eski onay düğmesi hiçbir yazıyı başlatamaz.
         cancelPending("Telefon oturumu yeniden başladı.");
     }

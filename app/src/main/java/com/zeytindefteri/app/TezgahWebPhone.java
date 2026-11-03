@@ -18,6 +18,13 @@ public final class TezgahWebPhone implements AutoCloseable {
         void close();
     }
 
+    public interface Enrollment {
+        JSONObject enroll(JSONObject request, String capability) throws Exception;
+    }
+    private Enrollment enrollment;
+    public void enrollment(Enrollment listener) {
+        enrollment = listener;
+    }
     private Commands commands;
 
     public void commands(Commands handler) {
@@ -127,6 +134,28 @@ public final class TezgahWebPhone implements AutoCloseable {
         if (!qr.compact()) initializePairing();
     }
 
+    public TezgahWebPhone(String room, TezgahWebCrypto.Keys deviceKeys, TezgahWebRepository repository,
+            Consumer<String> output, Consumer<Boolean> state, Commands commands) throws Exception {
+        this.qr = new Qr(TezgahWebDto.json("room", room, "phoneCapability", "", "secret", "", "browserPublicKey", "", "nb", "", "expiresAt", 0));
+        this.repository = repository;
+        this.output = output;
+        this.state = state;
+        this.keys = deviceKeys;
+        commands(commands);
+        session = TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash, 0, 16));
+        epoch = TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash, 16, 32));
+        approval.peerConfirmed();
+        approval.phoneApproved();
+        active = true;
+        activeAt = System.nanoTime() / 1000000;
+        root = keys.resumeRoot();
+        guard = new TezgahWebCrypto.ResumeGuard(session, epoch, root);
+    }
+
+    public void activateDevice() {
+        activate();
+    }
+
     private void initializePairing() throws Exception {
         np=TezgahWebCrypto.base64(TezgahWebCrypto.random(32));KeyPair p=TezgahWebCrypto.keyPair();
         TezgahWebCrypto.Pairing pairing=new TezgahWebCrypto.Pairing(qr.room,qr.expiresAt,TezgahWebCrypto.unbase64(qr.secret),qr.browserKey,qr.nb);
@@ -190,6 +219,17 @@ public final class TezgahWebPhone implements AutoCloseable {
         if(type.equals("encrypted")){
             if(!ready()||!approval.canRead())throw new IllegalArgumentException("ONAY_GEREKLI");
             JSONObject request=new JSONObject(new String(channel.open(TezgahWebProtocol.Frame.parse(raw)),java.nio.charset.StandardCharsets.UTF_8));
+            if ("device_enroll".equals(request.optString("type"))) {
+                try {
+                    if (enrollment == null) throw new IllegalArgumentException("Bu bağlantıda cihaz kaydı desteklenmiyor.");
+                    JSONObject result = enrollment.enroll(request, capability);
+                    send(TezgahWebDto.json("v", 1, "type", "device_enrolled", "ok", true, "device", result));
+                } catch (Exception e) {
+                    send(TezgahWebDto.json("v", 1, "type", "device_enrolled", "ok", false,
+                            "message", "Bilgisayar kaydedilemedi. Bu bağlantı geçici olarak devam ediyor."));
+                }
+                return;
+            }
             if ("komut".equals(request.optString("type"))) {
                 if (commands != null) send(commands.submit(request));
                 else send(TezgahWebDto.json("v", 1, "type", "komut_sonucu", "id", request.optString("id"),

@@ -30,6 +30,10 @@ public final class TezgahWebClient implements AutoCloseable {
         release = callback;
     }
 
+    public void enrollment(TezgahWebPhone.Enrollment listener) {
+        core.enrollment(listener);
+    }
+
     public void commands(TezgahWebPhone.Commands commands) {
         core.commands(commands);
     }
