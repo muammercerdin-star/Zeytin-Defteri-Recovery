@@ -13,6 +13,11 @@ function check(condition, message) {
 }
 const temporary = mkdtempSync(join(tmpdir(), 'zd-command-flow-'));
 const child = spawn('java', ['-cp', process.argv[2], 'com.zeytindefteri.app.CommandPhoneBridge', join(temporary, 'phone.sqlite'), 'tests/web_commands/sql_bridge.py'], { stdio: ['pipe', 'pipe', 'inherit'] });
+const watchdog = setTimeout(() => {
+  console.error('Uçtan uca komut testi 30 saniyede tamamlanamadı.');
+  child.kill();
+  process.exit(1);
+}, 30000);
 const waiting = [];
 const lines = createInterface({ input: child.stdout });
 lines.on('line', line => waiting.shift()?.(JSON.parse(line)));
@@ -150,6 +155,7 @@ try {
   child.stdin.write(JSON.stringify({ cmd: 'close' }) + '\n');
   console.log(`PASS ${checks} Java phone ↔ JS page encrypted command / resume checks`);
 } finally {
+  clearTimeout(watchdog);
   lines.close();
   child.kill();
   rmSync(temporary, { recursive: true, force: true });

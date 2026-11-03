@@ -215,6 +215,11 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
 
     private void decide(String expectedRoom, String id, boolean approve) {
         if (ended || !sameOwner() || !room.equals(expectedRoom) || !reviewId.equals(id) || id == null || id.isEmpty()) return;
+        KeyguardManager lock = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        if (approve && lock != null && lock.isKeyguardLocked()) {
+            android.widget.Toast.makeText(this, "Onaylamak için telefonun kilidini aç.", android.widget.Toast.LENGTH_LONG).show();
+            return;
+        }
         if (client != null) client.decide(id, approve && SystemClock.elapsedRealtime() < reviewUntil);
         clearReview();
     }
@@ -264,6 +269,7 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
 
     private void showReviewNotification() {
         manager().notify(REVIEW_ID, builder(REVIEW_CHANNEL).setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setVisibility(Notification.VISIBILITY_PRIVATE)
                 .setContentTitle(name + " · Onay bekleniyor").setContentText(reviewText)
                 .setStyle(new Notification.BigTextStyle().bigText(reviewText)).setContentIntent(open())
                 .addAction(android.R.drawable.ic_menu_save, "Onayla", action(APPROVE, REVIEW_ID))

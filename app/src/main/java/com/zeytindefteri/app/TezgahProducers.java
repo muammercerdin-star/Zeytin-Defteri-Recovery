@@ -86,9 +86,23 @@ public final class TezgahProducers {
     }
 
     public static Producer find(SQLiteDatabase db, String owner, String name) {
+        TezgahPurchases.ensure(db);
         String key = TezgahCrates.key(name);
-        for (Producer p : search(db, owner, name, 200)) {
-            if (TezgahCrates.key(p.name).equals(key)) return p;
+        Cursor catalog = db.rawQuery("SELECT name,phone FROM tezgah_producers WHERE owner_uid=? AND name_key=?",
+                new String[]{owner, key});
+        try {
+            if (catalog.moveToFirst()) return new Producer(catalog.getString(0), catalog.getString(1));
+        } finally {
+            catalog.close();
+        }
+        Cursor history = db.rawQuery("SELECT seller_name,seller_phone FROM tezgah_purchases WHERE COALESCE(owner_uid,'')=? ORDER BY created_at DESC,id DESC",
+                new String[]{owner});
+        try {
+            while (history.moveToNext()) {
+                if (key.equals(TezgahCrates.key(history.getString(0)))) return new Producer(history.getString(0), history.getString(1));
+            }
+        } finally {
+            history.close();
         }
         return null;
     }

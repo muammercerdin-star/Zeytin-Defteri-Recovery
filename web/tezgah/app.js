@@ -189,7 +189,7 @@ export class TezgahPage {
       command.checking = true;
       void this.operation('komut_sonucu', { id }).then(async result => {
         if (!this.commands.has(id)) return;
-        if (result.durum === 'bulunamadi') {
+        if (result.bulundu === false) {
           if (this.canWrite()) await this.encrypted(command.request);
           else this.commandResult({ id, durum: 'reddedildi', hata: 'Tam kullanım yetkisi kaldırıldı.', ozet: {} });
         } else {
@@ -236,6 +236,9 @@ export class TezgahPage {
   }
 
   async start(reason = '') {
+    if (this.commands.size) {
+      reason += ' Yanıtı alınamayan işlem vardı. Yeni kayıt girmeden telefondaki defteri kontrol edin.';
+    }
     const generation = ++this.generation;
     this.wipe();
     this.lastActivity = this.mono();

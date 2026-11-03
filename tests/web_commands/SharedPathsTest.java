@@ -101,6 +101,25 @@ public final class SharedPathsTest {
         check(TezgahPurchases.get(db, "serial", purchase).paid == 22, "neither concurrent payment lost");
         screen.close();
         executor.shutdownNow();
+        java.util.concurrent.atomic.AtomicInteger notifications = new java.util.concurrent.atomic.AtomicInteger();
+        CountDownLatch notice = new CountDownLatch(1);
+        TezgahWebChanges.Listener listener = new TezgahWebChanges.Listener() {
+            public void changed(String owner, long revision) {
+                notifications.incrementAndGet();
+                notice.countDown();
+            }
+            public void reset(String owner) { }
+        };
+        TezgahWebChanges.listen(listener);
+        db.beginTransaction();
+        TezgahLedger.recordSale(db, "rollbackNotice", "Ali", kg, prices, 10, 10, 2, 0, "", date, 1);
+        db.endTransaction();
+        Thread.sleep(450);
+        check(notifications.get() == 0, "rollback emits no change event");
+        TezgahLedger.recordSale(db, "commitNotice", "Ali", kg, prices, 10, 10, 2, 0, "", date, 1);
+        check(notice.await(2, TimeUnit.SECONDS), "committed common path emits change event");
+        check(notifications.get() == 1, "nested writes coalesce to one committed notice");
+        TezgahWebChanges.remove(listener);
         engine.close();
         db.close();
         System.out.println("PASS " + checks + " shared native paths / real SQLite serialization checks");

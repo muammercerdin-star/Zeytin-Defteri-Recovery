@@ -815,7 +815,7 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
                 String id = text(args, "id", 22, false);
                 TezgahWebProtocol.token(id, 16);
                 JSONObject old = stored(id);
-                return old == null ? result(id, "bulunamadi", "Komut telefona ulaşmamış.", null) : old.getJSONObject("result");
+                return old == null ? TezgahWebDto.json("id", id, "bulundu", false) : old.getJSONObject("result");
             }
             case "ureticiler": {
                 fields(args, "q");

@@ -196,6 +196,7 @@ export class Operations {
       this.purchaseCommand = await this.send(this.editing ? 'alim_duzenle' : 'alim_ekle', fields);
     });
     this.purchaseSection = section.details;
+    this.purchaseSection.open = true;
     this.seller = this.input(section.fields, 'Üretici ara / seç');
     this.seller.required = true;
     this.seller.setAttribute('list', 'web-producers');
@@ -389,6 +390,10 @@ export class Operations {
       return this.loadReport();
     });
     this.reportNext.disabled = true;
+    this.reportType.addEventListener('change', () => {
+      this.reportCursor = 0;
+      this.reportNext.disabled = true;
+    });
     section.append(toolbar);
     this.reportInfo = this.element('p', '', 'footnote');
     section.append(this.reportInfo);
@@ -414,9 +419,9 @@ export class Operations {
     table.append(body);
     const columns = {
       alim_defteri: [['id', 'No'], ['tarih', 'Tarih'], ['uretici', 'Üretici'], ['netKg', 'Net kg'], ['tutarTL', 'Tutar ₺'], ['odenenTL', 'Ödenen ₺'], ['kalanTL', 'Kalan ₺']],
-      cari: [['id', 'No'], ['tarih', 'Tarih'], ['kisi', 'Kişi'], ['tur', 'Tür'], ['tutar', 'Tutar ₺'], ['not', 'Not']],
-      kasalar: [['id', 'No'], ['tarih', 'Tarih'], ['kisi', 'Aracı'], ['tur', 'Tür'], ['adet', 'Kasa'], ['not', 'Not']],
-      z_listesi: [['id', 'Kayıt no'], ['ad', 'Z'], ['count', 'Alım'], ['netKg', 'Net kg'], ['tutar', 'Tutar ₺'], ['odenen', 'Ödenen ₺'], ['cariyeIslendi', 'Cariye işlendi']],
+      cari: [['id', 'No'], ['tarih', 'Tarih'], ['kisi', 'Kişi'], ['yon', 'Tür'], ['tutar', 'Tutar ₺'], ['not', 'Not']],
+      kasalar: [['id', 'No'], ['tarih', 'Tarih'], ['kisi', 'Aracı'], ['yon', 'Tür'], ['adet', 'Kasa'], ['not', 'Not']],
+      z_listesi: [['id', 'Kayıt no'], ['etiket', 'Z'], ['alimSayisi', 'Alım'], ['kg', 'Net kg'], ['tutar', 'Tutar ₺'], ['cariyeIslendi', 'Cariye işlendi']],
       aksam_hesabi: [['netKg', 'Alınan kg'], ['teslimKg', 'Teslim kg'], ['tutar', 'Üretici toplam ₺'], ['komisyon', 'Komisyon ₺/kg'], ['avans', 'Avans ₺'], ['tuccar', 'Tüccar ödeyecek ₺']]
     }[operation];
     const head = this.element('tr');
@@ -427,9 +432,9 @@ export class Operations {
       const row = this.element('tr');
       for (const [key] of columns) {
         let value = item[key] ?? '';
-        if (['tutarTL', 'odenenTL', 'kalanTL', 'netKg', 'tutar', 'odenen', 'teslimKg', 'komisyon', 'avans', 'tuccar'].includes(key)) value = amount(value);
+        if (['tutarTL', 'odenenTL', 'kalanTL', 'netKg', 'kg', 'tutar', 'odenen', 'teslimKg', 'komisyon', 'avans', 'tuccar'].includes(key)) value = amount(value);
         if (typeof value === 'boolean') value = value ? 'Evet' : 'Hayır';
-        if (key === 'tur') value = operation === 'cari' ? ({ 1: 'Satış', 2: 'Tahsilat', 3: 'Ödeme' }[value] || value) : ({ 1: 'Giden', 2: 'Gelen' }[value] || value);
+        if (key === 'yon') value = operation === 'cari' ? ({ 1: 'Satış', 2: 'Tahsilat', 3: 'Ödeme' }[value] || value) : ({ 1: 'Giden', 2: 'Gelen' }[value] || value);
         row.append(this.element('td', String(value)));
       }
       if (this.app.canWrite() && ['alim_defteri', 'cari', 'kasalar'].includes(operation)) {
@@ -459,7 +464,8 @@ export class Operations {
       return;
     }
     if (this.full && !state.writable && !state.stale) this.clear();
-    this.full = state.writable;
+    if (!state.stale) this.full = state.writable;
+    this.root.classList.toggle('stale', state.stale);
     this.online = state.approved && !state.stale;
     this.root.hidden = false;
     this.writeFields.hidden = !state.writable;
@@ -472,7 +478,9 @@ export class Operations {
         if (epoch !== this.epoch) return;
         this.today = data.tarih;
         this.date.value = this.today;
-      }).catch(() => {}).finally(() => { this.metaLoading = false; });
+      }).catch(() => {}).finally(() => {
+        if (epoch === this.epoch) this.metaLoading = false;
+      });
     }
     if (this.reportDirty && this.activeReport && this.online && !this.reportLoading) {
       this.reportLoading = true;

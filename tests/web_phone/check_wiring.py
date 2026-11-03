@@ -27,4 +27,8 @@ for name in ['TezgahPurchases','TezgahPayments','TezgahClosing','TezgahZ']:
 check('TezgahPayments.payBulk(' in (p/'TezgahStatementActivity.java').read_text() and 'if (committed)' in (p/'TezgahPayments.java').read_text(), 'shared atomic bulk payment path')
 check('now-lastSent<100' in client and 'queue.size()>=128' in client and '2*1024*1024' in client,'bounded pacing independent of scheduler catchup')
 check('p.generation!=TezgahWebChanges.resetGeneration()' in svc.replace(' ', ''),'pending approval invalidated by account reset')
+check('intent.setData(' in svc and 'reviewId' in svc and 'room.equals(expectedRoom)' in svc, 'approval identity is room plus command')
+check('isKeyguardLocked()' in svc, 'locked phone cannot approve a write')
+check('permissions.check(read.getId())' in home and 'writable(owner)' in home, 'read permission default and phone downgrade UI')
+check('commands.revoke()' in svc and 'client.downgrade()' in svc, 'immediate revoke precedes queued downgrade')
 print(f'PASS {n}/{n} web phone wiring (static, not Android runtime)')

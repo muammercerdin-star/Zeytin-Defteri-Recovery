@@ -69,6 +69,9 @@ public final class CommandsTest {
         JSONObject wrongVersion = command("uretici_ekle", j("ad", "Ali"));
         wrongVersion.put("v", 1.5);
         check(engine.submit(wrongVersion).getString("durum").equals("reddedildi"), "fractional version");
+        db.execSQL("INSERT INTO tezgah_purchases(owner_uid,seller_name,record_date,created_at) VALUES('lookup','Ali','2026-11-03',0)");
+        db.execSQL("WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<205) INSERT INTO tezgah_purchases(owner_uid,seller_name,record_date,created_at) SELECT 'lookup','Ali '||x,'2026-11-03',x FROM n");
+        check(TezgahProducers.find(db, "lookup", "Ali") != null, "exact producer lookup not capped by 200 suggestions");
         long id = add(today);
         check(id > 0, "purchase id");
         check(TezgahPurchases.get(db, "A", id).gross == 100, "phone total");

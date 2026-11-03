@@ -16,7 +16,7 @@ root = Path(out)
 (root / 'package.json').write_text('{"type":"module"}')
 shutil.copytree('web/tezgah', root / 'web/tezgah')
 (root / 'tests/web_page').mkdir(parents=True)
-for name in ['test.mjs', 'flow.mjs']:
+for name in ['test.mjs', 'flow.mjs', 'operations.mjs']:
     shutil.copy2('tests/web_page/' + name, root / 'tests/web_page' / name)
 stubs = list(Path('tests/buyers/stubs').rglob('*.java'))
 subprocess.run(['java', '-m', 'jdk.compiler/com.sun.tools.javac.Main', '-encoding', 'UTF-8', '-d', out, *map(str, stubs)], check=True)
@@ -26,4 +26,5 @@ src.append('tests/web_phone/PhoneBridge.java')
 subprocess.run(['java', '-m', 'jdk.compiler/com.sun.tools.javac.Main', '--release', '8', '-encoding', 'UTF-8', '-cp', out + ':' + jar, '-d', out, *src], check=True)
 PY
 node "$D/tests/web_page/test.mjs"
+node "$D/tests/web_page/operations.mjs"
 node "$D/tests/web_page/flow.mjs" "$D:$JSON_JAR"
