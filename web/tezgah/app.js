@@ -1,6 +1,8 @@
 import * as C from './js/crypto.js';
 import * as P from './js/protocol.js';
 import * as Compact from './js/compact.js';
+import * as Devices from './js/device-keys.js';
+import { DeviceTransport } from './js/device-transport.js';
 import { RELAY_URL } from './config.js';
 import qrCode from './js/vendor/qrcode.js';
 import { Operations } from './js/operations.js';
@@ -112,6 +114,10 @@ export class TezgahPage {
     this.permissions = [];
     this.calls = new Map();
     this.commands = new Map();
+    this.deviceStore = globalThis.indexedDB ? new Devices.DeviceStore() : null;
+    this.remember = false;
+    this.identity = null;
+    this.locked = false;
     this.onCommand = () => {};
     this.onChange = () => {};
     this.onWipe = () => {};
@@ -121,7 +127,7 @@ export class TezgahPage {
     this.state = state;
     this.message = message;
     this.view({ state, message, data: this.data, page: this.page, writable: this.canWrite(), approved: this.approved,
-      loading: !!this.pending, stale: !['bagli', 'yeniden'].includes(state),
+      locked: this.locked, persistent: !!this.identity, loading: !!this.pending, stale: !['bagli', 'yeniden'].includes(state),
       seconds: this.room ? Math.max(0, Math.ceil((this.qrDeadline - this.mono()) / 1000)) : 0 });
   }
 
@@ -205,6 +211,8 @@ export class TezgahPage {
   }
 
   wipe(notify = true) {
+    this.transport?.close();
+    this.transport = null;
     this.cancelCalls('Oturum kapandı.');
     this.commands.clear();
     this.permissions = [];
@@ -236,9 +244,61 @@ export class TezgahPage {
     this.drawQr(null);
   }
 
+  async forgetDevice() {
+    await this.deviceStore?.forget();
+    this.identity = null;
+    this.enrolling = null;
+    await this.start('Bağlantıyı kestiniz.');
+  }
+
+  async openSaved() {
+    if (!this.identity) return false;
+    this.wipe(false);
+    this.locked = false;
+    const generation = ++this.generation;
+    this.room = { room: this.identity.device.room };
+    this.transport = new DeviceTransport({ identity: this.identity, relay: this.relay, connect: this.connect,
+      state: message => {
+        if (generation !== this.generation) return;
+        this.approved = false;
+        this.data = null;
+        this.onWipe();
+        this.publish('koptu', message);
+      },
+      accepted: async (keys, session, epoch, socket) => {
+        if (generation !== this.generation) return;
+        this.keys = keys;
+        this.session = session;
+        this.epoch = epoch;
+        this.socket = socket;
+        this.channel = new C.Channel(keys,session,epoch,'w2p');
+        this.consumed = true;
+        this.startedAt = this.mono();
+        this.startedWall = this.now();
+      },
+      frame: async frame => {
+        if (generation !== this.generation || !this.channel) return;
+        const payload = JSON.parse(decoder.decode(await this.channel.open(frame)));
+        await this.payload(payload);
+      },
+      revoked: async () => {
+        if (generation !== this.generation) return;
+        await this.deviceStore?.forget();
+        this.identity = null;
+        await this.start('Telefon bu bilgisayarın yetkisini kapattı. Yeni QR okutun.');
+      }
+    });
+    this.transport.open();
+    return true;
+  }
+
   async start(reason = '') {
     if (this.commands.size) {
       reason += ' Yanıtı alınamayan işlem vardı. Yeni kayıt girmeden telefondaki defteri kontrol edin.';
+    }
+    if (this.identity) {
+      await this.openSaved();
+      return;
     }
     const generation = ++this.generation;
     this.wipe();
@@ -355,6 +415,10 @@ export class TezgahPage {
   }
 
   async visible() {
+    if (this.identity && this.transport) {
+      this.transport.open();
+      return;
+    }
     if (this.consumed && this.lostAt !== null && this.mono() - this.lostAt < 300000) {
       this.retryAt = Infinity;
       if (!this.socket || this.socket.readyState !== 1) this.openSocket();
@@ -545,9 +609,29 @@ export class TezgahPage {
       this.approvalDeadline = null;
       this.retryCount = 0;
       this.publish(this.resumed ? 'yeniden' : 'bagli', '');
-      await this.refresh();
+      if (!this.locked) await this.refresh();
+      if (!this.identity && this.remember && this.deviceStore && !this.enrolling) {
+        this.enrolling = await Devices.generate();
+        await this.encrypted({v:1,type:'device_enroll',id:this.enrolling.id,publicKey:this.enrolling.publicKey});
+      }
       return;
     }
+    if (payload.type === 'device_enrolled' && this.enrolling) {
+      P.require(this.approved, 'ONAY_GEREKLI');
+      if (payload.ok && payload.device?.id === this.enrolling.id) {
+        try {
+          await this.deviceStore.save(this.enrolling.key,payload.device);
+          this.identity = {key:this.enrolling.key,device:payload.device};
+          this.message = 'Bu tarayıcı kaydedildi. Sonraki açılışta otomatik bağlanır.';
+        } catch {
+          this.message = 'Tarayıcı cihaz anahtarını saklayamadı. Bu oturum geçici devam ediyor.';
+        }
+      } else this.message = payload.message || 'Cihaz kaydedilemedi; geçici bağlantı açık.';
+      this.enrolling = null;
+      this.publish();
+      return;
+    }
+    if (this.locked) return;
     P.require(this.approved, 'ONAY_GEREKLI');
     if (payload.type === 'komut_sonucu') {
       this.commandResult(payload);
@@ -660,14 +744,41 @@ export class TezgahPage {
   }
 
   activity() {
+    if (this.locked && this.identity) {
+      this.locked = false;
+      this.publish(this.approved ? 'bagli' : 'koptu','');
+      if (this.approved) void this.refresh();
+    }
     this.lastActivity = this.mono();
     this.lastActivityWall = this.now();
   }
 
   async tick() {
     const now = this.mono();
-    if (now - this.lastActivity >= IDLE_MS ||
-      this.now() - this.lastActivityWall >= IDLE_MS) {
+    if (this.identity) {
+      if (!this.locked && (now - this.lastActivity >= 1800000 || this.now() - this.lastActivityWall >= 1800000)) {
+        this.locked = true;
+        this.data = null;
+        this.pending = null;
+        this.cancelCalls('Ekran gizlendi.');
+        this.onWipe();
+        this.publish(this.state,'Veriler gizlendi. Devam etmek için ekrana dokunun.');
+      }
+      if (this.locked && !this.transport) return;
+      if (this.transport) {
+        if (this.socket?.readyState === 1 && now - (this.lastPing || 0) >= 30000) {
+          this.send({v:1,type:'ping'});
+          this.lastPing = now;
+        }
+        if (!this.locked && this.approved && this.refreshAt && now >= this.refreshAt) {
+          this.refreshAt = null;
+          await this.refresh();
+        }
+        return;
+      }
+    }
+    if (now - this.lastActivity >= (this.identity ? 1800000 : IDLE_MS) ||
+      this.now() - this.lastActivityWall >= (this.identity ? 1800000 : IDLE_MS)) {
       await this.start('5 dakika işlem yapılmadığı için ekran kilitlendi.');
       return;
     }
@@ -861,11 +972,16 @@ export function boot(document) {
     }
   });
   operations = new Operations(document, app);
+  const remember = document.getElementById('remember');
+  if (remember) {
+    app.remember = remember.checked;
+    remember.addEventListener('change', () => { app.remember = remember.checked; });
+  }
   const safe = promise => promise.catch(() => {
     void app.start('Bağlantı yeniden hazırlanıyor.');
   });
-  byId('disconnect').addEventListener('click', () => safe(app.start('Bağlantıyı siz kestiniz.')));
-  byId('retry').addEventListener('click', () => safe(app.start()));
+  byId('disconnect').addEventListener('click', () => safe(app.forgetDevice()));
+  byId('retry').addEventListener('click', () => safe(app.identity ? app.forgetDevice() : app.start()));
   byId('refresh').addEventListener('click', () => safe(app.refresh()));
   byId('previous').addEventListener('click', () => safe(app.navigate(-1)));
   byId('next').addEventListener('click', () => safe(app.navigate(1)));
@@ -905,7 +1021,14 @@ export function boot(document) {
       globalThis.location.reload();
     }
   });
-  void app.start();
+  void (async () => {
+    try {
+      app.identity = await app.deviceStore?.load() || null;
+    } catch {
+      app.message = 'Kalıcı cihaz kaydı açılamadı; QR ile bağlanın.';
+    }
+    await app.start();
+  })();
   return app;
 }
 

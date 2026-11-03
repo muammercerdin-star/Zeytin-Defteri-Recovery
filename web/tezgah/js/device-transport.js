@@ -41,9 +41,10 @@ export class DeviceTransport {
           P.token(value.nonce,32);
           const transcript = D.transcript('zd-web/device-relay/v1', [this.identity.device.room,'browser',value.nonce]);
           const signature = await D.sign(this.identity.key.privateKey,transcript);
+          const publicKey = C.base64(await crypto.subtle.exportKey('spki',this.identity.key.publicKey));
           if (!current()) return;
           this.send({v:1,type:'device_auth',room:this.identity.device.room,role:'browser',
-            publicKey:C.base64(await crypto.subtle.exportKey('spki',this.identity.key.publicKey)),signature});
+            publicKey,signature});
         } else if (value.type === 'auth_ok') {
           P.require(value.stage === 'device','GECERSIZ_CIHAZ_AKISI');
           this.attempt = 0;

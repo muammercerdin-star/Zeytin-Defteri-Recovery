@@ -259,7 +259,7 @@ const canvas = { width: 420, height: 420, getContext: () => ({
 drawCode(canvas, JSON.stringify(firstQr));
 check(canvas.width > 300 && rectangles > 100, 'actual pairing QR rendered locally');
 const source = readFileSync('web/tezgah/app.js', 'utf8');
-check(!/innerHTML|localStorage|indexedDB|document\.cookie|sessionStorage/.test(source), 'no unsafe DOM or persistent storage');
+check(!/innerHTML|localStorage|document\.cookie|sessionStorage/.test(source), 'no unsafe DOM or persistent storage');
 const headers = readFileSync('web/tezgah/_headers', 'utf8');
 for (const rule of ["default-src 'self'", "frame-ancestors 'none'", 'Referrer-Policy: no-referrer',
   'Cache-Control: no-store']) {

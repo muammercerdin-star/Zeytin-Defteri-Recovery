@@ -12,7 +12,11 @@ p=Path(out)
 (p/'package.json').write_text('{"type":"module"}')
 shutil.copytree('web/tezgah',p/'web/tezgah')
 shutil.copytree('tests/web_devices',p/'tests/web_devices')
-files=['TezgahWebProtocol','TezgahWebCrypto','TezgahWebDeviceCrypto','TezgahWebDeviceHandshake']
-subprocess.run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','--release','8','-encoding','UTF-8','-cp',jar,'-d',out,*['app/src/main/java/com/zeytindefteri/app/'+f+'.java' for f in files],'tests/web_devices/DeviceBridge.java'],check=True)
+stubs=list(Path('tests/buyers/stubs').rglob('*.java'))
+subprocess.run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','-d',out,*map(str,stubs)],check=True)
+files=['TezgahModel','TezgahSearch','TezgahWizardFlow','TezgahCrates','TezgahPurchases','TezgahPayments','TezgahClosing','TezgahZ','TezgahWebChanges','TezgahWebDto','TezgahWebRepository','TezgahWebPhone','TezgahWebProtocol','TezgahWebCrypto','TezgahWebDeviceCrypto','TezgahWebDeviceHandshake']
+subprocess.run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','--release','8','-encoding','UTF-8','-cp',out+':'+jar,'-d',out,*['app/src/main/java/com/zeytindefteri/app/'+f+'.java' for f in files],'tests/web_devices/DeviceBridge.java'],check=True)
 PY
 node "$D/tests/web_devices/test.mjs" "$D:$JSON_JAR"
+
+node "$D/tests/web_devices/page.mjs" "$D:$JSON_JAR"

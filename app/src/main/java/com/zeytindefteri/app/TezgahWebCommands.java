@@ -283,6 +283,12 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
                 rateCount = 0;
             }
             require(++rateCount <= 3, "Çok hızlı işlem gönderildi. Bir saniye bekleyin.");
+            if (session.startsWith("device:")) {
+                db.execSQL("DELETE FROM " + TABLE + " WHERE rowid IN (SELECT rowid FROM " + TABLE
+                        + " WHERE owner_uid=? AND session_id=? AND state IN ('tamam','reddedildi','iptal')"
+                        + " ORDER BY rowid LIMIT MAX(0,(SELECT COUNT(*) FROM " + TABLE
+                        + " WHERE owner_uid=? AND session_id=?)-2047))", new Object[]{owner, session, owner, session});
+            }
             Cursor count = db.rawQuery("SELECT COUNT(*) FROM " + TABLE + " WHERE owner_uid=? AND session_id=?", new String[]{owner, session});
             try {
                 require(count.moveToFirst() && count.getInt(0) < MAX_IDS, "Oturumun komut sınırı doldu. Yeni QR ile bağlanın.");

@@ -141,7 +141,7 @@ public final class TezgahWebPhone implements AutoCloseable {
         this.output = output;
         this.state = state;
         this.keys = deviceKeys;
-        commands(commands);
+        if (commands != null) commands(commands);
         session = TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash, 0, 16));
         epoch = TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash, 16, 32));
         approval.peerConfirmed();

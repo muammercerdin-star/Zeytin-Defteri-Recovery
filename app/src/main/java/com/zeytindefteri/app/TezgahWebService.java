@@ -240,6 +240,13 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
                     device.put("tamKullanim", commands.writable());
                     TezgahWebDevices.save(this, p.owner, device);
                     saved = true;
+                    main.post(() -> {
+                        try {
+                            Intent ready = new Intent(this, TezgahWebReadyService.class).setAction("refresh");
+                            if (Build.VERSION.SDK_INT >= 26) startForegroundService(ready);
+                            else startService(ready);
+                        } catch (RuntimeException ignored) { }
+                    });
                     return TezgahWebDto.json("id", device.getString("id"), "room", device.getString("room"), "phoneKey", device.getString("phoneKey"));
                 } finally {
                     if (!saved) TezgahWebDevices.discard(device);

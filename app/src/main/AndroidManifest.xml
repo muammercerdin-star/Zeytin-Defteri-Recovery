@@ -363,6 +363,7 @@
         <activity android:name=".TezgahReportActivity" android:exported="false" />
         <activity android:name=".ModeratorManagementActivity" android:exported="false" />
         <activity android:name=".ModerationActivity" android:exported="false" />
+        <service android:name=".TezgahWebReadyService" android:exported="false" android:foregroundServiceType="connectedDevice" />
     </application>
 
 

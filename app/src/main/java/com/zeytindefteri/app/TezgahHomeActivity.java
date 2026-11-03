@@ -105,6 +105,7 @@ public final class TezgahHomeActivity extends Activity {
     /** Tezgâhçı üretici ekranını hiç açmayabilir: bildirim izni (gün sonu, elek hatırlatması) burada da sorulur. */
     @Override protected void onResume() {
         super.onResume();
+        TezgahWebReadyService.prepare(this);
         TezgahWebService.review(this, owner);
         if (body != null && TezgahWebClient.configured()) { render(); webHandler.removeCallbacks(webRefresh); webHandler.post(webRefresh); }
         try { PushRegistration.requestPermission(this); } catch (RuntimeException ignored) { }
@@ -292,6 +293,27 @@ public final class TezgahHomeActivity extends Activity {
         lines.append('\n').append(TezgahWebService.lastTrace(owner));
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.VERTICAL);
+        org.json.JSONArray devices = TezgahWebDevices.list(this, owner);
+        for (int i = 0; i < devices.length(); i++) {
+            final org.json.JSONObject device = devices.optJSONObject(i);
+            if (device == null) continue;
+            TextView manage = text(device.optString("ad") + " · " + TezgahWebReadyService.status(owner, device.optString("id")) + " · " + (device.optBoolean("tamKullanim") ? "Tam kullanım" : "Yalnız görüntüleme"), 16, GREEN, true);
+            manage.setPadding(dp(20), dp(14), dp(20), dp(14));
+            actions.addView(manage);
+            manage.setOnClickListener(view -> new AlertDialog.Builder(this).setTitle(device.optString("ad"))
+                    .setItems(new String[]{"Yalnız görüntüleme", "Tam kullanım", "Çıkış yap"}, (d, which) -> {
+                        try {
+                            if (which == 2) TezgahWebDevices.forget(this, owner, device.getString("id"));
+                            else {
+                                device.put("tamKullanim", which == 1);
+                                TezgahWebDevices.save(this, owner, device);
+                            }
+                            TezgahWebReadyService.changedDevice(this, owner, device.getString("id"));
+                        } catch (Exception e) {
+                            android.widget.Toast.makeText(this, "Cihaz güncellenemedi.", android.widget.Toast.LENGTH_LONG).show();
+                        }
+                    }).setNegativeButton("Kapat", null).show());
+        }
         TextView review = text("Bekleyen işlemi onayla / reddet", 16, GREEN, true);
         review.setPadding(dp(20), dp(18), dp(20), dp(18));
         review.setOnClickListener(view -> TezgahWebService.review(this, owner));
