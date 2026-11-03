@@ -126,7 +126,7 @@ export class TezgahPage {
   publish(state = this.state, message = this.message) {
     this.state = state;
     this.message = message;
-    this.view({ state, message, data: this.data, page: this.page, writable: this.canWrite(), approved: this.approved,
+    this.view({ state, message, data: this.data, page: this.page, writable: this.canWrite() && !this.locked, approved: this.approved && !this.locked,
       locked: this.locked, persistent: !!this.identity, loading: !!this.pending, stale: !['bagli', 'yeniden'].includes(state),
       seconds: this.room ? Math.max(0, Math.ceil((this.qrDeadline - this.mono()) / 1000)) : 0 });
   }
@@ -261,6 +261,12 @@ export class TezgahPage {
       state: message => {
         if (generation !== this.generation) return;
         this.approved = false;
+        this.channel?.close();
+        this.keys?.close();
+        this.channel = this.keys = null;
+        this.socket = null;
+        this.pending = null;
+        this.cancelCalls('Telefon bağlantısı bekleniyor.');
         this.data = null;
         this.onWipe();
         this.publish('koptu', message);
@@ -766,9 +772,19 @@ export class TezgahPage {
       }
       if (this.locked && !this.transport) return;
       if (this.transport) {
-        if (this.socket?.readyState === 1 && now - (this.lastPing || 0) >= 30000) {
-          this.send({v:1,type:'ping'});
-          this.lastPing = now;
+        this.transport.check();
+        if (!this.locked && this.approved) this.reconcile();
+        for (const [id, call] of this.calls) {
+          if (now >= call.deadline) {
+            this.calls.delete(id);
+            call.reject(new Error('Telefon yanıt vermedi.'));
+          }
+        }
+        if (!this.locked && this.pending && now >= this.pending.deadline) {
+          const pending = this.pending;
+          this.pending = null;
+          if (pending.attempts < 2) await this.request(pending.cursor,pending.index,pending.attempts + 1);
+          else this.publish(this.state,'Telefon yanıt vermedi. Yenile düğmesini kullanın.');
         }
         if (!this.locked && this.approved && this.refreshAt && now >= this.refreshAt) {
           this.refreshAt = null;
@@ -937,7 +953,7 @@ export function boot(document) {
       byId('status').textContent = statuses[state.state];
       byId('status').dataset.state = state.state;
       byId('message').textContent = state.message;
-      byId('pairing').hidden = !!state.data;
+      byId('pairing').hidden = !!state.data || state.persistent;
       byId('ledger').hidden = !state.data;
       byId('ledger').classList.toggle('stale', state.stale);
       byId('stale').hidden = !state.data || !state.stale;

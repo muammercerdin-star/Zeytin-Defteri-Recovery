@@ -63,6 +63,13 @@ try {
     check(app.identity===identity && app.data===null,'sayfa kapama cihaz kimliğini korur');
   }
   check(qrCount===0,'beş açılışta QR yok');
+  let forgotten = 0;
+  app.deviceStore = {forget:async()=>{forgotten++;}};
+  app.createRoom = async () => ({v:1,room:C.base64(C.random(16)),browserCapability:C.base64(C.random(32)),phoneCapability:C.base64(C.random(32)),expiresAt:Math.floor(Date.now()/1000)+90});
+  await app.start();
+  socket.onclose({code:1008,reason:'CIHAZ_IPTAL'});
+  for(let wait=0;wait<100 && !app.pairing;wait++) await new Promise(resolve=>setTimeout(resolve,1));
+  check(forgotten===1 && app.identity===null && !!app.pairing,'telefondan iptal eski kimliği siler ve yeni QR ister');
   app.stop();
   console.log(`PASS ${n} gerçek Java telefon ↔ kalıcı JS sayfa / 5 açılış / idle kilidi`);
 } finally {

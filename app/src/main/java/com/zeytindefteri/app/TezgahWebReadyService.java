@@ -53,6 +53,14 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
         });
     }
 
+    public static int connectedCount(String owner) {
+        TezgahWebReadyService service = instance;
+        if (service == null || service.stopped || !owner.equals(service.owner)) return 0;
+        int count = 0;
+        for (String status : service.statuses.values()) if ("Bağlı".equals(status)) count++;
+        return count;
+    }
+
     public static String status(String owner, String id) {
         TezgahWebReadyService service = instance;
         return service != null && owner.equals(service.owner) ? service.statuses.getOrDefault(id, "Hazır bekleme kapalı") : "Hazır bekleme kapalı";
@@ -82,6 +90,10 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
             return START_NOT_STICKY;
         }
         if (intent != null && ("approve".equals(intent.getAction()) || "reject".equals(intent.getAction()))) {
+            if (links.isEmpty()) {
+                stopSelf(startId);
+                return START_NOT_STICKY;
+            }
             final String device = intent.getStringExtra("device");
             final String command = intent.getStringExtra("command");
             final boolean accept = "approve".equals(intent.getAction());
@@ -109,7 +121,7 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
         });
         if (!ticking) {
             ticking = true;
-            worker.scheduleAtFixedRate(this::tick, 100, 100, TimeUnit.MILLISECONDS);
+            worker.scheduleAtFixedRate(this::tick, 1, 1, TimeUnit.SECONDS);
         }
         return START_NOT_STICKY;
     }
@@ -140,8 +152,11 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
     }
 
     private void tick() {
+        if (!alive()) {
+            stopSelf();
+            return;
+        }
         long now = SystemClock.elapsedRealtime();
-        for (Link link : links.values()) link.pump(now);
         if (now - lastCheck < 1000) return;
         lastCheck = now;
         if (!alive()) {
@@ -179,6 +194,7 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
         boolean closed;
         final ArrayDeque<String> queue = new ArrayDeque<>();
         int bytes;
+        boolean pumping;
         double tokens = 65536;
         long tokenAt = SystemClock.elapsedRealtime();
         Link(JSONObject device) { this.device = device; }
@@ -226,6 +242,8 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
             ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).cancel(ID + 1);
             if (core != null) core.close();
             core = null;
+            queue.clear();
+            bytes = 0;
             statuses.put(device.optString("id"), "Bilgisayar bekleniyor");
             if (handshake != null) handshake.close();
             handshake = null;
@@ -271,11 +289,15 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
                             public void trace(String message) {
                                 approvals.remove(id);
                                 ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).cancel(ID + 1);
+                                ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(ID, notification(device.optString("ad") + ": " + message, null, null));
                             }
                             public void backup(String command) {
-                                new Handler(Looper.getMainLooper()).post(() -> TezgahCloudBackup.backupForWeb(TezgahWebReadyService.this, (ok, message) -> {
-                                    if (!stopped) worker.execute(() -> { if (core != null) core.backupDone(command, ok, message); });
-                                }));
+                                new Handler(Looper.getMainLooper()).post(() -> {
+                                    if (!alive() || generation != version) return;
+                                    TezgahCloudBackup.backupForWeb(TezgahWebReadyService.this, (ok, message) -> {
+                                        if (alive() && generation == version) worker.execute(() -> { if (core != null) core.backupDone(command, ok, message); });
+                                    });
+                                });
                             }
                         });
                 core = new TezgahWebPhone(device.getString("room"), handshake.takeKeys(), new TezgahWebRepository(helper.getWritableDatabase(), owner),
@@ -296,6 +318,19 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
             }
             queue.add(text);
             bytes += length;
+            if (!pumping) {
+                pumping = true;
+                worker.execute(this::flush);
+            }
+        }
+        void flush() {
+            if (closed || !alive() || queue.isEmpty()) {
+                pumping = false;
+                return;
+            }
+            pump(SystemClock.elapsedRealtime());
+            if (!queue.isEmpty()) worker.schedule(this::flush, 100, TimeUnit.MILLISECONDS);
+            else pumping = false;
         }
         void pump(long now) {
             tokens = Math.min(65536, tokens + Math.max(0, now - tokenAt) * 32.768);

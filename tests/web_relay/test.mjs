@@ -187,6 +187,11 @@ try {
  eq(JSON.parse(persistentPhone.client.received.at(-1)).reason,'CIKIS','browser closes active connection immediately');
  persistentWeb=await deviceSocket('browser',browserIdentity,browserSpki);
  eq(persistentWeb.ws.attachment.role,'browser','closed page reconnects using identity');
+ await message(persistentPhone,{v:1,type:'forget'});
+ eq(deviceEntry.ctx.data.size,0,'phone forget deletes persistent authorization');
+ eq(persistentWeb.ws.reason,'CIHAZ_IPTAL','phone forget immediately closes browser');
+ eq((await socket(e,{room:deviceRoom},'browser',null,false)).res.status,404,'forgotten identity cannot reopen old room');
+ await deviceEntry.obj.fetch(new Request('https://internal/init-device',{method:'POST',body:JSON.stringify({room:deviceRoom,browserHash:await keyHash(browserSpki),phoneHash:await keyHash(phoneSpki)})}));
  now=deviceEntry.ctx.data.get('meta').expiresAt;
  await alarm(deviceEntry);
  eq(deviceEntry.ctx.data.size,0,'thirty unused days deletes device metadata');

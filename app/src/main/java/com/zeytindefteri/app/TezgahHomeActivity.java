@@ -160,7 +160,7 @@ public final class TezgahHomeActivity extends Activity {
         ask.setOnClickListener(v -> askQuestion());
         titleRow.addView(ask, new LinearLayout.LayoutParams(-2, dp(42)));
         body.addView(titleRow);
-        if (TezgahWebClient.configured()) body.addView(row(TezgahWebService.connected(owner) ? "1 bilgisayar bağlı ›" : TezgahWebService.running(owner) ? "Bağlantı bekleniyor ›" : "Bilgisayara bağlan", "Yetki telefondan verilir · QR ile güvenli bağlantı", "›", false, v -> webConnect()), margins(-1, -2, 12));
+        if (TezgahWebClient.configured()) body.addView(row(TezgahWebReadyService.connectedCount(owner) > 0 ? TezgahWebReadyService.connectedCount(owner) + " bilgisayar bağlı ›" : TezgahWebService.connected(owner) ? "1 bilgisayar bağlı ›" : TezgahWebService.running(owner) ? "Bağlantı bekleniyor ›" : TezgahWebDevices.list(this, owner).length() > 0 ? "Kayıtlı bilgisayarlar ›" : "Bilgisayara bağlan", "Yetki telefondan verilir · QR ile güvenli bağlantı", "›", false, v -> webConnect()), margins(-1, -2, 12));
         String cloud = TezgahCloudBackup.statusLine(this);
         if (!cloud.isEmpty()) {
             TextView cl = text(cloud, 12, cloud.contains("bekliyor") || cloud.contains("büyük") ? AMBER : MUTED, false);
@@ -242,10 +242,15 @@ public final class TezgahHomeActivity extends Activity {
 
     private void webConnect() {
         if (!TezgahWebClient.configured() || !owner.equals(new SessionManager(this).getUserUid())) return;
-        if (TezgahWebService.running(owner)) {
+        if (TezgahWebService.running(owner) || TezgahWebDevices.list(this, owner).length() > 0) {
             webComputers();
             return;
         }
+        webPair();
+    }
+
+    private void webPair() {
+        if (!TezgahWebClient.configured() || !owner.equals(new SessionManager(this).getUserUid())) return;
         android.widget.EditText name = new android.widget.EditText(this);
             name.setHint("Örn. Ev bilgisayarı");
             name.setSingleLine(true);
@@ -337,7 +342,7 @@ public final class TezgahHomeActivity extends Activity {
         scan.setOnClickListener(view -> {
             shown.dismiss();
             TezgahWebService.disconnect(this);
-            webConnect();
+            webPair();
         });
         clear.setOnClickListener(view -> {
             TezgahWebSessions.clearHistory(this, owner);

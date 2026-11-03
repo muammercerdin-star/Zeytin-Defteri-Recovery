@@ -25,3 +25,20 @@ Her satırın yanına tarih, cihaz/tarayıcı ve geçti/kaldı yazın. Gecikmeyi
 | 15 | Yeniden eşleştirin; bilgisayara dokunmadan 5 dk bekleyin. Sonra tekrar eşleşip sekmeyi yenileyin. | Ağ ping/değişiklikleri idle süresini uzatmaz; 5 dk'da tablo temizlenir/yeni QR gelir. Sekme yenilemede de yeni QR ve tekrar telefon onayı gerekir. Arka plan sekmesinde süre, görünür olunca ayrıca kontrol edilir. | ☐ |
 
 Bir adım kalırsa: gizli veri içermeyen hata kodu, ağ türü, cihaz/Android/tarayıcı sürümü, beklenen/gerçek davranış ve ölçülen süreyi not edin. Kamera QR'ı okuyamıyorsa tarayıcı yakınlaştırmasını %100 yapın, kodu tam gösterin ve beyaz kenarını kesmeyin. Canlı dağıtım ve bu liste tamamlanmadan “ilk gerçek demo başarılı” denmez.
+
+## Adım 5 — kayıtlı bilgisayar
+
+1. Güncel Worker/Pages dağıtımının başarılı olduğunu ve yeni APK'nın kurulu olduğunu kontrol et. Beklenen: mevcut alım/ödeme ekranları çalışır.
+2. Web sayfasını aç. Beklenen: ortasında Z bulunan kolay QR; “Bu tarayıcıda oturumum açık kalsın” işaretli.
+3. Telefonda ad/yetkiyi seç, sonra QR okut. Beklenen: onaylı bağlantı ve tarayıcının kaydedildiğini bildiren mesaj.
+4. Sayfayı kapatıp tekrar aç. Beklenen: QR olmadan yeniden bağlantı; telefondaki güncel veri gelir.
+5. Telefon uygulaması hazır değilken aç. Beklenen: “Telefonunda Zeytin Defteri'ni aç”; uygulama açılınca otomatik bağlantı.
+6. Telefonda Bağlı bilgisayarlar listesinden kayıtlı cihazı aç. Yetkiyi Yalnız görüntüleme yap. Beklenen: yeniden güvenli bağlantı sonrasında yazma formları görünmez.
+7. Telefonda Tam kullanım ver. Beklenen: yeni el sıkışma sonrasında formlar gelir; bilgisayar kendi kendine yetki yükseltemez.
+8. Silme/Z/toplu ödeme talebini dene. Beklenen: telefonda bildirimle açık onay, 60 saniyede iptal; kilitli telefonda Onayla kayıt yapmaz.
+9. Kayıtlı oturumda 30 dakika işlem yapma. Beklenen: iş verileri gizlenir; dokununca telefondan yeni veri istenir, QR çıkmaz.
+10. Telefondan kayıtlı cihaz için Çıkış yap. Beklenen: aktif bağlantı kapanır; eski cihaz kimliğiyle veri alınamaz, yeniden telefon onayı gerekir.
+11. Kalıcı kutuyu kapatıp yeni QR ile bağlan. Beklenen: beş dakika sonra eski geçici oturum temizliği; sayfa yenilemede yeni QR.
+12. Wi-Fi, ardından mobil veri; ekran kapalıyken ve tarayıcı arka plandan dönerken dene. Beklenen: ağ varsa yeniden bağlantı. Android pil kısıtı servisi durdurduysa uygulamayı açmak gerekir. Takılmada relay/HTTP tanısını kaydet, QR/anahtar ve iş verisini paylaşma.
+
+Otuz gün sınırı host'ta kontrollü saatle sınanır; cihaz saatini değiştirerek gerçek defter üzerinde test yapma.

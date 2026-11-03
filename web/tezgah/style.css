@@ -127,3 +127,5 @@ select { display: block; padding: 11px; margin-top: 7px; color: var(--text); bac
 /* QR tarayıcı yakınlaştırması olmadan en az 320 CSS piksel kalır. */
 .qr-wrap { overflow-x: auto; }
 canvas { min-width: 320px; }
+
+#remember { display: inline-block; margin: 0 8px 0 0; padding: 0; accent-color: var(--green); }

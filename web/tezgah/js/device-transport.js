@@ -25,6 +25,10 @@ export class DeviceTransport {
     if (this.stopped) return;
     clearTimeout(this.retry);
     const generation = ++this.generation;
+    this.socket?.close();
+    this.lastSeen = Date.now();
+    this.lastPing = this.lastSeen;
+    this.authenticated = false;
     this.handshake?.close();
     this.handshake = new DeviceHandshake(this.identity);
     const socket = this.connect(this.url);
@@ -35,6 +39,7 @@ export class DeviceTransport {
       this.tail = this.tail.then(async () => {
         if (!current()) return;
         P.require(typeof event.data === 'string' && P.utf8(event.data).length <= P.MAX_FRAME_BYTES, 'BOYUT_SINIRI');
+        this.lastSeen = Date.now();
         const value = JSON.parse(event.data);
         P.require(value.v === 1, 'GECERSIZ_SURUM');
         if (value.type === 'device_challenge') {
@@ -48,6 +53,7 @@ export class DeviceTransport {
         } else if (value.type === 'auth_ok') {
           P.require(value.stage === 'device','GECERSIZ_CIHAZ_AKISI');
           this.attempt = 0;
+          this.authenticated = true;
         } else if (value.type === 'device_ready') {
           this.handshake.close();
           this.handshake = new DeviceHandshake(this.identity);
@@ -83,6 +89,19 @@ export class DeviceTransport {
     socket.onerror = () => {
       if (current()) socket.close();
     };
+  }
+
+  check() {
+    if (this.stopped || this.socket?.readyState !== 1) return;
+    const now = Date.now();
+    if (now - this.lastSeen > 65000) {
+      this.open();
+      return;
+    }
+    if (this.authenticated && now - this.lastPing >= 30000) {
+      this.send({v:1,type:'ping'});
+      this.lastPing = now;
+    }
   }
 
   send(value) {

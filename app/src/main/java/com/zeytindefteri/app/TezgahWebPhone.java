@@ -25,6 +25,7 @@ public final class TezgahWebPhone implements AutoCloseable {
     public void enrollment(Enrollment listener) {
         enrollment = listener;
     }
+    private boolean persistentDevice;
     private Commands commands;
 
     public void commands(Commands handler) {
@@ -141,6 +142,7 @@ public final class TezgahWebPhone implements AutoCloseable {
         this.output = output;
         this.state = state;
         this.keys = deviceKeys;
+        persistentDevice = true;
         if (commands != null) commands(commands);
         session = TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash, 0, 16));
         epoch = TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash, 16, 32));
@@ -248,13 +250,13 @@ public final class TezgahWebPhone implements AutoCloseable {
     }
     private String pendingEpoch,pendingNb;
     private static String safeCode(String code){return code!=null&&code.matches("[A-Z_]{1,40}")?code:"VERI_OKUNAMADI";}
-    private void activate(){channel=new TezgahWebCrypto.Channel(keys,session,epoch,"p2w");ready=true;send(TezgahWebDto.json("v",1,"type","onaylandi","session",session,"permissions",permissions(),"maxAgeSeconds",28800,"idleLockSeconds",300));state.accept(true);}
+    private void activate(){channel=new TezgahWebCrypto.Channel(keys,session,epoch,"p2w");ready=true;send(TezgahWebDto.json("v",1,"type","onaylandi","session",session,"permissions",permissions(),"maxAgeSeconds",persistentDevice ? 2592000 : 28800,"idleLockSeconds",persistentDevice ? 1800 : 300));state.accept(true);}
     private void send(JSONObject payload){if(!ready()||!approval.canRead())return;output.accept(channel.seal(TezgahWebProtocol.utf8(payload.toString())).json());}
     public void changed(long revision){if(ready())send(TezgahWebDto.json("v",1,"type","olay","event","veri_degisti","sourceEpoch",TezgahWebChanges.SOURCE,"revision",Long.toString(revision),"scopes",new JSONArray().put("alimlar")));}
     public String expiryMessage() {
         return active ? "Yeniden bağlanma veya oturum süresi doldu. Yeni QR okut." : "QR'ın süresi doldu. Yeni QR okut.";
     }
 
-    public boolean expired(long now){return closed||(active&&now-activeAt>=28800000)||(!active&&System.currentTimeMillis()/1000>=qr.expiresAt)||(active&&lost>=0&&now-lost>300000);}
+    public boolean expired(long now){return closed||(active&&now-activeAt>=(persistentDevice ? 2592000000L : 28800000L))||(!active&&System.currentTimeMillis()/1000>=qr.expiresAt)||(active&&lost>=0&&now-lost>300000);}
     public void close(){if(commands!=null)commands.close();closed=true;ready=false;approval.close();if(channel!=null)channel.close();if(guard!=null)guard.close();if(keys!=null)keys.close();if(root!=null)Arrays.fill(root,(byte)0);repository.close();hello=null;capability=null;state.accept(false);}
 }

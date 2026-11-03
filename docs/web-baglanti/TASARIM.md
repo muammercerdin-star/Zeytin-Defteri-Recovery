@@ -1,12 +1,25 @@
 # Zeytin Defteri — Web bağlantısı tasarımı
 
-Tarih: **3 Kasım 2026**. Durum: **Adım 4 canlıda kullanıcı tarafından doğrulandı (eşleşme ve Tam kullanım formları). Adım 5 sürüyor: kısa QR/logolu çizim ve bağlantı düzeltmeleri uygulandı; kalıcı cihazın kripto/depolama/relay temeli host testli, sayfa–telefon servis entegrasyonu henüz tamamlanmadı. Kalıcı oturum kullanıcıya açılmış değildir.**
+Tarih: **3 Kasım 2026**. Durum: **Adım 4 canlıda kullanıcı tarafından doğrulandı (eşleşme ve Tam kullanım formları). Adım 5 entegrasyonu uygulandı: kısa QR, kayıtlı cihaz, QR’sız sayfa açılışı, Android hazır servisi ve 30 dakika veri gizleme host testleriyle doğrulandı. APK ve gerçek cihaz/canlı ortam doğrulaması yapılmadı.**
 
 İlk tasarım `ce48c0c` commitinde onaylandı. Adım 2: ayrı relay Worker, saf Java/ES module kripto-protokol yardımcıları ve host testleri eklendi. 3a'da telefon onayı, ekran/servis/OkHttp, salt alım görünümü ve mutasyon bildirimleri eklendi. Gradle/manifest 3a için güncellendi; `cloud/zeytin-ai` değişmedi. [3a raporu](ADIM3A-RAPOR.md) derleme/API/test sınırlarını içerir. Kurulum: [KURULUM.md](../../cloud/tezgah-relay/KURULUM.md); test kayıtları: [ADIM2-TEST-SONUCLARI.md](ADIM2-TEST-SONUCLARI.md).
 
 ## Adım 5 — kolay bağlantı ve kayıtlı tarayıcı (önceki kurallara güncelleme)
 
 Bu bölüm önceki kısa ömürlü/salt okunur aşama kararlarını belirtilen noktalarda değiştirir. İş verisinin tek kaynağı telefon SQLite'tır. Adım 4 komut doğrulaması, idempotency ve silme/Z/toplu ödeme onayı korunur. Canlı URL'ler, `wrangler.toml` vars, `config.js`, `_headers`, SDK/AGP ve bağımlılıklar değişmez. Yeni sürüm route'ları eklenebilir. Ana dal değiştirilmez.
+
+
+### Uygulama ayrıntısı — kalıcı cihaz entegrasyonu
+
+Hazır bağlantılar `TezgahWebReadyService` içinde, `connectedDevice` ön plan servisiyle yürür. Görünür MainActivity/TezgahHomeActivity açılışında başlatılır; kayıt yoksa başlamaz. Bildirimden kapatılabilir; START_NOT_STICKY kullanır, FCM/boot başlatma veya wake lock yoktur. İlk cihaz kaydı sonrasında başlatma denenir; Android arka plan başlangıcını engellerse sonraki görünür uygulama açılışında başlar. OEM pil kısıtları nedeniyle telefon kapalıyken WhatsApp ile aynı erişilebilirlik garantisi verilmez.
+
+En fazla dört bilgisayar kaydı tutulur. Her cihazın hazır soketi ve taze ECDH kanalı ayrıdır; tüm hazır cihaz komutları tek executor üzerinde işlenir. SQLite işlemleri mevcut uygulama kayıt yollarını kullanır. `device:<id>` idempotency günlüğü başka cihaz veya geçici oturum açıldığında silinmez; 2048 kayıt sınırında tamamlanmış en eski sonuçlar çıkarılır, bekleyen onaylar çıkarılmaz. Böylece son N komutun tekrar kaydedilmesi önlenir.
+
+Android Keystore ECDSA özel anahtarı dosyaya aktarılmaz. Owner'a bağlı noBackupFilesDir metadata kaydı ad, tarayıcı/telefon açık anahtarları, anahtar alias'ı, izin, rastgele oda ve son kullanımı tutar. Tarayıcı IndexedDB'sinde yalnız CryptoKeyPair ve {id,room,phoneKey} cihaz kimliği vardır. Son veri ve formlar RAM'dedir. Oturum kaydı olmayan tarayıcı eski beş dakika temizliğini kullanır; kayıtlı tarayıcı 30 dakikada veriyi gizler, dokununca telefondan tekrar ister.
+
+Telefondaki yetki değişikliği ilgili eski komut yürütücüsünü geçersiz kılar ve yeni el sıkışma açar. Cihazdan çıkış, yerel yetki/Keystore kaydını siler ve relay'e forget gönderir. Ağ yoksa karşı ekrana anında bildirim iletilemez; telefon silinen kayda tekrar veri vermez. Otuz günün sonunda telefon ve relay kaydı düşer. Tarayıcı anahtarının iptal mesajını alamadığı ağ hatasında kullanıcı Yeni QR oluştur/Bağlantıyı kes üzerinden eski yerel kimliği temizleyebilir.
+
+Hazır servis gönderimi 128 frame/2 MiB kuyrukla sınırlıdır; veri gönderilirken en fazla 10 frame/sn ve yaklaşık 1,9 MiB/dk tempo kullanılır. Boş kuyrukta 100 ms gönderim döngüsü çalışmaz. Kamera, servis ve bağlantı sınıfları Android 15 API JAR'ı ve gerçek OkHttp 4.12.1 ile Java 8 hedefinde derlenmiştir; projeye özgü sınıfların bazıları bu API kontrolünde stub'dır. Bu kontrol tam Gradle/APK derlemesi değildir.
 
 ### 5.1 Kısa QR: optik anahtar sabitlemesini kaybetmeden 68 karakter
 
