@@ -1,6 +1,6 @@
 # Zeytin Defteri — Web bağlantısı tasarımı
 
-Tarih: **3 Kasım 2026**. Durum: **Adım 4 canlıda kullanıcı tarafından doğrulandı (eşleşme ve Tam kullanım formları). Adım 5 aşağıdaki sözleşmeyle uygulanacak; henüz uygulanmış/test edilmiş sayılmaz.**
+Tarih: **3 Kasım 2026**. Durum: **Adım 4 canlıda kullanıcı tarafından doğrulandı (eşleşme ve Tam kullanım formları). Adım 5 sürüyor: kısa QR/logolu çizim ve bağlantı düzeltmeleri uygulandı; kalıcı cihazın kripto/depolama/relay temeli host testli, sayfa–telefon servis entegrasyonu henüz tamamlanmadı. Kalıcı oturum kullanıcıya açılmış değildir.**
 
 İlk tasarım `ce48c0c` commitinde onaylandı. Adım 2: ayrı relay Worker, saf Java/ES module kripto-protokol yardımcıları ve host testleri eklendi. 3a'da telefon onayı, ekran/servis/OkHttp, salt alım görünümü ve mutasyon bildirimleri eklendi. Gradle/manifest 3a için güncellendi; `cloud/zeytin-ai` değişmedi. [3a raporu](ADIM3A-RAPOR.md) derleme/API/test sınırlarını içerir. Kurulum: [KURULUM.md](../../cloud/tezgah-relay/KURULUM.md); test kayıtları: [ADIM2-TEST-SONUCLARI.md](ADIM2-TEST-SONUCLARI.md).
 

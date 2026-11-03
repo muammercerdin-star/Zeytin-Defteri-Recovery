@@ -87,7 +87,7 @@ export async function resume(root, t) {
   try { return await keys(prk,h); } finally { prk.fill(0); }
 }
 export async function proof(key, role, hash) {
-  need(['phone-hello','web-finished','resume-phone','resume-browser'].includes(role),'GECERSIZ_KANIT');
+  need(['phone-hello','web-finished','resume-phone','resume-browser','device-phone','device-browser'].includes(role),'GECERSIZ_KANIT');
   return hmac(key,concat(P.utf8(role),hash));
 }
 export async function verify(key, role, hash, candidate) {

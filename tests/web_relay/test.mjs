@@ -133,6 +133,63 @@ try {
  ok(!JSON.stringify(compactPhone.entry.ctx.writes).includes('browserPublicKey'),'metadata not persisted');
  await message(compactPhone,metadata);
  eq(compactPhone.ws.reason,'ONAY_GEREKLI','phone cannot inject browser metadata');
+ // Kalıcı oda: etkin telefon capability'si olmadan kayıt yok; yalnız public-key hash saklanır.
+ e=environment();
+ p=await pair(e);
+ const enrolledCaps=await consume(p);
+ const deviceRoom=b64(16,70);
+ const browserIdentity=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);
+ const phoneIdentity=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);
+ const browserSpki=Buffer.from(await crypto.subtle.exportKey('spki',browserIdentity.publicKey)).toString('base64url');
+ const phoneSpki=Buffer.from(await crypto.subtle.exportKey('spki',phoneIdentity.publicKey)).toString('base64url');
+ const keyHash=async value=>Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))).toString('base64url');
+ const registration={pairRoom:p.r.room,room:deviceRoom,browserHash:await keyHash(browserSpki),phoneHash:await keyHash(phoneSpki)};
+ const register=cap=>worker.fetch(new Request(base+'/v2/devices',{method:'POST',headers:{Authorization:'Bearer '+cap},body:JSON.stringify(registration)}),e);
+ eq((await register(b64(32,80))).status,403,'registration requires paired phone');
+ eq((await register(enrolledCaps.phone)).status,201,'paired phone enrolls hashes');
+ const deviceEntry=e.ROOMS.objects.get(deviceRoom);
+ ok(!JSON.stringify(deviceEntry.ctx.data.get('meta')).includes(deviceRoom),'persistent room identifier stored only as hash');
+ async function deviceSocket(role,identity,publicKey) {
+   const sock=await socket(e,{room:deviceRoom},role,null,false);
+   const challenge=JSON.parse(sock.client.received.at(-1));
+   eq(challenge.type,'device_challenge','fresh relay challenge');
+   const fields=[deviceRoom,role,challenge.nonce];
+   const parts=[Buffer.from('zd-web/device-relay/v1\n')];
+   for(const field of fields) {
+     const bytes=Buffer.from(field),length=Buffer.alloc(4);
+     length.writeUInt32BE(bytes.length);
+     parts.push(length,bytes);
+   }
+   const signature=Buffer.from(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},identity.privateKey,Buffer.concat(parts))).toString('base64url');
+   const auth={v:1,type:'device_auth',room:deviceRoom,role,publicKey,signature};
+   await message(sock,auth);
+   return {...sock,auth};
+ }
+ let persistentPhone=await deviceSocket('phone',phoneIdentity,phoneSpki);
+ let persistentWeb=await deviceSocket('browser',browserIdentity,browserSpki);
+ eq(persistentPhone.ws.attachment.role,'phone','signed phone auth');
+ eq(persistentWeb.ws.attachment.role,'browser','signed browser auth');
+ const wrongDevice=await deviceSocket('browser',phoneIdentity,phoneSpki);
+ eq(wrongDevice.ws.reason,'AUTH_RED','other role identity cannot connect');
+ const replay=await socket(e,{room:deviceRoom},'browser',null,false);
+ await message(replay,persistentWeb.auth);
+ eq(replay.ws.reason,'AUTH_RED','old challenge signature cannot reconnect');
+ await message(persistentPhone,{v:1,type:'device_ready',nonce:b64(32,71),signature:b64(64,72)});
+ eq(JSON.parse(persistentWeb.client.received.at(-1)).type,'device_ready','signed endpoint handshake relayed');
+ ok(!JSON.stringify(deviceEntry.ctx.writes).includes('device_ready'),'handshake not stored');
+ const firstExpiry=deviceEntry.ctx.data.get('meta').expiresAt;
+ now+=86400000;
+ await message(persistentPhone,{v:1,type:'ping'});
+ eq(deviceEntry.ctx.data.get('meta').expiresAt,firstExpiry,'ready heartbeat does not renew thirty days');
+ await message(persistentPhone,{v:1,type:'device_active'});
+ eq(deviceEntry.ctx.data.get('meta').expiresAt,now+30*86400000,'verified phone marks device use');
+ await message(persistentWeb,{v:1,type:'close'});
+ eq(JSON.parse(persistentPhone.client.received.at(-1)).reason,'CIKIS','browser closes active connection immediately');
+ persistentWeb=await deviceSocket('browser',browserIdentity,browserSpki);
+ eq(persistentWeb.ws.attachment.role,'browser','closed page reconnects using identity');
+ now=deviceEntry.ctx.data.get('meta').expiresAt;
+ await alarm(deviceEntry);
+ eq(deviceEntry.ctx.data.size,0,'thirty unused days deletes device metadata');
  eq(logs,[],'no console call on every tested path');
  // Statik ek denetim: DO log API'si yok, IP/cookie başlığı okunmuyor.
  ok(!/console\s*[.[]|CF-Connecting-IP|X-Forwarded-For|headers\.get\(['"]Cookie/.test(src),'no log/IP/cookie reads');

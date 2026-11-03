@@ -134,7 +134,7 @@ public final class TezgahWebCrypto {
         try { return new Keys(prk, h); } finally { Arrays.fill(prk,(byte)0); }
     }
     public static byte[] proof(byte[] key, String role, byte[] transcriptHash) {
-        need(role.equals("phone-hello") || role.equals("web-finished") || role.equals("resume-phone") || role.equals("resume-browser"), "GECERSIZ_KANIT");
+        need(role.equals("phone-hello") || role.equals("web-finished") || role.equals("resume-phone") || role.equals("resume-browser") || role.equals("device-phone") || role.equals("device-browser"), "GECERSIZ_KANIT");
         return hmac(key, concat(TezgahWebProtocol.utf8(role), transcriptHash));
     }
     public static void verify(byte[] key, String role, byte[] hash, byte[] proof) {

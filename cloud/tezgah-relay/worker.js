@@ -67,6 +67,19 @@ export default {
         return json({v:compact ? 2 : 1,room,browserCapability:cb,...(compact ? {} : {phoneCapability:cp}),expiresAt:Math.floor((now+PENDING_MS)/1000),relayUrl:env.RELAY_URL},201,origin);
       } catch { return json({error:'GECERSIZ_ISTEK'},400,origin); }
     }
+    if (request.method === 'POST' && url.pathname === '/v2/devices' && !url.search) {
+      if (origin) return json({error:'YETKI_YOK'},403);
+      try {
+        const input = await smallBody(request);
+        if (!exact(input, 'pairRoom,room,browserHash,phoneHash') || !token(input.pairRoom,16) || !token(input.room,16) || !token(input.browserHash,32) || !token(input.phoneHash,32)) return json({error:'GECERSIZ_ISTEK'},400);
+        const capability = request.headers.get('Authorization')?.replace(/^Bearer /, '');
+        if (!token(capability,32)) return json({error:'YETKI_YOK'},403);
+        const source = env.ROOMS.get(env.ROOMS.idFromName(input.pairRoom));
+        return source.fetch(new Request('https://internal/register-device', {method:'POST',body:JSON.stringify({...input,capability})}));
+      } catch {
+        return json({error:'GECERSIZ_ISTEK'},400);
+      }
+    }
     if(request.method==='GET' && url.pathname==='/v1/socket') {
       const params=[...url.searchParams.keys()],room=url.searchParams.get('room');
       if(params.length!==1||params[0]!=='room'||!token(room,16))return json({error:'GECERSIZ_ISTEK'},400);
@@ -93,7 +106,7 @@ export class TezgahRelay {
     if(!this.meta || this.meta.kind==='gate')return;
     let at=this.meta.expiresAt;
     if(this.meta.reconnectUntil)at=Math.min(at,this.meta.reconnectUntil);
-    for(const ws of this.sockets()){const a=this.attachment(ws);at=Math.min(at,a.role?a.lastSeen+60000:a.authDeadline);}
+    for(const ws of this.sockets()){const a=this.attachment(ws);if (a.role && this.meta.kind === 'device') continue;at=Math.min(at,a.role?a.lastSeen+60000:a.authDeadline);}
     const old=await this.ctx.storage.getAlarm();
     if(old===null||old>at)await this.ctx.storage.setAlarm(at);
   }
@@ -122,15 +135,42 @@ export class TezgahRelay {
         this.meta={kind:'room',room:m.room,browserHash:m.browserHash,phoneHash:m.phoneHash,expiresAt:m.expiresAt,stage:'pending',reconnectUntil:0,upgradeMinute:0,upgrades:0};
         await this.save();await this.schedule();return json({},201);
       }
-      if(path!=='/socket'||!this.meta||this.meta.kind!=='room')return json({},404);
+      if (path === '/register-device' && request.method === 'POST') {
+        const input = await request.json();
+        if (!this.meta || this.meta.kind !== 'room' || this.meta.stage !== 'active' || now >= this.meta.expiresAt || this.meta.phoneHash !== await hash(input.capability)) return json({},403);
+        if ((this.meta.registrations || 0) >= 4) return json({},429);
+        this.meta.registrations = (this.meta.registrations || 0) + 1;
+        await this.save();
+        const target = this.env.ROOMS.get(this.env.ROOMS.idFromName(input.room));
+        return target.fetch(new Request('https://internal/init-device', {method:'POST',body:JSON.stringify({room:input.room,browserHash:input.browserHash,phoneHash:input.phoneHash})}));
+      }
+      if (path === '/init-device' && request.method === 'POST') {
+        if (this.meta) return json({},409);
+        const input = await request.json();
+        if (!exact(input,'room,browserHash,phoneHash') || !token(input.room,16) || !token(input.browserHash,32) || !token(input.phoneHash,32)) return json({},400);
+        this.meta = {kind:'device',roomHash:await hash(input.room),browserHash:input.browserHash,phoneHash:input.phoneHash,expiresAt:now+30*86400000,upgradeMinute:0,upgrades:0};
+        await this.save();
+        await this.schedule();
+        return json({ok:true},201);
+      }
+      if(path!=='/socket'||!this.meta||!['room','device'].includes(this.meta.kind))return json({},404);
       if(now>=this.meta.expiresAt||(this.meta.reconnectUntil && now>=this.meta.reconnectUntil)){await this.end();return json({},410);}
-      if(request.headers.get('X-Room')!==this.meta.room)return json({},403);
+      if(this.meta.kind === 'device' ? await hash(request.headers.get('X-Room')) !== this.meta.roomHash : request.headers.get('X-Room')!==this.meta.room)return json({},403);
       const minute=Math.floor(now/60000);if(this.meta.upgradeMinute!==minute){this.meta.upgradeMinute=minute;this.meta.upgrades=0;}
       if(this.meta.upgrades>=20||this.sockets().length>=4)return json({},429);
       this.meta.upgrades++;await this.save();
       const pair=new WebSocketPair(),client=pair[0],server=pair[1];
       this.ctx.acceptWebSocket(server);
       server.serializeAttachment({authDeadline:now+AUTH_MS,origin:request.headers.get('X-Web-Origin')||'',second:0,count:0,minute:0,bytes:0,lastSeen:now});
+      if (this.meta.kind === 'device') {
+        const a = this.attachment(server);
+        a.challenge = rand(32);
+        server.serializeAttachment(a);
+        send(server, {v:1,type:'device_challenge',nonce:a.challenge});
+        if (this.ctx.setWebSocketAutoResponse && typeof WebSocketRequestResponsePair !== 'undefined') {
+          this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"v":1,"type":"ping"}', '{"v":1,"type":"pong"}'));
+        }
+      }
       await this.schedule();return new Response(null,{status:101,webSocket:client});
     });
   }
@@ -141,7 +181,7 @@ export class TezgahRelay {
   }
   async message(ws,message) {
     const now=Date.now(),m=this.meta,a=this.attachment(ws);
-    if(!m||m.kind!=='room'||now>=m.expiresAt||(m.reconnectUntil && now>=m.reconnectUntil)){await this.end();return;}
+    if(!m||!['room','device'].includes(m.kind)||now>=m.expiresAt||(m.reconnectUntil && now>=m.reconnectUntil)){await this.end();return;}
     if(ws.readyState!==1)return;
     if(typeof message!=='string'){close(ws,'GECERSIZ_ZARF');return;}
     const size=encoder.encode(message).length;
@@ -163,6 +203,10 @@ export class TezgahRelay {
     a.tokens-=1;a.bytes+=size;if(a.excessLast!=null&&now-a.excessLast>1000){a.excessSince=null;a.excessLast=null;}
     a.lastSeen=now;ws.serializeAttachment(a);
     const f=JSON.parse(message);
+    if (m.kind === 'device') {
+      await this.deviceMessage(ws, f, a, now, size);
+      return;
+    }
     if(!a.role) {
       if(now>=a.authDeadline||!exact(f,'v,type,room,role,capability')||f.v!==1||f.type!=='auth'||f.room!==m.room||!['browser','phone'].includes(f.role)||!token(f.capability,32)) {close(ws,'AUTH_RED');return;}
       if((f.role==='browser'&&!origins(this.env).includes(a.origin))||(f.role==='phone'&&a.origin)){close(ws,'ROL_RED');return;}
@@ -199,6 +243,70 @@ export class TezgahRelay {
     if(peer){try{peer.send(message);}catch{close(peer);}}
     await this.schedule();
   }
+  async deviceMessage(ws, f, a, now, size) {
+    const m = this.meta;
+    if (!a.role) {
+      if (now >= a.authDeadline || !exact(f,'v,type,room,role,publicKey,signature') || f.v !== 1 || f.type !== 'device_auth' || !['browser','phone'].includes(f.role) || !token(f.room,16) || !token(f.publicKey,91) || !token(f.signature,64) || await hash(f.room) !== m.roomHash) {
+        close(ws,'AUTH_RED');
+        return;
+      }
+      if ((f.role === 'browser' && !origins(this.env).includes(a.origin)) || (f.role === 'phone' && a.origin) || await hash(f.publicKey) !== m[f.role+'Hash']) {
+        close(ws,'AUTH_RED');
+        return;
+      }
+      const key = await crypto.subtle.importKey('spki',decode64(f.publicKey),{name:'ECDSA',namedCurve:'P-256'},false,['verify']);
+      const transcript = deviceTranscript('zd-web/device-relay/v1',[f.room,f.role,a.challenge]);
+      if (!await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},key,decode64(f.signature),transcript)) {
+        close(ws,'AUTH_RED');
+        return;
+      }
+      const old = this.role(f.role);
+      if (old) {
+        const oldA = this.attachment(old);
+        oldA.replaced = true;
+        old.serializeAttachment(oldA);
+        close(old,'BAGLANTI_YENILENDI');
+      }
+      a.role = f.role;
+      delete a.challenge;
+      delete a.authDeadline;
+      delete a.origin;
+      ws.serializeAttachment(a);
+      send(ws,{v:1,type:'auth_ok',stage:'device'});
+      const peer = this.role(f.role === 'phone' ? 'browser' : 'phone');
+      if (peer) send(peer,{v:1,type:'peer_joined',role:f.role});
+      await this.schedule();
+      return;
+    }
+    if (exact(f,'v,type') && f.v === 1 && f.type === 'ping') {
+      send(ws,{v:1,type:'pong'});
+      return;
+    }
+    if (exact(f,'v,type') && f.v === 1 && f.type === 'forget' && a.role === 'phone') {
+      await this.end('CIHAZ_IPTAL');
+      return;
+    }
+    const peer = this.role(a.role === 'phone' ? 'browser' : 'phone');
+    if (exact(f,'v,type') && f.v === 1 && f.type === 'close') {
+      close(ws,a.role === 'browser' ? 'TARAYICI_KAPATTI' : 'TELEFON_KAPATTI');
+      if (peer) send(peer,{v:1,type:'peer_left',role:a.role,reason:'CIKIS'});
+      return;
+    }
+    if (exact(f,'v,type') && f.v === 1 && f.type === 'device_active' && a.role === 'phone' && peer) {
+      m.expiresAt = now + 30*86400000;
+      await this.save();
+      await this.schedule();
+      return;
+    }
+    const handshake = a.role === 'phone' ? ['device_ready','device_answer'] : ['device_hello','device_finished'];
+    const encrypted = f.type === 'encrypted' && exact(f,'v,type,session,epoch,dir,seq,ct') && token(f.session,16) && token(f.epoch,16) && f.dir === (a.role === 'phone' ? 'p2w' : 'w2p') && validSeq(f.seq) && validCt(f.ct);
+    if (f.v !== 1 || (!encrypted && !(size <= 4096 && handshake.includes(f.type)))) {
+      close(ws,'GECERSIZ_ZARF');
+      return;
+    }
+    // İmzalı el sıkışma ve şifreli içerik yalnız karşı sokete; storage/attachment yok.
+    if (peer) send(peer,f);
+  }
   async disconnected(ws) {
     return this.ctx.blockConcurrencyWhile(async()=>{
       const a=this.attachment(ws);close(ws);
@@ -215,7 +323,7 @@ export class TezgahRelay {
       if(now>=m.expiresAt||(m.reconnectUntil&&now>=m.reconnectUntil)){await this.end();return;}
       for(const ws of this.sockets()) {
         const a=this.attachment(ws);
-        if((!a.role&&now>=a.authDeadline)||(a.role&&now>=a.lastSeen+60000)) {
+        if((!a.role&&now>=a.authDeadline)||(a.role&&m.kind!=='device'&&now>=a.lastSeen+60000)) {
           close(ws,'ZAMAN_ASIMI');if(a.role&&m.stage==='active'&&!m.reconnectUntil)m.reconnectUntil=now+RESUME_MS;
         }
       }
@@ -242,4 +350,24 @@ function validResumeFrame(f,role) {
   if(role==='browser'&&f.type==='resume_offer')return exact(f,'v,type,session,oldEpoch,epoch,nb')&&token(f.session,16)&&token(f.oldEpoch,16)&&token(f.epoch,16)&&f.oldEpoch!==f.epoch&&token(f.nb,32);
   if(role==='phone'&&f.type==='resume_answer')return exact(f,'v,type,np,proof')&&token(f.np,32)&&token(f.proof,32);
   return role==='browser'&&f.type==='resume_finished'&&exact(f,'v,type,proof')&&token(f.proof,32);
+}
+
+function decode64(value) {
+  return Uint8Array.from(atob(value.replaceAll('-','+').replaceAll('_','/')), c => c.charCodeAt(0));
+}
+function deviceTranscript(label, fields) {
+  const parts = [encoder.encode(label + '\n')];
+  for (const field of fields) {
+    const bytes = encoder.encode(field);
+    const length = new Uint8Array(4);
+    new DataView(length.buffer).setUint32(0,bytes.length,false);
+    parts.push(length,bytes);
+  }
+  const result = new Uint8Array(parts.reduce((n,p) => n+p.length,0));
+  let offset = 0;
+  for (const part of parts) {
+    result.set(part,offset);
+    offset += part.length;
+  }
+  return result;
 }
