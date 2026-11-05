@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Dalda siyah Gemlik zeytinleri</title>
+<desc id="desc">Gece karanlığında, sıcak altın ışığın aydınlattığı siyah zeytinler ve zeytin yaprakları.</desc>
+<defs>
+ <radialGradient id="back" cx="75%" cy="45%" r="73%"><stop stop-color="#334024"/><stop offset=".4" stop-color="#142119"/><stop offset="1" stop-color="#040907"/></radialGradient>
+ <radialGradient id="aura"><stop stop-color="#e9b35e" stop-opacity=".35"/><stop offset="1" stop-color="#e9b35e" stop-opacity="0"/></radialGradient>
+ <linearGradient id="wood" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#967a44"/><stop offset=".55" stop-color="#66562d"/><stop offset="1" stop-color="#141d15"/></linearGradient>
+ <linearGradient id="leaf" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#a4a57c"/><stop offset=".2" stop-color="#536c43"/><stop offset=".65" stop-color="#263f2d"/><stop offset="1" stop-color="#0b1b18"/></linearGradient>
+ <radialGradient id="fruit" cx=".24" cy=".20" r=".88"><stop stop-color="#59605b"/><stop offset=".19" stop-color="#252f2b"/><stop offset=".48" stop-color="#111b17"/><stop offset=".75" stop-color="#070c0c"/><stop offset=".93" stop-color="#040809"/><stop offset="1" stop-color="#797a4a"/></radialGradient>
+ <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5d496" stop-opacity=".8"/><stop offset="1" stop-color="#f5d496" stop-opacity="0"/></linearGradient>
+ <filter id="soft" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="16"/></filter>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="6" dy="20" stdDeviation="25" flood-color="#000" flood-opacity=".7"/></filter>
+</defs>
+<rect width="1600" height="900" fill="url(#back)"/>
+<ellipse cx="1110" cy="360" rx="550" ry="570" fill="url(#aura)"/>
+<g opacity=".4" filter="url(#soft)"><circle cx="1410" cy="96" r="5" fill="#f7cd87"/><circle cx="870" cy="150" r="6" fill="#d5bd84"/><circle cx="1280" cy="800" r="5" fill="#cab272"/></g>
+<path d="M1630 145 C1420 230 1310 300 1190 390 S900 480 780 545" fill="none" stroke="#191d13" stroke-width="34" stroke-linecap="round"/>
+<path d="M1630 145 C1420 230 1310 300 1190 390 S900 480 780 545" fill="none" stroke="url(#wood)" stroke-width="13" stroke-linecap="round"/>
+<g fill="url(#leaf)" stroke="#b0a37a" stroke-width="2" stroke-opacity=".35" filter="url(#shadow)">
+ <path d="M1290 330 Q1310 225 1502 180 Q1420 308 1290 330Z"/>
+ <path d="M1200 382 Q1092 234 1004 230 Q1055 378 1200 382Z"/>
+ <path d="M1128 425 Q1132 326 1260 273 Q1219 401 1128 425Z"/>
+ <path d="M1015 476 Q892 384 796 419 Q912 508 1015 476Z"/>
+ <path d="M1422 246 Q1436 362 1528 414 Q1528 283 1422 246Z"/>
+ <path d="M940 502 Q858 567 837 686 Q960 607 940 502Z"/>
+</g>
+<g fill="none" stroke="#c7b585" stroke-width="2" opacity=".48"><path d="M1290 330 1480 192"/><path d="M1200 382 1015 240"/><path d="M1128 425 1251 282"/><path d="M1015 476 801 420"/><path d="M1422 246 1520 406"/></g>
+<path d="M1200 390 Q1198 470 1165 545" stroke="#987b46" stroke-width="9" fill="none"/>
+<path d="M1040 478 Q1042 530 1010 575" stroke="#856e41" stroke-width="8" fill="none"/>
+<path d="M1340 295 Q1308 377 1330 458" stroke="#9a8151" stroke-width="8" fill="none"/>
+<g filter="url(#shadow)">
+ <g transform="rotate(-14 1140 598)"><ellipse cx="1140" cy="598" rx="120" ry="165" fill="url(#fruit)"/><ellipse cx="1099" cy="527" rx="29" ry="62" transform="rotate(-22 1099 527)" fill="url(#shine)" opacity=".56"/><ellipse cx="1174" cy="718" rx="48" ry="8" fill="#b69a5a" opacity=".23"/></g>
+ <g transform="rotate(17 997 620)"><ellipse cx="997" cy="620" rx="102" ry="142" fill="url(#fruit)"/><ellipse cx="968" cy="550" rx="20" ry="48" transform="rotate(-22 968 550)" fill="url(#shine)" opacity=".4"/></g>
+ <g transform="rotate(22 1348 502)"><ellipse cx="1348" cy="502" rx="104" ry="142" fill="url(#fruit)"/><ellipse cx="1322" cy="443" rx="20" ry="48" transform="rotate(-22 1322 443)" fill="url(#shine)" opacity=".38"/></g>
+</g>
+<rect width="1600" height="900" fill="url(#back)" opacity=".07"/>
+</svg>
