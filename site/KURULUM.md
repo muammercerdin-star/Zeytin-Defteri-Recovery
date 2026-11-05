@@ -33,7 +33,9 @@ python3 site/tools/build_legal.py
 sh tests/site/run.sh
 ```
 
-Betik geliştirici tarafından çalıştırılır; Cloudflare derleme komutu değildir. GitHub'a gönderilen hazır HTML'ler yayınlanır. `work/site` dalına sonraki push'lar bağlı Pages projesini otomatik günceller. `robots.txt`, `sitemap.xml` ve Open Graph adresleri tek ayardan üretilir. Üretim kontrolü için `python3 site/tools/build_legal.py --check` kullanılır.
+Betik geliştirici tarafından çalıştırılır; Cloudflare derleme komutu değildir. GitHub'a gönderilen hazır HTML'ler yayınlanır.
+
+**Ana sayfa tasarımında önemli kural:** Yeni premium ana sayfanın kaynak şablonu `site/tools/home.template` dosyasıdır. `site/index.html` otomatik oluşturulan çıktıdır; tasarımı kalıcı olarak değiştirmek için şablonu güncelle, ardından `python3 site/tools/build_legal.py` çalıştır. Bu yöntemle yasal belgeleri yeniden oluşturmak yeni ana sayfayı silmez. `{{SITE_URL}}` alanları `site/config.json` üzerinden doldurulur. Tanıtım bölümündeki film şimdilik *hazırlanıyor* durumundadır, gerçek video bağlantısı yoktur. `work/site` dalına sonraki push'lar bağlı Pages projesini otomatik günceller. `robots.txt`, `sitemap.xml` ve Open Graph adresleri tek ayardan üretilir. Üretim kontrolü için `python3 site/tools/build_legal.py --check` kullanılır.
 
 E-posta `config.json` içinden alınır ve uygulamadaki `LegalDocuments.CONTACT_EMAIL` ile aynı olmak zorundadır; farklıysa üretim durur. Yasal içerikler uygulamadaki üç `.txt` dosyasıdır; hazır HTML'leri elle değiştirme. Logolar da uygulamanın vektör path'lerinden üretilir. Python ve Java yalnız geliştirici testleri içindir; ziyaretçinin telefonu hiçbirini çalıştırmaz.
 
