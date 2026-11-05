@@ -129,21 +129,12 @@ def render():
         lines = text.splitlines()
         body = '<article class="document"><h1>' + esc(lines[0]) + '</h1>\n' + blocks('\n'.join(lines[1:])) + '</article>'
         output[file] = page(file, lines[0], f'Zeytin Defteri {lines[0]}; sürüm {values["VERSION"]}, {values["DATE"]}.', body)
-    phone_rows = ''.join(f'<li><span class="grade grade-{i}">{badge}</span><span>{label}</span><strong>{kg} kg</strong></li>'
-                         for i, (badge, label, kg) in enumerate([('★', 'Double', 5), ('1', '1 Numara', 15), ('2', '2 Numara', 15), ('3', '3 Numara', 20), ('4', '4 Numara', 25)]))
-    cards = ''.join(f'<article class="feature"><span class="feature-icon" aria-hidden="true">{icon}</span><h3>{title}</h3><p>{desc}</p></article>'
-                    for icon, title, desc in [('≡', 'Sesle elek', 'Elek numarasını ve kilosunu söyle, kaydını kolaylaştır.'), ('₺', 'Bölge fiyatı', 'Üreticilerin anonim katkılarıyla bölgesel fiyat bilgisini takip et.'), ('☁', 'Bahçe havası', 'Seçtiğin bahçenin hava durumunu takip et.'), ('★', 'Zeytin Ligi', 'Bölgendeki üreticiler arasında sıralamanı gör.')])
-    output['index.html'] = page('index.html', 'Zeytinciliğin defteri cebinde.', 'Elek kaydını sesle gir, masrafını ve alacağını tut. Zeytin Defteri yakında Google Play’de.', f'''
-<section class="hero" aria-labelledby="hero-title">
-<div class="hero-copy"><p class="eyebrow">BAHÇEDEN ELEĞE, EMEĞİNİN YANINDA</p>
-<h1 id="hero-title">Zeytinciliğin defteri <span>cebinde.</span></h1>
-<p class="lead">Elek kaydını sesle gir, masrafını ve alacağını tut, bölgende zeytinin bugün kaça gittiğini gör. Ücretsiz.</p>
-<a class="button" href="#ne-yapar">Ne yapar? <span aria-hidden="true">↓</span></a></div>
-<figure class="phone-demo"><div class="phone"><div class="speaker" aria-hidden="true"></div><p class="phone-heading">ELEK · KİLO</p><ul class="grade-list">{phone_rows}</ul><p class="voice-hint">“3 numara 20 kilo” de, yazsın</p><div class="phone-bottom" aria-hidden="true"></div></div><figcaption>Örnek elek kaydı · gerçek kişi verisi içermez.</figcaption></figure>
-</section>
-<section class="coming-prices" aria-labelledby="prices-title"><span class="status-dot" aria-hidden="true"></span><div><h2 id="prices-title">Bölge fiyatları yakında burada</h2><p>Bölgesel fiyat bilgisi bu sitede henüz yayınlanmıyor.</p></div></section>
-<section class="features" id="ne-yapar" aria-labelledby="features-title"><p class="eyebrow">ZEYTİN DEFTERİ</p><h2 id="features-title">Ne yapar?</h2><div class="feature-grid">{cards}</div></section>
-<aside class="play-coming"><h2>Yakında Google Play'de.</h2><p>Bahçenin hesabı, telefonunda yanında.</p></aside>''')
+    # Pazarlama sayfası özgün şablondan üretilir; yasal içeriklerin yeniden
+    # derlenmesi yeni ana sayfayı eskiye döndürmez.
+    homepage_template = (SITE / 'tools/home.template').read_text(encoding='utf-8')
+    if homepage_template.count('{{SITE_URL}}') != 2:
+        raise ValueError('Ana sayfa şablonunda iki SITE_URL alanı bekleniyordu')
+    output['index.html'] = homepage_template.replace('{{SITE_URL}}', esc(base))
     subject, body = method_string('deletionSubject'), method_string('deletionBody')
     mailto = 'mailto:' + config['CONTACT_EMAIL'] + '?subject=' + quote(subject, safe='') + '&body=' + quote(body, safe='')
     retention = re.search(r'(?m)^# 10\. Saklama ve silme\n(.*?)(?=^# 11\.)', legal['gizlilik.html'], re.S | re.M)[1].rstrip()
