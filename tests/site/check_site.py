@@ -110,7 +110,24 @@ public class SiteLegalOracle {
     for policy in ["Content-Security-Policy: default-src 'self'", "img-src 'self' data:", "style-src 'self'", "frame-ancestors 'none'", 'Referrer-Policy: no-referrer', 'X-Content-Type-Options: nosniff', 'camera=()', 'microphone=()', 'geolocation=()']:
         assert policy in headers, policy
     size = sum(p.stat().st_size for p in SITE.rglob('*') if p.is_file() and '__pycache__' not in p.parts)
-    assert size < 200_000, size
+    # Yeni üç ekran görseli toplam 100 KB altında olacak; yasal içerik testleri değişmez.
+    assert size < 280_000, size
+    photo_dir = SITE / 'assets/screenshots'
+    photos = [photo_dir / name for name in ('ana-sayfa.webp', 'bahcelerim.webp', 'elek-kaydi.webp')]
+    exists = [p.is_file() for p in photos]
+    homepage = (SITE / 'index.html').read_text(encoding='utf-8')
+    if any(exists):
+        assert all(exists), 'Gerçek ekran galerisi yalnız eksiksiz üçlü setle yayınlanmalı'
+        assert sum(p.stat().st_size for p in photos) <= 100_000
+        for p in photos:
+            b = p.read_bytes()
+            assert b[:4] == b'RIFF' and b[8:12] == b'WEBP', p
+        assert 'id="gercek-ekranlar"' in homepage
+        for p in photos:
+            assert ('/assets/screenshots/' + p.name) in homepage
+    else:
+        assert 'id="gercek-ekranlar"' not in homepage
+        assert '/assets/screenshots/' not in homepage
     sitemap = ET.parse(SITE / 'sitemap.xml')
     for loc in sitemap.findall('.//{*}loc'):
         assert loc.text.startswith(config['SITE_URL'].rstrip('/') + '/')
