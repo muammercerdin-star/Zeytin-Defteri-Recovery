@@ -268,3 +268,16 @@ body.home{background:#08120e;color:#f9f9f4}
 .home [id]{scroll-margin-top:90px}
 .home .skip{z-index:100}
 @media(max-width:700px){.home [id]{scroll-margin-top:76px}}
+
+/* Adım 3: Görseller yalnız dosyaları gerçekten yayınlanınca üretici tarafından eklenir. */
+.home .real-screen-gallery{background:#0b1a14;color:#f7f9f2;padding:100px 24px}
+.home .real-screen-heading{max-width:1120px;margin:0 auto 38px}
+.home .real-screen-heading .eyebrow{color:#dec48c}
+.home .real-screen-heading h2{font-size:clamp(38px,5vw,66px);line-height:1.1;letter-spacing:-.052em;margin:16px 0}
+.home .real-screen-heading p:last-child{font-size:16px;line-height:1.7;color:#b9c9bd;max-width:720px}
+.home .real-screen-grid{max-width:1120px;margin:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.home .screen-gallery-item{margin:0;border-radius:27px;background:#172c21;padding:22px;border:1px solid #3b5543;box-shadow:0 16px 42px #0004;min-width:0}
+.home .screen-gallery-item img{display:block;max-width:360px;width:100%;height:auto;margin:auto;border-radius:17px;box-shadow:0 12px 28px #0006}
+.home .screen-gallery-item figcaption{color:#e1e9e0;font-size:17px;font-weight:750;text-align:center;margin-top:17px}
+@media(max-width:800px){.home .real-screen-gallery{padding:75px 20px}.home .real-screen-grid{gap:13px}.home .screen-gallery-item{padding:12px;border-radius:20px}.home .screen-gallery-item img{border-radius:12px}.home .screen-gallery-item figcaption{font-size:14px}}
+@media(max-width:600px){.home .real-screen-grid{grid-template-columns:1fr;max-width:370px;gap:20px}.home .screen-gallery-item{padding:18px}.home .screen-gallery-item figcaption{font-size:16px}}
