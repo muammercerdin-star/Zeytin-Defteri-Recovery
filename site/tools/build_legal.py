@@ -134,7 +134,45 @@ def render():
     homepage_template = (SITE / 'tools/home.template').read_text(encoding='utf-8')
     if homepage_template.count('{{SITE_URL}}') != 2:
         raise ValueError('Ana sayfa şablonunda iki SITE_URL alanı bekleniyordu')
-    output['index.html'] = homepage_template.replace('{{SITE_URL}}', esc(base))
+# Gerçek ekran fotoğrafları yalnız tam ve doğrulanmış üçlü set varsa yayına girer.
+    # Eksik dosya -> kırık img değil; yanlış WebP -> üretim durur.
+    gallery_marker = '<!-- GERCEK_EKRANLAR -->'
+    if homepage_template.count(gallery_marker) != 1:
+        raise ValueError('Ana sayfa ekran galerisi işareti eksik veya tekrar ediyor')
+    photo_dir = SITE / 'assets/screenshots'
+    photo_data = [
+        ('ana-sayfa.webp', 'Ana Sayfa', 'Bahçenin hava durumu ve yapılacak işler'),
+        ('bahcelerim.webp', 'Bahçelerim', 'Zeytinlikler ve kayıtlı bahçeler'),
+        ('elek-kaydi.webp', 'Elek Kaydı', 'Elek sınıfı, kilo ve fiyat kaydı'),
+    ]
+    present = [photo_dir / name for name, _, _ in photo_data if (photo_dir / name).is_file()]
+    if present and len(present) != len(photo_data):
+        raise ValueError('Gerçek ekran görsellerinin üçü de eklenmeli; eksik set yayınlanamaz')
+    screen_gallery = ''
+    if present:
+        for image_path in present:
+            content = image_path.read_bytes()
+            if not (content[:4] == b'RIFF' and content[8:12] == b'WEBP'):
+                raise ValueError('Görsel WebP formatında değil: ' + str(image_path))
+            if not 4_000 <= len(content) <= 70_000:
+                raise ValueError('Ekran görseli boyutu aralık dışında: ' + str(image_path))
+        photo_items = ''.join(
+            f'<figure class="screen-gallery-item"><img loading="lazy" decoding="async" '
+            f'width="360" height="731" src="/assets/screenshots/{name}" alt="{esc(title)}: '
+            f'{esc(description)} ekran görüntüsü"><figcaption>{esc(title)}</figcaption></figure>'
+            for name, title, description in photo_data)
+        screen_gallery = (
+            '<section id="gercek-ekranlar" class="real-screen-gallery" '
+            'aria-labelledby="real-screen-title">'
+            '<div class="real-screen-heading"><p class="eyebrow">UYGULAMANIN İÇİNDEN</p>'
+            '<h2 id="real-screen-title">Bir bakışta Zeytin Defteri.</h2>'
+            '<p>Uygulamanın Ekim 2026 sürümünden alınmış gerçek ekran görüntüleri. '
+            'Kişisel alanlar gizlenmiştir; görünüm güncel sürümde farklı olabilir.</p></div>'
+            '<div class="real-screen-grid">' + photo_items + '</div></section>'
+        )
+    output['index.html'] = (homepage_template
+                            .replace('{{SITE_URL}}', esc(base))
+                            .replace(gallery_marker, screen_gallery))
     subject, body = method_string('deletionSubject'), method_string('deletionBody')
     mailto = 'mailto:' + config['CONTACT_EMAIL'] + '?subject=' + quote(subject, safe='') + '&body=' + quote(body, safe='')
     retention = re.search(r'(?m)^# 10\. Saklama ve silme\n(.*?)(?=^# 11\.)', legal['gizlilik.html'], re.S | re.M)[1].rstrip()
