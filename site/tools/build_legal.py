@@ -132,8 +132,8 @@ def render():
     # Pazarlama sayfası özgün şablondan üretilir; yasal içeriklerin yeniden
     # derlenmesi yeni ana sayfayı eskiye döndürmez.
     homepage_template = (SITE / 'tools/home.template').read_text(encoding='utf-8')
-    if homepage_template.count('{{SITE_URL}}') != 2:
-        raise ValueError('Ana sayfa şablonunda iki SITE_URL alanı bekleniyordu')
+    if homepage_template.count('{{SITE_URL}}') != 1:
+        raise ValueError('Ana sayfa şablonunda bir SITE_URL alanı bekleniyordu')
 # Gerçek ekran fotoğrafları yalnız tam ve doğrulanmış üçlü set varsa yayına girer.
     # Eksik dosya -> kırık img değil; yanlış WebP -> üretim durur.
     gallery_marker = '<!-- GERCEK_EKRANLAR -->'
