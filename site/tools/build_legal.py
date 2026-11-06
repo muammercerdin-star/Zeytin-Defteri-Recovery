@@ -134,7 +134,7 @@ def render():
     homepage_template = (SITE / 'tools/home.template').read_text(encoding='utf-8')
     if homepage_template.count('{{SITE_URL}}') != 1:
         raise ValueError('Ana sayfa şablonunda bir SITE_URL alanı bekleniyordu')
-# Gerçek ekran fotoğrafları yalnız tam ve doğrulanmış üçlü set varsa yayına girer.
+    # Gerçek ekran fotoğrafları yalnız tam ve doğrulanmış üçlü set varsa yayına girer.
     # Eksik dosya -> kırık img değil; yanlış WebP -> üretim durur.
     gallery_marker = '<!-- GERCEK_EKRANLAR -->'
     if homepage_template.count(gallery_marker) != 1:
