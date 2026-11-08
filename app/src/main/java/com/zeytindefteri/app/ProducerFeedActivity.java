@@ -6554,7 +6554,8 @@ public class ProducerFeedActivity extends Activity {
 
     private void updateTanecik() {
         if (tanecik == null) return;
-        boolean onPage = "HOME".equals(currentSection) || (tanecik.touring() && "ELEK".equals(currentSection));
+        boolean onPage = "HOME".equals(currentSection) || (tanecik.touring()
+                && ("ELEK".equals(currentSection) || "GARDENS".equals(currentSection)));
         tanecik.setActive(screenResumed && onPage && !seasonReportOpen);
     }
 
@@ -6573,6 +6574,12 @@ public class ProducerFeedActivity extends Activity {
             @Override public void openReport() {
                 startActivity(new Intent(ProducerFeedActivity.this, BuyersActivity.class)
                         .putExtra(BuyersActivity.EXTRA_REPORT, true).putExtra(BuyersActivity.EXTRA_TOUR, true));
+            }
+            @Override public void openElekGuide() {
+                long garden = 0;
+                try { garden = loadHomeGardenSnapshot().id; } catch (RuntimeException ignored) { }
+                startActivity(new Intent(ProducerFeedActivity.this, ElekActivity.class)
+                        .putExtra("garden_id", garden).putExtra(TanecikGuide.EXTRA, true));
             }
             @Override public void tourEnded() {
                 if (!"HOME".equals(currentSection)) ProducerFeedActivity.this.showSection("HOME");
@@ -6939,6 +6946,7 @@ public class ProducerFeedActivity extends Activity {
         item.setOrientation(LinearLayout.VERTICAL);
         item.setGravity(Gravity.CENTER);
         item.setContentDescription(label);
+        item.setTag(TanecikTour.NAV + section);   // Tanecik turu bu düğmeye basar
         item.setSelected(active);
         item.setPadding(dp(1), dp(6), dp(1), dp(4));
 

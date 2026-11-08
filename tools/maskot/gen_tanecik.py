@@ -153,6 +153,18 @@ def pose(name):
             fill(ellipse(-14, -16, 4, 4), WHITE), fill(ellipse(34, -16, 4, 4), WHITE),
             stroke("M-10,24 q16,14 32,0", EYE, 5),
         ]
+    elif name in ("gosteriyor", "gosteriyor_asagi"):
+        # Sağ eliyle bir şeyi gösterir (sola bakarken görünüm aynalanır). Sol el belde.
+        back += arm("M-66,14 q-24,18 -26,44", -92, 60)
+        if name == "gosteriyor":
+            back += arm("M62,-6 q26,-10 44,-12", 106, -14)
+        else:
+            back += arm("M62,24 q28,20 40,52", 102, 80)
+        front += [
+            fill(ellipse(-20, -10, 10, 14), EYE), fill(ellipse(28, -10, 10, 14), EYE),
+            fill(ellipse(-14, -16, 4, 4), WHITE), fill(ellipse(34, -16, 4, 4), WHITE),
+            fill("M-14,18 q18,22 36,0 z", MOUTH),
+        ]
     elif name == "zipliyor":
         leg_spec = TUCK_LEGS
         back += arm("M-64,-4 q-26,-26 -38,-56", -102, -62)
@@ -226,7 +238,8 @@ def pose(name):
 
 POSES = ["merhaba", "sevinc", "konusuyor", "konusuyor_kapali", "dusunuyor",
          "duruyor", "duruyor_kirp", "yuruyor_1", "yuruyor_2", "uyuyor", "zipliyor", "itiyor",
-         "ucuyor_1", "ucuyor_2", "ucuyor_3", "ucuyor_4"]
+         "ucuyor_1", "ucuyor_2", "ucuyor_3", "ucuyor_4",
+         "gosteriyor", "gosteriyor_asagi"]
 
 SCARF = "#C0392B"
 SCARF_DARK = "#8E2A20"

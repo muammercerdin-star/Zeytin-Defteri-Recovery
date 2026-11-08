@@ -380,8 +380,15 @@ public class ElekActivity extends Activity {
             // "Elek gireceğim": boş formda sesli elek hemen başlar.
             getIntent().removeExtra(EXTRA_VOICE_START);
             getWindow().getDecorView().post(() -> { if (selectedGardenId > 0) voiceSession().start(); else showGardenPicker(); });
+        } else if (savedInstanceState == null && getIntent() != null && getIntent().getBooleanExtra(TanecikGuide.EXTRA, false)) {
+            // Tanecik turu: kayıt ekranını gösterir (Kaydet'e basmaz, yazdığını siler, tura döner).
+            getIntent().removeExtra(TanecikGuide.EXTRA);
+            tanecikGuide = new TanecikGuide(this, TanecikTour.elekGuide());
+            getWindow().getDecorView().postDelayed(() -> { if (tanecikGuide != null) tanecikGuide.start(); }, 600);
         }
     }
+
+    private TanecikGuide tanecikGuide;
 
     public static final String EXTRA_VOICE_START = "voice_start";
 
@@ -3721,6 +3728,7 @@ public class ElekActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (tanecikGuide != null) { tanecikGuide.release(); tanecikGuide = null; }
         if (voice != null) voice.close();
         if (priceDialog != null) priceDialog.dismiss();
 

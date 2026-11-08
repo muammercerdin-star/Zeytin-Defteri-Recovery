@@ -148,21 +148,45 @@ public class TanecikLinesTest {
         ok(TanecikLines.AWAKE_MS == 300000L, "5 dakika uyanık");
         ok(!z.important && !TanecikLines.wokeUp().important, "uyku sözleri '!' getirmez");
 
-        // --- Tanıtım turu
+        // --- Tanıtım turu (v2: menüye basar, Elek gösterimi, altyazı)
         List<TanecikTour.Step> steps = TanecikTour.steps();
-        ok(steps.size() >= 6, "tur adımları");
-        int reports = 0;
+        ok(steps.size() >= 8, "tur adımları");
+        int reports = 0, guides = 0, taps = 0;
+        java.util.Set<String> sections = new java.util.HashSet<>();
         for (int i = 0; i < steps.size(); i++) {
             TanecikTour.Step st = steps.get(i);
-            ok(st.section.equals("HOME") || st.section.equals("ELEK"), "bölüm: " + st.section);
+            sections.add(st.section);
+            ok(st.section.equals("HOME") || st.section.equals("ELEK") || st.section.equals("GARDENS"), "bölüm: " + st.section);
+            ok(st.tap.isEmpty() || st.tap.equals(TanecikTour.NAV + st.section), "basılan düğme bölümle aynı: " + st.tap);
+            if (!st.tap.isEmpty()) taps++;
             ok(st.tag.isEmpty() || st.tag.equals(TanecikTour.TAG_TAKVIM) || st.tag.equals(TanecikTour.TAG_HAVA)
                     || st.tag.equals(TanecikTour.TAG_MIKROFON), "hedef: " + st.tag);
-            ok(!st.text.isEmpty() && st.text.length() <= 170, "söz uzunluğu: " + st.text.length());
-            if (TanecikTour.DO_REPORT.equals(st.after)) { reports++; ok(i < steps.size() - 1, "rapor son adım olamaz (dönüş adımı lazım)"); }
+            ok(!st.text.isEmpty() && st.text.length() <= 90, "kısa ve hızlı söz (" + st.text.length() + "): " + st.text);
+            if (TanecikTour.DO_REPORT.equals(st.after)) reports++;
+            if (TanecikTour.DO_ELEK.equals(st.after)) { guides++; ok(st.section.equals("ELEK"), "gösterim Elek'ten açılır"); }
+            if (!st.after.isEmpty()) ok(i < steps.size() - 1, "ekran açan adım son olamaz (dönüş adımı lazım)");
         }
-        ok(reports == 1, "bir rapor adımı");
-        ok(steps.get(0).text.startsWith("Merhaba, ben Tanecik!") && steps.get(steps.size() - 1).text.startsWith("İşte bu kadar!"), "giriş ve kapanış");
-        ok(TanecikTour.readMs("kısa") == 4500 && TanecikTour.readMs(steps.get(3).text) > 4500, "sessiz telefonda süre");
+        ok(reports == 1 && guides == 1 && taps >= 3, "rapor, Elek gösterimi ve menüye basma var");
+        ok(sections.contains("GARDENS") && sections.contains("ELEK"), "başka menülere geçer");
+        ok(steps.get(0).text.startsWith("Selam! Ben Tanecik.") && steps.get(steps.size() - 1).text.startsWith("Hepsi bu!"), "giriş ve kapanış");
+        for (TanecikTour.GuideStep g : TanecikTour.elekGuide()) ok(!g.view.isEmpty() && g.text.length() <= 70, "gösterim adımı: " + g.text);
+        ok(TanecikTour.elekGuide().get(1).view.equals("etKg2") && TanecikTour.elekGuide().get(1).type.equals("150"), "kilo yazılır");
+        ok(TanecikTour.elekGuide().get(TanecikTour.elekGuide().size() - 1).view.equals("btnSaveElek"), "sonda Kaydet gösterilir (basılmaz)");
+
+        // --- Altyazı öbekleri
+        String sp = TanecikCaptions.spoken("Rüzgâr kuvvetli (31 km/s), yağmur %70, kilo başı 5,1 TL.");
+        ok(sp.equals("Rüzgâr kuvvetli (31 kilometre), yağmur yüzde 70, kilo başı 5,1 lira."), sp);
+        List<TanecikCaptions.Chunk> ch = TanecikCaptions.chunks("Selam! Ben Tanecik. Zeytin Defteri'ni hızlıca gezelim!");
+        StringBuilder joined = new StringBuilder();
+        for (TanecikCaptions.Chunk c : ch) { joined.append(c.text).append('|'); ok(c.text.split(" ").length <= 3, "en çok 3 kelime: " + c.text); }
+        ok(joined.toString().equals("Selam!|Ben Tanecik.|Zeytin Defteri'ni hızlıca|gezelim!|"), joined.toString());
+        String src = "Selam! Ben Tanecik. Zeytin Defteri'ni hızlıca gezelim!";
+        for (TanecikCaptions.Chunk c : ch) ok(src.startsWith(c.text, c.start), "başlangıç yeri doğru: " + c.text);
+        ok(TanecikCaptions.indexAt(ch, src.indexOf("Tanecik")) == 1 && TanecikCaptions.indexAt(ch, 0) == 0
+                && TanecikCaptions.indexAt(ch, src.length() - 2) == 3, "söylenen kelimenin öbeği");
+        ok(TanecikCaptions.chunkMs("gezelim!", 1f) > TanecikCaptions.chunkMs("gezelim", 1f), "cümle sonunda kısa durak");
+        ok(TanecikCaptions.chunkMs("Ben Tanecik", 1.12f) < TanecikCaptions.chunkMs("Ben Tanecik", 1f), "hızlı seste kısa");
+        ok(TanecikCaptions.chunks("").isEmpty() && TanecikCaptions.chunks("  a  ").get(0).text.equals("a"), "boşluklar");
         ok(TanecikLines.introLine().action.equals(TanecikLines.GO_TOUR) && TanecikLines.introLine().actionLabel.equals("Gezdir ›"), "tanışmada Gezdir");
         ok(has(TanecikLines.smart(null, 10, 11), "gezdireyim mi"), "turu öneren söz");
 

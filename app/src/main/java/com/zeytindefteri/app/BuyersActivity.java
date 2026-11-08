@@ -32,6 +32,7 @@ public final class BuyersActivity extends Activity {
     /** Tanecik turundan açıldı: rapor kendiliğinden okunur, bitince tura dönülür. */
     static final String EXTRA_TOUR = "tanecik_tour";
     private boolean tourMode, tourStarted, tourSpoke;
+    private TanecikVoice tourVoice;
     private boolean reportMode;
     private android.speech.tts.TextToSpeech tts;
     private boolean ttsReady, speaking;
@@ -92,11 +93,13 @@ public final class BuyersActivity extends Activity {
     }
 
     @Override protected void onPause() {
+        if (tourVoice != null) tourVoice.stop();
         stopSpeaking();
         super.onPause();
     }
 
     @Override protected void onDestroy() {
+        if (tourVoice != null) { tourVoice.release(); tourVoice = null; }
         mouthHandler.removeCallbacksAndMessages(null);
         if (tts != null) {
             try { tts.stop(); tts.shutdown(); } catch (RuntimeException ignored) { }
@@ -309,8 +312,16 @@ public final class BuyersActivity extends Activity {
             final String text = say.toString();
             if (!tourStarted) {
                 tourStarted = true;
-                mouthHandler.postDelayed(() -> { if (!isFinishing()) toggleSpeak(text); }, 900);
-                mouthHandler.postDelayed(() -> { if (!isFinishing() && !speaking) finish(); }, 12000);
+                // Turda: büyük sarı altyazıyla, biraz hızlı ses (TanecikVoice); bitince tura döner.
+                android.widget.FrameLayout over = new android.widget.FrameLayout(this);
+                ((android.view.ViewGroup) findViewById(android.R.id.content)).addView(over,
+                        new android.widget.FrameLayout.LayoutParams(-1, -1));
+                tourVoice = new TanecikVoice(this, over);
+                tourVoice.prepare(() -> mouthHandler.postDelayed(() -> {
+                    if (isFinishing()) return;
+                    setSpeaking(true);
+                    tourVoice.say(text, () -> setSpeaking(false));
+                }, 500));
             }
         }
 
