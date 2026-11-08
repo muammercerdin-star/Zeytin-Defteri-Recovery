@@ -32,7 +32,7 @@ for f in sorted(res.glob('tanecik_*.xml')):
         for k in p.attributes.keys():
             if k not in ok_attrs: fails.append(f'{f.name}: bilinmeyen öznitelik {k}')
         data = p.getAttribute('android:pathData')
-        if not re.fullmatch(r'[MmLlQqAaZz0-9.,\- ]+', data): fails.append(f'{f.name}: yol verisinde geçersiz karakter')
+        if not re.fullmatch(r'[MmLlQqAaZzHhVv0-9.,\- ]+', data): fails.append(f'{f.name}: yol verisinde geçersiz karakter')
         for a in ('android:fillAlpha', 'android:strokeAlpha'):
             if p.hasAttribute(a) and not 0 <= float(p.getAttribute(a)) <= 1: fails.append(f'{f.name}: {a} aralık dışı')
 if fails:

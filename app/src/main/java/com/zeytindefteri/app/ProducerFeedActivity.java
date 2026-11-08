@@ -250,7 +250,7 @@ public class ProducerFeedActivity extends Activity {
         FrameLayout stage = new FrameLayout(this);
         stage.addView(appShell, new FrameLayout.LayoutParams(-1, -1));
         setContentView(stage);
-        tanecik = new TanecikWalker(this, stage, bottomNav, this::tanecikFacts, this::tanecikAction);
+        tanecik = new TanecikWalker(this, stage, bottomNav, this::homeScroll, this::tanecikFacts, this::tanecikAction);
         // Kullanım şekli henüz seçilmediyse bir kez sorulur (eski kullanıcılar dahil).
         if (new SessionManager(this).hasSession() && !UserRole.chosen(RoleActivity.role(this))) {
             contentHost.post(() -> { if (!isFinishing()) RoleActivity.open(this, false, true); });
@@ -6427,6 +6427,20 @@ public class ProducerFeedActivity extends Activity {
             // Veri okunamazsa Tanecik genel sözlerle devam eder.
         }
         return f;
+    }
+
+    /** Ana sayfanın kayan sayfası (Tanecik'in kartları ve itmesi için); ana sayfa açık değilse null. */
+    private ScrollView homeScroll() {
+        if (!"HOME".equals(currentSection) || contentHost == null || contentHost.getChildCount() == 0) return null;
+        View v = contentHost.getChildAt(0);
+        return v instanceof ScrollView ? (ScrollView) v : null;
+    }
+
+    /** Kullanıcı ekrana dokundu: Tanecik sayfayı itiyorsa hemen bıraksın. */
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
+        if (tanecik != null && ev.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) tanecik.userTouched();
+        return super.dispatchTouchEvent(ev);
     }
 
     /** Tanecik'in balonundaki düğme. */

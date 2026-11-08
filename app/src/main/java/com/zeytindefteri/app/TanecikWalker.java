@@ -1,5 +1,8 @@
 package com.zeytindefteri.app;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -17,14 +20,20 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.animation.BounceInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -35,7 +44,11 @@ import java.util.function.Supplier;
 /**
  * Tanecik ana sayfada gezer (Shimeji gibi, ama yalnız uygulamanın içinde; "üstte göster" izni yok).
  *
- * - Alt menünün üst kenarında yürür, durur, el sallar, düşünür, göz kırpar.
+ * - Alt menünün üst kenarında yürür, durur, el sallar, düşünür, göz kırpar, hoplar.
+ * - Kartların üstüne zıplar, üstlerinde yürür, aşağı atlar. Sayfa kayınca kartla birlikte kayar;
+ *   kart ekrandan çıkarsa düşer. Tutup bir kartın üstüne bırakılırsa oraya konar.
+ * - Ara sıra kollarını kaldırıp sayfayı yukarı iter, bırakınca sayfa yerine yaylanır. Yalnız kullanıcı
+ *   20 sn dokunmadıysa ve en çok 2 dakikada bir; ekrana dokunulduğu an bırakır.
  * - Dokununca kullanıcının verisine bakarak konuşur ({@link TanecikLines#smart}): yağmur/rüzgâr uyarısı,
  *   hasat hatırlatması, alacak, elek raporu. Balonda "Dinle" (telefonun Türkçe sesi) ve ilgili yere giden düğme.
  * - Soğukta atkı, yağmurda şemsiye.
@@ -60,6 +73,8 @@ final class TanecikWalker {
     private final FrameLayout layer;
     private final View floorRef;
     private final Supplier<TanecikLines.Facts> facts;
+    /** Ana sayfanın kayan sayfası (yoksa null): kartlar platform, itme bu sayfayı kaydırır. */
+    private final Supplier<ScrollView> page;
     private final Consumer<String> onAction;
     /** Hareket eden kap: gövde + kıyafet birlikte döner/taşınır. */
     private final FrameLayout actor;
@@ -74,12 +89,20 @@ final class TanecikWalker {
     private float downX, downY, grabDx, grabDy;
     private long downAt;
     private String bubbleAction = "";
+    /** Üstünde durduğu kart; null: alt menünün üstü. */
+    private View platform;
+    private boolean jumping, pushing;
+    private ValueAnimator jumpAnim, pushAnim;
+    private long lastUserTouch = SystemClock.uptimeMillis(), lastPush;
+    private final ViewTreeObserver.OnScrollChangedListener scrollWatch = this::onPageScrolled;
+    private ViewTreeObserver watchedTree;
 
     private TextToSpeech tts;
     private boolean ttsReady, ttsFailed, talking;
 
-    TanecikWalker(Activity activity, FrameLayout layer, View floorRef,
+    TanecikWalker(Activity activity, FrameLayout layer, View floorRef, Supplier<ScrollView> page,
                   Supplier<TanecikLines.Facts> facts, Consumer<String> onAction) {
+        this.page = page;
         this.activity = activity;
         this.layer = layer;
         this.floorRef = floorRef;
@@ -94,6 +117,9 @@ final class TanecikWalker {
         actor.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         actor.setVisibility(View.GONE);
         actor.setOnTouchListener(this::onTouch);
+        // Dönme/basılma noktası: yatayda orta, dikeyde ayak. (Biri elle verilince öbürü de verilmeli.)
+        actor.setPivotX(w / 2f);
+        actor.setPivotY(h);
         body = new ImageView(activity);
         body.setImageResource(R.drawable.tanecik_duruyor);
         body.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -141,7 +167,7 @@ final class TanecikWalker {
 
         // Klavye açılınca ya da alt menü yer değiştirince ayaklar yine menünün üstünde kalsın.
         floorRef.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            if (attached && !dragging && t != ot) actor.setTranslationY(floorY());
+            if (attached && !dragging && !jumping && platform == null && t != ot) actor.setTranslationY(floorY());
         });
     }
 
@@ -195,6 +221,8 @@ final class TanecikWalker {
         if (!active) return;
         if (floorRef.getTop() <= 0 || layer.getWidth() <= 0) { handler.postDelayed(this::startAfterLayout, 300); return; }
         sleeping = TanecikLines.sleeping(Calendar.getInstance().get(Calendar.HOUR_OF_DAY));
+        platform = null;
+        watchScroll(true);
         dressFor(readFacts());
         actor.setVisibility(View.VISIBLE);
         actor.setTranslationY(floorY());
@@ -212,7 +240,9 @@ final class TanecikWalker {
 
     private void stop() {
         handler.removeCallbacksAndMessages(null);
-        actor.animate().cancel();
+        cancelMotion();
+        watchScroll(false);
+        platform = null;
         actor.setVisibility(View.GONE);
         bubble.setVisibility(View.GONE);
         stopTalk();
@@ -225,6 +255,7 @@ final class TanecikWalker {
     private void walkTo(float targetX, Runnable then) {
         if (!active || dragging) return;
         idling = false;
+        targetX = Math.max(minSurfaceX(), Math.min(maxSurfaceX(), targetX));
         float dx = targetX - actor.getTranslationX();
         if (Math.abs(dx) < dp(8)) { then.run(); return; }
         face(dx > 0);
@@ -234,7 +265,7 @@ final class TanecikWalker {
         actor.animate().translationX(targetX).setDuration(duration).setInterpolator(new LinearInterpolator())
                 .withEndAction(() -> {
                     handler.removeCallbacks(walkTick);
-                    actor.setTranslationY(floorY());
+                    actor.setTranslationY(surfaceY());
                     then.run();
                 }).start();
     }
@@ -244,7 +275,7 @@ final class TanecikWalker {
             if (!active || dragging) return;
             walkFrame = !walkFrame;
             body.setImageResource(walkFrame ? R.drawable.tanecik_yuruyor_1 : R.drawable.tanecik_yuruyor_2);
-            actor.setTranslationY(floorY() - (walkFrame ? dp(2) : 0));   // adımda hafif sekme
+            actor.setTranslationY(surfaceY() - (walkFrame ? dp(2) : 0));   // adımda hafif sekme
             handler.postDelayed(this, WALK_FRAME_MS);
         }
     };
@@ -285,10 +316,258 @@ final class TanecikWalker {
         idling = false;
         handler.removeCallbacks(blink);
         int r = random.nextInt(100);
-        if (r < 55) walkTo(randomX(), this::idle);
-        else if (r < 75) pose(R.drawable.tanecik_merhaba, 1600);
-        else if (r < 90) pose(R.drawable.tanecik_dusunuyor, 2200);
+        if (platform != null) {
+            // Kartın üstünde: biraz gezinir, sonra aşağı atlar.
+            if (r < 35) walkTo(randomX(), this::idle);
+            else if (r < 60) jumpTo(randomFloorX(), null, this::idle);
+            else if (r < 72) hop();
+            else if (r < 86) pose(R.drawable.tanecik_merhaba, 1600);
+            else pose(R.drawable.tanecik_dusunuyor, 2200);
+            return;
+        }
+        if (r < 30) { walkTo(randomX(), this::idle); return; }
+        if (r < 42) { hop(); return; }
+        if (r < 62) {
+            View target = pickPlatform();
+            if (target != null) { jumpTo(randomXOn(target), target, this::idle); return; }
+            walkTo(randomX(), this::idle);
+            return;
+        }
+        if (r < 70 && canPush()) { push(); return; }
+        if (r < 85) pose(R.drawable.tanecik_merhaba, 1600);
+        else if (r < 95) pose(R.drawable.tanecik_dusunuyor, 2200);
         else idle();
+    }
+
+    // ------------------------------------------------------------ zıplama ve kartlar
+
+    /** Yerinde hoplama. */
+    private void hop() {
+        jumpTo(actor.getTranslationX() + (random.nextBoolean() ? 1 : -1) * dp(14), platform, this::idle);
+    }
+
+    /** Kavisli zıplama; target null: alt menünün üstü. Varış yüksekliği her karede yeniden hesaplanır (sayfa kayabilir). */
+    private void jumpTo(float targetX, View target, Runnable then) {
+        if (!active || dragging) return;
+        cancelMotion();
+        idling = false;
+        jumping = true;
+        handler.removeCallbacks(blink);
+        final float x0 = actor.getTranslationX(), y0 = actor.getTranslationY();
+        final float x1 = Math.max(minXOn(target), Math.min(maxXOn(target), targetX));
+        float y1Now = yOn(target);
+        final float arc = Math.max(dp(36), (y0 - y1Now) > 0 ? dp(40) : dp(24));
+        if (Math.abs(x1 - x0) > dp(4)) face(x1 > x0);
+        body.setImageResource(R.drawable.tanecik_zipliyor);
+        long duration = 520 + (long) Math.min(500, Math.abs(y0 - y1Now) / getDensity() * 2.2);
+        jumpAnim = ValueAnimator.ofFloat(0f, 1f);
+        jumpAnim.setDuration(duration);
+        jumpAnim.setInterpolator(new LinearInterpolator());
+        jumpAnim.addUpdateListener(a -> {
+            float t = (float) a.getAnimatedValue();
+            float y1 = yOn(target);
+            actor.setTranslationX(x0 + (x1 - x0) * t);
+            actor.setTranslationY(y0 + (y1 - y0) * t - arc * 4 * t * (1 - t)
+                    - (y1 < y0 ? (y0 - y1) * 0.25f * 4 * t * (1 - t) : 0));
+        });
+        jumpAnim.addListener(new AnimatorListenerAdapter() {
+            boolean cancelled;
+            @Override public void onAnimationCancel(Animator a) { cancelled = true; }
+            @Override public void onAnimationEnd(Animator a) {
+                jumping = false;
+                if (cancelled || !active) return;
+                if (target != null && !validPlatform(target)) { platform = null; fall(); return; }
+                platform = target;
+                actor.setTranslationY(surfaceY());
+                land(then);
+            }
+        });
+        jumpAnim.start();
+    }
+
+    /** Yere değince hafif basılma (ayaktan). */
+    private void land(Runnable then) {
+        body.setImageResource(R.drawable.tanecik_duruyor);
+        actor.setScaleY(0.86f);
+        actor.animate().scaleY(1f).setDuration(220).setInterpolator(new OvershootInterpolator(2f))
+                .withEndAction(then).start();
+    }
+
+    /** Kart ekrandan çıktı ya da altından kaydı: aşağı düşer. */
+    private void fall() {
+        cancelMotion();
+        platform = null;
+        idling = false;
+        body.setImageResource(R.drawable.tanecik_konusuyor);   // "aaa!"
+        float fallDist = floorY() - actor.getTranslationY();
+        if (!motionAllowed() || fallDist < dp(4)) { actor.setTranslationY(floorY()); resumeIdle(); return; }
+        long duration = (long) Math.min(900, 250 + fallDist / getDensity() * 1.6);
+        actor.animate().translationY(floorY()).setDuration(duration).setInterpolator(new BounceInterpolator())
+                .withEndAction(() -> { if (active) land(this::resumeIdle); }).start();
+    }
+
+    private void onPageScrolled() {
+        if (!attached || !active) return;
+        if (platform != null && !jumping && !dragging) {
+            if (!validPlatform(platform)) fall();
+            else actor.setTranslationY(surfaceY());
+        }
+        if (bubble.getVisibility() == View.VISIBLE) placeBubble();
+    }
+
+    private void watchScroll(boolean on) {
+        if (watchedTree != null && watchedTree.isAlive()) watchedTree.removeOnScrollChangedListener(scrollWatch);
+        watchedTree = null;
+        if (on) {
+            watchedTree = layer.getViewTreeObserver();
+            watchedTree.addOnScrollChangedListener(scrollWatch);
+        }
+    }
+
+    /** Ana sayfadaki kartlar (arka planı olan, geniş ve en az 48 dp yüksek görünümler; iki kat derine kadar). */
+    private List<View> platforms() {
+        List<View> out = new ArrayList<>();
+        ScrollView sv = page == null ? null : safePage();
+        if (sv == null || sv.getChildCount() == 0 || !(sv.getChildAt(0) instanceof ViewGroup)) return out;
+        collect((ViewGroup) sv.getChildAt(0), 0, out);
+        return out;
+    }
+
+    private void collect(ViewGroup g, int depth, List<View> out) {
+        for (int i = 0; i < g.getChildCount(); i++) {
+            View c = g.getChildAt(i);
+            if (c.getVisibility() != View.VISIBLE) continue;
+            if (c.getBackground() != null && c.getWidth() >= layer.getWidth() * 0.5f && c.getHeight() >= dp(48)) out.add(c);
+            else if (depth < 1 && c instanceof ViewGroup) collect((ViewGroup) c, depth + 1, out);
+        }
+    }
+
+    private ScrollView safePage() {
+        try { return page.get(); } catch (RuntimeException e) { return null; }
+    }
+
+    /** Ekranda üstüne çıkılabilecek bir kart (rastgele). */
+    private View pickPlatform() {
+        List<View> ok = new ArrayList<>();
+        for (View v : platforms()) if (validPlatform(v) && topOf(v) > dp(150)) ok.add(v);
+        return ok.isEmpty() ? null : ok.get(random.nextInt(ok.size()));
+    }
+
+    /** Kartın üst kenarı görünür ve alt menünün belirgin üstünde mi. */
+    private boolean validPlatform(View v) {
+        if (v == null || !v.isShown()) return false;
+        float top = topOf(v);
+        return top - h >= dp(4) && top <= floorY() + h - dp(40);
+    }
+
+    private float topOf(View v) {
+        int[] a = new int[2], b = new int[2];
+        v.getLocationInWindow(a);
+        layer.getLocationInWindow(b);
+        return a[1] - b[1];
+    }
+
+    private float leftOf(View v) {
+        int[] a = new int[2], b = new int[2];
+        v.getLocationInWindow(a);
+        layer.getLocationInWindow(b);
+        return a[0] - b[0];
+    }
+
+    private float yOn(View target) {
+        return target == null ? floorY() : topOf(target) - h + dp(2);
+    }
+
+    private float surfaceY() {
+        return yOn(platform);
+    }
+
+    private float minXOn(View target) {
+        return target == null ? 0 : leftOf(target) - w * 0.25f;
+    }
+
+    private float maxXOn(View target) {
+        return target == null ? maxX() : Math.min(maxX(), leftOf(target) + target.getWidth() - w * 0.75f);
+    }
+
+    private float minSurfaceX() { return minXOn(platform); }
+
+    private float maxSurfaceX() { return maxXOn(platform); }
+
+    private float randomXOn(View target) {
+        float min = minXOn(target) + dp(8), max = maxXOn(target) - dp(8);
+        return max <= min ? min : min + random.nextFloat() * (max - min);
+    }
+
+    private float randomFloorX() {
+        // Aşağı atlarken çok uzağa değil, yakına.
+        float x = actor.getTranslationX() + (random.nextBoolean() ? 1 : -1) * dp(30 + random.nextInt(60));
+        return Math.max(dp(8), Math.min(maxX() - dp(8), x));
+    }
+
+    // ------------------------------------------------------------ sayfayı itme
+
+    /** Kullanıcı ekrana dokundu: itme varsa hemen bırak (sayfa kullanıcının). */
+    void userTouched() {
+        lastUserTouch = SystemClock.uptimeMillis();
+        if (pushing) {
+            if (pushAnim != null) pushAnim.cancel();
+            pushing = false;
+            if (active && !dragging) resumeIdle();
+        }
+    }
+
+    private boolean canPush() {
+        long now = SystemClock.uptimeMillis();
+        ScrollView sv = safePage();
+        return sv != null && motionAllowed() && !sleeping && platform == null
+                && now - lastUserTouch >= 20000 && now - lastPush >= 120000
+                && (sv.canScrollVertically(1) || sv.canScrollVertically(-1));
+    }
+
+    /** Kollarını kaldırıp sayfayı yukarı iter, bırakınca sayfa yaylanarak yerine döner. */
+    private void push() {
+        final ScrollView sv = safePage();
+        if (sv == null) { idle(); return; }
+        cancelMotion();
+        idling = false;
+        pushing = true;
+        lastPush = SystemClock.uptimeMillis();
+        handler.removeCallbacks(blink);
+        body.setImageResource(R.drawable.tanecik_itiyor);
+        final int start = sv.getScrollY();
+        final int dist = (sv.canScrollVertically(1) ? 1 : -1) * dp(110);
+        pushAnim = ValueAnimator.ofFloat(0f, 1f, 1f, 0f);
+        pushAnim.setDuration(2600);
+        pushAnim.setInterpolator(new DecelerateInterpolator());
+        pushAnim.addUpdateListener(a -> {
+            float f = (float) a.getAnimatedValue();
+            sv.scrollTo(0, start + Math.round(dist * f));
+            // İterken hafifçe uzanır.
+            actor.setTranslationY(floorY() - dp(6) * f);
+        });
+        pushAnim.addListener(new AnimatorListenerAdapter() {
+            boolean cancelled;
+            @Override public void onAnimationCancel(Animator a) { cancelled = true; }
+            @Override public void onAnimationEnd(Animator a) {
+                pushing = false;
+                actor.setTranslationY(floorY());
+                if (cancelled || !active) return;
+                body.setImageResource(R.drawable.tanecik_sevinc);
+                handler.postDelayed(TanecikWalker.this::idle, 900);
+            }
+        });
+        pushAnim.start();
+    }
+
+    private void cancelMotion() {
+        actor.animate().cancel();
+        actor.setScaleY(1f);
+        if (jumpAnim != null) jumpAnim.cancel();
+        if (pushAnim != null) pushAnim.cancel();
+        jumping = false;
+        pushing = false;
+        handler.removeCallbacks(walkTick);
     }
 
     private void pose(int res, long ms) {
@@ -314,8 +593,8 @@ final class TanecikWalker {
 
     private void say(TanecikLines.Line line) {
         handler.removeCallbacksAndMessages(null);
-        actor.animate().cancel();
-        actor.setTranslationY(floorY());
+        cancelMotion();
+        actor.setTranslationY(surfaceY());
         idling = false;
         stopTalk();
         if (!sleeping) mouth(1800);
@@ -365,15 +644,22 @@ final class TanecikWalker {
         listen.setText("🔊 Dinle");
         listen.setVisibility(ttsFailed ? View.GONE : View.VISIBLE);
         bubble.setVisibility(View.VISIBLE);
+        placeBubble();
+        // Ekran okuyucu kullanan, balondaki sözü duysun.
+        bubble.announceForAccessibility(line.text);
+    }
+
+    /** Balon Tanecik'in başının üstünde; yer yoksa altında. */
+    private void placeBubble() {
         bubble.measure(View.MeasureSpec.makeMeasureSpec(dp(280), View.MeasureSpec.AT_MOST),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         float bw = bubble.getMeasuredWidth(), bh = bubble.getMeasuredHeight();
         float x = actor.getTranslationX() + w / 2f - bw / 2f;
         x = Math.max(dp(8), Math.min(layer.getWidth() - bw - dp(8), x));
+        float y = actor.getTranslationY() - bh + dp(4);
+        if (y < dp(8)) y = Math.min(actor.getTranslationY() + h, floorY() + h - bh);
         bubble.setTranslationX(x);
-        bubble.setTranslationY(Math.max(dp(8), floorY() - bh + dp(4)));
-        // Ekran okuyucu kullanan, balondaki sözü duysun.
-        bubble.announceForAccessibility(line.text);
+        bubble.setTranslationY(y);
     }
 
     private void hideBubble() {
@@ -476,8 +762,9 @@ final class TanecikWalker {
                 if (!dragging && Math.hypot(e.getRawX() - downX, e.getRawY() - downY) > slop) {
                     dragging = true;
                     idling = false;
+                    platform = null;
                     handler.removeCallbacksAndMessages(null);
-                    actor.animate().cancel();
+                    cancelMotion();
                     hideBubble();
                     body.setImageResource(R.drawable.tanecik_konusuyor);   // "aaa!" havada
                 }
@@ -490,7 +777,7 @@ final class TanecikWalker {
                 handler.removeCallbacks(longPressCheck);
                 if (longPressed) return true;
                 if (dragging) drop();
-                else if (SystemClock.uptimeMillis() - downAt < longPressMs) speak();
+                else if (!jumping && SystemClock.uptimeMillis() - downAt < longPressMs) speak();
                 return true;
             case MotionEvent.ACTION_CANCEL:
                 handler.removeCallbacks(longPressCheck);
@@ -502,23 +789,37 @@ final class TanecikWalker {
     }
 
     private void drop() {
-        float fall = floorY() - actor.getTranslationY();
         float x = Math.max(0, Math.min(maxX(), actor.getTranslationX()));
+        // Bırakıldığı yerin altında bir kart varsa onun üstüne konar.
+        float feet = actor.getTranslationY() + h - dp(2);
+        float center = x + w / 2f;
+        View landOn = null;
+        float best = Float.MAX_VALUE;
+        for (View v : platforms()) {
+            float top = topOf(v), left = leftOf(v);
+            if (!validPlatform(v) || center < left || center > left + v.getWidth() || top < feet - dp(6)) continue;
+            if (top < best) { best = top; landOn = v; }
+        }
+        final View target = landOn;
+        float targetY = yOn(target);
+        float fall = targetY - actor.getTranslationY();
         Runnable landed = () -> {
             dragging = false;
             if (!active) return;
+            platform = target;
+            actor.setTranslationY(surfaceY());
             if (sleeping) { body.setImageResource(R.drawable.tanecik_uyuyor); return; }
             body.setImageResource(R.drawable.tanecik_sevinc);
             handler.postDelayed(this::resumeIdle, 900);
         };
         if (!motionAllowed() || fall < dp(4)) {
             actor.setTranslationX(x);
-            actor.setTranslationY(floorY());
+            actor.setTranslationY(targetY);
             landed.run();
             return;
         }
-        long duration = (long) Math.min(900, 250 + fall / activity.getResources().getDisplayMetrics().density * 1.6);
-        actor.animate().translationX(x).translationY(floorY()).setDuration(duration)
+        long duration = (long) Math.min(900, 250 + fall / getDensity() * 1.6);
+        actor.animate().translationX(x).translationY(targetY).setDuration(duration)
                 .setInterpolator(new BounceInterpolator()).withEndAction(landed).start();
     }
 
@@ -547,8 +848,12 @@ final class TanecikWalker {
         return Math.max(0, layer.getWidth() - w);
     }
 
+    private float getDensity() {
+        return activity.getResources().getDisplayMetrics().density;
+    }
+
     private float randomX() {
-        float min = dp(8), max = maxX() - dp(8);
+        float min = minSurfaceX() + dp(8), max = maxSurfaceX() - dp(8);
         return max <= min ? min : min + random.nextFloat() * (max - min);
     }
 

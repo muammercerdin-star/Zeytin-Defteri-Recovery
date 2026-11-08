@@ -49,6 +49,7 @@ def stroke(d, color, width, alpha=1.0):
 STAND_LEGS = (("M-22,78 q-2,22 -6,34", -31, 113), ("M22,78 q2,22 6,34", 31, 113))
 # Yürüme: sağa bakar (kasketin siperi sağda); ön bacak sağda.
 STEP_LEGS = (("M-22,78 q-8,18 -20,30", -44, 110), ("M22,78 q12,16 26,28", 54, 108))
+TUCK_LEGS = (("M-22,78 q-14,8 -18,22", -34, 100), ("M22,78 q14,8 18,22", 34, 100))
 PASS_LEGS = (("M-14,80 q-2,22 -2,34", -16, 115), ("M14,80 q2,22 6,34", 22, 115))
 
 
@@ -61,9 +62,9 @@ def legs(spec):
     return out
 
 
-def base(leg_spec=STAND_LEGS):
-    """Gövde, bacaklar, yanaklar: her pozda aynı (yapraklar kasketle birlikte çizilir)."""
-    return [fill(ellipse(0, 118, 56, 8), "#000000", 0.22)] + legs(leg_spec) + [
+def base(leg_spec=STAND_LEGS, shadow=True):
+    """Gövde, bacaklar, yanaklar: her pozda aynı (yapraklar kasketle birlikte çizilir). Havadayken gölge yok."""
+    return ([fill(ellipse(0, 118, 56, 8), "#000000", 0.22)] if shadow else []) + legs(leg_spec) + [
         fill(ellipse(0, 0, 72, 90), BODY_SHADE),
         fill(ellipse(-6, -6, 64, 82), BODY),
         fill(ellipse(-18, -22, 40, 50), BODY_LIGHT, 0.45),
@@ -128,6 +129,22 @@ def pose(name):
             fill(ellipse(-14, -16, 4, 4), WHITE), fill(ellipse(34, -16, 4, 4), WHITE),
             stroke("M-10,24 q16,14 32,0", EYE, 5),
         ]
+    elif name == "zipliyor":
+        leg_spec = TUCK_LEGS
+        back += arm("M-64,-4 q-26,-26 -38,-56", -102, -62)
+        back += arm("M64,-4 q26,-26 38,-56", 102, -62)
+        front += open_eyes(-2) + [fill("M-16,20 q16,24 32,0 z", MOUTH)]
+    elif name == "itiyor":
+        # kollar dimdik yukarı, gözler sıkılı: sayfayı itiyor
+        back += arm("M-58,-30 q-8,-50 -4,-96", -62, -128)
+        back += arm("M58,-30 q8,-50 4,-96", 62, -128)
+        front += [
+            stroke("M-34,-16 l14,6 -14,6", EYE, 5),
+            stroke("M34,-16 l-14,6 14,6", EYE, 5),
+            fill("M-18,22 h36 v12 h-36 z", WHITE),
+            stroke("M-18,22 h36 v12 h-36 z", MOUTH, 3),
+            stroke("M-6,22 v12 M6,22 v12", MOUTH, 2),
+        ]
     elif name == "uyuyor":
         back += [stroke("M76,-74 l12,0 -12,14 12,0", WHITE, 3, 0.85),
                  stroke("M92,-100 l15,0 -15,18 15,0", WHITE, 3, 0.85)]
@@ -174,11 +191,11 @@ def pose(name):
         ]
     else:
         raise ValueError(name)
-    return back + base(leg_spec) + cap() + front
+    return back + base(leg_spec, name != "zipliyor") + cap() + front
 
 
 POSES = ["merhaba", "sevinc", "konusuyor", "konusuyor_kapali", "dusunuyor",
-         "duruyor", "duruyor_kirp", "yuruyor_1", "yuruyor_2", "uyuyor"]
+         "duruyor", "duruyor_kirp", "yuruyor_1", "yuruyor_2", "uyuyor", "zipliyor", "itiyor"]
 
 SCARF = "#C0392B"
 SCARF_DARK = "#8E2A20"
