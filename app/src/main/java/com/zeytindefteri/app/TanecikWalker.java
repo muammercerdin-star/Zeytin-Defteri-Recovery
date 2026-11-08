@@ -142,7 +142,6 @@ final class TanecikWalker {
         bubbleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         bubbleText.setTextColor(0xFF24341A);
         bubbleText.setLineSpacing(0, 1.12f);
-        bubbleText.setMaxWidth(dp(250));
         bubbleText.setOnClickListener(v -> hideBubble());
         bubble.addView(bubbleText);
         LinearLayout buttons = new LinearLayout(activity);
@@ -711,9 +710,17 @@ final class TanecikWalker {
 
     /** Balon Tanecik'in başının üstünde; yer yoksa altında. */
     private void placeBubble() {
-        bubble.measure(View.MeasureSpec.makeMeasureSpec(dp(280), View.MeasureSpec.AT_MOST),
+        // Genişlik sabit: en çok 280 dp, dar ekranda kenarlardan 8'er dp boşluk. Ölçüm ve yerleşim aynı genişlikle
+        // yapılır; yoksa düğme satırı balonu ekran genişliğine açar ve balon kenardan taşar.
+        int bwPx = Math.max(dp(160), Math.min(dp(280), layer.getWidth() - dp(16)));
+        ViewGroup.LayoutParams lp = bubble.getLayoutParams();
+        if (lp != null && lp.width != bwPx) {
+            lp.width = bwPx;
+            bubble.setLayoutParams(lp);
+        }
+        bubble.measure(View.MeasureSpec.makeMeasureSpec(bwPx, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-        float bw = bubble.getMeasuredWidth(), bh = bubble.getMeasuredHeight();
+        float bw = bwPx, bh = bubble.getMeasuredHeight();
         float x = actor.getTranslationX() + w / 2f - bw / 2f;
         x = Math.max(dp(8), Math.min(layer.getWidth() - bw - dp(8), x));
         float y = actor.getTranslationY() - bh + dp(4);
