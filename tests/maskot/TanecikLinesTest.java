@@ -140,6 +140,14 @@ public class TanecikLinesTest {
         }
         ok(asked > 0, "en az bir soru önerilir");
 
+        // --- Gece uyandırma
+        TanecikLines.Line z = TanecikLines.sleepyLine();
+        ok(z.action.equals(TanecikLines.GO_WAKE) && z.actionLabel.equals("Uyandır ›") && z.text.startsWith("Zzz"), "uyurken uyandır düğmesi");
+        ok(TanecikLines.wokeUp().text.startsWith("Haa? Uyandım!") && TanecikLines.wokeUp().action.isEmpty(), "uyanınca");
+        ok(TanecikLines.goodnight().text.equals("Uykum geldi… İyi geceler!"), "yatarken");
+        ok(TanecikLines.AWAKE_MS == 300000L, "5 dakika uyanık");
+        ok(!z.important && !TanecikLines.wokeUp().important, "uyku sözleri '!' getirmez");
+
         System.out.println("PASS: " + checks + " Tanecik sözü kontrolü");
     }
 }

@@ -22,6 +22,24 @@ public final class TanecikLines {
         return "Zzz… Geç oldu, yarın görüşürüz.";
     }
 
+    /** Uyurken dokununca çıkan balon: "Uyandır" düğmesiyle. */
+    public static Line sleepyLine() {
+        return new Line("sleepy", sleepy(), GO_WAKE, "Uyandır ›", "", false);
+    }
+
+    /** Gece uyandırılınca. */
+    public static Line wokeUp() {
+        return new Line("woke", "Haa? Uyandım! Gece gece çalışıyorsun ha. Bana dokun, konuşalım.", "", "", "", false);
+    }
+
+    /** Gece uyanıkken bir süre dokunulmazsa yatarken. */
+    public static Line goodnight() {
+        return new Line("goodnight", "Uykum geldi… İyi geceler!", "", "", "", false);
+    }
+
+    /** Gece uyandırılınca bu kadar uyanık kalır; her dokunuş süreyi uzatır. */
+    public static final long AWAKE_MS = 5 * 60 * 1000L;
+
     /** Tanecik'in bildiği o anki durum. Bilinmeyen alan NaN / -1 / boş kalır, o söz atlanır. */
     public static final class Facts {
         public double tempC = Double.NaN, windKmh = Double.NaN;
@@ -50,7 +68,7 @@ public final class TanecikLines {
 
     /** Eylem: balondaki düğme ne açar. GO_ASK: soruyu asistana sorar (Line.question). */
     public static final String GO_ELEK = "ELEK", GO_WEATHER = "WEATHER", GO_BUYERS = "BUYERS", GO_REPORT = "REPORT",
-            GO_ASK = "ASK";
+            GO_ASK = "ASK", GO_WAKE = "WAKE";
 
     /** Alacak bu kadar gündür bekliyorsa Tanecik kendiliğinden uyarır. */
     static final int OLD_RECEIVABLE_DAYS = 14;

@@ -89,6 +89,8 @@ final class TanecikWalker {
     private final int w, h, slop, longPressMs;
 
     private boolean active, attached, sleeping, walkFrame, dragging, longPressed, idling;
+    /** Gece uyandırıldıysa bu ana kadar uyanık (uptime). Uygulama açık kaldıkça geçerli. */
+    private static long awakeUntil;
     private float downX, downY, grabDx, grabDy;
     private long downAt;
     private String bubbleAction = "", bubbleQuestion = "";
@@ -166,6 +168,7 @@ final class TanecikWalker {
         listen.setOnClickListener(v -> toggleTalk());
         go = bubbleButton("");
         go.setOnClickListener(v -> {
+            if (TanecikLines.GO_WAKE.equals(bubbleAction)) { hideBubble(); wake(); return; }
             String action = TanecikLines.GO_ASK.equals(bubbleAction) ? "ASK|" + bubbleQuestion : bubbleAction;
             hideBubble();
             resumeIdle();
@@ -234,7 +237,7 @@ final class TanecikWalker {
     private void startAfterLayout() {
         if (!active) return;
         if (floorRef.getTop() <= 0 || layer.getWidth() <= 0) { handler.postDelayed(this::startAfterLayout, 300); return; }
-        sleeping = TanecikLines.sleeping(Calendar.getInstance().get(Calendar.HOUR_OF_DAY));
+        sleeping = shouldSleep();
         platform = null;
         watchScroll(true);
         dressFor(readFacts());
@@ -340,6 +343,7 @@ final class TanecikWalker {
 
     private void nextAction() {
         if (!active || dragging || bubble.getVisibility() == View.VISIBLE) return;
+        if (shouldSleep()) { goToSleep(); return; }
         idling = false;
         handler.removeCallbacks(blink);
         int r = random.nextInt(100);
@@ -665,8 +669,13 @@ final class TanecikWalker {
     /** Dokununca: sıradaki söz (veriye göre). */
     private void speak() {
         if (sleeping) {
-            say(new TanecikLines.Line(TanecikLines.sleepy(), "", ""));
+            // Uyurken ikinci dokunuş (balon açıkken) da uyandırır.
+            if (bubble.getVisibility() == View.VISIBLE && TanecikLines.GO_WAKE.equals(bubbleAction)) { hideBubble(); wake(); return; }
+            say(TanecikLines.sleepyLine());
             return;
+        }
+        if (TanecikLines.sleeping(Calendar.getInstance().get(Calendar.HOUR_OF_DAY))) {
+            awakeUntil = Math.max(awakeUntil, SystemClock.uptimeMillis() + TanecikLines.AWAKE_MS);   // konuştukça uyanık kalır
         }
         TanecikLines.Facts f = readFacts();
         dressFor(f);
@@ -681,6 +690,43 @@ final class TanecikWalker {
         p.edit().putInt(KEY_LINE, (at >= 0 ? at : i) + 1).putString(KEY_SHOWN, today() + "|" + String.join(",", shown)).apply();
         showNews(TanecikLines.hasNews(lines, shown));
         say(line);
+    }
+
+    /** Gece mi ve uyandırılmadı mı. */
+    private static boolean shouldSleep() {
+        return TanecikLines.sleeping(Calendar.getInstance().get(Calendar.HOUR_OF_DAY))
+                && SystemClock.uptimeMillis() > awakeUntil;
+    }
+
+    /** Gözlerini ovuşturup uyanır, sonra konuşur ve gezmeye başlar. */
+    private void wake() {
+        if (!active) return;
+        awakeUntil = SystemClock.uptimeMillis() + TanecikLines.AWAKE_MS;
+        sleeping = false;
+        handler.removeCallbacksAndMessages(null);
+        cancelMotion();
+        body.setImageResource(R.drawable.tanecik_duruyor_kirp);
+        handler.postDelayed(() -> body.setImageResource(R.drawable.tanecik_duruyor), 500);
+        handler.postDelayed(() -> body.setImageResource(R.drawable.tanecik_duruyor_kirp), 800);
+        handler.postDelayed(() -> {
+            if (!active) return;
+            refreshNews();
+            say(TanecikLines.wokeUp());
+        }, 1000);
+    }
+
+    /** Gece, uyanık kalma süresi bitince: köşesine gidip yatar. */
+    private void goToSleep() {
+        if (!active || dragging) return;
+        if (platform != null) { flyTo(randomFloorX(), null, this::goToSleep); return; }
+        walkTo(maxX() - dp(4), () -> {
+            if (!active) return;
+            face(true);
+            sleeping = true;
+            showNews(false);
+            body.setImageResource(R.drawable.tanecik_uyuyor);
+            say(TanecikLines.goodnight());
+        });
     }
 
     /** Bugün söylenen sözlerin kimlikleri (gün değişince boşalır). */
@@ -766,7 +812,7 @@ final class TanecikWalker {
         go.setText(line.actionLabel == null ? "" : line.actionLabel);
         go.setVisibility(bubbleAction.isEmpty() ? View.GONE : View.VISIBLE);
         listen.setText("🔊 Dinle");
-        listen.setVisibility(ttsFailed ? View.GONE : View.VISIBLE);
+        listen.setVisibility(ttsFailed || TanecikLines.GO_WAKE.equals(bubbleAction) ? View.GONE : View.VISIBLE);
         bubble.setVisibility(View.VISIBLE);
         placeBubble();
         // Ekran okuyucu kullanan, balondaki sözü duysun.
