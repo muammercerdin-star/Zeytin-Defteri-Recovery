@@ -27,6 +27,12 @@ import java.util.Locale;
  */
 public final class BuyersActivity extends Activity {
     public static final String EXTRA_BUYER_ID = "buyer_id";
+    /** Alıcılarım → "Elek raporu gör": karşılaştırmanın sade dille anlatımı. */
+    static final String EXTRA_REPORT = "elek_report";
+    private boolean reportMode;
+    private android.speech.tts.TextToSpeech tts;
+    private boolean ttsReady, speaking;
+    private TextView listenButton;
 
     private DatabaseHelper databaseHelper;
     private String owner = "";
@@ -46,9 +52,10 @@ public final class BuyersActivity extends Activity {
         databaseHelper = new DatabaseHelper(this);
         owner = databaseHelper.getActiveOwnerUid();
         buyerId = getIntent().getLongExtra(EXTRA_BUYER_ID, 0);
+        reportMode = getIntent().getBooleanExtra(EXTRA_REPORT, false);
         getWindow().setStatusBarColor(GreenTheme.color(R.color.zd_bg));
         getWindow().setNavigationBarColor(GreenTheme.color(R.color.zd_bg));
-        if (buyerId <= 0) {
+        if (buyerId <= 0 && !reportMode) {
             try { BuyerDirectory.mergeDuplicates(databaseHelper.getWritableDatabase(), owner); }
             catch (RuntimeException ignored) { /* Birleştirme yapılamazsa liste yine gösterilir. */ }
         }
@@ -67,7 +74,16 @@ public final class BuyersActivity extends Activity {
         if (body != null) render();
     }
 
+    @Override protected void onPause() {
+        stopSpeaking();
+        super.onPause();
+    }
+
     @Override protected void onDestroy() {
+        if (tts != null) {
+            try { tts.stop(); tts.shutdown(); } catch (RuntimeException ignored) { }
+            tts = null;
+        }
         if (databaseHelper != null) databaseHelper.close();
         super.onDestroy();
     }
@@ -75,7 +91,7 @@ public final class BuyersActivity extends Activity {
     private void render() {
         body.removeAllViews();
         try {
-            if (buyerId > 0) renderDetail(); else renderList();
+            if (reportMode) renderReport(); else if (buyerId > 0) renderDetail(); else renderList();
         } catch (RuntimeException e) {
             body.addView(text("Alıcı bilgileri okunamadı.", 16, GreenTheme.color(R.color.zd_text_soft), false));
         }
@@ -108,6 +124,8 @@ public final class BuyersActivity extends Activity {
                 GreenTheme.color(R.color.zd_warning)), new LinearLayout.LayoutParams(0, -2, 1));
         summary.addView(cols);
         body.addView(summary, gap(14));
+
+        if (sales > 0) body.addView(reportEntry(), gap(12));
 
         if (all.isEmpty()) {
             TextView empty = text("Henüz alıcı yok. Elek kaydında \"Bu zeytini sattım\" ile ya da yukarıdaki + Ekle ile alıcılarını kaydedebilirsin.",
@@ -207,6 +225,118 @@ public final class BuyersActivity extends Activity {
                 + (hasElek ? ", " + ElekInsights.accessibleLegend(elek.kg) : ""));
         card.setOnClickListener(v -> open(this, s.id));
         return card;
+    }
+
+    // ------------------------------------------------------------ ELEK RAPORU
+
+    /** Listedeki giriş kartı. */
+    private View reportEntry() {
+        LinearLayout c = card(GreenTheme.color(R.color.zd_card), GreenTheme.color(R.color.zd_border));
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        copy.addView(text("Elek raporu gör", 17, GreenTheme.color(R.color.zd_text), true));
+        copy.addView(text("Aynı zeytine kim daha çok veriyor? Sade dille anlatır.", 14, GreenTheme.color(R.color.zd_muted), false));
+        row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(text("›", 28, GreenTheme.color(R.color.zd_green), true));
+        c.addView(row);
+        c.setMinimumHeight(dp(64));
+        c.setClickable(true);
+        c.setFocusable(true);
+        c.setContentDescription("Elek raporu gör. Aynı zeytine kim daha çok veriyor, sade dille anlatır.");
+        c.setOnClickListener(v -> startActivity(new Intent(this, BuyersActivity.class).putExtra(EXTRA_REPORT, true)));
+        return c;
+    }
+
+    private void renderReport() {
+        int season = databaseHelper.getActiveSeasonYear();
+        body.addView(header("Elek raporu", season + " sezonu · senin kayıtlarından"));
+        List<BuyerDirectory.Summary> all = BuyerDirectory.list(databaseHelper.getReadableDatabase(), owner, season);
+        List<BuyerElekReport.Buyer> buyers = new ArrayList<>();
+        for (BuyerDirectory.Summary s : all) if (s.saleCount > 0) buyers.add(new BuyerElekReport.Buyer(s.id, s.name, s.receivable));
+        final BuyerElekReport.Report report = BuyerElekReport.build(safeFairSales(season), buyers);
+        int ink = GreenTheme.color(R.color.zd_text), muted = GreenTheme.color(R.color.zd_muted);
+
+        LinearLayout top = card(GreenTheme.color(R.color.zd_green_soft), GreenTheme.color(R.color.zd_green_mid_dim));
+        TextView headline = text(report.headline, 19, ink, true);
+        headline.setLineSpacing(0, 1.15f);
+        top.addView(headline);
+        listenButton = pill("🔊  Sesli dinle", true);
+        listenButton.setContentDescription("Raporu sesli dinle");
+        listenButton.setOnClickListener(v -> toggleSpeak(report.plainText()));
+        top.addView(listenButton, sized(-1, 48, 14));
+        body.addView(top, gap(14));
+
+        for (BuyerElekReport.Section sec : report.sections) {
+            LinearLayout box = card(GreenTheme.color(R.color.zd_card), GreenTheme.color(R.color.zd_border));
+            int color = sec.tone > 0 ? GreenTheme.color(R.color.zd_green) : sec.tone < 0 ? GreenTheme.color(R.color.zd_warning) : ink;
+            box.addView(text(sec.title, 17, sec.compared ? color : muted, true));
+            for (String line : sec.lines) {
+                TextView t = text(line, 16, GreenTheme.color(R.color.zd_text_soft), false);
+                t.setLineSpacing(0, 1.2f);
+                box.addView(t, gap(8));
+            }
+            body.addView(box, gap(12));
+        }
+        if (!report.tip.isEmpty()) {
+            TextView tip = text(report.tip, 15, muted, false);
+            tip.setLineSpacing(0, 1.2f);
+            body.addView(tip, gap(16));
+        }
+        TextView how = text("Nasıl hesaplanır: bir alıcıya verdiğin zeytin, aynı bahçeden " + BuyerFairCompare.ELEK_DAYS
+                + " gün içinde başka alıcılara verdiğinle karşılaştırılır. Sınıf fiyatları aynı günlerin (±" + BuyerFairCompare.PRICE_DAYS
+                + " gün) satışlarıyla kıyaslanır. Sınıfsız (karışık) satışlar girmez. Hesap telefonunda yapılır, kimseye gönderilmez.",
+                13, muted, false);
+        how.setLineSpacing(0, 1.15f);
+        body.addView(how, gap(14));
+    }
+
+    private void toggleSpeak(String text) {
+        if (speaking) { stopSpeaking(); return; }
+        if (tts == null) {
+            Toast.makeText(this, "Ses hazırlanıyor…", Toast.LENGTH_SHORT).show();
+            final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
+            tts = new android.speech.tts.TextToSpeech(getApplicationContext(), st -> main.post(() -> {
+                int lang = android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED;
+                try { if (st == android.speech.tts.TextToSpeech.SUCCESS) lang = tts.setLanguage(new Locale("tr", "TR")); }
+                catch (RuntimeException ignored) { }
+                ttsReady = st == android.speech.tts.TextToSpeech.SUCCESS && lang >= 0;
+                if (!ttsReady) {
+                    Toast.makeText(this, "Telefonda Türkçe ses yok. Ayarlar → Metin okuma'dan Türkçe sesi indirebilirsin.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
+                    @Override public void onStart(String id) { }
+                    @Override public void onDone(String id) { main.post(() -> setSpeaking(false)); }
+                    @Override public void onError(String id) { main.post(() -> setSpeaking(false)); }
+                });
+                speak(text);
+            }));
+            return;
+        }
+        if (ttsReady) speak(text);
+    }
+
+    private void speak(String text) {
+        if (tts == null || isFinishing()) return;
+        // Okurken "%" ve "TL" düzgün söylensin.
+        String spoken = text.replace("%", "yüzde ").replace(" TL", " lira").replace(" kg", " kilo").replace("±", "artı eksi ");
+        if (tts.speak(spoken, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "rapor-" + System.nanoTime())
+                != android.speech.tts.TextToSpeech.ERROR) setSpeaking(true);
+    }
+
+    private void stopSpeaking() {
+        if (tts != null) { try { tts.stop(); } catch (RuntimeException ignored) { } }
+        setSpeaking(false);
+    }
+
+    private void setSpeaking(boolean on) {
+        speaking = on;
+        if (listenButton != null) {
+            listenButton.setText(on ? "■  Durdur" : "🔊  Sesli dinle");
+            listenButton.setContentDescription(on ? "Okumayı durdur" : "Raporu sesli dinle");
+        }
     }
 
     // ------------------------------------------------------------ KARNE

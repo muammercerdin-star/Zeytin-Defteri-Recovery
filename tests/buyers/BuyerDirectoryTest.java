@@ -194,6 +194,32 @@ public final class BuyerDirectoryTest {
         ok(BuyerFairCompare.epochDay("2024-03-01") - BuyerFairCompare.epochDay("2024-02-28") == 2, "artık yıl");
         ok(BuyerFairCompare.epochDay("1970-01-01") == 0 && BuyerFairCompare.epochDay("bozuk") == Integer.MIN_VALUE, "epochDay sınırları");
 
+        // --- Elek raporu (sade dil)
+        List<BuyerElekReport.Buyer> rb = new java.util.ArrayList<>();
+        rb.add(new BuyerElekReport.Buyer(fa, "Ali Özdemir", 10340));
+        rb.add(new BuyerElekReport.Buyer(fo, "Özer", 0));
+        rb.add(new BuyerElekReport.Buyer(fk, "Kemal", 0));
+        BuyerElekReport.Report rep = BuyerElekReport.build(fs, rb);
+        System.out.println(rep.plainText());
+        ok(rep.headline.equals("Aynı zeytine en çok parayı Kemal veriyor. En az veren Özer."), rep.headline);
+        ok(rep.sections.size() == 3 && rep.sections.get(0).title.startsWith("Kemal: kilo başı 8,2 TL fazla")
+                && rep.sections.get(1).title.equals("Özer: kilo başı 8,2 TL az")
+                && rep.sections.get(2).title.equals("Ali Özdemir: karşılaştırılamadı"), "sıra: en çok veren, en az veren, kıyaslanamayan");
+        BuyerElekReport.Section so = rep.sections.get(1);
+        ok(so.tone == -1 && so.lines.get(0).endsWith("100 kilo zeytinde bu yaklaşık 820 TL eder."), so.lines.get(0));
+        ok(so.lines.get(1).startsWith("Eleği ufak çıkarıyor: Double ile 1 Numara %0 çıkıyor (diğerlerinde %10)"), so.lines.get(1));
+        ok(so.lines.get(2).startsWith("Sınıf fiyatlarında ise önde (2 Numara'da 2 TL ve 3 Numara'da 2 TL fazla veriyor); ama elek"), so.lines.get(2));
+        ok(rep.sections.get(0).lines.get(2).endsWith("yani fazlası elekten geliyor."), rep.sections.get(0).lines.get(2));
+        ok(so.lines.contains("Karşılaştırılan 200 kiloda yaklaşık 1.640 TL az aldın."), "toplam etki");
+        ok(so.lines.get(so.lines.size() - 1).equals("Yalnız 1 satış eşleşti; sonuç yön gösterir, kesin değil."), "güven uyarısı");
+        ok(rep.sections.get(2).lines.contains("Sende 10.340 TL alacağı var."), "alacak hatırlatılır");
+        ok(rep.sections.get(2).tone == 0 && !rep.sections.get(2).compared, "kıyaslanamayana hüküm yok");
+        ok(BuyerElekReport.locative("Yağlık").equals("Yağlık'ta") && BuyerElekReport.locative("2 Numara").equals("2 Numara'da"), "ek uyumu");
+        ok(BuyerElekReport.build(new java.util.ArrayList<>(), rb).headline.equals("Bu sezon alıcılara satış kaydı yok."), "boş rapor");
+        List<BuyerElekReport.Buyer> onlyAli = new java.util.ArrayList<>();
+        onlyAli.add(rb.get(0));
+        ok(BuyerElekReport.build(fs, onlyAli).headline.startsWith("Henüz karşılaştırma yapacak kadar"), "eşleşme yoksa başlık");
+
         System.out.println("PASS: " + checks + " alıcı rehberi kontrolü (gerçek SQLite)");
     }
 
