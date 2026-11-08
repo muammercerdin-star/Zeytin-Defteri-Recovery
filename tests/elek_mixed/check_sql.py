@@ -17,7 +17,10 @@ def check(name, ok):
     if not ok: fails.append(name)
 
 # --- Kaynak: arşiv sorgusu karışık sütunları
-check("arşiv: mixed_kg ve mixed_revenue sütunları", "AS mixed_kg" in repo and "AS mixed_revenue" in repo and "ElekMixedEntry.GRADE" in repo)
+entry = rd("com/zeytindefteri/app/ElekMixedEntry.java")
+check("sabit tek yerde tanımlı: GRADE = KARISIK", 'public static final String GRADE = "KARISIK";' in entry)
+check("arşiv: mixed_kg ve mixed_revenue sütunları (düz 'KARISIK' = GRADE)", "eg.grade='KARISIK' THEN eg.kg ELSE 0 END),0) AS mixed_kg" in repo
+      and "eg.grade='KARISIK' THEN eg.line_total ELSE 0 END),0) AS mixed_revenue" in repo)
 check("arşiv: toplam kilo/tutar tüm satırlardan (karışık dahil)", "SUM(eg.kg),0) AS total_kg" in repo and "SUM(eg.line_total),0) AS total_revenue" in repo)
 
 # --- Gerçek SQLite: aynı sorgu
@@ -56,7 +59,7 @@ check("lig: yerel önizleme karışık kilo ve tutarı çıkarır", 'value(c, "t
 
 # Piyasa (yerel Piyasa ekranı) sınıf tablosuna karışık girmez
 m = re.search(r'private String validLineWhere\(\) \{(.*?)\n    \}', market, re.S)
-check("piyasa: KARISIK satırı fiyat tablolarından dışlanır", m is not None and "eg.grade <> '\" + ElekMixedEntry.GRADE + \"'" in m.group(1))
+check("piyasa: KARISIK satırı fiyat tablolarından dışlanır", m is not None and "AND eg.grade <> 'KARISIK' " in m.group(1))
 where = "AND eg.kg > 0 AND eg.price_per_kg > 0 AND eg.grade <> 'KARISIK' "
 cnt = db.execute("SELECT COUNT(*) FROM elek_grades eg INNER JOIN elek_records er ON er.id=eg.elek_id WHERE 1=1 " + where).fetchone()[0]
 check("piyasa sorgusu gerçek SQLite'ta yalnız 3 sınıflı satırı görür", cnt == 3)

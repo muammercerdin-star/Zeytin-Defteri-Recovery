@@ -14,10 +14,13 @@ cols = ["double_kg", "grade1_kg", "grade2_kg", "grade3_kg", "grade4_kg", "oil_kg
 assert lits[:12] == grades + cols, 'grade/column arrays changed'
 base = lits[12] + lits[13]
 grade_sql = ''.join(lits[14] + g + lits[15] + c for g, c in zip(grades, cols))
-records = lits[16] + lits[17]
-where = ''.join(lits[18:24])
-garden_filter = lits[24]
-group = lits[25]
+mixed_sql = lits[16]   # sınıfsız (toplam) kayıt sütunları: mixed_kg, mixed_revenue
+assert 'AS mixed_kg' in mixed_sql and 'AS mixed_revenue' in mixed_sql, 'mixed columns moved'
+grade_sql += mixed_sql
+records = lits[17] + lits[18]
+where = ''.join(lits[19:25])
+garden_filter = lits[25]
+group = lits[26]
 assert group.startswith('GROUP BY') and garden_filter.startswith('AND er.garden_id'), 'query pieces moved'
 sql_all = base + grade_sql + records + where + group
 sql_one = base + grade_sql + records + where + garden_filter + group
@@ -31,6 +34,8 @@ INSERT INTO gardens VALUES (1,'u','Edremit','Gemlik','Bursa'),(2,'u','Girelli','
 INSERT INTO elek_records VALUES (10,1,'u',2026,'2026-10-13'),(11,2,'u',2026,'2026-10-01'),(12,1,'u',2025,'2025-10-01'),(13,3,'x',2026,'2026-10-02');
 INSERT INTO elek_grades VALUES (10,'DOUBLE',3,360),(10,'1',15,1200),(10,'2',25,1500),(10,'3',40,1600),(10,'4',10,200),(10,'YAGLIK',5,50),
  (11,'1',20,1600),(12,'1',99,9999),(13,'1',7,7);
+INSERT INTO elek_records VALUES (14,2,'u',2026,'2026-09-20');
+INSERT INTO elek_grades VALUES (14,'KARISIK',150,8000);
 ''')
 checks = 0
 def ok(v, l):
@@ -38,12 +43,16 @@ def ok(v, l):
     assert v, l
     checks += 1
 rows = [dict(r) for r in db.execute(sql_all, ['u', 'u', '2026', '2026', '2026'])]
-ok([r['record_date'] for r in rows] == ['2026-10-13', '2026-10-01'], 'season+owner scope, newest first')
+ok([r['record_date'] for r in rows] == ['2026-10-13', '2026-10-01', '2026-09-20'], 'season+owner scope, newest first')
+m = rows[2]
+ok(m['total_kg'] == 150 and m['total_revenue'] == 8000 and m['mixed_kg'] == 150 and m['mixed_revenue'] == 8000
+   and sum(m[c] for c in cols) == 0, 'sınıfsız kayıt toplama girer, sınıf sütunlarına girmez')
+ok(rows[0]['mixed_kg'] == 0, 'sınıflı kayıtta mixed_kg 0')
 r = rows[0]
 ok(r['garden_name'] == 'Edremit' and r['total_kg'] == 98 and r['total_revenue'] == 4910, 'screenshot record totals')
 ok([r[c] for c in cols] == [3, 15, 25, 40, 10, 5], 'per-grade kg columns')
 one = [dict(r) for r in db.execute(sql_one, ['u', 'u', '2026', '2026', '2026', '2'])]
-ok(len(one) == 1 and one[0]['garden_name'] == 'Girelli', 'garden filter')
+ok(len(one) == 2 and one[0]['garden_name'] == 'Girelli', 'garden filter')
 s = dict(db.execute(sql_summary, ['u', 'u', '2026', '2026', '2026']).fetchone())
-ok(s['total_kg'] == 118 and s['record_count'] == 2, 'summary equals sum of records')
+ok(s['total_kg'] == 268 and s['record_count'] == 3 and s['mixed_kg'] == 150, 'summary equals sum of records')
 print(f'PASS: {checks} elek archive query checks (host SQLite fixture).')

@@ -115,8 +115,11 @@ for record in range(1, 7):
         db.execute('INSERT INTO elek_grades VALUES(?,?,?,?)', (record, grade, record, record * 10))
 
 def record_ids(sql, args):
-    rows = db.execute(sql, args).fetchall()
-    return rows, [r[9] for r in rows]
+    cursor = db.execute(sql, args)
+    rows = cursor.fetchall()
+    # Sütun adıyla: sorguya yeni sütun (ör. mixed_kg) eklendiğinde sıra kayabilir.
+    at = [d[0] for d in cursor.description].index('record_id')
+    return rows, [r[at] for r in rows]
 
 rows, actual = record_ids(all_sql, all_args)
 assert actual == [2, 1, 6], actual

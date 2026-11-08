@@ -30,6 +30,8 @@ for k in keys:code+='EditText etKg'+k+'=new EditText();TextView tvCalc'+k+'=new 
 code+='TextView tvTotalKg=new TextView(),tvTotalRevenue=new TextView(),tvAveragePrice=new TextView();\n'
 # calculateAll ends with a display-only refresh (dağılım şeridi, kaydet durumu); tested in tests/elek_insights.
 code+='void refreshElekInsights(){}\n'
+# Toplam (sınıfsız) mod: bu testte kapalı; calculateAll'daki dalın derlenmesi için (ayrıntılı test: tests/elek_mixed).
+code+='boolean mixedMode;TextView tvMixedPrice;double[] mixedValues(){return new double[]{0,0};}static class ElekMixedEntry{static double pricePerKg(double k,double t){return 0;}static String priceLine(double k,double t){return "";}}\n'
 for name in ['setupNumberFormat','calculateAll','readDouble','calculationText','money','formatNumber']:code+=method(name)+'\n'
 code+='''public static void main(String[] a){ElekMathTest t=new ElekMathTest();t.setupNumberFormat();
 t.priceDouble=100;t.price1=90;t.price2=70;t.price3=55;t.price4=40;t.priceOil=32;
