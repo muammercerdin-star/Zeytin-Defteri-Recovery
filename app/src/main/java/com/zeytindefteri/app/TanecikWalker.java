@@ -57,7 +57,8 @@ import java.util.function.Supplier;
  * - İlk açılışta kendini bir kez tanıtır.
  */
 final class TanecikWalker {
-    private static final String PREFS = "tanecik", KEY_ON = "enabled", KEY_LINE = "line_index", KEY_INTRO = "intro_done";
+    private static final String PREFS = "tanecik", KEY_ON = "enabled", KEY_LINE = "line_index", KEY_INTRO = "intro_done",
+            KEY_SHOWN = "shown_today";
     private static final int WALK_FRAME_MS = 200;
     private static final long BUBBLE_MS = 7000;
 
@@ -79,6 +80,8 @@ final class TanecikWalker {
     /** Hareket eden kap: gövde + kıyafet birlikte döner/taşınır. */
     private final FrameLayout actor;
     private final ImageView body, outfit;
+    /** Başındaki "!" : bugün söylenmemiş önemli bir şey var (yağmur, rüzgâr, bekleyen alacak). */
+    private final TextView news;
     private final LinearLayout bubble;
     private final TextView bubbleText, listen, go;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -88,7 +91,7 @@ final class TanecikWalker {
     private boolean active, attached, sleeping, walkFrame, dragging, longPressed, idling;
     private float downX, downY, grabDx, grabDy;
     private long downAt;
-    private String bubbleAction = "";
+    private String bubbleAction = "", bubbleQuestion = "";
     /** Üstünde durduğu kart; null: alt menünün üstü. */
     private View platform;
     private boolean jumping, pushing;
@@ -128,6 +131,18 @@ final class TanecikWalker {
         outfit.setVisibility(View.GONE);
         actor.addView(body, new FrameLayout.LayoutParams(-1, -1));
         actor.addView(outfit, new FrameLayout.LayoutParams(-1, -1));
+        news = new TextView(activity);
+        news.setText("!");
+        news.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        news.setTypeface(Typeface.DEFAULT_BOLD);
+        news.setTextColor(0xFF24341A);
+        news.setGravity(Gravity.CENTER);
+        GradientDrawable dot = new GradientDrawable();
+        dot.setShape(GradientDrawable.OVAL);
+        dot.setColor(0xFFF2C94C);
+        news.setBackground(dot);
+        news.setVisibility(View.GONE);
+        actor.addView(news, new FrameLayout.LayoutParams(dp(20), dp(20), Gravity.TOP | Gravity.START));
 
         bubble = new LinearLayout(activity);
         bubble.setOrientation(LinearLayout.VERTICAL);
@@ -151,7 +166,7 @@ final class TanecikWalker {
         listen.setOnClickListener(v -> toggleTalk());
         go = bubbleButton("");
         go.setOnClickListener(v -> {
-            String action = bubbleAction;
+            String action = TanecikLines.GO_ASK.equals(bubbleAction) ? "ASK|" + bubbleQuestion : bubbleAction;
             hideBubble();
             resumeIdle();
             if (!action.isEmpty() && onAction != null) onAction.accept(action);
@@ -223,6 +238,7 @@ final class TanecikWalker {
         platform = null;
         watchScroll(true);
         dressFor(readFacts());
+        refreshNews();
         actor.setVisibility(View.VISIBLE);
         actor.setTranslationY(floorY());
         if (sleeping || !motionAllowed()) {
@@ -293,6 +309,18 @@ final class TanecikWalker {
     }
 
     private void idle() {
+        if (!active || dragging) return;
+        idling = true;
+        // Haberi varsa ara sıra el sallayarak dikkat çeker.
+        if (news.getVisibility() == View.VISIBLE && random.nextInt(3) == 0) {
+            body.setImageResource(R.drawable.tanecik_merhaba);
+            handler.postDelayed(this::idleStill, 1200);
+            return;
+        }
+        idleStill();
+    }
+
+    private void idleStill() {
         if (!active || dragging) return;
         idling = true;
         body.setImageResource(R.drawable.tanecik_duruyor);
@@ -646,8 +674,44 @@ final class TanecikWalker {
         List<TanecikLines.Line> lines = TanecikLines.smart(f, now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MONTH) + 1);
         SharedPreferences p = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         int i = p.getInt(KEY_LINE, 0);
-        p.edit().putInt(KEY_LINE, i + 1).apply();
-        say(lines.get(Math.floorMod(i, lines.size())));
+        java.util.Set<String> shown = shownToday();
+        TanecikLines.Line line = TanecikLines.choose(lines, shown, i);
+        int at = lines.indexOf(line);
+        shown.add(line.id);
+        p.edit().putInt(KEY_LINE, (at >= 0 ? at : i) + 1).putString(KEY_SHOWN, today() + "|" + String.join(",", shown)).apply();
+        showNews(TanecikLines.hasNews(lines, shown));
+        say(line);
+    }
+
+    /** Bugün söylenen sözlerin kimlikleri (gün değişince boşalır). */
+    private java.util.Set<String> shownToday() {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        String raw = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_SHOWN, "");
+        int bar = raw == null ? -1 : raw.indexOf('|');
+        if (bar < 0 || !raw.substring(0, bar).equals(today())) return out;
+        for (String id : raw.substring(bar + 1).split(",")) if (!id.isEmpty()) out.add(id);
+        return out;
+    }
+
+    private static String today() {
+        Calendar c = Calendar.getInstance();
+        return c.get(Calendar.YEAR) + "-" + (c.get(Calendar.MONTH) + 1) + "-" + c.get(Calendar.DAY_OF_MONTH);
+    }
+
+    /** Önemli bir şey varsa başında "!" belirir (dokunmadan haber verir). */
+    private void refreshNews() {
+        if (sleeping) { showNews(false); return; }
+        Calendar now = Calendar.getInstance();
+        try {
+            List<TanecikLines.Line> lines = TanecikLines.smart(readFacts(), now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MONTH) + 1);
+            showNews(TanecikLines.hasNews(lines, shownToday()));
+        } catch (RuntimeException e) {
+            showNews(false);
+        }
+    }
+
+    private void showNews(boolean on) {
+        news.setVisibility(on ? View.VISIBLE : View.GONE);
     }
 
     private void say(TanecikLines.Line line) {
@@ -698,6 +762,7 @@ final class TanecikWalker {
     private void showBubble(TanecikLines.Line line) {
         bubbleText.setText(line.text);
         bubbleAction = line.action == null ? "" : line.action;
+        bubbleQuestion = line.question == null ? "" : line.question;
         go.setText(line.actionLabel == null ? "" : line.actionLabel);
         go.setVisibility(bubbleAction.isEmpty() ? View.GONE : View.VISIBLE);
         listen.setText("🔊 Dinle");

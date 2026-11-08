@@ -37,67 +37,148 @@ public final class TanecikLines {
         /** Elek raporunda aynı zeytine en çok veren alıcı ve kilo başı farkı (yoksa boş). */
         public String bestBuyer = "";
         public double bestBuyerPerKg;
+        /** Bugünkü satış (sezonun satışlarından). */
+        public double todayKg, todayTl;
+        /** Bu sezonun toplam satışı. */
+        public double seasonKg, seasonTl;
+        /** En eski açık alacağın satışından bu yana gün ve alıcısı (-1: yok). */
+        public long oldestReceivableDays = -1;
+        public String oldestReceivableBuyer = "";
+        /** Yarınki yağış ihtimali (%); bilinmiyorsa NaN. */
+        public double tomorrowRain = Double.NaN;
     }
 
-    /** Eylem: balondaki düğme ne açar. */
-    public static final String GO_ELEK = "ELEK", GO_WEATHER = "WEATHER", GO_BUYERS = "BUYERS", GO_REPORT = "REPORT";
+    /** Eylem: balondaki düğme ne açar. GO_ASK: soruyu asistana sorar (Line.question). */
+    public static final String GO_ELEK = "ELEK", GO_WEATHER = "WEATHER", GO_BUYERS = "BUYERS", GO_REPORT = "REPORT",
+            GO_ASK = "ASK";
+
+    /** Alacak bu kadar gündür bekliyorsa Tanecik kendiliğinden uyarır. */
+    static final int OLD_RECEIVABLE_DAYS = 14;
 
     public static final class Line {
+        /** Kalıcı kimlik: günlük hafıza bununla tutulur. */
+        public final String id;
         public final String text, action, actionLabel;
+        /** GO_ASK için asistana gidecek soru (asistanın kurallarının anladığı bir cümle). */
+        public final String question;
+        /** Önemli: Tanecik başında "!" taşır, dokununca önce bunu söyler. */
+        public final boolean important;
 
-        Line(String text) { this(text, "", ""); }
+        Line(String text) { this("", text, "", "", "", false); }
 
-        Line(String text, String action, String actionLabel) {
+        Line(String text, String action, String actionLabel) { this("", text, action, actionLabel, "", false); }
+
+        Line(String id, String text, String action, String actionLabel, String question, boolean important) {
+            this.id = id.isEmpty() ? "t" + Integer.toHexString(text.hashCode()) : id;
             this.text = text;
             this.action = action;
             this.actionLabel = actionLabel;
+            this.question = question;
+            this.important = important;
         }
     }
 
+    private static Line ask(String id, String text, String question, String label) {
+        return new Line(id, text, GO_ASK, label, question, false);
+    }
+
     /**
-     * Sırayla söylenecek sözler. Önce acil olan (yağmur, rüzgâr), sonra selam, sonra kullanıcının
-     * kendi verisinden hatırlatmalar, en sonda mevsim öğüdü ve ipuçları. month: 1–12.
+     * Sırayla söylenecek sözler. Önce acil olan (yağmur, rüzgâr, bekleyen alacak), sonra selam, sonra kullanıcının
+     * kendi verisinden hatırlatmalar, en sonda mevsim öğüdü, asistana sorulacak sorular ve ipuçları. month: 1–12.
+     * Önerilen her soru asistanın kurallarıyla anlaşılır (tests/maskot'ta çözümleyiciyle denenir).
      */
     public static List<Line> smart(Facts f, int hour, int month) {
         if (f == null) f = new Facts();
         List<Line> out = new ArrayList<>();
         boolean harvest = month >= 10;
         if (f.raining) {
-            out.add(new Line("Yağmur yağıyor. Şemsiyemi aldım! Toplanan zeytini ıslak bırakma.", GO_WEATHER, "Hava durumu ›"));
+            out.add(new Line("rain_now", "Yağmur yağıyor. Şemsiyemi aldım! Toplanan zeytini ıslak bırakma.",
+                    GO_WEATHER, "Hava durumu ›", "", true));
         } else if (f.rainChance >= 60) {
-            out.add(new Line("24 saat içinde yağmur ihtimali %" + Math.round(f.rainChance)
-                    + ". Hasadı ve ilaçlamayı ona göre planla.", GO_WEATHER, "Hava durumu ›"));
+            out.add(new Line("rain_24h", "24 saat içinde yağmur ihtimali %" + Math.round(f.rainChance)
+                    + ". Hasadı ve ilaçlamayı ona göre planla.", GO_WEATHER, "Hava durumu ›", "", true));
+        } else if (harvest && f.tomorrowRain >= 60) {
+            out.add(new Line("rain_tomorrow", "Yarın yağmur ihtimali %" + Math.round(f.tomorrowRain)
+                    + ". Toplanacak zeytin varsa bugünü değerlendir.", GO_ASK, "Sor: yarın yağar mı? ›",
+                    "yarın yağmur yağacak mı?", true));
         }
         if (f.windKmh >= 25) {
-            out.add(new Line("Rüzgâr kuvvetli (" + Math.round(f.windKmh) + " km/s). İlaç rüzgârla savrulur; bugün ilaçlama yapma.",
-                    GO_WEATHER, "Hava durumu ›"));
+            out.add(new Line("wind", "Rüzgâr kuvvetli (" + Math.round(f.windKmh) + " km/s). İlaç rüzgârla savrulur; bugün ilaçlama yapma.",
+                    GO_WEATHER, "Hava durumu ›", "", true));
         }
-        out.add(new Line(greeting(hour)));
+        if (f.oldestReceivableDays >= OLD_RECEIVABLE_DAYS && !f.oldestReceivableBuyer.isEmpty()) {
+            out.add(new Line("recv_old", f.oldestReceivableBuyer + "'in parası " + f.oldestReceivableDays
+                    + " gündür bekliyor. Bir arasan iyi olur.", GO_BUYERS, "Alıcılarım ›", "", true));
+        }
+        out.add(new Line("greet", greeting(hour), "", "", "", false));
         if (cold(f)) {
-            out.add(new Line("Hava soğuk, " + Math.round(f.tempC) + " derece. Atkımı taktım; sen de sıkı giyin!"));
+            out.add(new Line("cold", "Hava soğuk, " + Math.round(f.tempC) + " derece. Atkımı taktım; sen de sıkı giyin!",
+                    "", "", "", false));
         }
-        if (f.hasGarden && harvest) {
+        if (f.todayKg > 0) {
+            out.add(ask("today_sales", "Bugün " + kgText(f.todayKg) + " kg sattın, " + money(f.todayTl) + ". Eline sağlık!",
+                    "bugün ne kadar sattım?", "Ayrıntı ›"));
+        } else if (f.hasGarden && harvest) {
             if (f.daysSinceHarvest == 0) {
-                out.add(new Line("Bugünkü hasadı yazmışsın, eline sağlık!"));
+                out.add(new Line("harvest_today", "Bugünkü hasadı yazmışsın, eline sağlık!", "", "", "", false));
             } else if (f.daysSinceHarvest >= 3 && hour >= 8 && hour < 21) {
-                out.add(new Line(f.daysSinceHarvest + " gündür hasat kaydı yok. Topladıysan Elek'e yaz, kaybolmasın.",
-                        GO_ELEK, "Elek'e git ›"));
+                out.add(new Line("harvest_gap", f.daysSinceHarvest + " gündür hasat kaydı yok. Topladıysan Elek'e yaz, kaybolmasın.",
+                        GO_ELEK, "Elek'e git ›", "", false));
             }
         }
         if (f.receivableCount > 0 && f.receivableTotal > 0.009) {
-            out.add(new Line((f.receivableCount == 1 ? "Bir alıcıda " : f.receivableCount + " alıcıda toplam ")
-                    + money(f.receivableTotal) + " alacağın var. Unutma, takip et.", GO_BUYERS, "Alıcılarım ›"));
+            out.add(new Line("recv", (f.receivableCount == 1 ? "Bir alıcıda " : f.receivableCount + " alıcıda toplam ")
+                    + money(f.receivableTotal) + " alacağın var. Unutma, takip et.", GO_ASK, "Kimden? ›",
+                    "kimden ne kadar alacağım var?", false));
         }
         if (!f.bestBuyer.isEmpty() && f.bestBuyerPerKg >= 0.5) {
-            out.add(new Line("Aynı zeytine en çok " + f.bestBuyer + " veriyor; kilo başı "
-                    + oneDecimal(f.bestBuyerPerKg) + " TL fazla.", GO_REPORT, "Elek raporu ›"));
+            out.add(new Line("best_buyer", "Aynı zeytine en çok " + f.bestBuyer + " veriyor; kilo başı "
+                    + oneDecimal(f.bestBuyerPerKg) + " TL fazla.", GO_REPORT, "Elek raporu ›", "", false));
         }
-        for (String s : season(month)) {
-            out.add(s.startsWith("Ayarlar'da Alıcılarım'a bak") ? new Line(s, GO_REPORT, "Elek raporu ›") : new Line(s));
+        if (f.seasonKg > 0) {
+            out.add(ask("season_sum", "Bu sezon " + kgText(f.seasonKg) + " kg zeytin sattın, toplam " + money(f.seasonTl) + ".",
+                    "bu sezon durumum ne?", "Özetle ›"));
         }
-        out.add(new Line("Ortadaki mikrofona bas, konuşarak kaydet. \"150 kilo topladım\" demen yeter."));
-        out.add(new Line("Beni parmağınla tutup taşıyabilirsin. Gizlemek istersen üstüme basılı tut."));
+        List<String> seasonLines = season(month);
+        for (int i = 0; i < seasonLines.size(); i++) {
+            String s = seasonLines.get(i);
+            out.add(s.startsWith("Ayarlar'da Alıcılarım'a bak")
+                    ? new Line("season_" + i, s, GO_REPORT, "Elek raporu ›", "", false)
+                    : new Line("season_" + i, s, "", "", "", false));
+        }
+        out.add(ask("ask_today", "Bana soru sorabilirsin. Mesela: \"Bugün bahçede ne var?\"", "bugün bahçede ne var?", "Sor ›"));
+        out.add(ask("ask_price", "Piyasayı merak ediyorsan sor: \"2 numara fiyatı ne kadar?\"", "2 numara fiyatı ne kadar?", "Sor ›"));
+        out.add(ask("ask_expense", "Masrafını bilmek ister misin? \"Bu sezon masraf ne kadar?\" de.", "bu sezon masraf ne kadar?", "Sor ›"));
+        out.add(new Line("tip_mic", "Ortadaki mikrofona bas, konuşarak kaydet. \"150 kilo topladım\" demen yeter.", "", "", "", false));
+        out.add(new Line("tip_drag", "Beni parmağınla tutup taşıyabilirsin. Gizlemek istersen üstüme basılı tut.", "", "", "", false));
         return out;
+    }
+
+    /**
+     * Hangi söz söylensin (günlük hafıza): önce bugün söylenmemiş önemli söz; sonra sıradan, bugün söylenmemiş
+     * ilk söz (sıra index'ten başlar); hepsi söylendiyse sıradaki.
+     */
+    public static Line choose(List<Line> lines, java.util.Set<String> shownToday, int index) {
+        if (lines.isEmpty()) return new Line(greeting(12));
+        for (Line l : lines) if (l.important && !shownToday.contains(l.id)) return l;
+        int n = lines.size();
+        for (int k = 0; k < n; k++) {
+            Line l = lines.get(Math.floorMod(index + k, n));
+            if (!shownToday.contains(l.id)) return l;
+        }
+        return lines.get(Math.floorMod(index, n));
+    }
+
+    /** Bugün söylenmemiş önemli bir söz var mı (başta "!" işareti için). */
+    public static boolean hasNews(List<Line> lines, java.util.Set<String> shownToday) {
+        for (Line l : lines) if (l.important && !shownToday.contains(l.id)) return true;
+        return false;
+    }
+
+    static String kgText(double v) {
+        java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(new java.util.Locale("tr", "TR"));
+        nf.setMaximumFractionDigits(0);
+        return nf.format(Math.max(0, Math.round(v)));
     }
 
     /** İlk tanışma (bir kez). */

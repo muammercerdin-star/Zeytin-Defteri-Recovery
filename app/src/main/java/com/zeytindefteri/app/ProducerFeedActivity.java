@@ -6403,6 +6403,13 @@ public class ProducerFeedActivity extends Activity {
         }
         f.hasGarden = tanecikHasGarden;
         f.daysSinceHarvest = tanecikLastHarvest;
+        if (w != null && w.forecast != null) {
+            String tomorrow = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                    .format(new java.util.Date(System.currentTimeMillis() + 86400000L));
+            for (WeatherRepository.DailyForecast d : w.forecast.daily) {
+                if (tomorrow.equals(d.dateIso)) { f.tomorrowRain = d.precipitationProbability; break; }
+            }
+        }
         if (db == null) return f;
         try {
             String owner = db.getActiveOwnerUid();
@@ -6411,9 +6418,12 @@ public class ProducerFeedActivity extends Activity {
             List<BuyerDirectory.Summary> buyers = BuyerDirectory.list(rdb, owner, season);
             List<BuyerElekReport.Buyer> active = new ArrayList<>();
             for (BuyerDirectory.Summary b : buyers) {
+                f.seasonKg += b.kg;
+                f.seasonTl += b.gross;
                 if (b.receivable > 0.009) { f.receivableTotal += b.receivable; f.receivableCount++; }
                 if (b.saleCount > 0) active.add(new BuyerElekReport.Buyer(b.id, b.name, b.receivable));
             }
+            tanecikSalesFacts(rdb, owner, season, f);
             if (active.size() >= 2) {
                 BuyerElekReport.Report r = BuyerElekReport.build(BuyerDirectory.fairSales(rdb, owner, season), active);
                 if (!r.sections.isEmpty() && r.sections.get(0).compared && r.sections.get(0).tone > 0) {
@@ -6443,9 +6453,39 @@ public class ProducerFeedActivity extends Activity {
         return super.dispatchTouchEvent(ev);
     }
 
+    /** Bugünkü satış ve en eski bekleyen alacak (Tanecik için). */
+    private static void tanecikSalesFacts(android.database.sqlite.SQLiteDatabase rdb, String owner, int season,
+                                          TanecikLines.Facts f) {
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
+        String own = owner == null ? "" : owner;
+        android.database.Cursor c = rdb.rawQuery("SELECT COALESCE(SUM(s.total_kg),0), COALESCE(SUM(s.gross_total),0) FROM sales s "
+                + "WHERE COALESCE(s.owner_uid,'')=? AND s.season_year=? AND COALESCE(s.sale_kind,'SALE')='SALE' AND "
+                + BuyerDirectory.ISO_DATE + "=?", new String[]{own, String.valueOf(season), today});
+        try { if (c.moveToFirst()) { f.todayKg = c.getDouble(0); f.todayTl = c.getDouble(1); } } finally { c.close(); }
+        // Satış tarihinden bu yana en uzun bekleyen açık alacak.
+        c = rdb.rawQuery("SELECT MIN(" + BuyerDirectory.ISO_DATE + "), COALESCE(b.name,'') FROM receivables r "
+                + "INNER JOIN sales s ON s.id=r.related_sale_id LEFT JOIN buyers b ON b.id=s.buyer_id "
+                + "WHERE COALESCE(r.owner_uid,'')=? AND COALESCE(r.status,'OPEN')<>'CLOSED' "
+                + "AND r.amount - r.total_received > 0.009 AND COALESCE(b.name,'')<>''", new String[]{own});
+        try {
+            if (c.moveToFirst() && !c.isNull(0)) {
+                int day = BuyerFairCompare.epochDay(c.getString(0));
+                int now = BuyerFairCompare.epochDay(today);
+                if (day != Integer.MIN_VALUE && now != Integer.MIN_VALUE && now >= day) {
+                    f.oldestReceivableDays = now - day;
+                    f.oldestReceivableBuyer = c.getString(1);
+                }
+            }
+        } finally { c.close(); }
+    }
+
     /** Tanecik'in balonundaki düğme. */
     private void tanecikAction(String action) {
-        if (TanecikLines.GO_ELEK.equals(action)) {
+        if (action != null && action.startsWith("ASK|")) {
+            // Tanecik'in önerdiği soru asistana yazılı gider; cevap asistanın kendi kurallarıyla, kayıtlardan gelir.
+            String q = action.substring(4).trim();
+            if (!q.isEmpty()) askZeytinAssistant(q);
+        } else if (TanecikLines.GO_ELEK.equals(action)) {
             showSection("ELEK");
         } else if (TanecikLines.GO_WEATHER.equals(action)) {
             HomeWeatherState w = homeWeather;
