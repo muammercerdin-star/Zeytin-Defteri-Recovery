@@ -29,6 +29,9 @@ public final class BuyersActivity extends Activity {
     public static final String EXTRA_BUYER_ID = "buyer_id";
     /** Alıcılarım → "Elek raporu gör": karşılaştırmanın sade dille anlatımı. */
     static final String EXTRA_REPORT = "elek_report";
+    /** Tanecik turundan açıldı: rapor kendiliğinden okunur, bitince tura dönülür. */
+    static final String EXTRA_TOUR = "tanecik_tour";
+    private boolean tourMode, tourStarted, tourSpoke;
     private boolean reportMode;
     private android.speech.tts.TextToSpeech tts;
     private boolean ttsReady, speaking;
@@ -66,6 +69,7 @@ public final class BuyersActivity extends Activity {
         owner = databaseHelper.getActiveOwnerUid();
         buyerId = getIntent().getLongExtra(EXTRA_BUYER_ID, 0);
         reportMode = getIntent().getBooleanExtra(EXTRA_REPORT, false);
+        tourMode = reportMode && getIntent().getBooleanExtra(EXTRA_TOUR, false);
         getWindow().setStatusBarColor(GreenTheme.color(R.color.zd_bg));
         getWindow().setNavigationBarColor(GreenTheme.color(R.color.zd_bg));
         if (buyerId <= 0 && !reportMode) {
@@ -291,6 +295,24 @@ public final class BuyersActivity extends Activity {
         listenButton.setOnClickListener(v -> toggleSpeak(report.plainText()));
         top.addView(listenButton, sized(-1, 48, 14));
         body.addView(top, gap(14));
+        if (tourMode) {
+            TextView back = pill("Tura dön ›", false);
+            back.setOnClickListener(v -> finish());
+            body.addView(back, sized(-1, 48, 10));
+            // Tanecik başlığı ve en iyi alıcının satırını okur; bitince tura döner (ses yoksa 12 sn sonra).
+            StringBuilder say = new StringBuilder(report.headline);
+            if (!report.sections.isEmpty() && report.sections.get(0).compared) {
+                BuyerElekReport.Section first = report.sections.get(0);
+                say.append(' ').append(first.title).append('.');
+                if (!first.lines.isEmpty()) say.append(' ').append(first.lines.get(0));
+            }
+            final String text = say.toString();
+            if (!tourStarted) {
+                tourStarted = true;
+                mouthHandler.postDelayed(() -> { if (!isFinishing()) toggleSpeak(text); }, 900);
+                mouthHandler.postDelayed(() -> { if (!isFinishing() && !speaking) finish(); }, 12000);
+            }
+        }
 
         for (BuyerElekReport.Section sec : report.sections) {
             LinearLayout box = card(GreenTheme.color(R.color.zd_card), GreenTheme.color(R.color.zd_border));
@@ -387,6 +409,8 @@ public final class BuyersActivity extends Activity {
     private void setSpeaking(boolean on) {
         boolean was = speaking;
         speaking = on;
+        if (on) tourSpoke = true;
+        if (tourMode && was && !on && tourSpoke) mouthHandler.postDelayed(() -> { if (!isFinishing()) finish(); }, 1500);
         mouthHandler.removeCallbacks(mouthTick);
         if (mascot != null) {
             if (on && !was) mouthHandler.post(mouthTick);

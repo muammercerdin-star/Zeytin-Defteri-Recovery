@@ -68,7 +68,7 @@ public final class TanecikLines {
 
     /** Eylem: balondaki düğme ne açar. GO_ASK: soruyu asistana sorar (Line.question). */
     public static final String GO_ELEK = "ELEK", GO_WEATHER = "WEATHER", GO_BUYERS = "BUYERS", GO_REPORT = "REPORT",
-            GO_ASK = "ASK", GO_WAKE = "WAKE";
+            GO_ASK = "ASK", GO_WAKE = "WAKE", GO_TOUR = "TOUR";
 
     /** Alacak bu kadar gündür bekliyorsa Tanecik kendiliğinden uyarır. */
     static final int OLD_RECEIVABLE_DAYS = 14;
@@ -167,6 +167,7 @@ public final class TanecikLines {
         out.add(ask("ask_today", "Bana soru sorabilirsin. Mesela: \"Bugün bahçede ne var?\"", "bugün bahçede ne var?", "Sor ›"));
         out.add(ask("ask_price", "Piyasayı merak ediyorsan sor: \"2 numara fiyatı ne kadar?\"", "2 numara fiyatı ne kadar?", "Sor ›"));
         out.add(ask("ask_expense", "Masrafını bilmek ister misin? \"Bu sezon masraf ne kadar?\" de.", "bu sezon masraf ne kadar?", "Sor ›"));
+        out.add(new Line("tour_offer", "Uygulamayı bilmiyorsan seni bir dakikada gezdireyim mi?", GO_TOUR, "Gezdir ›", "", false));
         out.add(new Line("tip_mic", "Ortadaki mikrofona bas, konuşarak kaydet. \"150 kilo topladım\" demen yeter.", "", "", "", false));
         out.add(new Line("tip_drag", "Beni parmağınla tutup taşıyabilirsin. Gizlemek istersen üstüme basılı tut.", "", "", "", false));
         return out;
@@ -201,7 +202,12 @@ public final class TanecikLines {
 
     /** İlk tanışma (bir kez). */
     public static String intro() {
-        return "Merhaba, ben Tanecik! Bahçende ve defterinde sana yardım edeceğim. Bana dokun, konuşayım.";
+        return "Merhaba, ben Tanecik! Bahçende ve defterinde sana yardım edeceğim. İstersen seni bir gezdireyim.";
+    }
+
+    /** Tanışma balonu: "Gezdir" düğmesi turu başlatır. */
+    public static Line introLine() {
+        return new Line("intro", intro(), GO_TOUR, "Gezdir ›", "", false);
     }
 
     /** Hava koduna göre yağış var mı (WMO: çisenti, yağmur, sağanak, fırtına). */

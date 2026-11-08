@@ -2255,7 +2255,9 @@ public class ProducerFeedActivity extends Activity {
 
 
         // 3) Zeytin takvimi
-        hero.addView(buildHomeSeasonCard(today,gold),homeCardParams(14));
+        View seasonCard=buildHomeSeasonCard(today,gold);
+        seasonCard.setTag(TanecikTour.TAG_TAKVIM);   // Tanecik turu bu karta zıplar
+        hero.addView(seasonCard,homeCardParams(14));
 
         // 4) Hava kartı
         LinearLayout weatherCard=new LinearLayout(this);
@@ -2348,6 +2350,7 @@ public class ProducerFeedActivity extends Activity {
             return true;
         });
         state.weatherCard=weatherHolder;
+        weatherHolder.setTag(TanecikTour.TAG_HAVA);
         hero.addView(weatherHolder,homeCardParams(12));
 
         state.refresh=() -> {
@@ -6525,7 +6528,9 @@ public class ProducerFeedActivity extends Activity {
 
     /** Tanecik'in balonundaki düğme. */
     private void tanecikAction(String action) {
-        if (action != null && action.startsWith("ASK|")) {
+        if ("TOUR".equals(action)) {
+            startTanecikTour();
+        } else if (action != null && action.startsWith("ASK|")) {
             // Tanecik'in önerdiği soru asistana yazılı gider; cevap asistanın kendi kurallarıyla, kayıtlardan gelir.
             String q = action.substring(4).trim();
             if (!q.isEmpty()) askZeytinAssistant(q);
@@ -6542,7 +6547,33 @@ public class ProducerFeedActivity extends Activity {
     }
 
     private void updateTanecik() {
-        if (tanecik != null) tanecik.setActive(screenResumed && "HOME".equals(currentSection) && !seasonReportOpen);
+        if (tanecik == null) return;
+        boolean onPage = "HOME".equals(currentSection) || (tanecik.touring() && "ELEK".equals(currentSection));
+        tanecik.setActive(screenResumed && onPage && !seasonReportOpen);
+    }
+
+    /** "Tanecik ile tanıtım turu": Ana sayfa → takvim → hava → mikrofon → Elek → elek raporu → kapanış. */
+    void startTanecikTour() {
+        if (tanecik == null) return;
+        if (!TanecikWalker.enabled(this)) TanecikWalker.setEnabled(this, true);
+        if (!"HOME".equals(currentSection)) showSection("HOME");
+        tanecik.startTour(TanecikTour.steps(), new TanecikWalker.TourHost() {
+            @Override public void showSection(String section) {
+                if (!section.equals(currentSection)) ProducerFeedActivity.this.showSection(section);
+            }
+            @Override public View find(String tag) {
+                return getWindow().getDecorView().findViewWithTag(tag);
+            }
+            @Override public void openReport() {
+                startActivity(new Intent(ProducerFeedActivity.this, BuyersActivity.class)
+                        .putExtra(BuyersActivity.EXTRA_REPORT, true).putExtra(BuyersActivity.EXTRA_TOUR, true));
+            }
+            @Override public void tourEnded() {
+                if (!"HOME".equals(currentSection)) ProducerFeedActivity.this.showSection("HOME");
+                updateTanecik();
+            }
+        });
+        updateTanecik();
     }
 
     private void setSeasonReportOpen(boolean open) {
@@ -6857,6 +6888,7 @@ public class ProducerFeedActivity extends Activity {
         assistantItem.setGravity(Gravity.CENTER);
         ZeytinAssistantOrbView plus = new ZeytinAssistantOrbView(this);
         assistantOrb = plus;
+        plus.setTag(TanecikTour.TAG_MIKROFON);
         plus.setContentDescription("Zeytin Asistanını aç. İşlem eklemek için uzun bas.");
         plus.setElevation(dp(8));
         assistantItem.addView(plus, new LinearLayout.LayoutParams(dp(60), dp(60)));

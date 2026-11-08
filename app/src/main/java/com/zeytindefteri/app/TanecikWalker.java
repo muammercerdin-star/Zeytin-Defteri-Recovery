@@ -102,6 +102,21 @@ final class TanecikWalker {
     private final ViewTreeObserver.OnScrollChangedListener scrollWatch = this::onPageScrolled;
     private ViewTreeObserver watchedTree;
 
+    /** Tur sırasında ekranları açan ve hedefleri bulan taraf (ProducerFeedActivity). */
+    interface TourHost {
+        void showSection(String section);
+        View find(String tag);
+        void openReport();
+        void tourEnded();
+    }
+
+    private List<TanecikTour.Step> tour;
+    private int tourAt = -1;
+    private TourHost tourHost;
+    private boolean tourSpeaking;
+
+    boolean touring() { return tour != null; }
+
     private TextToSpeech tts;
     private boolean ttsReady, ttsFailed, talking;
 
@@ -165,9 +180,11 @@ final class TanecikWalker {
         buttons.setGravity(Gravity.CENTER_VERTICAL);
         listen = bubbleButton("🔊 Dinle");
         listen.setContentDescription("Tanecik'in sözünü sesli dinle");
-        listen.setOnClickListener(v -> toggleTalk());
+        listen.setOnClickListener(v -> { if (tour != null) endTour(); else toggleTalk(); });
         go = bubbleButton("");
         go.setOnClickListener(v -> {
+            if (tour != null) { tourNext(); return; }
+            if (TanecikLines.GO_TOUR.equals(bubbleAction)) { hideBubble(); if (onAction != null) onAction.accept("TOUR"); return; }
             if (TanecikLines.GO_WAKE.equals(bubbleAction)) { hideBubble(); wake(); return; }
             String action = TanecikLines.GO_ASK.equals(bubbleAction) ? "ASK|" + bubbleQuestion : bubbleAction;
             hideBubble();
@@ -244,6 +261,14 @@ final class TanecikWalker {
         refreshNews();
         actor.setVisibility(View.VISIBLE);
         actor.setTranslationY(floorY());
+        if (tour != null) {
+            // Elek raporundan dönüldü (ya da ekran yeniden açıldı): tur kaldığı yerden sürer.
+            sleeping = false;
+            if (actor.getTranslationX() < 0 || actor.getTranslationX() > maxX()) actor.setTranslationX(maxX() / 2f);
+            body.setImageResource(R.drawable.tanecik_duruyor);
+            handler.postDelayed(this::runTourStep, 700);
+            return;
+        }
         if (sleeping || !motionAllowed()) {
             actor.setTranslationX(maxX() - dp(4));
             face(true);
@@ -307,7 +332,7 @@ final class TanecikWalker {
         SharedPreferences p = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if (p.getBoolean(KEY_INTRO, false) || sleeping) return false;
         p.edit().putBoolean(KEY_INTRO, true).apply();
-        say(new TanecikLines.Line(TanecikLines.intro(), "", ""));
+        say(TanecikLines.introLine());
         return true;
     }
 
@@ -342,7 +367,7 @@ final class TanecikWalker {
     };
 
     private void nextAction() {
-        if (!active || dragging || bubble.getVisibility() == View.VISIBLE) return;
+        if (!active || dragging || tour != null || bubble.getVisibility() == View.VISIBLE) return;
         if (shouldSleep()) { goToSleep(); return; }
         idling = false;
         handler.removeCallbacks(blink);
@@ -668,6 +693,7 @@ final class TanecikWalker {
 
     /** Dokununca: sıradaki söz (veriye göre). */
     private void speak() {
+        if (tour != null) return;   // turda dokunuş anlatımı bölmez
         if (sleeping) {
             // Uyurken ikinci dokunuş (balon açıkken) da uyandırır.
             if (bubble.getVisibility() == View.VISIBLE && TanecikLines.GO_WAKE.equals(bubbleAction)) { hideBubble(); wake(); return; }
@@ -888,8 +914,8 @@ final class TanecikWalker {
                 }
                 tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                     @Override public void onStart(String id) { }
-                    @Override public void onDone(String id) { handler.post(() -> talkEnded()); }
-                    @Override public void onError(String id) { handler.post(() -> talkEnded()); }
+                    @Override public void onDone(String id) { handler.post(() -> talkDone()); }
+                    @Override public void onError(String id) { handler.post(() -> talkDone()); }
                 });
                 if (bubble.getVisibility() == View.VISIBLE) talk(text);
             }));
@@ -911,12 +937,157 @@ final class TanecikWalker {
 
     private void talkEnded() {
         talking = false;
-        listen.setText("🔊 Dinle");
+        listen.setText(tour != null ? "✕ Turu bitir" : "🔊 Dinle");
+    }
+
+    /** Okuma kendiliğinden bitti: turdaysa bir sonraki adıma geçer. */
+    private void talkDone() {
+        talkEnded();
+        if (tour != null && tourSpeaking) {
+            tourSpeaking = false;
+            handler.postDelayed(this::tourAfterSpeech, 900);
+        }
     }
 
     private void stopTalk() {
+        tourSpeaking = false;
         if (tts != null && talking) { try { tts.stop(); } catch (RuntimeException ignored) { } }
         talkEnded();
+    }
+
+    /** Türkçe sesi hazırlar; hazır olunca (ya da hiç yoksa) then çalışır. */
+    private void ensureTts(Runnable then) {
+        if (tts != null) { then.run(); return; }
+        tts = new TextToSpeech(activity.getApplicationContext(), st -> handler.post(() -> {
+            int lang = TextToSpeech.LANG_NOT_SUPPORTED;
+            try { if (st == TextToSpeech.SUCCESS) lang = tts.setLanguage(new Locale("tr", "TR")); }
+            catch (RuntimeException ignored) { }
+            ttsReady = st == TextToSpeech.SUCCESS && lang >= 0;
+            if (!ttsReady) ttsFailed = true;
+            else tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                @Override public void onStart(String id) { }
+                @Override public void onDone(String id) { handler.post(() -> talkDone()); }
+                @Override public void onError(String id) { handler.post(() -> talkDone()); }
+            });
+            then.run();
+        }));
+    }
+
+    // ------------------------------------------------------------ tanıtım turu
+
+    /** Turu baştan başlatır (Ayarlar'dan ya da tanışma balonundan). */
+    void startTour(List<TanecikTour.Step> steps, TourHost host) {
+        tour = steps;
+        tourAt = 0;
+        tourHost = host;
+        awakeUntil = SystemClock.uptimeMillis() + TanecikLines.AWAKE_MS * 3;   // gece de gezdirir
+        sleeping = false;
+        if (!active) return;   // setActive(true) olunca startAfterLayout sürdürür
+        handler.removeCallbacksAndMessages(null);
+        cancelMotion();
+        hideBubble();
+        // Ses hazırlansın; sonra Tanecik görünür olur ve tura başlar (startAfterLayout tur dalı).
+        ensureTts(this::startAfterLayout);
+    }
+
+    private void runTourStep() {
+        if (tour == null || !active) return;
+        if (tourAt >= tour.size()) { endTour(); return; }
+        final TanecikTour.Step step = tour.get(tourAt);
+        handler.removeCallbacksAndMessages(null);
+        cancelMotion();
+        hideBubble();
+        if (tourHost != null) {
+            if (platform != null) { platform = null; actor.setTranslationY(floorY()); }
+            tourHost.showSection(step.section);
+        }
+        // Ekran kurulsun, sonra hedefe git.
+        handler.postDelayed(() -> moveForStep(step), 650);
+    }
+
+    private void moveForStep(TanecikTour.Step step) {
+        if (tour == null || !active) return;
+        View target = step.tag.isEmpty() || tourHost == null ? null : tourHost.find(step.tag);
+        Runnable talkThen = () -> tourSay(step);
+        if (target != null && TanecikTour.TAG_MIKROFON.equals(step.tag)) {
+            // Mikrofon alt menüde: yanına yürür.
+            float x = layer.getWidth() / 2f - w - dp(28);
+            if (platform != null) flyTo(x, null, talkThen); else walkTo(x, talkThen);
+            return;
+        }
+        if (target != null) {
+            ScrollView sv = safePage();
+            float want = layer.getHeight() * 0.42f;
+            float dy = topOf(target) - want;
+            if (sv != null && Math.abs(dy) > dp(24)) sv.smoothScrollBy(0, Math.round(dy));
+            handler.postDelayed(() -> {
+                if (tour == null || !active) return;
+                if (validPlatform(target)) jumpTo(randomXOn(target), target, talkThen);
+                else talkThen.run();
+            }, 700);
+            return;
+        }
+        if (platform != null) flyTo(randomFloorX(), null, talkThen);
+        else if (actor.getTranslationX() < dp(8) || actor.getTranslationX() > maxX() - dp(8)) walkTo(maxX() / 2f, talkThen);
+        else talkThen.run();
+    }
+
+    private void tourSay(TanecikTour.Step step) {
+        if (tour == null || !active) return;
+        boolean last = tourAt >= tour.size() - 1;
+        boolean news = tourAt == tour.size() - 2;   // "başımda ünlem çıkar" adımı
+        if (news) showNews(true);
+        TanecikLines.Line line = new TanecikLines.Line("tour_" + tourAt, step.text, "TOURNEXT",
+                last ? "Bitir ›" : "Devam ›", "", false);
+        actor.setTranslationY(surfaceY());
+        body.setImageResource(last ? R.drawable.tanecik_sevinc : R.drawable.tanecik_merhaba);
+        showBubble(line);
+        listen.setText("✕ Turu bitir");
+        listen.setVisibility(last ? View.GONE : View.VISIBLE);
+        if (ttsReady) {
+            talk(step.text);
+            tourSpeaking = talking;
+        }
+        if (!tourSpeaking) handler.postDelayed(this::tourAfterSpeech, TanecikTour.readMs(step.text));
+    }
+
+    /** Söz bitti: rapor adımıysa raporu açar, değilse sıradaki adım. */
+    private void tourAfterSpeech() {
+        if (tour == null || !active) return;
+        TanecikTour.Step step = tour.get(Math.min(tourAt, tour.size() - 1));
+        if (TanecikTour.DO_REPORT.equals(step.after) && tourHost != null) {
+            tourAt++;
+            hideBubble();
+            tourHost.openReport();   // dönünce startAfterLayout turu sürdürür
+            return;
+        }
+        if (tourAt >= tour.size() - 1) { handler.postDelayed(this::endTour, 1500); return; }
+        tourNext();
+    }
+
+    private void tourNext() {
+        if (tour == null) return;
+        stopTalk();
+        TanecikTour.Step step = tour.get(Math.min(tourAt, tour.size() - 1));
+        if (TanecikTour.DO_REPORT.equals(step.after) && tourHost != null) { tourAfterSpeech(); return; }
+        tourAt++;
+        runTourStep();
+    }
+
+    void endTour() {
+        if (tour == null) return;
+        tour = null;
+        tourAt = -1;
+        stopTalk();
+        hideBubble();
+        showNews(false);
+        TourHost host = tourHost;
+        tourHost = null;
+        if (host != null) host.tourEnded();
+        if (active) {
+            sleeping = shouldSleep();
+            resumeIdle();
+        }
     }
 
     // ------------------------------------------------------------ dokunma: dokun, taşı, basılı tut
@@ -930,6 +1101,7 @@ final class TanecikWalker {
     private boolean onTouch(View v, MotionEvent e) {
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
+                if (tour != null) return false;   // tur sürerken Tanecik tutulmaz
                 downX = e.getRawX(); downY = e.getRawY(); downAt = SystemClock.uptimeMillis();
                 grabDx = downX - actor.getTranslationX(); grabDy = downY - actor.getTranslationY();
                 dragging = false; longPressed = false;

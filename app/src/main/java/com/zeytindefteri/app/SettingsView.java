@@ -99,6 +99,9 @@ final class SettingsView extends ScrollView {
                 typingRow(activity),
                 prayerRow(activity),
                 tanecikRow(activity),
+                row(activity, R.drawable.ic_assistant_nav_archive, "Tanecik ile tanıtım turu",
+                        "Tanecik uygulamayı sesli anlatarak gezdirir", null,
+                        () -> { if (activity instanceof ProducerFeedActivity) ((ProducerFeedActivity) activity).startTanecikTour(); }),
                 tanitimRow(activity));
         View management = ModerationAccess.settingsSection(activity, access);
         if (management != null) body.addView(management);

@@ -148,6 +148,24 @@ public class TanecikLinesTest {
         ok(TanecikLines.AWAKE_MS == 300000L, "5 dakika uyanık");
         ok(!z.important && !TanecikLines.wokeUp().important, "uyku sözleri '!' getirmez");
 
+        // --- Tanıtım turu
+        List<TanecikTour.Step> steps = TanecikTour.steps();
+        ok(steps.size() >= 6, "tur adımları");
+        int reports = 0;
+        for (int i = 0; i < steps.size(); i++) {
+            TanecikTour.Step st = steps.get(i);
+            ok(st.section.equals("HOME") || st.section.equals("ELEK"), "bölüm: " + st.section);
+            ok(st.tag.isEmpty() || st.tag.equals(TanecikTour.TAG_TAKVIM) || st.tag.equals(TanecikTour.TAG_HAVA)
+                    || st.tag.equals(TanecikTour.TAG_MIKROFON), "hedef: " + st.tag);
+            ok(!st.text.isEmpty() && st.text.length() <= 170, "söz uzunluğu: " + st.text.length());
+            if (TanecikTour.DO_REPORT.equals(st.after)) { reports++; ok(i < steps.size() - 1, "rapor son adım olamaz (dönüş adımı lazım)"); }
+        }
+        ok(reports == 1, "bir rapor adımı");
+        ok(steps.get(0).text.startsWith("Merhaba, ben Tanecik!") && steps.get(steps.size() - 1).text.startsWith("İşte bu kadar!"), "giriş ve kapanış");
+        ok(TanecikTour.readMs("kısa") == 4500 && TanecikTour.readMs(steps.get(3).text) > 4500, "sessiz telefonda süre");
+        ok(TanecikLines.introLine().action.equals(TanecikLines.GO_TOUR) && TanecikLines.introLine().actionLabel.equals("Gezdir ›"), "tanışmada Gezdir");
+        ok(has(TanecikLines.smart(null, 10, 11), "gezdireyim mi"), "turu öneren söz");
+
         System.out.println("PASS: " + checks + " Tanecik sözü kontrolü");
     }
 }
