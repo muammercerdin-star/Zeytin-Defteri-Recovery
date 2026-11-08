@@ -138,7 +138,14 @@ final class TanecikVoice {
         showChunk(TanecikCaptions.indexAt(chunks, offset));
     }
 
+    /**
+     * Büyük altyazı kapalı (kullanıcı isteği: Tanecik konuşurken sözlerin ekrana yazılmasına gerek yok).
+     * Öbek eşleştirme kodu ileride "sözleri yazıyla da göster" seçeneği için duruyor.
+     */
+    static boolean captionsEnabled = false;
+
     private void showChunk(int i) {
+        if (!captionsEnabled) return;
         if (chunks == null || i < 0 || i >= chunks.size() || i == shown) return;
         shown = i;
         caption.setText(chunks.get(i).text);
