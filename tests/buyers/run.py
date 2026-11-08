@@ -7,6 +7,7 @@ with tempfile.TemporaryDirectory(prefix='zeytin-buyers-') as out:
     stubs = [str(p) for p in (here / 'stubs').rglob('*.java')]
     subprocess.run(['java', '-m', 'jdk.compiler/com.sun.tools.javac.Main', '-encoding', 'UTF-8', '-d', out, *stubs,
                     str(root / 'app/src/main/java/com/zeytindefteri/app/BuyerDirectory.java'),
+                    str(root / 'app/src/main/java/com/zeytindefteri/app/BuyerFairCompare.java'),
                     str(here / 'BuyerDirectoryTest.java')], check=True)
     db = pathlib.Path(out) / 'test.sqlite'
     subprocess.run(['java', '-cp', out, 'com.zeytindefteri.app.BuyerDirectoryTest', str(db), str(here / 'sql_helper.py')],

@@ -149,6 +149,51 @@ public final class BuyerDirectoryTest {
         ok(BuyerDirectory.elekVerdict(sv, BuyerDirectory.others(st, veli)).contains("düşük"), "düşük iri oranı");
         ok(BuyerDirectory.elekStats(db, "u1", 2026).get(ali) == null, "başka kullanıcının verisi karışmaz");
 
+        // --- Adil karşılaştırma (u4): kullanıcının örneği. Dün Ali'ye iri zeytinli Hacıaliler'i, bugün Özer'e ufak
+        // zeytinli Girelli'yi verdi. Sezon toplamı "Özer kötü" der; adil karşılaştırma eşleşme olmadığı için hüküm vermez.
+        db.execSQL("INSERT INTO buyers(name, created_at, owner_uid) VALUES('Ali Özdemir', 1, 'u4'), ('Özer', 1, 'u4'), ('Kemal', 1, 'u4')");
+        long fa = BuyerDirectory.find(db, "u4", "Ali Özdemir"), fo = BuyerDirectory.find(db, "u4", "Özer"), fk = BuyerDirectory.find(db, "u4", "Kemal");
+        long h1 = sale4(db, 10, fa, "2026-11-06");
+        grade(db, h1, "DOUBLE", 60, 130); grade(db, h1, "1", 90, 100); grade(db, h1, "2", 50, 70);
+        long g1 = sale4(db, 20, fo, "07.11.2026");                     // gg.aa.yyyy de okunur
+        grade(db, g1, "2", 80, 72); grade(db, g1, "3", 80, 44); grade(db, g1, "4", 40, 30);
+        long mixed = sale4(db, 20, fo, "2026-11-07");
+        grade(db, mixed, "KARISIK", 500, 55);                        // sınıfsız satış karşılaştırmaya girmez
+        List<BuyerFairCompare.Sale> fs = BuyerDirectory.fairSales(db, "u4", 2026);
+        ok(fs.size() == 2, "sınıfsız satış alınmaz: " + fs.size());
+        BuyerFairCompare.Elek eo = BuyerFairCompare.elek(fs, fo);
+        ok(eo.matchedSales == 0 && !eo.enough(), "farklı bahçe eşleşmez");
+        ok(BuyerFairCompare.elekVerdict(eo, "Özer").startsWith("Adil karşılaştırma için Özer'e"), BuyerFairCompare.elekVerdict(eo, "Özer"));
+        BuyerFairCompare.Prices po = BuyerFairCompare.prices(fs, fo);
+        ok(po.matchedSales == 1, "fiyat bahçeden bağımsız, yakın günde eşleşir");
+        BuyerFairCompare.PriceRow p2 = prow(po, 2), p3 = prow(po, 3);
+        ok(p2.matched() && near(p2.buyerAvg, 72) && near(p2.othersAvg, 70), "2 No aynı günler: 72 vs 70");
+        ok(!p3.matched() && near(p3.buyerSeasonAvg, 44), "diğerinde olmayan sınıf karşılaştırılmaz");
+
+        // Aynı bahçe (Girelli), aynı hafta Kemal'e de satış: şimdi adil karşılaştırma var.
+        long k1 = sale4(db, 20, fk, "2026-11-10");
+        grade(db, k1, "1", 20, 100); grade(db, k1, "2", 100, 70); grade(db, k1, "3", 60, 42); grade(db, k1, "4", 20, 30);
+        long far = sale4(db, 20, fk, "2026-10-01");                  // bir ay önce: eşleşmez
+        grade(db, far, "DOUBLE", 400, 120);
+        fs = BuyerDirectory.fairSales(db, "u4", 2026);
+        eo = BuyerFairCompare.elek(fs, fo);
+        ok(eo.matchedSales == 1 && eo.enough() && near(eo.matchedKg, 200) && near(eo.othersKg, 200), "aynı bahçe ±7 gün eşleşir");
+        ok(near(eo.buyerShare[0] + eo.buyerShare[1], 0) && near(eo.othersShare[1], 10), "uzak tarihli Double karışmaz");
+        double oPer = (20 * 100 + 100 * 70 + 60 * 42 + 20 * 30) / 200.0, bPer = (80 * 72 + 80 * 44 + 40 * 30) / 200.0;
+        ok(near(eo.othersPerKg, oPer) && near(eo.buyerPerKg, bPer), "kg başı: " + eo.buyerPerKg + " / " + eo.othersPerKg);
+        String vo = BuyerFairCompare.elekVerdict(eo, "Özer");
+        ok(vo.equals("Aynı zeytine kilo başı 8,2 TL az verdi. Double + 1 Numara oranı 10 puan düşük (eleği ufak çıkarıyor)."), vo);
+        ok(BuyerFairCompare.elekBasis(eo).equals("Aynı bahçe, ±7 gün · 1 satış eşleşti · 200 kg"), BuyerFairCompare.elekBasis(eo));
+        BuyerFairCompare.Elek ea = BuyerFairCompare.elek(fs, fa);
+        ok(ea.matchedSales == 0, "Ali'nin bahçesine başka alıcı yok: hüküm yok");
+        BuyerFairCompare.Prices pk = BuyerFairCompare.prices(fs, fk);
+        BuyerFairCompare.PriceRow kd = prow(pk, 0), k2 = prow(pk, 2);
+        ok(!kd.matched() && near(kd.buyerSeasonAvg, 120), "bir ay önceki Double eşleşmez");
+        ok(k2.matched() && near(k2.othersAvg, 72), "10 Kasım ±3 gün: yalnız 7 Kasım (6 Kasım dışarıda)");
+        ok(BuyerFairCompare.epochDay("2026-11-08") - BuyerFairCompare.epochDay("2026-10-31") == 8, "ay geçişi");
+        ok(BuyerFairCompare.epochDay("2024-03-01") - BuyerFairCompare.epochDay("2024-02-28") == 2, "artık yıl");
+        ok(BuyerFairCompare.epochDay("1970-01-01") == 0 && BuyerFairCompare.epochDay("bozuk") == Integer.MIN_VALUE, "epochDay sınırları");
+
         System.out.println("PASS: " + checks + " alıcı rehberi kontrolü (gerçek SQLite)");
     }
 
@@ -162,6 +207,17 @@ public final class BuyerDirectoryTest {
         db.execSQL("INSERT INTO sales(garden_id, buyer_id, sale_date, sale_kind, season_year, owner_uid) VALUES(1, ?, '2026-10-19', ?, ?, 'u3')",
                 new Object[]{buyer, kind, season});
         return lastId(db, "sales");
+    }
+
+    private static long sale4(SQLiteDatabase db, int garden, long buyer, String date) {
+        db.execSQL("INSERT INTO sales(garden_id, buyer_id, sale_date, sale_kind, season_year, owner_uid) VALUES(?, ?, ?, 'SALE', 2026, 'u4')",
+                new Object[]{garden, buyer, date});
+        return lastId(db, "sales");
+    }
+
+    private static BuyerFairCompare.PriceRow prow(BuyerFairCompare.Prices p, int grade) {
+        for (BuyerFairCompare.PriceRow r : p.rows) if (r.grade == grade) return r;
+        throw new AssertionError("sınıf yok: " + grade);
     }
 
     private static void grade(SQLiteDatabase db, long sale, String grade, double kg, double price) {

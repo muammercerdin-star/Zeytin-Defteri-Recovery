@@ -347,6 +347,38 @@ public final class BuyerDirectory {
         return out;
     }
 
+    /**
+     * Adil karşılaştırma için sezonun satışları tek tek (bahçe + tarih + sınıf kiloları).
+     * Sınıfsız (KARISIK) satırlar gradeIndex'te -1 döndüğü için girmez; tarihi okunamayan satış atlanır.
+     */
+    public static List<BuyerFairCompare.Sale> fairSales(SQLiteDatabase db, String owner, int season) {
+        Map<Long, BuyerFairCompare.Sale> out = new LinkedHashMap<>();
+        Cursor c = db.rawQuery("SELECT s.id, s.buyer_id, COALESCE(s.garden_id,0), " + ISO_DATE + ", sg.grade, sg.kg, "
+                + "COALESCE(sg.price_per_kg,0) "
+                + "FROM sale_grades sg INNER JOIN sales s ON s.id=sg.sale_id "
+                + "WHERE COALESCE(s.owner_uid,'')=? AND s.season_year=? AND s.buyer_id IS NOT NULL "
+                + "AND COALESCE(s.sale_kind,'SALE')='SALE' AND sg.kg>0", new String[]{owner(owner), String.valueOf(season)});
+        try {
+            while (c.moveToNext()) {
+                int i = gradeIndex(c.getString(4));
+                int day = BuyerFairCompare.epochDay(c.getString(3));
+                if (i < 0 || day == Integer.MIN_VALUE) continue;
+                BuyerFairCompare.Sale s = out.get(c.getLong(0));
+                if (s == null) {
+                    s = new BuyerFairCompare.Sale();
+                    s.buyerId = c.getLong(1);
+                    s.gardenId = c.getLong(2);
+                    s.day = day;
+                    out.put(c.getLong(0), s);
+                }
+                double kg = c.getDouble(5);
+                s.kg[i] += kg;
+                s.tl[i] += kg * Math.max(0, c.getDouble(6));
+            }
+        } finally { c.close(); }
+        return new ArrayList<>(out.values());
+    }
+
     /** Bu alıcı dışındaki bütün alıcıların toplam dağılımı. */
     public static ElekStats others(Map<Long, ElekStats> all, long buyerId) {
         ElekStats o = new ElekStats();

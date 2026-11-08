@@ -255,27 +255,41 @@ public final class BuyersActivity extends Activity {
 
         java.util.Map<Long, BuyerDirectory.ElekStats> elek = safeElekStats(season);
         BuyerDirectory.ElekStats mine = elek.get(buyerId);
-        if (mine != null && mine.totalKg > 0) body.addView(elekCard(buyer, mine, BuyerDirectory.others(elek, buyerId)), gap(12));
+        // Adil karşılaştırma: her satış yalnız aynı bahçe/yakın tarihli satışlarla kıyaslanır (BuyerFairCompare).
+        List<BuyerFairCompare.Sale> fair = safeFairSales(season);
+        if (mine != null && mine.totalKg > 0) body.addView(elekCard(buyer, mine, BuyerFairCompare.elek(fair, buyerId)), gap(12));
 
-        List<BuyerDirectory.PriceRow> prices = BuyerDirectory.priceComparison(databaseHelper.getReadableDatabase(), owner, buyerId, season);
-        boolean comparable = false;
-        for (BuyerDirectory.PriceRow r : prices) if (r.buyerAvg > 0 && r.othersAvg > 0) comparable = true;
-        if (!prices.isEmpty()) {
+        BuyerFairCompare.Prices prices = BuyerFairCompare.prices(fair, buyerId);
+        boolean comparable = prices.matchedSales > 0;
+        if (!prices.rows.isEmpty()) {
             LinearLayout box = card(GreenTheme.color(R.color.zd_card), GreenTheme.color(R.color.zd_border));
             box.addView(text(comparable ? "Kim daha iyi fiyat verdi?" : "Ortalama fiyatları", 17, GreenTheme.color(R.color.zd_text), true));
-            box.addView(text(comparable ? "Bu sezon kg başına ortalama, senin satışlarından" : "Karşılaştırma için başka alıcıya da satış kaydı gerekir",
-                    14, GreenTheme.color(R.color.zd_muted), false));
-            box.addView(priceLine("Elek", buyer.name, "Diğerleri", GreenTheme.color(R.color.zd_muted), GreenTheme.color(R.color.zd_muted), false), gap(10));
-            for (BuyerDirectory.PriceRow r : prices) {
+            box.addView(text(BuyerFairCompare.priceBasis(prices), 14, GreenTheme.color(R.color.zd_muted), false));
+            box.addView(priceLine("Elek", buyer.name, comparable ? "Diğerleri" : "", GreenTheme.color(R.color.zd_muted), GreenTheme.color(R.color.zd_muted), false), gap(10));
+            for (BuyerFairCompare.PriceRow r : prices.rows) {
                 int better = GreenTheme.color(R.color.zd_green), worse = GreenTheme.color(R.color.zd_warning), plain = GreenTheme.color(R.color.zd_text);
                 String mark = "";
                 int color = plain;
-                if (r.buyerAvg > 0 && r.othersAvg > 0) {
+                String mineText, othersText;
+                if (r.matched()) {
                     double diff = r.buyerAvg - r.othersAvg;
                     if (diff >= 0.5) { mark = " ▲"; color = better; }
                     else if (diff <= -0.5) { mark = " ▼"; color = worse; }
+                    mineText = price(r.buyerAvg) + mark;
+                    othersText = price(r.othersAvg);
+                } else {
+                    // Aynı günlerde başka alıcı yok: sezon ortalaması bilgi olarak, karşılaştırmasız.
+                    mineText = price(r.buyerSeasonAvg);
+                    othersText = comparable ? "—" : "";
                 }
-                box.addView(priceLine(r.label, price(r.buyerAvg) + mark, price(r.othersAvg), color, plain, true), gap(8));
+                box.addView(priceLine(BuyerDirectory.GRADE_LABELS[r.grade], mineText, othersText, color, plain, true), gap(8));
+            }
+            if (comparable) {
+                TextView note = text("Diğerleri: aynı günlerde (±" + BuyerFairCompare.PRICE_DAYS
+                        + " gün) başka alıcılara aynı sınıfa aldığın fiyat. Eşleşmeyen satışlar karşılaştırmaya girmez.",
+                        13, GreenTheme.color(R.color.zd_muted), false);
+                note.setLineSpacing(0, 1.15f);
+                box.addView(note, gap(10));
             }
             body.addView(box, gap(12));
         }
@@ -369,42 +383,61 @@ public final class BuyersActivity extends Activity {
         return bar;
     }
 
-    /** Karnedeki "Elek performansı" kartı: sınıf yüzdeleri, diğer alıcılarla karşılaştırma. */
-    private View elekCard(BuyerDirectory.Summary buyer, BuyerDirectory.ElekStats mine, BuyerDirectory.ElekStats others) {
+    private List<BuyerFairCompare.Sale> safeFairSales(int season) {
+        try { return BuyerDirectory.fairSales(databaseHelper.getReadableDatabase(), owner, season); }
+        catch (RuntimeException e) { return new java.util.ArrayList<>(); }
+    }
+
+    /**
+     * Karnedeki "Elek performansı" kartı. Çubuk bu alıcının sezon dağılımını gösterir;
+     * karşılaştırma ise yalnız AYNI BAHÇEDEN, ±7 gün içinde başka alıcılara yapılan satışlarla yapılır.
+     */
+    private View elekCard(BuyerDirectory.Summary buyer, BuyerDirectory.ElekStats mine, BuyerFairCompare.Elek fair) {
         LinearLayout box = card(GreenTheme.color(R.color.zd_card), GreenTheme.color(R.color.zd_border));
         box.addView(text("Elek performansı", 17, GreenTheme.color(R.color.zd_text), true));
         box.addView(text("Bu sezon bu alıcıya verdiğin zeytinin sınıf dağılımı", 14, GreenTheme.color(R.color.zd_muted), false));
         box.addView(gradeBar(mine, 10), sized(-1, 10, 12));
-        boolean hasOthers = others.totalKg > 0;
         int ink = GreenTheme.color(R.color.zd_text), muted = GreenTheme.color(R.color.zd_muted);
         int green = GreenTheme.color(R.color.zd_green), warn = GreenTheme.color(R.color.zd_warning);
-        box.addView(priceLine("Sınıf", buyer.name, hasOthers ? "Diğerleri" : "", muted, muted, false), gap(12));
-        for (int i = 0; i < mine.kg.length; i++) {
-            if (mine.kg[i] <= 0 && others.kg[i] <= 0) continue;
-            double a = mine.share(i), b = others.share(i);
+        boolean enough = fair != null && fair.enough();
+        String verdict = BuyerFairCompare.elekVerdict(fair, buyer.name);
+        if (!enough) {
+            // Adil karşılaştırma yok: yalnız bu alıcının sezon yüzdeleri, yanında "diğerleri" sütunu yok.
+            box.addView(priceLine("Sınıf", buyer.name, "", muted, muted, false), gap(12));
+            for (int i = 0; i < mine.kg.length; i++) {
+                if (mine.kg[i] <= 0) continue;
+                box.addView(priceLine(BuyerDirectory.GRADE_LABELS[i], "%" + BuyerDirectory.pct(mine.share(i)), "", ink, ink, true), gap(8));
+            }
+            box.addView(priceLine("Kg başı", BuyerDirectory.oneDecimal(mine.avgPerKg()) + " TL", "", ink, ink, true), gap(10));
+            TextView why = text(verdict, 14, muted, false);
+            why.setLineSpacing(0, 1.15f);
+            box.addView(why, gap(12));
+            return box;
+        }
+        box.addView(text("Adil karşılaştırma", 15, ink, true), gap(14));
+        box.addView(text(BuyerFairCompare.elekBasis(fair), 13, muted, false));
+        box.addView(priceLine("Sınıf", buyer.name, "Diğerleri", muted, muted, false), gap(10));
+        for (int i = 0; i < fair.buyerShare.length; i++) {
+            double a = fair.buyerShare[i], b = fair.othersShare[i];
+            if (a <= 0.05 && b <= 0.05) continue;
             String mark = "";
             int color = ink;
-            if (hasOthers && Math.abs(a - b) >= 3 && (i <= 1 || i >= 4)) {
+            if (Math.abs(a - b) >= 3 && (i <= 1 || i >= 4)) {
                 boolean higher = a > b;
                 mark = higher ? " ▲" : " ▼";
                 // İri sınıfta fazlası iyi, ufak sınıfta (4, Yağlık) fazlası kötü.
                 color = (i <= 1) == higher ? green : warn;
             }
             box.addView(priceLine(BuyerDirectory.GRADE_LABELS[i], "%" + BuyerDirectory.pct(a) + mark,
-                    hasOthers ? "%" + BuyerDirectory.pct(b) : "", color, ink, true), gap(8));
+                    "%" + BuyerDirectory.pct(b), color, ink, true), gap(8));
         }
-        box.addView(priceLine("Kg başı", BuyerDirectory.oneDecimal(mine.avgPerKg()) + " TL",
-                hasOthers ? BuyerDirectory.oneDecimal(others.avgPerKg()) + " TL" : "", ink, ink, true), gap(10));
-        String verdict = BuyerDirectory.elekVerdict(mine, others);
-        if (verdict.isEmpty()) {
-            verdict = hasOthers ? "Karşılaştırma için iki tarafta da en az " + Math.round(BuyerDirectory.MIN_COMPARE_KG) + " kg satış gerekir."
-                    : "Karşılaştırma için başka alıcıya da satış kaydı gerekir.";
-            box.addView(text(verdict, 14, muted, false), gap(12));
-        } else {
-            int vColor = verdict.contains("yüksek") ? green : verdict.contains("düşük") ? warn : ink;
-            box.addView(text(verdict, 15, vColor, true), gap(12));
-        }
-        TextView caveat = text("Fark zeytinin kendisinden de olabilir; aynı bahçenin aynı haftadaki satışlarını karşılaştırınca daha doğru sonuç verir.",
+        double perKg = fair.perKgDiff();
+        int perKgColor = perKg >= 0.5 ? green : perKg <= -0.5 ? warn : ink;
+        box.addView(priceLine("Kg başı", BuyerDirectory.oneDecimal(fair.buyerPerKg) + " TL" + (perKg >= 0.5 ? " ▲" : perKg <= -0.5 ? " ▼" : ""),
+                BuyerDirectory.oneDecimal(fair.othersPerKg) + " TL", perKgColor, ink, true), gap(10));
+        box.addView(text(verdict, 15, perKgColor, true), gap(12));
+        TextView caveat = text("Diğerleri: aynı bahçeden, " + BuyerFairCompare.ELEK_DAYS
+                + " gün içinde başka alıcılara verdiğin zeytin. Böylece fark bahçeden ya da piyasanın oynamasından değil, alıcıdan gelir.",
                 13, muted, false);
         caveat.setLineSpacing(0, 1.15f);
         box.addView(caveat, gap(6));
