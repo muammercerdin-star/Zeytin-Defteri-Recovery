@@ -319,6 +319,7 @@ export class TezgahPage {
       secret = C.random(32);
       const nb = C.base64(C.random(32));
       const compact = await Compact.prepare(B, secret);
+      const requested = this.mono();
       const room = await this.createRoom(this.origin, { room: compact.room, phoneCapabilityHash: compact.phoneCapabilityHash });
       if (generation !== this.generation) {
         // Oda yalnız 90 sn yaşayabilir; eski async sonuç ekrana/anahtarlara dönmez.
@@ -328,9 +329,11 @@ export class TezgahPage {
       P.token(room.room, 16);
       P.token(room.browserCapability, 32);
       if (room.v === 1) P.token(room.phoneCapability, 32);
-      const remaining = room.expiresAt * 1000 - this.now();
-      P.require(Number.isSafeInteger(room.expiresAt) && remaining > 0 &&
-        remaining <= 90000, 'QR_SURESI_DOLDU');
+      P.require(Number.isSafeInteger(room.expiresAt) && room.expiresAt > 0, 'GECERSIZ_ODA');
+      // Tarayıcı saati relay saatinden kayabilir. Kayma makulse kalan süre duvar saatinden,
+      // değilse istek anından itibaren yerel kronometreyle (relay odayı en çok 90 sn tutar) sayılır.
+      const wall = room.expiresAt * 1000 - this.now();
+      const remaining = wall > 0 && wall <= 90000 ? wall : Math.max(1000, 89000 - (this.mono() - requested));
       // Sunucunun relayUrl alanı hedef seçemez; tek hedef yerel config.js.
       this.room = { room: room.room, expiresAt: room.expiresAt,
         browserCapability: room.browserCapability };
@@ -491,8 +494,9 @@ export class TezgahPage {
       case 'phone_hello': {
         P.require(!this.consumed && frame.room === this.room.room &&
           this.mono() < this.qrDeadline, 'QR_SURESI_DOLDU');
+        // Süre yukarıda yerel kronometreyle denetlendi; Pairing'e relay saatinden bir an verilir.
         const keys = await this.pairing.browserKeys(this.browser,
-          frame.phonePublicKey, frame.np, Math.floor(this.now() / 1000));
+          frame.phonePublicKey, frame.np, this.room.expiresAt - 1);
         try {
           await C.verify(keys.confirmation(), 'phone-hello', keys.transcriptHash,
             C.unbase64(frame.proof));

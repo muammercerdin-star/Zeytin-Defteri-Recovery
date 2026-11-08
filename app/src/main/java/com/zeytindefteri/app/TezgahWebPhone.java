@@ -58,9 +58,23 @@ public final class TezgahWebPhone implements AutoCloseable {
         if (commands != null) commands.backupDone(id, ok, message);
     }
 
+    /** QR'ın en uzun ömrü. Telefon bunu okuttuğu andan itibaren kendi kronometresiyle sayar. */
+    static final long QR_LIFE_MS = 90000;
+
+    /** TezgahWebClient.clock() ile aynı monotonik saat (ms). */
+    static long mono() {
+        return System.nanoTime() / 1000000;
+    }
+
     public static final class Qr {
         public final String room,capability,secret,browserKey,nb;public final long expiresAt;
-        private Qr(JSONObject j)throws Exception{room=j.getString("room");capability=j.getString("phoneCapability");secret=j.getString("secret");browserKey=j.getString("browserPublicKey");nb=j.getString("nb");expiresAt=j.getLong("expiresAt");}
+        /**
+         * Yerel son tarih (monotonik ms). Telefon saati relay saatiyle karşılaştırılmaz: operatörden
+         * ayarlanan saatler onlarca saniye kayabiliyor ve bu, eşleşmeyi rastgele bozuyordu. Asıl süre
+         * denetimi relay'dedir (süresi dolan odaya bağlantı 410 ile reddedilir).
+         */
+        public final long localDeadline;
+        private Qr(JSONObject j,long localDeadline)throws Exception{room=j.getString("room");capability=j.getString("phoneCapability");secret=j.getString("secret");browserKey=j.getString("browserPublicKey");nb=j.getString("nb");expiresAt=j.getLong("expiresAt");this.localDeadline=localDeadline;}
         public boolean compact() {
             return browserKey.isEmpty();
         }
@@ -94,12 +108,15 @@ public final class TezgahWebPhone implements AutoCloseable {
             } finally {
                 Arrays.fill(keyMac, (byte) 0);
             }
-            if (expires <= seconds) throw new IllegalArgumentException("QR_SURESI_DOLDU");
-            if (expires - seconds < 30) throw new IllegalArgumentException("QR_YENILENMEK_UZERE");
-            if (expires > seconds + 90) throw new IllegalArgumentException("GECERSIZ_QR");
+            // expiresAt MAC ile doğrulandı; telefon saatiyle karşılaştırılmaz (bkz. localDeadline).
+            if (expires <= 0) throw new IllegalArgumentException("GECERSIZ_QR");
+            if (mono() >= localDeadline) throw new IllegalArgumentException("QR_SURESI_DOLDU");
             return new Qr(TezgahWebDto.json("room", room, "phoneCapability", capability, "secret", secret,
-                    "browserPublicKey", key, "nb", nonce, "expiresAt", expires));
+                    "browserPublicKey", key, "nb", nonce, "expiresAt", expires), localDeadline);
         }
+
+        /** v1 QR'da telefon saati için kabul edilen kayma (sn). Gerçek süre denetimi relay'dedir. */
+        static final long CLOCK_SKEW_S = 600;
 
         public static Qr parse(String text,long seconds)throws Exception{
             if(text==null||TezgahWebProtocol.utf8(text).length>2048)throw new IllegalArgumentException("GECERSIZ_QR");
@@ -111,7 +128,7 @@ public final class TezgahWebPhone implements AutoCloseable {
                 byte[] cap = derive(room, secret, "phone-cap");
                 try {
                     return new Qr(TezgahWebDto.json("room", room, "phoneCapability", TezgahWebCrypto.base64(cap),
-                            "secret", secret, "browserPublicKey", "", "nb", "", "expiresAt", seconds + 90));
+                            "secret", secret, "browserPublicKey", "", "nb", "", "expiresAt", seconds + 90), mono() + QR_LIFE_MS);
                 } finally {
                     Arrays.fill(bytes, (byte) 0);
                     Arrays.fill(cap, (byte) 0);
@@ -121,7 +138,7 @@ public final class TezgahWebPhone implements AutoCloseable {
             if(j.length()!=fields.size())throw new IllegalArgumentException("GECERSIZ_QR");for(Iterator<String> it=j.keys();it.hasNext();)if(!fields.contains(it.next()))throw new IllegalArgumentException("GECERSIZ_QR");
             if(!"ZD_WEB_PAIR".equals(j.optString("kind"))||!(j.get("v") instanceof Number)||((Number)j.get("v")).doubleValue()!=1.0)throw new IllegalArgumentException("SURUM_DESTEKLENMIYOR");
             if(!(j.get("expiresAt") instanceof Number)||((Number)j.get("expiresAt")).doubleValue()!=j.getLong("expiresAt"))throw new IllegalArgumentException("GECERSIZ_QR");
-            Qr q=new Qr(j);if(q.expiresAt<=seconds||q.expiresAt>seconds+90)throw new IllegalArgumentException("QR_SURESI_DOLDU");
+            Qr q=new Qr(j,mono()+QR_LIFE_MS);if(q.expiresAt<=seconds-CLOCK_SKEW_S||q.expiresAt>seconds+90+CLOCK_SKEW_S)throw new IllegalArgumentException("QR_SURESI_DOLDU");
             TezgahWebProtocol.token(q.room,16);TezgahWebProtocol.token(q.capability,32);TezgahWebProtocol.token(q.secret,32);TezgahWebProtocol.token(q.nb,32);TezgahWebCrypto.publicKey(q.browserKey);return q;
         }
     }
@@ -137,7 +154,7 @@ public final class TezgahWebPhone implements AutoCloseable {
 
     public TezgahWebPhone(String room, TezgahWebCrypto.Keys deviceKeys, TezgahWebRepository repository,
             Consumer<String> output, Consumer<Boolean> state, Commands commands) throws Exception {
-        this.qr = new Qr(TezgahWebDto.json("room", room, "phoneCapability", "", "secret", "", "browserPublicKey", "", "nb", "", "expiresAt", 0));
+        this.qr = new Qr(TezgahWebDto.json("room", room, "phoneCapability", "", "secret", "", "browserPublicKey", "", "nb", "", "expiresAt", 0), Long.MAX_VALUE);
         this.repository = repository;
         this.output = output;
         this.state = state;
@@ -161,7 +178,8 @@ public final class TezgahWebPhone implements AutoCloseable {
     private void initializePairing() throws Exception {
         np=TezgahWebCrypto.base64(TezgahWebCrypto.random(32));KeyPair p=TezgahWebCrypto.keyPair();
         TezgahWebCrypto.Pairing pairing=new TezgahWebCrypto.Pairing(qr.room,qr.expiresAt,TezgahWebCrypto.unbase64(qr.secret),qr.browserKey,qr.nb);
-        try{keys=pairing.phoneKeys(p,np,System.currentTimeMillis()/1000);}finally{pairing.close();}
+        if(mono()>=qr.localDeadline)throw new IllegalArgumentException("QR_SURESI_DOLDU");
+        try{keys=pairing.phoneKeys(p,np,qr.expiresAt-1);}finally{pairing.close();}
         session=TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash,0,16));epoch=TezgahWebCrypto.base64(Arrays.copyOfRange(keys.transcriptHash,16,32));
         hello=TezgahWebDto.json("v",1,"type","phone_hello","room",qr.room,"phonePublicKey",TezgahWebCrypto.base64(p.getPublic().getEncoded()),"np",np,"proof",TezgahWebCrypto.base64(TezgahWebCrypto.proof(keys.confirmation(),"phone-hello",keys.transcriptHash))).toString();
     }
@@ -176,7 +194,7 @@ public final class TezgahWebPhone implements AutoCloseable {
     private String hello;
     public String room(){return qr.room;}
     public boolean ready(){return ready&&!closed;}
-    public boolean canReconnect(long now){return !closed&&(active?lost>=0&&now-lost<=300000:System.currentTimeMillis()/1000<qr.expiresAt);}
+    public boolean canReconnect(long now){return !closed&&(active?lost>=0&&now-lost<=300000:now<qr.localDeadline);}
     public void opened(){if(closed)return;output.accept(TezgahWebDto.json("v",1,"type","auth","room",qr.room,"role","phone","capability",capability).toString());}
     public void approve(){if(closed)throw new IllegalArgumentException("OTURUM_IPTAL");localApproval=true;tryConsume();}
     private void tryConsume(){if(localApproval&&peerConfirmed&&!consuming&&!active){approval.phoneApproved();consuming=true;output.accept(TezgahWebDto.json("v",1,"type","consume","session",session).toString());}}
@@ -190,13 +208,13 @@ public final class TezgahWebPhone implements AutoCloseable {
         if(type.equals("peer_joined")){if("browser".equals(f.optString("role"))){if(active)disconnected(now);else sendHello();}return;}
         if (type.equals("bootstrap")) {
             if (active || !qr.compact()) return;
-            qr = qr.resolve(f, System.currentTimeMillis() / 1000);
+            qr = qr.resolve(f, now / 1000);
             initializePairing();
             sendHello();
             return;
         }
         if(type.equals("pong")||type.equals("hiz_siniri"))return;
-        if(!active&&System.currentTimeMillis()/1000>=qr.expiresAt)throw new IllegalArgumentException("QR_SURESI_DOLDU");
+        if(!active&&now>=qr.localDeadline)throw new IllegalArgumentException("QR_SURESI_DOLDU");
         if(type.equals("web_finished")&&active)return;
         if(type.equals("web_finished")&&!active){
             if(!qr.room.equals(f.getString("room")))throw new IllegalArgumentException("GECERSIZ_ODA");
@@ -257,6 +275,6 @@ public final class TezgahWebPhone implements AutoCloseable {
         return active ? "Yeniden bağlanma veya oturum süresi doldu. Yeni QR okut." : "QR'ın süresi doldu. Yeni QR okut.";
     }
 
-    public boolean expired(long now){return closed||(active&&now-activeAt>=(persistentDevice ? 2592000000L : 28800000L))||(!active&&System.currentTimeMillis()/1000>=qr.expiresAt)||(active&&lost>=0&&now-lost>300000);}
+    public boolean expired(long now){return closed||(active&&now-activeAt>=(persistentDevice ? 2592000000L : 28800000L))||(!active&&now>=qr.localDeadline)||(active&&lost>=0&&now-lost>300000);}
     public void close(){if(commands!=null)commands.close();closed=true;ready=false;approval.close();if(channel!=null)channel.close();if(guard!=null)guard.close();if(keys!=null)keys.close();if(root!=null)Arrays.fill(root,(byte)0);repository.close();hello=null;capability=null;state.accept(false);}
 }
