@@ -33,6 +33,19 @@ public final class BuyersActivity extends Activity {
     private android.speech.tts.TextToSpeech tts;
     private boolean ttsReady, speaking;
     private TextView listenButton;
+    /** Tanecik (maskot): raporun başında durur, sesli okurken ağzı oynar. */
+    private android.widget.ImageView mascot;
+    private int mascotRest = R.drawable.tanecik_merhaba;
+    private boolean mouthOpen;
+    private final android.os.Handler mouthHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable mouthTick = new Runnable() {
+        @Override public void run() {
+            if (!speaking || mascot == null) return;
+            mouthOpen = !mouthOpen;
+            mascot.setImageResource(mouthOpen ? R.drawable.tanecik_konusuyor : R.drawable.tanecik_konusuyor_kapali);
+            mouthHandler.postDelayed(this, mouthOpen ? 170 : 130);
+        }
+    };
 
     private DatabaseHelper databaseHelper;
     private String owner = "";
@@ -80,6 +93,7 @@ public final class BuyersActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        mouthHandler.removeCallbacksAndMessages(null);
         if (tts != null) {
             try { tts.stop(); tts.shutdown(); } catch (RuntimeException ignored) { }
             tts = null;
@@ -128,6 +142,7 @@ public final class BuyersActivity extends Activity {
         if (sales > 0) body.addView(reportEntry(), gap(12));
 
         if (all.isEmpty()) {
+            body.addView(mascotView(R.drawable.tanecik_merhaba, 96), centered(96, 18));
             TextView empty = text("Henüz alıcı yok. Elek kaydında \"Bu zeytini sattım\" ile ya da yukarıdaki + Ekle ile alıcılarını kaydedebilirsin.",
                     16, GreenTheme.color(R.color.zd_text_soft), false);
             empty.setLineSpacing(0, 1.2f);
@@ -236,6 +251,8 @@ public final class BuyersActivity extends Activity {
         row.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout copy = new LinearLayout(this);
         copy.setOrientation(LinearLayout.VERTICAL);
+        row.addView(mascotView(R.drawable.tanecik_merhaba, 48), new LinearLayout.LayoutParams(dp(48), dp(54)));
+        copy.setPadding(dp(10), 0, 0, 0);
         copy.addView(text("Elek raporu gör", 17, GreenTheme.color(R.color.zd_text), true));
         copy.addView(text("Aynı zeytine kim daha çok veriyor? Sade dille anlatır.", 14, GreenTheme.color(R.color.zd_muted), false));
         row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
@@ -259,9 +276,16 @@ public final class BuyersActivity extends Activity {
         int ink = GreenTheme.color(R.color.zd_text), muted = GreenTheme.color(R.color.zd_muted);
 
         LinearLayout top = card(GreenTheme.color(R.color.zd_green_soft), GreenTheme.color(R.color.zd_green_mid_dim));
+        mascotRest = mascotPose(report);
+        LinearLayout lead = new LinearLayout(this);
+        lead.setGravity(Gravity.CENTER_VERTICAL);
+        mascot = mascotView(mascotRest, 88);
+        lead.addView(mascot, new LinearLayout.LayoutParams(dp(88), dp(99)));
         TextView headline = text(report.headline, 19, ink, true);
         headline.setLineSpacing(0, 1.15f);
-        top.addView(headline);
+        headline.setPadding(dp(12), 0, 0, 0);
+        lead.addView(headline, new LinearLayout.LayoutParams(0, -2, 1));
+        top.addView(lead);
         listenButton = pill("🔊  Sesli dinle", true);
         listenButton.setContentDescription("Raporu sesli dinle");
         listenButton.setOnClickListener(v -> toggleSpeak(report.plainText()));
@@ -290,6 +314,35 @@ public final class BuyersActivity extends Activity {
                 13, muted, false);
         how.setLineSpacing(0, 1.15f);
         body.addView(how, gap(14));
+    }
+
+    /** Rapora göre duruş: iyi alıcı bulunduysa sevinç, kıyas yoksa düşünüyor, diğer hallerde selam. */
+    static int mascotPose(BuyerElekReport.Report report) {
+        boolean anyCompared = false, anyGood = false;
+        for (BuyerElekReport.Section s : report.sections) {
+            if (s.compared) anyCompared = true;
+            if (s.compared && s.tone > 0) anyGood = true;
+        }
+        if (anyGood) return R.drawable.tanecik_sevinc;
+        if (!anyCompared) return R.drawable.tanecik_dusunuyor;
+        return R.drawable.tanecik_merhaba;
+    }
+
+    /** Süs görseli: ekran okuyucu atlar (bilgi metinde var). */
+    private android.widget.ImageView mascotView(int res, int widthDp) {
+        android.widget.ImageView v = new android.widget.ImageView(this);
+        v.setImageResource(res);
+        v.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+        v.setAdjustViewBounds(true);
+        v.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        return v;
+    }
+
+    private LinearLayout.LayoutParams centered(int widthDp, int topDp) {
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(widthDp), dp(Math.round(widthDp * 270f / 240f)));
+        p.gravity = Gravity.CENTER_HORIZONTAL;
+        p.topMargin = dp(topDp);
+        return p;
     }
 
     private void toggleSpeak(String text) {
@@ -332,7 +385,13 @@ public final class BuyersActivity extends Activity {
     }
 
     private void setSpeaking(boolean on) {
+        boolean was = speaking;
         speaking = on;
+        mouthHandler.removeCallbacks(mouthTick);
+        if (mascot != null) {
+            if (on && !was) mouthHandler.post(mouthTick);
+            else if (!on) mascot.setImageResource(mascotRest);
+        }
         if (listenButton != null) {
             listenButton.setText(on ? "■  Durdur" : "🔊  Sesli dinle");
             listenButton.setContentDescription(on ? "Okumayı durdur" : "Raporu sesli dinle");
