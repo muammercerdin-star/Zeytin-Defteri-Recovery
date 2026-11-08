@@ -98,7 +98,8 @@ final class SettingsView extends ScrollView {
                 row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant),
                 typingRow(activity),
                 prayerRow(activity),
-                tanecikRow(activity));
+                tanecikRow(activity),
+                tanitimRow(activity));
         View management = ModerationAccess.settingsSection(activity, access);
         if (management != null) body.addView(management);
         addSection(body, activity, "DİĞER",
@@ -177,6 +178,19 @@ final class SettingsView extends ScrollView {
                 });
         value[0] = (TextView) ((LinearLayout) row).getChildAt(2);
         return row;
+    }
+
+    /** Reklam/gösterim için örnek verilerle çalışma (bkz. TanitimModu). */
+    private static View tanitimRow(Activity activity) {
+        boolean on = TanitimModu.active(activity);
+        return row(activity, R.drawable.ic_settings_shield, "Tanıtım modu",
+                "Reklam ve gösterim için örnek verilerle çalışır; kendi kayıtların korunur",
+                on ? "Açık" : "Kapalı",
+                () -> {
+                    if (!(activity instanceof ProducerFeedActivity)) return;
+                    if (TanitimModu.active(activity)) ((ProducerFeedActivity) activity).askTanitimOff();
+                    else ((ProducerFeedActivity) activity).askTanitimOn();
+                });
     }
 
     private static View typingRow(Activity activity) {

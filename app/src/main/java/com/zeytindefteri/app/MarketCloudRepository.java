@@ -1042,7 +1042,8 @@ public final class MarketCloudRepository {
             int year,
             SyncCallback callback
     ) {
-        if (!canUseCloud()) {
+        if (!canUseCloud() || TanitimModu.OWNER.equals(databaseHelper.getActiveOwnerUid())) {
+            // Tanıtım modunda katkı eşitlemesi hiç çalışmaz (örnek veriler piyasaya gitmez; gerçek katkılar geri çekilmez).
             if (callback != null) callback.onComplete(null);
             return;
         }

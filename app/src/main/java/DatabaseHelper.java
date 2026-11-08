@@ -58,6 +58,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public String getActiveOwnerUid() {
 
+        // Tanıtım modunda yalnız uydurma veriler görünür (bkz. TanitimModu: buluta, piyasaya, yedeğe gitmez).
+        if (TanitimModu.active(appContext)) {
+            return TanitimModu.OWNER;
+        }
+
         SessionManager sessionManager =
                 new SessionManager(
                         appContext

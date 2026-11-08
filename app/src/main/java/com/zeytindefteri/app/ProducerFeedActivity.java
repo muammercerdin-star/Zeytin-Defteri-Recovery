@@ -1789,6 +1789,12 @@ public class ProducerFeedActivity extends Activity {
                         today
                 );
 
+        if (TanitimModu.active(this)) {
+            LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-1, -2);
+            tp.setMargins(dp(16), dp(8), dp(16), 0);
+            body.addView(tanitimBanner(), tp);
+        }
+
         // İkisi de (üretici + tezgâhçı): üstte Bahçe / Tezgâh geçişi.
         if (UserRole.BOTH.equals(RoleActivity.role(this))) {
             LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
@@ -6379,6 +6385,44 @@ public class ProducerFeedActivity extends Activity {
      * Android 13+ için geri dinleyicisi yalnızca rapor açıkken kayıtlıdır (BackCompat);
      * Android 12 ve altında onBackPressed aynı işi yapar.
      */
+    /** Tanıtım modunda ana sayfanın üstündeki ince şerit: örnek veriler olduğunu söyler, dokununca kapatır. */
+    private View tanitimBanner() {
+        TextView t = text("Tanıtım modu · örnek verilerle  ·  Kapat ›", 13, GreenTheme.color(R.color.zd_text), true);
+        t.setGravity(Gravity.CENTER);
+        t.setPadding(dp(12), dp(8), dp(12), dp(8));
+        t.setBackground(round(GreenTheme.color(R.color.zd_green_soft), 14, GreenTheme.color(R.color.zd_green_mid_dim)));
+        t.setOnClickListener(v -> askTanitimOff());
+        return t;
+    }
+
+    void askTanitimOff() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Tanıtım modu kapatılsın mı?")
+                .setMessage("Örnek veriler silinir, kendi kayıtların geri gelir.")
+                .setPositiveButton("Kapat", (d, w) -> {
+                    TanitimModu.setActive(this, false);
+                    android.widget.Toast.makeText(this, "Tanıtım modu kapandı.", android.widget.Toast.LENGTH_SHORT).show();
+                    recreate();
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
+    void askTanitimOn() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Tanıtım modu açılsın mı?")
+                .setMessage("Reklam ya da gösterim için örnek verilerle çalışır. Kendi kayıtların görünmez ve değişmez; "
+                        + "örnek veriler buluta, piyasaya ve yedeğe gitmez. Kapatınca örnek veriler silinir.\n\n"
+                        + "Tanıtım modundayken gerçek kayıt yapma; kapatınca silinir.")
+                .setPositiveButton("Aç", (d, w) -> {
+                    TanitimModu.setActive(this, true);
+                    android.widget.Toast.makeText(this, "Tanıtım modu açık: örnek veriler yüklendi.", android.widget.Toast.LENGTH_LONG).show();
+                    recreate();
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
     /** Tanecik'in bildikleri: ana sayfadaki hava, son hasat, alacaklar, elek raporunun en iyi alıcısı. */
     private TanecikLines.Facts tanecikFacts() {
         TanecikLines.Facts f = new TanecikLines.Facts();
@@ -7555,6 +7599,7 @@ public class ProducerFeedActivity extends Activity {
     }
 
     private String currentUserName() {
+        if (TanitimModu.active(this)) return TanitimModu.NAME;   // tanıtımda gerçek ad görünmez
         try {
             FirebaseUser u =
                     FirebaseAuth
