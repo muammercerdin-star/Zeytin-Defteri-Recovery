@@ -4576,6 +4576,12 @@ public class ProducerFeedActivity extends Activity {
                 return out;
             }
 
+            // Tanıtım modunda yalnız örnek bahçeler görünür (gerçek bahçe adı reklama sızmasın).
+            if (TanitimModu.active(this)
+                    && !TanitimModu.OWNER.equals(getString(gardenCursor, "owner_uid", ""))) {
+                return out;
+            }
+
             out.id =
                     getLong(
                             gardenCursor,
@@ -7607,6 +7613,7 @@ public class ProducerFeedActivity extends Activity {
     }
 
     private String currentUserKey() {
+        if (TanitimModu.active(this)) return TanitimModu.OWNER;   // tanıtımın kendi ayarları (seçili bahçe vb.)
         try {
             FirebaseUser u =
                     FirebaseAuth

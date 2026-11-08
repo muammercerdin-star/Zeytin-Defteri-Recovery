@@ -19,6 +19,13 @@ if 'app_settings' not in modu: fails.append('tanıtım ayarları silinmiyor')
 dh = read(J / 'DatabaseHelper.java')
 if 'TanitimModu.active(appContext)' not in dh or 'return TanitimModu.OWNER;' not in dh: fails.append('aktif sahip tanıtıma geçmiyor')
 if not re.search(r'OWNER\s*=\s*"[^"]+"', modu): fails.append('tanıtım sahibi boş olamaz (boş sahip kullanıcıya bağlanır)')
+pf = read(A / 'ProducerFeedActivity.java')
+if 'if (TanitimModu.active(this)) return TanitimModu.OWNER;   // tanıtımın kendi ayarları' not in pf:
+    fails.append('ana sayfa seçili bahçe ayarı tanıtımda gerçek hesaba bakıyor')
+if '!TanitimModu.OWNER.equals(getString(gardenCursor, "owner_uid", ""))' not in pf:
+    fails.append('ana sayfa tanıtımda gerçek bahçeyi gösterebilir')
+if 'if (TanitimModu.active(this)) return TanitimModu.NAME;' not in pf:
+    fails.append('selamlamada gerçek ad görünebilir')
 # 3) Bulut yolları satırı Google uid'iyle seçer (örnek sahip asla eşleşmez).
 pc = read(A / 'ProductionCloudRepository.java')
 if '"WHERE r.owner_uid = ? " +' not in pc or '"AND g.owner_uid = ? " +' not in pc: fails.append('eşitleme sahip süzgeci değişmiş')
