@@ -74,8 +74,32 @@ def base(leg_spec=STAND_LEGS, shadow=True):
     ]
 
 
-def cap():
-    """Düz köy kasketi (yapraklar kasketin üstünden çıkar)."""
+LEAF_LIGHT = "#9DB487"
+# Pervane karesi: k = kanadın yatay ölçeği (1 açık, 0.35 yandan, -1 ters, -0.35 ters yandan).
+PROP_FRAMES = {"ucuyor_1": 1.0, "ucuyor_2": 0.35, "ucuyor_3": -1.0, "ucuyor_4": -0.35}
+
+
+def propeller(k):
+    """Yapraklar yatay pervane: biri koyu biri açık (dönünce yer değiştirdikleri görünsün)."""
+    r = lambda v: round(v * k, 2)
+    return [
+        stroke("M0,-86 l4,-24", STEM, 6),
+        fill(ellipse(4, -112, 64, 7), WHITE, 0.16),                       # dönme izi
+        fill(f"M4,-112 q{r(30)},-17 {r(62)},-3 q{r(-30)},20 {r(-62)},3 z", LEAF),
+        fill(f"M4,-112 q{r(-30)},-17 {r(-62)},-3 q{r(30)},20 {r(62)},3 z", LEAF_LIGHT),
+        fill(ellipse(4, -112, 5, 5), STEM),
+    ]
+
+
+def cap(prop=None):
+    """Düz köy kasketi (yapraklar kasketin üstünden çıkar; uçarken pervane olur)."""
+    if prop is not None:
+        return [
+            fill("M-66,-44 q-4,-34 30,-46 q56,-14 92,20 q10,10 6,22 q-64,-10 -128,4 z", CAP),
+            stroke("M-60,-60 q50,-22 104,2", CAP_LINE, 2, 0.7),
+            fill("M52,-52 q30,0 44,12 q-26,8 -50,2 z", CAP_DARK),
+            stroke("M-66,-44 q64,-14 128,-4", "#2E251D", 3),
+        ] + propeller(prop)
     return [
         fill("M-66,-44 q-4,-34 30,-46 q56,-14 92,20 q10,10 6,22 q-64,-10 -128,4 z", CAP),
         stroke("M-60,-60 q50,-22 104,2", CAP_LINE, 2, 0.7),
@@ -145,6 +169,11 @@ def pose(name):
             stroke("M-18,22 h36 v12 h-36 z", MOUTH, 3),
             stroke("M-6,22 v12 M6,22 v12", MOUTH, 2),
         ]
+    elif name in PROP_FRAMES:
+        leg_spec = PASS_LEGS
+        back += arm("M-64,0 q-26,-8 -40,-30", -104, -32)
+        back += arm("M64,0 q26,-8 40,-30", 104, -32)
+        front += open_eyes(-2) + [stroke("M-16,22 q16,18 32,0", EYE, 5)]
     elif name == "uyuyor":
         back += [stroke("M76,-74 l12,0 -12,14 12,0", WHITE, 3, 0.85),
                  stroke("M92,-100 l15,0 -15,18 15,0", WHITE, 3, 0.85)]
@@ -191,11 +220,13 @@ def pose(name):
         ]
     else:
         raise ValueError(name)
-    return back + base(leg_spec, name != "zipliyor") + cap() + front
+    flying = name in PROP_FRAMES
+    return back + base(leg_spec, name != "zipliyor" and not flying) + cap(PROP_FRAMES.get(name)) + front
 
 
 POSES = ["merhaba", "sevinc", "konusuyor", "konusuyor_kapali", "dusunuyor",
-         "duruyor", "duruyor_kirp", "yuruyor_1", "yuruyor_2", "uyuyor", "zipliyor", "itiyor"]
+         "duruyor", "duruyor_kirp", "yuruyor_1", "yuruyor_2", "uyuyor", "zipliyor", "itiyor",
+         "ucuyor_1", "ucuyor_2", "ucuyor_3", "ucuyor_4"]
 
 SCARF = "#C0392B"
 SCARF_DARK = "#8E2A20"

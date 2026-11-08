@@ -319,7 +319,7 @@ final class TanecikWalker {
         if (platform != null) {
             // Kartın üstünde: biraz gezinir, sonra aşağı atlar.
             if (r < 35) walkTo(randomX(), this::idle);
-            else if (r < 60) jumpTo(randomFloorX(), null, this::idle);
+            else if (r < 60) flyTo(randomFloorX(), null, this::idle);   // pervaneyle süzülerek iner
             else if (r < 72) hop();
             else if (r < 86) pose(R.drawable.tanecik_merhaba, 1600);
             else pose(R.drawable.tanecik_dusunuyor, 2200);
@@ -393,17 +393,76 @@ final class TanecikWalker {
                 .withEndAction(then).start();
     }
 
-    /** Kart ekrandan çıktı ya da altından kaydı: aşağı düşer. */
+    /** Kart ekrandan çıktı ya da altından kaydı: pervanesini açıp süzülerek iner. */
     private void fall() {
         cancelMotion();
         platform = null;
         idling = false;
-        body.setImageResource(R.drawable.tanecik_konusuyor);   // "aaa!"
         float fallDist = floorY() - actor.getTranslationY();
         if (!motionAllowed() || fallDist < dp(4)) { actor.setTranslationY(floorY()); resumeIdle(); return; }
-        long duration = (long) Math.min(900, 250 + fallDist / getDensity() * 1.6);
-        actor.animate().translationY(floorY()).setDuration(duration).setInterpolator(new BounceInterpolator())
-                .withEndAction(() -> { if (active) land(this::resumeIdle); }).start();
+        flyTo(actor.getTranslationX(), null, this::resumeIdle);
+    }
+
+    private static final int[] PROP = {
+            R.drawable.tanecik_ucuyor_1, R.drawable.tanecik_ucuyor_2,
+            R.drawable.tanecik_ucuyor_3, R.drawable.tanecik_ucuyor_4};
+    private int propFrame;
+
+    /** Pervane: yapraklar döner (dört kare). */
+    private final Runnable propTick = new Runnable() {
+        @Override public void run() {
+            if (!active || !jumping) return;
+            propFrame = (propFrame + 1) % PROP.length;
+            body.setImageResource(PROP[propFrame]);
+            handler.postDelayed(this, 60);
+        }
+    };
+
+    /**
+     * Pervaneyle süzülerek iniş: önce hafifçe havalanır, sonra sallana sallana ağır ağır iner.
+     * target null: alt menünün üstü. Varış yüksekliği her karede yeniden hesaplanır.
+     */
+    private void flyTo(float targetX, View target, Runnable then) {
+        if (!active || dragging) return;
+        cancelMotion();
+        idling = false;
+        jumping = true;
+        handler.removeCallbacks(blink);
+        final float x0 = actor.getTranslationX(), y0 = actor.getTranslationY();
+        final float x1 = Math.max(minXOn(target), Math.min(maxXOn(target), targetX));
+        float dist = Math.abs(yOn(target) - y0);
+        if (Math.abs(x1 - x0) > dp(4)) face(x1 > x0);
+        final float sway = dp(10), lift = dp(14);
+        long duration = Math.min(3200, 900 + (long) (dist / getDensity() * 6));
+        handler.removeCallbacks(propTick);
+        handler.post(propTick);
+        jumpAnim = ValueAnimator.ofFloat(0f, 1f);
+        jumpAnim.setDuration(duration);
+        jumpAnim.setInterpolator(new LinearInterpolator());
+        jumpAnim.addUpdateListener(a -> {
+            float t = (float) a.getAnimatedValue();
+            float y1 = yOn(target);
+            // İlk %15'te havalanma, sonra sabit hızla iniş; sona doğru yavaşlar.
+            float down = t < 0.15f ? 0f : (float) Math.sin((t - 0.15f) / 0.85f * Math.PI / 2);
+            float up = t < 0.15f ? lift * (t / 0.15f) : lift * (1 - down);
+            actor.setTranslationX(x0 + (x1 - x0) * t + (float) Math.sin(t * Math.PI * 3) * sway * (1 - t));
+            actor.setTranslationY(y0 + (y1 - y0) * down - up);
+        });
+        jumpAnim.addListener(new AnimatorListenerAdapter() {
+            boolean cancelled;
+            @Override public void onAnimationCancel(Animator a) { cancelled = true; }
+            @Override public void onAnimationEnd(Animator a) {
+                jumping = false;
+                handler.removeCallbacks(propTick);
+                if (cancelled || !active) return;
+                if (target != null && !validPlatform(target)) { platform = null; fall(); return; }
+                platform = target;
+                actor.setTranslationX(x1);
+                actor.setTranslationY(surfaceY());
+                land(then);
+            }
+        });
+        jumpAnim.start();
     }
 
     private void onPageScrolled() {
@@ -568,6 +627,7 @@ final class TanecikWalker {
         jumping = false;
         pushing = false;
         handler.removeCallbacks(walkTick);
+        handler.removeCallbacks(propTick);
     }
 
     private void pose(int res, long ms) {
@@ -816,6 +876,18 @@ final class TanecikWalker {
             actor.setTranslationX(x);
             actor.setTranslationY(targetY);
             landed.run();
+            return;
+        }
+        if (fall > dp(60)) {
+            // Yüksekten bırakıldı: pervaneyle süzülür.
+            dragging = false;
+            final boolean wasSleeping = sleeping;
+            flyTo(x, target, () -> {
+                if (!active) return;
+                if (wasSleeping) { body.setImageResource(R.drawable.tanecik_uyuyor); return; }
+                body.setImageResource(R.drawable.tanecik_sevinc);
+                handler.postDelayed(this::resumeIdle, 900);
+            });
             return;
         }
         long duration = (long) Math.min(900, 250 + fall / getDensity() * 1.6);

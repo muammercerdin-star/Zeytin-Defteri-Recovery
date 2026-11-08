@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- tools/maskot/gen_tanecik.py ile üretildi; elle değiştirme. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp" android:height="270dp"
+    android:viewportWidth="240" android:viewportHeight="270">
+    <group android:translateX="120" android:translateY="142">
+        <path android:pathData="M-64,0 q-26,-8 -40,-30" android:strokeColor="#3E5A14" android:strokeWidth="8" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+        <path android:pathData="M-115,-32 a11,11 0 1,0 22,0 a11,11 0 1,0 -22,0 z" android:fillColor="#5E8A1E"/>
+        <path android:pathData="M64,0 q26,-8 40,-30" android:strokeColor="#3E5A14" android:strokeWidth="8" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+        <path android:pathData="M93,-32 a11,11 0 1,0 22,0 a11,11 0 1,0 -22,0 z" android:fillColor="#5E8A1E"/>
+        <path android:pathData="M-14,80 q-2,22 -2,34" android:strokeColor="#3E5A14" android:strokeWidth="7" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+        <path android:pathData="M14,80 q2,22 6,34" android:strokeColor="#3E5A14" android:strokeWidth="7" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+        <path android:pathData="M-29,115 a13,6 0 1,0 26,0 a13,6 0 1,0 -26,0 z" android:fillColor="#3E5A14"/>
+        <path android:pathData="M9,115 a13,6 0 1,0 26,0 a13,6 0 1,0 -26,0 z" android:fillColor="#3E5A14"/>
+        <path android:pathData="M-72,0 a72,90 0 1,0 144,0 a72,90 0 1,0 -144,0 z" android:fillColor="#5E8A1E"/>
+        <path android:pathData="M-70,-6 a64,82 0 1,0 128,0 a64,82 0 1,0 -128,0 z" android:fillColor="#86AD34"/>
+        <path android:pathData="M-58,-22 a40,50 0 1,0 80,0 a40,50 0 1,0 -80,0 z" android:fillColor="#B2D25C" android:fillAlpha="0.45"/>
+        <path android:pathData="M-45,-44 a13,22 0 1,0 26,0 a13,22 0 1,0 -26,0 z" android:fillColor="#FFFFFF" android:fillAlpha="0.3"/>
+        <path android:pathData="M-53,14 a13,8 0 1,0 26,0 a13,8 0 1,0 -26,0 z" android:fillColor="#F08A7A" android:fillAlpha="0.55"/>
+        <path android:pathData="M27,14 a13,8 0 1,0 26,0 a13,8 0 1,0 -26,0 z" android:fillColor="#F08A7A" android:fillAlpha="0.55"/>
+        <path android:pathData="M-66,-44 q-4,-34 30,-46 q56,-14 92,20 q10,10 6,22 q-64,-10 -128,4 z" android:fillColor="#5A4A3A"/>
+        <path android:pathData="M-60,-60 q50,-22 104,2" android:strokeColor="#7D6A55" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeAlpha="0.7"/>
+        <path android:pathData="M52,-52 q30,0 44,12 q-26,8 -50,2 z" android:fillColor="#3A2F25"/>
+        <path android:pathData="M-66,-44 q64,-14 128,-4" android:strokeColor="#2E251D" android:strokeWidth="3" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+        <path android:pathData="M0,-86 l4,-24" android:strokeColor="#6B4F2A" android:strokeWidth="6" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+        <path android:pathData="M-60,-112 a64,7 0 1,0 128,0 a64,7 0 1,0 -128,0 z" android:fillColor="#FFFFFF" android:fillAlpha="0.16"/>
+        <path android:pathData="M4,-112 q-30.0,-17 -62.0,-3 q30.0,20 62.0,3 z" android:fillColor="#71895F"/>
+        <path android:pathData="M4,-112 q30.0,-17 62.0,-3 q-30.0,20 -62.0,3 z" android:fillColor="#9DB487"/>
+        <path android:pathData="M-1,-112 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 z" android:fillColor="#6B4F2A"/>
+        <path android:pathData="M-34,-10 a10,14 0 1,0 20,0 a10,14 0 1,0 -20,0 z" android:fillColor="#1E2814"/>
+        <path android:pathData="M14,-10 a10,14 0 1,0 20,0 a10,14 0 1,0 -20,0 z" android:fillColor="#1E2814"/>
+        <path android:pathData="M-24,-18 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 z" android:fillColor="#FFFFFF"/>
+        <path android:pathData="M24,-18 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 z" android:fillColor="#FFFFFF"/>
+        <path android:pathData="M-16,22 q16,18 32,0" android:strokeColor="#1E2814" android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    </group>
+</vector>
