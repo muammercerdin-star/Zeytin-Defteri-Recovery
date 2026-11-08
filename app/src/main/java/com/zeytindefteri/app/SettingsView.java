@@ -97,7 +97,8 @@ final class SettingsView extends ScrollView {
         addSection(body, activity, "UYGULAMA",
                 row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant),
                 typingRow(activity),
-                prayerRow(activity));
+                prayerRow(activity),
+                tanecikRow(activity));
         View management = ModerationAccess.settingsSection(activity, access);
         if (management != null) body.addView(management);
         addSection(body, activity, "DİĞER",
@@ -157,6 +158,21 @@ final class SettingsView extends ScrollView {
                 () -> {
                     boolean on = !PrayerLineView.enabled(activity);
                     PrayerLineView.setEnabled(activity, on);
+                    if (value[0] != null) value[0].setText(on ? "Açık" : "Kapalı");
+                });
+        value[0] = (TextView) ((LinearLayout) row).getChildAt(2);
+        return row;
+    }
+
+    /** Ana sayfada gezen maskot (açık/kapalı); ana sayfaya dönünce uygulanır. */
+    private static View tanecikRow(Activity activity) {
+        final TextView[] value = new TextView[1];
+        View row = row(activity, R.drawable.ic_settings_person, "Tanecik",
+                "Ana sayfada gezen zeytin tanesi; dokununca konuşur",
+                TanecikWalker.enabled(activity) ? "Açık" : "Kapalı",
+                () -> {
+                    boolean on = !TanecikWalker.enabled(activity);
+                    TanecikWalker.setEnabled(activity, on);
                     if (value[0] != null) value[0].setText(on ? "Açık" : "Kapalı");
                 });
         value[0] = (TextView) ((LinearLayout) row).getChildAt(2);

@@ -46,14 +46,24 @@ def stroke(d, color, width, alpha=1.0):
     return ("stroke", d, color, alpha, width)
 
 
-def base():
+STAND_LEGS = (("M-22,78 q-2,22 -6,34", -31, 113), ("M22,78 q2,22 6,34", 31, 113))
+# Yürüme: sağa bakar (kasketin siperi sağda); ön bacak sağda.
+STEP_LEGS = (("M-22,78 q-8,18 -20,30", -44, 110), ("M22,78 q12,16 26,28", 54, 108))
+PASS_LEGS = (("M-14,80 q-2,22 -2,34", -16, 115), ("M14,80 q2,22 6,34", 22, 115))
+
+
+def legs(spec):
+    out = []
+    for d, fx, fy in spec:
+        out.append(stroke(d, LIMB, 7))
+    for d, fx, fy in spec:
+        out.append(fill(ellipse(fx, fy, 13, 6), LIMB))
+    return out
+
+
+def base(leg_spec=STAND_LEGS):
     """Gövde, bacaklar, yanaklar: her pozda aynı (yapraklar kasketle birlikte çizilir)."""
-    return [
-        fill(ellipse(0, 118, 56, 8), "#000000", 0.22),
-        stroke("M-22,78 q-2,22 -6,34", LIMB, 7),
-        stroke("M22,78 q2,22 6,34", LIMB, 7),
-        fill(ellipse(-31, 113, 13, 6), LIMB),
-        fill(ellipse(31, 113, 13, 6), LIMB),
+    return [fill(ellipse(0, 118, 56, 8), "#000000", 0.22)] + legs(leg_spec) + [
         fill(ellipse(0, 0, 72, 90), BODY_SHADE),
         fill(ellipse(-6, -6, 64, 82), BODY),
         fill(ellipse(-18, -22, 40, 50), BODY_LIGHT, 0.45),
@@ -93,13 +103,38 @@ def arm(d, hx, hy):
 
 
 def spark(x, y, s):
-    return fill(f"M{x},{y - s} l{s * .36},{s * .64} {s * .64},{s * .36} {-s * .64},{s * .36} "
-                f"{-s * .36},{s * .64} {-s * .36},{-s * .64} {-s * .64},{-s * .36} {s * .64},{-s * .36} z", SPARK)
+    a, b = round(s * .36, 2), round(s * .64, 2)
+    return fill(f"M{x},{y - s} l{a},{b} {b},{a} {-b},{a} {-a},{b} {-a},{-b} {-b},{-a} {b},{-a} z", SPARK)
 
 
 def pose(name):
     back, front = [], []
-    if name == "merhaba":
+    leg_spec = STAND_LEGS
+    if name == "duruyor":
+        back += arm("M-66,14 q-24,18 -26,44", -92, 60)
+        back += arm("M66,14 q24,18 26,44", 92, 60)
+        front += open_eyes() + [stroke("M-16,24 q16,16 32,0", EYE, 5)]
+    elif name in ("yuruyor_1", "yuruyor_2"):
+        first = name == "yuruyor_1"
+        leg_spec = STEP_LEGS if first else PASS_LEGS
+        back += arm("M-66,14 q-20,20 -12,46" if first else "M-66,14 q-26,16 -34,40", -78 if first else -100, 62 if first else 56)
+        back += arm("M66,14 q26,16 34,40" if first else "M66,14 q20,20 12,46", 100 if first else 78, 56 if first else 62)
+        front += [
+            fill(ellipse(-20, -10, 10, 14), EYE), fill(ellipse(28, -10, 10, 14), EYE),
+            fill(ellipse(-14, -16, 4, 4), WHITE), fill(ellipse(34, -16, 4, 4), WHITE),
+            stroke("M-10,24 q16,14 32,0", EYE, 5),
+        ]
+    elif name == "uyuyor":
+        back += [stroke("M76,-74 l12,0 -12,14 12,0", WHITE, 3, 0.85),
+                 stroke("M92,-100 l15,0 -15,18 15,0", WHITE, 3, 0.85)]
+        back += arm("M-66,14 q-24,18 -26,44", -92, 60)
+        back += arm("M66,14 q24,18 26,44", 92, 60)
+        front += [
+            stroke("M-34,-8 q10,8 20,0", EYE, 5),
+            stroke("M14,-8 q10,8 20,0", EYE, 5),
+            fill(ellipse(0, 30, 7, 6), MOUTH),
+        ]
+    elif name == "merhaba":
         back += arm("M-66,10 q-30,-20 -34,-62", -100, -56)
         back += arm("M66,14 q24,18 26,44", 92, 60)
         front += open_eyes() + [stroke("M-20,22 q20,22 40,0", EYE, 5)]
@@ -135,10 +170,11 @@ def pose(name):
         ]
     else:
         raise ValueError(name)
-    return back + base() + cap() + front
+    return back + base(leg_spec) + cap() + front
 
 
-POSES = ["merhaba", "sevinc", "konusuyor", "konusuyor_kapali", "dusunuyor"]
+POSES = ["merhaba", "sevinc", "konusuyor", "konusuyor_kapali", "dusunuyor",
+         "duruyor", "yuruyor_1", "yuruyor_2", "uyuyor"]
 
 
 def to_vector(items):

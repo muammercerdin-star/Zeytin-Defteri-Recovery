@@ -153,6 +153,9 @@ public class ProducerFeedActivity extends Activity {
     }
     private CommentCloudRepository replyOutbox;
     private String currentSection = "MEYDAN";
+    /** Ana sayfada gezen maskot (yalnız HOME görünürken, uygulama öndeyken). */
+    private TanecikWalker tanecik;
+    private boolean screenResumed;
     private boolean liveFeedFirstEvent;
     private String activeType = "ALL";
 
@@ -239,7 +242,12 @@ public class ProducerFeedActivity extends Activity {
                 );
 
         applyRequestedCategory(getIntent());
-        setContentView(buildAppShell());
+        View appShell = buildAppShell();
+        // Tanecik'in gezdiği sahne: kabuğun üstünde ince bir katman (kendisi dokunuş yakalamaz).
+        FrameLayout stage = new FrameLayout(this);
+        stage.addView(appShell, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(stage);
+        tanecik = new TanecikWalker(this, stage, bottomNav);
         // Kullanım şekli henüz seçilmediyse bir kez sorulur (eski kullanıcılar dahil).
         if (new SessionManager(this).hasSession() && !UserRole.chosen(RoleActivity.role(this))) {
             contentHost.post(() -> { if (!isFinishing()) RoleActivity.open(this, false, true); });
@@ -321,6 +329,8 @@ public class ProducerFeedActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        screenResumed = true;
+        updateTanecik();
         refreshBellBadge();
         if (settingsContent != null && "PROFILE".equals(currentSection)) settingsContent.resume();
         if (socialBlocks != null) socialBlocks.stop();
@@ -565,6 +575,7 @@ public class ProducerFeedActivity extends Activity {
         boolean wasChat = "MEYDAN".equals(currentSection);
         currentSection = section;
         setSeasonReportOpen(false);
+        updateTanecik();
         stopTypingWatch();
 
         if (contentHost == null) {
@@ -6363,8 +6374,13 @@ public class ProducerFeedActivity extends Activity {
      * Android 13+ için geri dinleyicisi yalnızca rapor açıkken kayıtlıdır (BackCompat);
      * Android 12 ve altında onBackPressed aynı işi yapar.
      */
+    private void updateTanecik() {
+        if (tanecik != null) tanecik.setActive(screenResumed && "HOME".equals(currentSection) && !seasonReportOpen);
+    }
+
     private void setSeasonReportOpen(boolean open) {
         seasonReportOpen = open;
+        updateTanecik();
         if (open && seasonReportBack == null) {
             seasonReportBack = BackCompat.register(this, () -> showSection("REPORTS"));
         } else if (!open && seasonReportBack != null) {
@@ -7073,6 +7089,8 @@ public class ProducerFeedActivity extends Activity {
 
     @Override
     protected void onPause() {
+        screenResumed = false;
+        updateTanecik();
         if (settingsContent != null) settingsContent.pause();
         // Arka planda dinleme sürmesin (pil ve okuma maliyeti); onResume yeniden başlatır.
         if (cloudRepository != null) cloudRepository.stopLiveSync();
@@ -8062,6 +8080,7 @@ public class ProducerFeedActivity extends Activity {
     @Override
     protected void onDestroy() {
         homeWeather=null;
+        if (tanecik != null) tanecik.release();
         if (zeytinAssistant != null) {
             zeytinAssistant.destroy();
         }
