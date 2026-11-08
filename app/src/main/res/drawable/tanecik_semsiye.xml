@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- tools/maskot/gen_tanecik.py ile üretildi; elle değiştirme. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp" android:height="270dp"
+    android:viewportWidth="240" android:viewportHeight="270">
+    <group android:translateX="120" android:translateY="142">
+        <path android:pathData="M60,-104 l32,150 q2,10 -8,10" android:strokeColor="#5A4A3A" android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+        <path android:pathData="M2,-96 q58,-64 116,0 q-10,-9 -19,0 q-10,-9 -19,0 q-10,-9 -20,0 q-10,-9 -19,0 q-10,-9 -19,0 q-10,-9 -20,0 z" android:fillColor="#2E86C1"/>
+        <path android:pathData="M60,-128 q-16,12 -22,32" android:strokeColor="#1F5F8B" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeAlpha="0.8"/>
+        <path android:pathData="M60,-128 q16,12 22,32" android:strokeColor="#1F5F8B" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeAlpha="0.8"/>
+        <path android:pathData="M56,-130 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 z" android:fillColor="#1F5F8B"/>
+    </group>
+</vector>

@@ -6,6 +6,19 @@ public class TanecikLinesTest {
     static int checks;
     static void ok(boolean c, String m) { checks++; if (!c) throw new AssertionError(m); }
 
+    static java.util.List<String> texts(List<TanecikLines.Line> l) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (TanecikLines.Line x : l) out.add(x.text);
+        return out;
+    }
+
+    static TanecikLines.Line find(List<TanecikLines.Line> l, String part) {
+        for (TanecikLines.Line x : l) if (x.text.contains(part)) return x;
+        return null;
+    }
+
+    static boolean has(List<TanecikLines.Line> l, String part) { return find(l, part) != null; }
+
     public static void main(String[] a) {
         ok(TanecikLines.sleeping(22) && TanecikLines.sleeping(0) && TanecikLines.sleeping(4), "gece uyur");
         ok(!TanecikLines.sleeping(5) && !TanecikLines.sleeping(21), "gündüz uyumaz");
@@ -27,6 +40,45 @@ public class TanecikLinesTest {
         ok(TanecikLines.line(10, 11, 0).equals(TanecikLines.line(10, 11, n)), "döngüsel");
         ok(TanecikLines.line(10, 11, -1).equals(TanecikLines.line(10, 11, n - 1)), "eksi sıra bozulmaz");
         ok(TanecikLines.line(10, 11, 0).startsWith("Günaydın"), "ilk söz selam");
+        // --- Akıllı sözler (veriye göre)
+        TanecikLines.Facts f = new TanecikLines.Facts();
+        ok(texts(TanecikLines.smart(f, 10, 11)).equals(TanecikLines.lines(10, 11)), "veri yoksa genel sözler");
+        f.raining = true;
+        List<TanecikLines.Line> l = TanecikLines.smart(f, 10, 11);
+        ok(l.get(0).action.equals(TanecikLines.GO_WEATHER) && l.get(0).text.startsWith("Yağmur yağıyor"), "yağmur önce söylenir");
+        f = new TanecikLines.Facts(); f.rainChance = 70;
+        ok(TanecikLines.smart(f, 10, 11).get(0).text.startsWith("24 saat içinde yağmur ihtimali %70."), "yağış ihtimali");
+        f.rainChance = 40;
+        ok(TanecikLines.smart(f, 10, 11).get(0).text.startsWith("Günaydın"), "düşük ihtimalde uyarı yok");
+        f = new TanecikLines.Facts(); f.windKmh = 31;
+        ok(TanecikLines.smart(f, 10, 11).get(0).text.startsWith("Rüzgâr kuvvetli (31 km/s)"), "rüzgâr");
+        f = new TanecikLines.Facts(); f.tempC = 9;
+        ok(TanecikLines.cold(f) && has(TanecikLines.smart(f, 20, 11), "Hava soğuk, 9 derece. Atkımı taktım"), "soğuk: atkı");
+        f.tempC = 11;
+        ok(!TanecikLines.cold(f) && !has(TanecikLines.smart(f, 20, 11), "Atkımı"), "ılıkta atkı yok");
+        ok(!TanecikLines.cold(new TanecikLines.Facts()), "sıcaklık bilinmiyorsa atkı yok");
+        f = new TanecikLines.Facts(); f.hasGarden = true; f.daysSinceHarvest = 4;
+        l = TanecikLines.smart(f, 10, 11);
+        TanecikLines.Line h = find(l, "4 gündür hasat kaydı yok");
+        ok(h != null && h.action.equals(TanecikLines.GO_ELEK) && h.actionLabel.equals("Elek'e git ›"), "hasat hatırlatması");
+        ok(find(TanecikLines.smart(f, 10, 6), "gündür hasat") == null, "hasat dışı ayda hatırlatma yok");
+        ok(find(TanecikLines.smart(f, 23, 11), "gündür hasat") == null, "gece hatırlatma yok");
+        f.daysSinceHarvest = 0;
+        ok(has(TanecikLines.smart(f, 18, 11), "Bugünkü hasadı yazmışsın, eline sağlık!"), "bugün yazmış");
+        f = new TanecikLines.Facts(); f.receivableCount = 1; f.receivableTotal = 10340;
+        h = find(TanecikLines.smart(f, 10, 11), "alacağın var");
+        ok(h != null && h.text.equals("Bir alıcıda 10.340 TL alacağın var. Unutma, takip et.") && h.action.equals(TanecikLines.GO_BUYERS), h == null ? "yok" : h.text);
+        f.receivableCount = 3; f.receivableTotal = 12500.4;
+        ok(has(TanecikLines.smart(f, 10, 11), "3 alıcıda toplam 12.500 TL alacağın var."), "çok alıcı");
+        f = new TanecikLines.Facts(); f.bestBuyer = "Özer Ağırbaş"; f.bestBuyerPerKg = 5.06;
+        h = find(TanecikLines.smart(f, 10, 11), "Aynı zeytine en çok");
+        ok(h != null && h.text.equals("Aynı zeytine en çok Özer Ağırbaş veriyor; kilo başı 5,1 TL fazla.") && h.action.equals(TanecikLines.GO_REPORT), h == null ? "yok" : h.text);
+        f.bestBuyerPerKg = 0.2;
+        ok(find(TanecikLines.smart(f, 10, 11), "Aynı zeytine en çok") == null, "küçük farkta söylenmez");
+        ok(find(TanecikLines.smart(null, 10, 11), "Elek raporu\"") .action.equals(TanecikLines.GO_REPORT), "rapor öğüdünde düğme");
+        ok(TanecikLines.rainCode(61) && TanecikLines.rainCode(81) && TanecikLines.rainCode(95) && !TanecikLines.rainCode(3) && !TanecikLines.rainCode(45), "hava kodu");
+        ok(TanecikLines.intro().startsWith("Merhaba, ben Tanecik!"), "tanışma");
+
         System.out.println("PASS: " + checks + " Tanecik sözü kontrolü");
     }
 }

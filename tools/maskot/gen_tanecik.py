@@ -110,10 +110,14 @@ def spark(x, y, s):
 def pose(name):
     back, front = [], []
     leg_spec = STAND_LEGS
-    if name == "duruyor":
+    if name in ("duruyor", "duruyor_kirp"):
         back += arm("M-66,14 q-24,18 -26,44", -92, 60)
         back += arm("M66,14 q24,18 26,44", 92, 60)
-        front += open_eyes() + [stroke("M-16,24 q16,16 32,0", EYE, 5)]
+        if name == "duruyor":
+            front += open_eyes()
+        else:  # göz kırpma karesi
+            front += [stroke("M-34,-8 q10,6 20,0", EYE, 5), stroke("M14,-8 q10,6 20,0", EYE, 5)]
+        front += [stroke("M-16,24 q16,16 32,0", EYE, 5)]
     elif name in ("yuruyor_1", "yuruyor_2"):
         first = name == "yuruyor_1"
         leg_spec = STEP_LEGS if first else PASS_LEGS
@@ -174,7 +178,37 @@ def pose(name):
 
 
 POSES = ["merhaba", "sevinc", "konusuyor", "konusuyor_kapali", "dusunuyor",
-         "duruyor", "yuruyor_1", "yuruyor_2", "uyuyor"]
+         "duruyor", "duruyor_kirp", "yuruyor_1", "yuruyor_2", "uyuyor"]
+
+SCARF = "#C0392B"
+SCARF_DARK = "#8E2A20"
+UMBRELLA = "#2E86C1"
+UMBRELLA_DARK = "#1F5F8B"
+
+
+def accessory(name):
+    """Her pozun üstüne binen katman (aynı görünüm kutusu): soğukta atkı, yağmurda şemsiye."""
+    if name == "atki":
+        return [
+            fill("M-40,58 l-12,40 l16,3 l8,-40 z", SCARF),
+            stroke("M-50,90 l14,3", SCARF_DARK, 3),
+            fill("M-58,48 q58,20 116,0 l-4,20 q-54,18 -108,0 z", SCARF),
+            stroke("M-40,56 l-3,18", SCARF_DARK, 3),
+            stroke("M0,62 l0,18", SCARF_DARK, 3),
+            stroke("M40,56 l3,18", SCARF_DARK, 3),
+        ]
+    if name == "semsiye":
+        return [
+            stroke("M60,-104 l32,150 q2,10 -8,10", "#5A4A3A", 5),
+            fill("M2,-96 q58,-64 116,0 q-10,-9 -19,0 q-10,-9 -19,0 q-10,-9 -20,0 q-10,-9 -19,0 q-10,-9 -19,0 q-10,-9 -20,0 z", UMBRELLA),
+            stroke("M60,-128 q-16,12 -22,32", UMBRELLA_DARK, 2, 0.8),
+            stroke("M60,-128 q16,12 22,32", UMBRELLA_DARK, 2, 0.8),
+            fill(ellipse(60, -130, 4, 4), UMBRELLA_DARK),
+        ]
+    raise ValueError(name)
+
+
+ACCESSORIES = ["atki", "semsiye"]
 
 
 def to_vector(items):
@@ -213,6 +247,10 @@ def main():
     res = ROOT / "app/src/main/res/drawable"
     prev = ROOT / "tools/maskot/onizleme"
     prev.mkdir(parents=True, exist_ok=True)
+    for p in ACCESSORIES:
+        items = accessory(p)
+        (res / f"tanecik_{p}.xml").write_text(to_vector(items), encoding="utf-8")
+        (prev / f"{p}.svg").write_text(to_svg(items), encoding="utf-8")
     for p in POSES:
         items = pose(p)
         (res / f"tanecik_{p}.xml").write_text(to_vector(items), encoding="utf-8")

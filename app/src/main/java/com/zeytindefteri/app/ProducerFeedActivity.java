@@ -156,6 +156,9 @@ public class ProducerFeedActivity extends Activity {
     /** Ana sayfada gezen maskot (yalnız HOME görünürken, uygulama öndeyken). */
     private TanecikWalker tanecik;
     private boolean screenResumed;
+    /** Ana sayfanın takvim kartından: seçili bahçede son hasattan bu yana gün (-1: yok). */
+    private long tanecikLastHarvest = -1;
+    private boolean tanecikHasGarden;
     private boolean liveFeedFirstEvent;
     private String activeType = "ALL";
 
@@ -247,7 +250,7 @@ public class ProducerFeedActivity extends Activity {
         FrameLayout stage = new FrameLayout(this);
         stage.addView(appShell, new FrameLayout.LayoutParams(-1, -1));
         setContentView(stage);
-        tanecik = new TanecikWalker(this, stage, bottomNav);
+        tanecik = new TanecikWalker(this, stage, bottomNav, this::tanecikFacts, this::tanecikAction);
         // Kullanım şekli henüz seçilmediyse bir kez sorulur (eski kullanıcılar dahil).
         if (new SessionManager(this).hasSession() && !UserRole.chosen(RoleActivity.role(this))) {
             contentHost.post(() -> { if (!isFinishing()) RoleActivity.open(this, false, true); });
@@ -2718,6 +2721,8 @@ public class ProducerFeedActivity extends Activity {
             long d=daysSince(r.date);
             if(d>=0 && (lastHarvest<0 || d<lastHarvest))lastHarvest=d;
         }
+        tanecikLastHarvest=lastHarvest;
+        tanecikHasGarden=today.scope.garden>0;
         TextView harvest=text(today.scope.garden>0 ? HomeDashboardModel.lastHarvestText(lastHarvest)+"  ›" : "",12,
                 lastHarvest<0 ? GREEN : MUTED,lastHarvest<0);
         harvest.setGravity(Gravity.RIGHT);
@@ -6374,6 +6379,70 @@ public class ProducerFeedActivity extends Activity {
      * Android 13+ için geri dinleyicisi yalnızca rapor açıkken kayıtlıdır (BackCompat);
      * Android 12 ve altında onBackPressed aynı işi yapar.
      */
+    /** Tanecik'in bildikleri: ana sayfadaki hava, son hasat, alacaklar, elek raporunun en iyi alıcısı. */
+    private TanecikLines.Facts tanecikFacts() {
+        TanecikLines.Facts f = new TanecikLines.Facts();
+        HomeWeatherState w = homeWeather;
+        if (w != null) {
+            WeatherRepository.WeatherSnapshot c = w.current != null ? w.current : (w.forecast != null ? w.forecast.current : null);
+            if (c != null) {
+                f.tempC = c.temperatureC;
+                f.windKmh = c.windKmh;
+                f.raining = TanecikLines.rainCode(c.weatherCode);
+            }
+            if (w.forecast != null) {
+                double max = Double.NaN;
+                int n = 0;
+                for (WeatherRepository.HourlyForecast hf : w.forecast.hourly) {
+                    if (n++ >= 24) break;
+                    if (!Double.isNaN(hf.precipitationProbability))
+                        max = Double.isNaN(max) ? hf.precipitationProbability : Math.max(max, hf.precipitationProbability);
+                }
+                f.rainChance = max;
+            }
+        }
+        f.hasGarden = tanecikHasGarden;
+        f.daysSinceHarvest = tanecikLastHarvest;
+        if (db == null) return f;
+        try {
+            String owner = db.getActiveOwnerUid();
+            int season = db.getActiveSeasonYear();
+            android.database.sqlite.SQLiteDatabase rdb = db.getReadableDatabase();
+            List<BuyerDirectory.Summary> buyers = BuyerDirectory.list(rdb, owner, season);
+            List<BuyerElekReport.Buyer> active = new ArrayList<>();
+            for (BuyerDirectory.Summary b : buyers) {
+                if (b.receivable > 0.009) { f.receivableTotal += b.receivable; f.receivableCount++; }
+                if (b.saleCount > 0) active.add(new BuyerElekReport.Buyer(b.id, b.name, b.receivable));
+            }
+            if (active.size() >= 2) {
+                BuyerElekReport.Report r = BuyerElekReport.build(BuyerDirectory.fairSales(rdb, owner, season), active);
+                if (!r.sections.isEmpty() && r.sections.get(0).compared && r.sections.get(0).tone > 0) {
+                    BuyerElekReport.Section best = r.sections.get(0);
+                    int colon = best.title.indexOf(':');
+                    f.bestBuyer = colon > 0 ? best.title.substring(0, colon) : "";
+                    f.bestBuyerPerKg = best.perKg;
+                }
+            }
+        } catch (RuntimeException ignored) {
+            // Veri okunamazsa Tanecik genel sözlerle devam eder.
+        }
+        return f;
+    }
+
+    /** Tanecik'in balonundaki düğme. */
+    private void tanecikAction(String action) {
+        if (TanecikLines.GO_ELEK.equals(action)) {
+            showSection("ELEK");
+        } else if (TanecikLines.GO_WEATHER.equals(action)) {
+            HomeWeatherState w = homeWeather;
+            if (w != null && w.today != null && w.today.openWeather != null) w.today.openWeather.run();
+        } else if (TanecikLines.GO_BUYERS.equals(action)) {
+            BuyersActivity.open(this, 0);
+        } else if (TanecikLines.GO_REPORT.equals(action)) {
+            startActivity(new Intent(this, BuyersActivity.class).putExtra(BuyersActivity.EXTRA_REPORT, true));
+        }
+    }
+
     private void updateTanecik() {
         if (tanecik != null) tanecik.setActive(screenResumed && "HOME".equals(currentSection) && !seasonReportOpen);
     }
