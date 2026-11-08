@@ -282,8 +282,10 @@ public class MarketRepository {
     }
 
     private String validLineWhere() {
+        // Sınıfsız (toplam) kayıt elek fiyat tablolarına karışmaz.
         return "AND eg.kg > 0 " +
-                "AND eg.price_per_kg > 0 ";
+                "AND eg.price_per_kg > 0 " +
+                "AND eg.grade <> '" + ElekMixedEntry.GRADE + "' ";
     }
 
     private String regionSql() {

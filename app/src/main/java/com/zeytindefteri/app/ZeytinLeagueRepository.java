@@ -48,8 +48,11 @@ public final class ZeytinLeagueRepository {
         String[] cols = {"double_kg", "grade1_kg", "grade2_kg", "grade3_kg", "grade4_kg", "oil_kg"};
         try (Cursor c = new ElekRepository(db).getArchiveRecords(year, -1, uid)) {
             while (c.moveToNext()) {
-                double kg = value(c, "total_kg");
-                p.kg += kg; p.amount += value(c, "total_revenue"); p.records++;
+                // Lig puanı elek kalitesine dayanır: sınıfsız (toplam) kayıt lige girmez
+                // (sunucudaki lig de yalnız sınıflı piyasa katkılarını görür).
+                double kg = value(c, "total_kg") - value(c, "mixed_kg");
+                if (kg <= 0.000001) continue;
+                p.kg += kg; p.amount += value(c, "total_revenue") - value(c, "mixed_revenue"); p.records++;
                 for (int i = 0; i < 6; i++) p.grades[i] += value(c, cols[i]);
                 String district = c.getString(c.getColumnIndexOrThrow("district")).trim();
                 String province = c.getString(c.getColumnIndexOrThrow("province")).trim();

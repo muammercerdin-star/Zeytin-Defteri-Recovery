@@ -253,6 +253,7 @@ public class ElekArchiveActivity extends Activity {
                     cursor.getColumnIndexOrThrow("oil_kg")
             };
             int totalKgIndex = cursor.getColumnIndexOrThrow("total_kg");
+            int mixedKgIndex = cursor.getColumnIndexOrThrow("mixed_kg");
             int totalRevenueIndex = cursor.getColumnIndexOrThrow("total_revenue");
 
             while (cursor.moveToNext()) {
@@ -262,6 +263,7 @@ public class ElekArchiveActivity extends Activity {
                 card.gardenName = cursor.getString(gardenIndex);
                 card.totalKgValue = cursor.getDouble(totalKgIndex);
                 card.totalRevenueValue = cursor.getDouble(totalRevenueIndex);
+                card.mixedKg = cursor.getDouble(mixedKgIndex);
                 for (int i = 0; i < 6; i++) {
                     card.grades[i] = cursor.getDouble(gradeIndexes[i]);
                     seasonGrades[i] += card.grades[i];
@@ -381,7 +383,9 @@ public class ElekArchiveActivity extends Activity {
             holder.dayNumber.setText(card.dayNumber);
             holder.weekday.setText(card.weekday);
             holder.garden.setText(card.gardenName);
-            holder.meta.setText(formatNumber(card.totalKgValue) + " kg  ·  "
+            holder.meta.setText((card.mixedKg > 0 && card.mixedKg >= card.totalKgValue - 0.0001
+                    ? ElekMixedEntry.LABEL + "  ·  " : "")
+                    + formatNumber(card.totalKgValue) + " kg  ·  "
                     + ElekInsights.formatPerKg(card.totalRevenueValue, card.totalKgValue));
             holder.revenue.setText(money(card.totalRevenueValue));
 
@@ -400,7 +404,8 @@ public class ElekArchiveActivity extends Activity {
 
             holder.card.setContentDescription(card.dateLong + ", " + card.gardenName + ", "
                     + formatNumber(card.totalKgValue) + " kilogram, " + money(card.totalRevenueValue) + ". "
-                    + ElekInsights.accessibleLegend(card.grades) + " Makbuzu açmak için dokun.");
+                    + (card.mixedKg > 0 ? "Sınıfsız toplam kayıt. " : ElekInsights.accessibleLegend(card.grades))
+                    + " Makbuzu açmak için dokun.");
             holder.card.setOnClickListener(v -> openReceipt(card));
             return convertView;
         }
@@ -480,6 +485,8 @@ public class ElekArchiveActivity extends Activity {
         String monthHeader = "";
         double totalKgValue;
         double totalRevenueValue;
+        /** Sınıfsız (toplam) girilmiş kilo; sınıf çubuğunda gösterilmez. */
+        double mixedKg;
         final double[] grades = new double[6];
     }
 

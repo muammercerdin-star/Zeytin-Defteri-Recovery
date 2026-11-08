@@ -899,6 +899,10 @@ public class ElekRepository {
             sql.append(", COALESCE(SUM(CASE WHEN eg.grade='").append(grades[i])
                     .append("' THEN eg.kg ELSE 0 END),0) AS ").append(columns[i]);
         }
+        // Sınıfsız (toplam) kayıt: total_kg/total_revenue'ya dahil, sınıf sütunlarında yok.
+        String mixed = ElekMixedEntry.GRADE;
+        sql.append(", COALESCE(SUM(CASE WHEN eg.grade='").append(mixed).append("' THEN eg.kg ELSE 0 END),0) AS mixed_kg")
+                .append(", COALESCE(SUM(CASE WHEN eg.grade='").append(mixed).append("' THEN eg.line_total ELSE 0 END),0) AS mixed_revenue");
         if (records) sql.append(", er.id AS record_id, er.record_date, COALESCE(g.name,'-') AS garden_name, "
                 + "COALESCE(g.district,'') AS district, COALESCE(g.province,'') AS province");
         sql.append(" FROM elek_records er INNER JOIN gardens g ON g.id=er.garden_id "

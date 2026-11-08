@@ -60,6 +60,8 @@ public class ElekReceiptActivity extends Activity {
     private final double[] kg = new double[6];
     private final double[] price = new double[6];
     private final double[] lineTotal = new double[6];
+    /** Sınıfsız (toplam) kayıt satırı; yoksa 0. */
+    private double mixedKg, mixedPrice, mixedTotal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,11 +109,19 @@ public class ElekReceiptActivity extends Activity {
         }
 
         for (int i = 0; i < 6; i++) { kg[i] = 0; price[i] = 0; lineTotal[i] = 0; }
+        mixedKg = 0; mixedPrice = 0; mixedTotal = 0;
         Cursor g = null;
         try {
             g = elekRepository.getElekGrades(recordId);
             while (g != null && g.moveToNext()) {
-                int index = gradeIndexOf(string(g, "grade"));
+                String grade = string(g, "grade");
+                if (ElekMixedEntry.isMixed(grade)) {
+                    mixedKg += number(g, "kg");
+                    mixedTotal += number(g, "line_total");
+                    mixedPrice = ElekMixedEntry.pricePerKg(mixedKg, mixedTotal);
+                    continue;
+                }
+                int index = gradeIndexOf(grade);
                 if (index < 0) continue;
                 kg[index] = number(g, "kg");
                 price[index] = number(g, "price_per_kg");
@@ -357,15 +367,27 @@ public class ElekReceiptActivity extends Activity {
                 GreenTheme.color(R.color.elek_badge_four), GreenTheme.color(R.color.elek_badge_oil)
         };
         double totalKg = 0, totalTl = 0;
+        boolean graded = false;
+        for (int i = 0; i < 6; i++) graded |= kg[i] > 0;
         for (int i = 0; i < 6; i++) {
             totalKg += kg[i];
             totalTl += lineTotal[i];
+            // Yalnız toplam girilmiş kayıtta altı boş sınıf satırı gösterilmez.
+            if (!graded && mixedKg > 0) continue;
             paper.addView(rule(PAPER_LINE, 1), new LinearLayout.LayoutParams(-1, dp(1)));
             paper.addView(tableRow(ElekInsights.GRADE_NAMES[i],
                     kg[i] > 0 ? numberFormat.format(kg[i]) : "—",
                     price[i] > 0 ? numberFormat.format(price[i]) : "—",
                     lineTotal[i] > 0 ? numberFormat.format(lineTotal[i]) + " TL" : "—",
                     INK, 13, true, colors[i]));
+        }
+        if (mixedKg > 0) {
+            totalKg += mixedKg;
+            totalTl += mixedTotal;
+            paper.addView(rule(PAPER_LINE, 1), new LinearLayout.LayoutParams(-1, dp(1)));
+            paper.addView(tableRow(ElekMixedEntry.LABEL + " (sınıfsız)", numberFormat.format(mixedKg),
+                    mixedPrice > 0 ? averageFormat.format(mixedPrice) : "—",
+                    numberFormat.format(mixedTotal) + " TL", INK, 13, true, PAPER_LABEL));
         }
         paper.addView(rule(INK, 2), new LinearLayout.LayoutParams(-1, dp(2)));
         LinearLayout total = tableRow("Toplam", numberFormat.format(totalKg) + " kg",
@@ -375,7 +397,16 @@ public class ElekReceiptActivity extends Activity {
         ((TextView) total.getChildAt(total.getChildCount() - 1)).setTextSize(16);
         paper.addView(total);
 
-        // Dağılım
+        // Dağılım (sınıfı olmayan kayıtta gösterilecek dağılım yok)
+        if (!graded) {
+            TextView mixedNote = text("Sınıfları girilmemiş toplam kayıt. Hasat ve satışına sayılır; bölge elek fiyatlarına katılmaz.",
+                    11, PAPER_LABEL, false);
+            mixedNote.setPadding(0, dp(8), 0, 0);
+            paper.addView(mixedNote);
+            addSaleSection(paper);
+            addNote(paper);
+            return paper;
+        }
         LinearLayout bar = new LinearLayout(this);
         bar.setClipToOutline(true);
         GradientDrawable track = new GradientDrawable();
@@ -404,7 +435,11 @@ public class ElekReceiptActivity extends Activity {
         // Satış kaydı: elek satışa dönüştürüldüyse alıcı ve tahsilat makbuzun üzerinde yazar.
         addSaleSection(paper);
 
-        // Not
+        addNote(paper);
+        return paper;
+    }
+
+    private void addNote(LinearLayout paper) {
         View dashed = new View(this);
         GradientDrawable d = new GradientDrawable();
         d.setShape(GradientDrawable.LINE);
@@ -415,7 +450,6 @@ public class ElekReceiptActivity extends Activity {
         dl.setMargins(0, dp(14), 0, dp(8));
         paper.addView(dashed, dl);
         paper.addView(labeled("Not", note.trim().isEmpty() ? "Not eklenmemiş" : note.trim()));
-        return paper;
     }
 
     private void addSaleSection(LinearLayout paper) {

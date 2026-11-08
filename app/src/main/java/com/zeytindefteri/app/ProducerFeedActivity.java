@@ -5416,7 +5416,7 @@ public class ProducerFeedActivity extends Activity {
     private static final class ElekRow {
         long id;
         String date = "", garden = "";
-        double kg, revenue;
+        double kg, revenue, mixedKg;
         final double[] grades = new double[6];
     }
 
@@ -5476,6 +5476,7 @@ public class ProducerFeedActivity extends Activity {
                 r.kg = getDouble(rc, "total_kg");
                 r.revenue = getDouble(rc, "total_revenue");
                 for (int i = 0; i < ELEK_GRADE_COLUMNS.length; i++) r.grades[i] = getDouble(rc, ELEK_GRADE_COLUMNS[i]);
+                r.mixedKg = getDouble(rc, "mixed_kg");
                 rows.add(r);
             }
         } catch (Exception ignored) {
@@ -5889,7 +5890,8 @@ public class ProducerFeedActivity extends Activity {
         LinearLayout left = new LinearLayout(this);
         left.setOrientation(LinearLayout.VERTICAL);
         left.addView(text(ElekInsights.formatDate(r.date, false), 15, TEXT, true));
-        TextView meta = text(r.garden + "  ·  " + fmtKg(r.kg), 12, MUTED, false);
+        TextView meta = text(r.garden + "  ·  " + (r.mixedKg > 0 && r.mixedKg >= r.kg - 0.0001
+                ? ElekMixedEntry.LABEL + " " : "") + fmtKg(r.kg), 12, MUTED, false);
         meta.setSingleLine(true);
         meta.setEllipsize(TextUtils.TruncateAt.END);
         meta.setPadding(0, dp(2), 0, 0);
@@ -5912,7 +5914,8 @@ public class ProducerFeedActivity extends Activity {
         card.addView(elekDistributionBar(r.grades, 3), barParams);
         card.setContentDescription(ElekInsights.formatDate(r.date, false) + ", " + r.garden + ", "
                 + fmtKg(r.kg) + ", " + fmtTl(r.revenue) + ", ortalama " + ElekInsights.formatPerKg(r.revenue, r.kg)
-                + ". " + ElekInsights.accessibleLegend(r.grades) + " Makbuzu açmak için dokun.");
+                + ". " + (r.mixedKg > 0 ? "Sınıfsız toplam kayıt." : ElekInsights.accessibleLegend(r.grades))
+                + " Makbuzu açmak için dokun.");
         card.setOnClickListener(v -> startActivity(new Intent(this, ElekReceiptActivity.class)
                 .putExtra(ElekReceiptActivity.EXTRA_RECORD_ID, r.id)));
         return card;

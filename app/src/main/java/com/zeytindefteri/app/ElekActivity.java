@@ -359,6 +359,8 @@ public class ElekActivity extends Activity {
         restoreFormSelection(savedInstanceState);
         setupPriceChips();
         setupSaleOnSave();
+        setupMixedMode();
+        restoreMixedMode(savedInstanceState);
         calculateAll();
 
         loadSeasonArchive();
@@ -404,6 +406,7 @@ public class ElekActivity extends Activity {
                 return names;
             }
             @Override public void fill(double[] values, Boolean sold, String buyer) {
+                setMixedMode(false);
                 EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
                 for (int i = 0; i < kg.length && i < values.length; i++) {
                     if (kg[i] == null) continue;
@@ -463,6 +466,7 @@ public class ElekActivity extends Activity {
     /** Sesle söylenen kiloları forma koyar; satış ve alıcı söylendiyse onları da. Kaydetmez. */
     private void applyVoiceEntry(double[] kgValues, int sold, String buyer) {
         if (kgValues == null) return;
+        setMixedMode(false);
         EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
         double total = 0;
         StringBuilder said = new StringBuilder();
@@ -910,7 +914,20 @@ public class ElekActivity extends Activity {
         restoredPriceDraft = state.getStringArray("elek_price_draft");
     }
 
+    private void restoreMixedMode(Bundle state) {
+        if (state == null || etMixedKg == null) return;
+        etMixedKg.setText(state.getString("elek_mixed_kg", ""));
+        etMixedTotal.setText(state.getString("elek_mixed_total", ""));
+        mixedMode = state.getBoolean("elek_mixed_mode", false);
+        renderMixedMode();
+    }
+
     @Override protected void onSaveInstanceState(Bundle state) {
+        state.putBoolean("elek_mixed_mode", mixedMode);
+        if (etMixedKg != null) {
+            state.putString("elek_mixed_kg", etMixedKg.getText().toString());
+            state.putString("elek_mixed_total", etMixedTotal.getText().toString());
+        }
         state.putLong("elek_selected_garden",selectedGardenId);
         state.putString("elek_record_date",recordDateIso);
         state.putBoolean("elek_prices_open", priceDialog != null && priceDialog.isShowing());
@@ -1725,6 +1742,14 @@ public class ElekActivity extends Activity {
                         + " TL/kg"
         );
 
+        if (mixedMode) {
+            double[] mixed = mixedValues();
+            tvTotalKg.setText(formatNumber(mixed[0]) + " kg");
+            tvTotalRevenue.setText(money(mixed[1]));
+            tvAveragePrice.setText(formatNumber(ElekMixedEntry.pricePerKg(mixed[0], mixed[1])) + " TL/kg");
+            if (tvMixedPrice != null) tvMixedPrice.setText(ElekMixedEntry.priceLine(mixed[0], mixed[1]));
+        }
+
         refreshElekInsights();
     }
 
@@ -2424,7 +2449,7 @@ public class ElekActivity extends Activity {
                         + kgOil;
 
 
-        if (totalKg <= 0) {
+        if (totalKg <= 0 && !mixedMode) {
 
             Toast.makeText(
                     this,
@@ -2482,6 +2507,19 @@ public class ElekActivity extends Activity {
                         price4,
                         priceOil
                 };
+
+        // Toplam (sınıfsız) kayıt: tek "Karışık" satırı; kilo fiyatı tutardan hesaplanır.
+        if (mixedMode) {
+            double[] mixed = mixedValues();
+            String error = ElekMixedEntry.error(mixed[0], mixed[1]);
+            if (!error.isEmpty()) {
+                Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+                return;
+            }
+            grades = ElekMixedEntry.grades();
+            kilograms = ElekMixedEntry.kilograms(mixed[0]);
+            prices = ElekMixedEntry.prices(mixed[0], mixed[1]);
+        }
 
 
         final boolean wantSale = saleOnSave;
@@ -2586,6 +2624,7 @@ public class ElekActivity extends Activity {
 
 
             clearKgFields();
+            if (mixedMode && etMixedKg != null) etMixedKg.requestFocus();   // eski kayıtları art arda girmek için
             if (qrPricesActive) {
                 // QR'daki tüccar fiyatları yalnız o kayıt içindi: kendi kayıtlı fiyatlarına dön.
                 qrPricesActive = false;
@@ -2904,6 +2943,144 @@ public class ElekActivity extends Activity {
         if (btnSaveElek != null && !saving) btnSaveElek.setText(ElekSaleModel.saveLabel(saleOnSave));
     }
 
+    // ============================================================ TOPLAM (SINIFSIZ) KAYIT
+    // Sınıflarını bilmeyen (ör. sezon ortasında kurup eski satışlarını "150 kg, 8.000 TL" diye
+    // hatırlayan) üretici için. Kayıt ElekMixedEntry.GRADE satırıyla saklanır; hasat ve satışa sayılır,
+    // bölge elek fiyatlarına katılmaz.
+    private boolean mixedMode;
+    private android.view.View gradeCard;
+    private android.widget.LinearLayout mixedCard;
+    private EditText etMixedKg, etMixedTotal;
+    private TextView tvMixedPrice;
+    private TextView[] modeTabs;
+
+    private void setupMixedMode() {
+        android.view.View editPrices = findViewById(R.id.btnEditElekPrices);
+        if (editPrices == null || !(editPrices.getParent() instanceof android.view.View)) return;
+        android.view.View headerRow = (android.view.View) editPrices.getParent();
+        if (!(headerRow.getParent() instanceof android.view.View)) return;
+        gradeCard = (android.view.View) headerRow.getParent();
+        if (!(gradeCard.getParent() instanceof android.view.ViewGroup)) { gradeCard = null; return; }
+        android.view.ViewGroup parent = (android.view.ViewGroup) gradeCard.getParent();
+        float d = getResources().getDisplayMetrics().density;
+        int text = getResources().getColor(R.color.zd_text, null);
+        int soft = getResources().getColor(R.color.zd_text_soft, null);
+        int muted = getResources().getColor(R.color.zd_muted, null);
+
+        android.widget.LinearLayout tabs = new android.widget.LinearLayout(this);
+        tabs.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        tabs.setPadding(Math.round(4 * d), Math.round(4 * d), Math.round(4 * d), Math.round(4 * d));
+        tabs.setBackground(roundRect(getResources().getColor(R.color.zd_card, null),
+                getResources().getColor(R.color.zd_border, null), 22 * d));
+        String[] labels = {"Sınıf sınıf", "Toplam (sınıfsız)"};
+        modeTabs = new TextView[labels.length];
+        for (int i = 0; i < labels.length; i++) {
+            final boolean mixed = i == 1;
+            TextView tab = new TextView(this);
+            tab.setText(labels[i]);
+            tab.setTextSize(13);
+            tab.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+            tab.setGravity(android.view.Gravity.CENTER);
+            tab.setOnClickListener(v -> setMixedMode(mixed));
+            tabs.addView(tab, new android.widget.LinearLayout.LayoutParams(0, Math.round(36 * d), 1));
+            modeTabs[i] = tab;
+        }
+        int at = parent.indexOfChild(gradeCard);
+        android.widget.LinearLayout.LayoutParams tp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+        tp.topMargin = Math.round(10 * d);
+        parent.addView(tabs, at, tp);
+
+        mixedCard = new android.widget.LinearLayout(this);
+        mixedCard.setOrientation(android.widget.LinearLayout.VERTICAL);
+        mixedCard.setPadding(Math.round(14 * d), Math.round(12 * d), Math.round(14 * d), Math.round(14 * d));
+        mixedCard.setBackground(roundRect(getResources().getColor(R.color.zd_card, null),
+                getResources().getColor(R.color.zd_border, null), 22 * d));
+        TextView over = new TextView(this);
+        over.setText("TOPLAM · SINIFSIZ");
+        over.setTextSize(12);
+        over.setLetterSpacing(0.08f);
+        over.setTextColor(muted);
+        over.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        mixedCard.addView(over);
+        TextView explain = new TextView(this);
+        explain.setText("Sınıflarını bilmediğin satışlar için. Tarihi seç, toplam kiloyu ve tutarı yaz; eski kayıtları da böyle girebilirsin.");
+        explain.setTextSize(12.5f);
+        explain.setTextColor(soft);
+        explain.setPadding(0, Math.round(4 * d), 0, Math.round(4 * d));
+        mixedCard.addView(explain);
+
+        android.widget.LinearLayout fields = new android.widget.LinearLayout(this);
+        fields.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        etMixedKg = saleField("Toplam kilo", android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        etMixedKg.setTextSize(17);
+        etMixedKg.setContentDescription("Toplam kilo");
+        etMixedTotal = saleField("Toplam tutar TL", android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        etMixedTotal.setTextSize(17);
+        etMixedTotal.setContentDescription("Toplam tutar, Türk lirası");
+        // Türkçe yazılan "8.000" gibi tutarlarda nokta girilebilsin (bazı klavyelerde yalnız ondalık işareti var).
+        etMixedTotal.setKeyListener(android.text.method.DigitsKeyListener.getInstance("0123456789.,"));
+        etMixedKg.setKeyListener(android.text.method.DigitsKeyListener.getInstance("0123456789.,"));
+        android.widget.LinearLayout.LayoutParams kp = new android.widget.LinearLayout.LayoutParams(0, -2, 1);
+        kp.setMarginEnd(Math.round(8 * d));
+        fields.addView(etMixedKg, kp);
+        fields.addView(etMixedTotal, new android.widget.LinearLayout.LayoutParams(0, -2, 1.2f));
+        mixedCard.addView(fields, saleFieldParams(d));
+
+        tvMixedPrice = new TextView(this);
+        tvMixedPrice.setTextSize(13);
+        tvMixedPrice.setTextColor(text);
+        tvMixedPrice.setPadding(0, Math.round(8 * d), 0, 0);
+        mixedCard.addView(tvMixedPrice);
+        TextView rule = new TextView(this);
+        rule.setText("Hasadına ve satışına sayılır. Sınıfı bilinmediği için bölge elek fiyatlarına ve Zeytin Ligi puanına katılmaz.");
+        rule.setTextSize(11.5f);
+        rule.setTextColor(muted);
+        rule.setPadding(0, Math.round(6 * d), 0, 0);
+        mixedCard.addView(rule);
+
+        android.text.TextWatcher watcher = new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void afterTextChanged(android.text.Editable s) { if (mixedMode) calculateAll(); }
+        };
+        etMixedKg.addTextChangedListener(watcher);
+        etMixedTotal.addTextChangedListener(watcher);
+
+        android.widget.LinearLayout.LayoutParams mp = new android.widget.LinearLayout.LayoutParams(-1, -2);
+        mp.topMargin = Math.round(10 * d);
+        parent.addView(mixedCard, parent.indexOfChild(gradeCard) + 1, mp);
+        renderMixedMode();
+    }
+
+    private void setMixedMode(boolean on) {
+        if (mixedMode == on) return;
+        mixedMode = on;
+        renderMixedMode();
+        calculateAll();
+    }
+
+    private void renderMixedMode() {
+        if (modeTabs == null || gradeCard == null || mixedCard == null) return;
+        float d = getResources().getDisplayMetrics().density;
+        int green = getResources().getColor(R.color.zd_green, null);
+        int soft = getResources().getColor(R.color.zd_text_soft, null);
+        for (int i = 0; i < modeTabs.length; i++) {
+            boolean on = (i == 1) == mixedMode;
+            modeTabs[i].setTextColor(on ? green : soft);
+            modeTabs[i].setBackground(on ? roundRect(getResources().getColor(R.color.zd_green_soft, null), green, 18 * d) : null);
+            modeTabs[i].setContentDescription(modeTabs[i].getText() + (on ? ", seçili" : ""));
+        }
+        gradeCard.setVisibility(mixedMode ? android.view.View.GONE : android.view.View.VISIBLE);
+        mixedCard.setVisibility(mixedMode ? android.view.View.VISIBLE : android.view.View.GONE);
+    }
+
+    /** {kilo, toplam tutar}; toplam modda değilse {0, 0}. */
+    private double[] mixedValues() {
+        if (!mixedMode || etMixedKg == null) return new double[]{0, 0};
+        return new double[]{ElekMixedEntry.parse(etMixedKg.getText().toString()),
+                ElekMixedEntry.parse(etMixedTotal.getText().toString())};
+    }
+
     private void syncElekCloud(
             long elekId
     ) {
@@ -2963,6 +3140,10 @@ public class ElekActivity extends Activity {
                 ""
         );
 
+        if (etMixedKg != null) {
+            etMixedKg.setText("");
+            etMixedTotal.setText("");
+        }
 
         calculateAll();
     }
@@ -3147,6 +3328,10 @@ public class ElekActivity extends Activity {
                 readDouble(etKg4),
                 readDouble(etKgOil)
         };
+        if (mixedMode) {
+            refreshMixedInsights();
+            return;
+        }
         int[] colors = {
                 getResources().getColor(R.color.elek_badge_double, null),
                 getResources().getColor(R.color.elek_badge_one, null),
@@ -3214,6 +3399,39 @@ public class ElekActivity extends Activity {
         }
     }
 
+    /** Toplam (sınıfsız) modda alt çubuk, kaydet düğmesi ve ipucu. */
+    private void refreshMixedInsights() {
+        double[] mixed = mixedValues();
+        int muted = getResources().getColor(R.color.zd_muted, null);
+        int gold = getResources().getColor(R.color.zd_warning, null);
+        String error = ElekMixedEntry.error(mixed[0], mixed[1]);
+        boolean ok = error.isEmpty();
+        elekDistributionBar.removeAllViews();
+        if (mixed[0] > 0) {
+            android.view.View segment = new android.view.View(this);
+            segment.setBackgroundColor(getResources().getColor(R.color.zd_text_soft, null));
+            elekDistributionBar.addView(segment, new android.widget.LinearLayout.LayoutParams(0, -1, 1f));
+        }
+        elekDistributionBar.setContentDescription(mixed[0] > 0 ? "Sınıfsız toplam kayıt" : "Kilo girilmedi");
+        tvElekDistributionLegend.setText(mixed[0] > 0 ? ElekMixedEntry.summary(mixed[0], mixed[1]) : "Toplam kiloyu ve tutarı yaz.");
+        tvTotalRevenue.setTextColor(mixed[1] > 0 ? gold : muted);
+        if (tvElekGardenLabel != null) {
+            tvElekGardenLabel.setText(ElekInsights.gardenLabel(selectedGardenId, homeActiveGardenId));
+        }
+        if (btnSaveElek != null && !saving) {
+            btnSaveElek.setEnabled(ok);
+            btnSaveElek.setTextColor(ok ? getResources().getColor(R.color.zd_bg, null) : muted);
+        }
+        if (tvElekSaveHint != null) {
+            String date = tvElekDate == null ? "" : tvElekDate.getText().toString();
+            String hint;
+            if (selectedGardenId <= 0) hint = ElekInsights.saveHint(mixed[0], false, selectedGardenName, date);
+            else if (!ok) hint = error;
+            else hint = ElekSaleModel.saveHint(saleOnSave, mixed[1], selectedGardenName, date);
+            tvElekSaveHint.setText(hint);
+        }
+    }
+
     // Satırdaki fiyat çipine dokununca mevcut fiyat düzenleyici o sınıfın alanıyla açılır.
     private void setupPriceChips() {
         TextView[] chips = {
@@ -3238,6 +3456,7 @@ public class ElekActivity extends Activity {
             Toast.makeText(this, "Bu bir Zeytin Defteri tezgah fişi değil.", Toast.LENGTH_LONG).show();
             return;
         }
+        setMixedMode(false);
         // Aynı fiş ikinci kez okutulursa uyar: iki kez kaydedilirse satış ve alacak çift görünür.
         android.content.SharedPreferences seen = getSharedPreferences("zd_qr_seen", MODE_PRIVATE);
         String key = "h" + Integer.toHexString(raw.trim().hashCode());
@@ -3292,6 +3511,7 @@ public class ElekActivity extends Activity {
 
     /** Defterden okunup kontrol ekranında onaylanan kilolar ve (varsa) o kaydın fiyatları. */
     private void applyNotebook(double[] kgValues, double[] prices) {
+        setMixedMode(false);
         boolean priceChanged = false;
         double[] current = {priceDouble, price1, price2, price3, price4, priceOil};
         for (int i = 0; i < current.length && i < prices.length; i++) {
