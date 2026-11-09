@@ -49,6 +49,8 @@ public final class ZeytinLeagueView extends ScrollView {
     private String observedPointer;
 
     private MarketCloudRepository leagueCloudRepository;
+    /** Tanıtım modu: buluta hiç bağlanmaz, uydurma lig gösterilir (gerçek üretici adı görünmez). */
+    private final boolean demo;
     /** Adlı ön sıralama (Supabase league_region_ranking): bölge → satırlar; yüklenenler. */
     private final java.util.Map<String, List<MarketCloudRepository.RankRow>> previewCache = new java.util.HashMap<>();
     private final java.util.Set<String> previewLoading = new java.util.HashSet<>();
@@ -88,6 +90,7 @@ public final class ZeytinLeagueView extends ScrollView {
 
     public ZeytinLeagueView(Context context, int year, String uid, Runnable seasonPicker, Runnable personalReports) {
         super(context); this.year = year; this.uid = uid; this.seasonPicker = seasonPicker; this.personalReports = personalReports;
+        demo = TanitimModu.active(context);
         numbers.setMaximumFractionDigits(2);
         setFillViewport(true); setVerticalScrollBarEnabled(false); setBackgroundColor(bg);
         body = column(); body.setPadding(dp(8), dp(4), dp(8), dp(12)); addView(body);
@@ -101,6 +104,7 @@ public final class ZeytinLeagueView extends ScrollView {
     public void configureCloud(DatabaseHelper databaseHelper) {
         if (databaseHelper == null) return;
         settingsDb = databaseHelper;
+        if (demo) return;   // tanıtımda bulut yok
         leagueCloudRepository = new MarketCloudRepository(databaseHelper, uid);
         if (isAttachedToWindow() && localData != null) {
             refreshCloudDirectory();
@@ -109,6 +113,7 @@ public final class ZeytinLeagueView extends ScrollView {
 
     @Override protected void onAttachedToWindow() {
         super.onAttachedToWindow(); final int token = ++generation;
+        if (demo) { showDemo(); return; }
 
         // Alt navigasyondan geri gelindiginde ayni View yeniden baglaniyorsa,
         // daha once cizilmis kartlari silip skeleton gostermeyelim. Eski goruntu
@@ -236,6 +241,7 @@ public final class ZeytinLeagueView extends ScrollView {
     }
 
     private void refreshCloudDirectory() {
+        if (demo) { fillDemoRegions(); render(); return; }
         final int token = generation;
         if (leagueCloudRepository == null) return;
         if (!leagueCloudRepository.canUseCloud()) { retryCloudDirectory(token); return; }   // oturum henüz hazır değil
@@ -585,6 +591,7 @@ public final class ZeytinLeagueView extends ScrollView {
             selected = r.id;
             expanded = false;
             if (changed) render();
+            if (demo) return;   // tanıtımda bölge raporu (bulut) açılmaz
             post(() -> ZeytinLeagueRegionReportDialog.show(
                     getContext(),
                     leagueCloudRepository,
@@ -595,6 +602,52 @@ public final class ZeytinLeagueView extends ScrollView {
         });
         return tile;
     }
+    /** Tanıtım ligi: TanitimVerisi'ndeki uydurma bölgeler ve sıralama; tanıtım kullanıcısı "Sen". */
+    private void showDemo() {
+        ZeytinLeagueRepository.Result r = new ZeytinLeagueRepository.Result();
+        r.published = true;
+        r.publishedAtMs = System.currentTimeMillis();
+        r.status = "Tanıtım verisi • Gerçek sıralama değildir.";
+        for (TanitimVerisi.LigBolge b : TanitimVerisi.ligBolgeler()) {
+            ZeytinLeagueRepository.Region region = new ZeytinLeagueRepository.Region();
+            region.id = b.id; region.name = b.name; region.count = b.producers; region.kg = b.kg;
+            region.amount = b.kg * b.price; region.dominant = b.dominant; region.shared = true; region.aggregatePublished = true;
+            if (TanitimVerisi.LIG_BOLGE.equals(b.id)) {
+                int rank = 0;
+                for (TanitimVerisi.LigUretici u : TanitimVerisi.ligSiralama()) {
+                    ZeytinLeagueScore.Producer p = new ZeytinLeagueScore.Producer();
+                    p.rank = ++rank;
+                    p.name = u.name;
+                    p.region = b.id;
+                    p.kg = u.kg; p.amount = u.kg * u.price; p.score = u.score;
+                    p.grades[u.grade] = u.kg;
+                    p.records = 6; p.eligible = true; p.benchmarkReady = true;
+                    boolean me = TanitimVerisi.KULLANICI.equals(u.name);
+                    p.id = me ? uid : "tanitim-lig-" + rank;
+                    region.top.add(p);
+                    if (me) { r.mine = p; r.local = p; }
+                }
+            }
+            r.regions.add(region);
+        }
+        localData = r; data = r;
+        selected = TanitimVerisi.LIG_BOLGE;
+        loading = false; paging = false;
+        fillDemoRegions();
+        render();
+    }
+
+    private void fillDemoRegions() {
+        cloudLeagueRegions.clear();
+        cloudDirectoryLoaded = true;
+        for (TanitimVerisi.LigBolge b : TanitimVerisi.ligBolgeler()) {
+            MarketCloudRepository.LeagueRegionStat st = new MarketCloudRepository.LeagueRegionStat();
+            st.id = b.id; st.name = b.name; st.grade = selectedLeagueGrade; st.producerCount = b.producers;
+            st.published = true; st.totalKg = b.kg; st.averagePrice = b.price; st.dominantGrade = b.dominant;
+            cloudLeagueRegions.add(st);
+        }
+    }
+
     private void render() {
         final int restoreScrollY = getScrollY();
         body.removeAllViews();
@@ -618,7 +671,7 @@ public final class ZeytinLeagueView extends ScrollView {
         retry.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
         retry.setContentDescription(loading ? "Yükleniyor" : "Sonuçları yenile");
         retry.setEnabled(!loading); retry.setAlpha(loading ? .4f : 1f);
-        retry.setOnClickListener(v -> begin(localData));
+        retry.setOnClickListener(v -> { if (demo) showDemo(); else begin(localData); });
         statusRow.addView(retry, new LinearLayout.LayoutParams(dp(36), dp(36))); body.addView(statusRow);
         if (data.regions.isEmpty()) {
             LinearLayout region = box();

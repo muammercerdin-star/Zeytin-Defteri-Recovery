@@ -344,7 +344,7 @@ public class ProducerFeedActivity extends Activity {
         ChatGuard.refresh(this);
 
         // Maliyet: canlı dinleme yalnız Sohbet sekmesi açıkken (diğer sekmelerde bulut okunmaz).
-        if (cloudRepository != null && "MEYDAN".equals(currentSection)) {
+        if (cloudRepository != null && "MEYDAN".equals(currentSection) && !TanitimModu.active(this)) {
             // Tek seferlik senkron yerine canlı dinleme: ekran açıkken gelen yeni mesajlar, silinen
             // gönderiler ve başka telefondan yapılan değişiklikler yenileme beklemeden görünür.
             liveFeedFirstEvent = true;
@@ -649,7 +649,8 @@ public class ProducerFeedActivity extends Activity {
         }
 
         // Sohbet sekmesine girince canlı akış başlar, çıkınca durur (okuma maliyeti).
-        boolean isChat = "MEYDAN".equals(currentSection);
+        // Tanıtımda Sohbet uydurma mesajları gösterir: canlı akış (gerçek mesajlar) dinlenmez.
+        boolean isChat = "MEYDAN".equals(currentSection) && !TanitimModu.active(this);
         if (cloudRepository != null && isChat && !wasChat) {
             liveFeedFirstEvent = false;
             cloudRepository.startLiveSync(success -> runOnUiThread(this::onLiveFeedChanged));
@@ -1031,7 +1032,7 @@ public class ProducerFeedActivity extends Activity {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
             @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
             @Override public void afterTextChanged(android.text.Editable s) {
-                if (chatTyping == null) return;
+                if (chatTyping == null || TanitimModu.active(ProducerFeedActivity.this)) return;
                 if (s.toString().trim().isEmpty()) chatTyping.clear(); else chatTyping.typing(activeType);
             }
         });
@@ -1074,6 +1075,7 @@ public class ProducerFeedActivity extends Activity {
 
     /** Sohbet ekranı açıkken başkalarının "yazıyor" bilgisini dinler. */
     private void startTypingWatch() {
+        if (TanitimModu.active(this)) return;   // tanıtımda gerçek kişilerin "yazıyor" bilgisi gösterilmez
         if (chatTyping == null) chatTyping = new ChatTypingRepository(this);
         java.util.Set<String> hidden = socialBlocks == null ? new java.util.HashSet<>() : socialBlocks.blockedIds();
         chatTyping.start(hidden, typers -> runOnUiThread(() -> {
@@ -1102,6 +1104,10 @@ public class ProducerFeedActivity extends Activity {
 
     private void sendMeydanText(View send) {
         if (publishingText || messageInput == null) return;
+        if (TanitimModu.active(this)) {   // tanıtımdan gerçek Meydan'a mesaj gitmez
+            Toast.makeText(this, "Tanıtım modunda mesaj gönderilmez.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         String text = messageInput.getText().toString().trim();
         if (text.length() < 3 || text.length() > 2000) {
             messageInput.setError("Mesaj 3–2000 karakter olmalı."); return;
@@ -1242,6 +1248,11 @@ public class ProducerFeedActivity extends Activity {
      */
     private void refreshMarketStrip() {
         if (marketStrip == null) return;
+        if (TanitimModu.active(this)) {
+            TanitimVerisi.LigBolge b = TanitimVerisi.ligBolgeler()[0];
+            applyMarketStrip(MeydanMarketStrip.of(b.name, true, b.producers, true, b.price));
+            return;
+        }
         final int serial = ++marketStripSerial;
         FirebaseUser user = firebaseAuth == null ? null : firebaseAuth.getCurrentUser();
         final String uid = user == null ? "" : user.getUid();
@@ -1290,6 +1301,7 @@ public class ProducerFeedActivity extends Activity {
 
         feedContainer.removeAllViews();
         feedReplyPreviews.clear();
+        if (TanitimModu.active(this)) { loadDemoFeed(); return; }
         if (firebaseAuth == null || firebaseAuth.getCurrentUser() == null) {
             feedContainer.addView(emptyCard("Meydan'a katıl", "Mesajları görmek ve yanıtlamak için giriş yapmalısın."));
             return;
@@ -1439,6 +1451,41 @@ public class ProducerFeedActivity extends Activity {
         }
     }
 
+    /**
+     * Tanıtım Sohbeti: TanitimVerisi'ndeki uydurma mesajlar (gerçek kişi, gerçek mesaj yok). Kimlikleri eksi
+     * sayıdır; açma, Faydalı, şikâyet ve yanıt buluta hiçbir şey yazmaz.
+     */
+    private void loadDemoFeed() {
+        long now = System.currentTimeMillis();
+        TanitimVerisi.SohbetMesaj[] all = TanitimVerisi.sohbet();
+        for (int i = 0; i < all.length; i++) {
+            TanitimVerisi.SohbetMesaj m = all[i];
+            FeedManager.PostItem p = new FeedManager.PostItem();
+            p.id = -(i + 1);
+            p.userId = "tanitim-sohbet-" + (i + 1);
+            p.userName = m.author;
+            p.district = m.district;
+            p.province = "Bursa";
+            p.postType = m.type;
+            p.content = m.text;
+            p.commentCount = m.replies;
+            p.usefulCount = m.useful;
+            p.createdAt = now - m.minutesAgo * 60_000L;
+            p.active = true;
+            if (!matchesType(p, activeType)) continue;
+            if (!m.reply.isEmpty()) {
+                FeedReplyPreview r = new FeedReplyPreview();
+                r.uid = "tanitim-yanit-" + (i + 1);
+                r.name = m.replyAuthor;
+                r.content = m.reply;
+                r.createdAt = p.createdAt + 20 * 60_000L;
+                r.cachedCount = m.replies;
+                feedReplyPreviews.put(p.id, r);
+            }
+            feedContainer.addView(buildPostCard(p));
+        }
+    }
+
     private boolean matchesType(
             FeedManager.PostItem p,
             String type
@@ -1548,7 +1595,7 @@ public class ProducerFeedActivity extends Activity {
         tag.setPadding(dp(9), dp(3), dp(9), dp(3));
         tag.setBackground(round(surface, 10, BORDER));
         header.addView(tag);
-        if (SocialReportManager.canReport(uid)) {
+        if (p.id >= 0 && SocialReportManager.canReport(uid)) {   // tanıtım mesajı (eksi id) şikâyet edilmez
             ImageView menu = new ImageView(this);
             menu.setImageResource(R.drawable.ic_op_more);
             menu.setColorFilter(MUTED);
@@ -1610,7 +1657,7 @@ public class ProducerFeedActivity extends Activity {
 
         LinearLayout actions = row();
         TextView useful = meydanAction("Faydalı", R.drawable.ic_op_heart);
-        if (reactionManager != null) reactionManager.setupReactionButton(useful, p.id, currentUserKey());
+        if (reactionManager != null && p.id >= 0) reactionManager.setupReactionButton(useful, p.id, currentUserKey());
         actions.addView(useful, new LinearLayout.LayoutParams(-2, dp(44)));
         TextView replyAction = meydanAction(count > 0 ? "Yanıtla · " + count : "Yanıtla", R.drawable.ic_op_reply);
         replyAction.setContentDescription(count > 0 ? "Yanıtla, " + count + " yanıt" : "Yanıtla");
@@ -1670,6 +1717,10 @@ public class ProducerFeedActivity extends Activity {
         }
     }
     private void openFeedThread(long postId,String parentId,boolean focus) {
+        if (postId < 0) {   // tanıtım mesajı: gerçek yanıt ekranı açılmaz
+            Toast.makeText(this, "Tanıtım mesajı", Toast.LENGTH_SHORT).show();
+            return;
+        }
         Intent intent=new Intent(this,PostRepliesActivity.class).putExtra("post_id",postId)
             .putExtra("focus_composer",focus);
         if(!TextUtils.isEmpty(parentId))intent.putExtra("reply_parent_cloud_id",parentId);
@@ -6555,11 +6606,12 @@ public class ProducerFeedActivity extends Activity {
     private void updateTanecik() {
         if (tanecik == null) return;
         boolean onPage = "HOME".equals(currentSection) || (tanecik.touring()
-                && ("ELEK".equals(currentSection) || "GARDENS".equals(currentSection)));
+                && ("ELEK".equals(currentSection) || "GARDENS".equals(currentSection)
+                || "REPORTS".equals(currentSection) || "MEYDAN".equals(currentSection)));
         tanecik.setActive(screenResumed && onPage && !seasonReportOpen);
     }
 
-    /** "Tanecik ile tanıtım turu": takvim → hava → Bahçelerim → Elek → mikrofon → elek raporu → Lig/Sohbet/Tezgâh (yalnız gösterir) → kapanış. */
+    /** "Tanecik ile tanıtım turu": takvim → hava → Bahçelerim → Elek → mikrofon → elek raporu → Zeytin Ligi → Sohbet → Tezgâh → kapanış. */
     void startTanecikTour() {
         if (tanecik == null) return;
         if (!TanecikWalker.enabled(this)) TanecikWalker.setEnabled(this, true);

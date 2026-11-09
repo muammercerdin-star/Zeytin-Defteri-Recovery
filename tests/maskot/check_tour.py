@@ -11,7 +11,8 @@ fails = []
 for tag in ['TAG_TAKVIM', 'TAG_HAVA', 'TAG_MIKROFON']:
     if f'setTag(TanecikTour.{tag})' not in pf: fails.append('hedef etiketi konmamış: ' + tag)
 if 'void startTanecikTour()' not in pf or 'EXTRA_TOUR, true' not in pf: fails.append('tur başlatma/rapor açma yok')
-if '&& ("ELEK".equals(currentSection) || "GARDENS".equals(currentSection))' not in pf: fails.append('Elek/Bahçeler adımında Tanecik görünmez')
+if '&& ("ELEK".equals(currentSection) || "GARDENS".equals(currentSection)\n                || "REPORTS".equals(currentSection) || "MEYDAN".equals(currentSection)));' not in pf:
+    fails.append('Elek/Bahçeler/Lig/Sohbet adımında Tanecik görünmez')
 if 'tourMode && was && !on && tourSpoke' not in ba or 'Tura dön' not in ba: fails.append('rapor tura dönmüyor')
 if 'startTanecikTour()' not in sv: fails.append('Ayarlar\'da tur satırı yok')
 if 'if (tour != null) {' not in wk or 'runTourStep' not in wk: fails.append('dönüşte tur sürmüyor')

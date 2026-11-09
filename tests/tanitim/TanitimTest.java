@@ -41,6 +41,27 @@ public class TanitimTest {
         ok(h.lines.get(1).startsWith("Eleği ufak çıkarıyor"), "Hasan ufak: " + h.lines.get(1));
         ok(todayKg > 100, "bugün satış var (Tanecik 'Bugün ... sattın' der)");
         ok(oldestOpen == 18 && hasanOpen > 0, "Hasan Bey'in 18 gündür bekleyen parası (Tanecik '!' ile söyler)");
+
+        // Zeytin Ligi ve Sohbet tanıtımı: uydurma adlar (ad + baş harf), gizlilik eşiği, tanıtım kullanıcısı 4.
+        java.util.Set<String> ligAd = new java.util.HashSet<>();
+        double prev = Double.MAX_VALUE;
+        int me = -1, i = 0;
+        for (TanitimVerisi.LigUretici u : TanitimVerisi.ligSiralama()) {
+            i++;
+            ok(ligAd.add(u.name), "ligde aynı ad iki kez: " + u.name);
+            ok(u.score < prev, "lig puana göre sıralı");
+            prev = u.score;
+            if (u.name.equals(TanitimVerisi.KULLANICI)) me = i;
+            else ok(u.name.matches("\\p{Lu}\\p{Ll}+ \\p{Lu}\\."), "uydurma ad (ad + baş harf): " + u.name);
+            ok(u.grade >= 0 && u.grade < 6 && u.kg >= 100, "lig satırı geçerli");
+        }
+        ok(me == 4, "tanıtım kullanıcısı ligde 4.");
+        for (TanitimVerisi.LigBolge b : TanitimVerisi.ligBolgeler()) ok(b.producers >= 5, "bölge gizlilik eşiği (5+ üretici): " + b.name);
+        ok(TanitimVerisi.ligBolgeler()[0].id.equals(TanitimVerisi.LIG_BOLGE), "ilk bölge ligin bölgesi");
+        for (TanitimVerisi.SohbetMesaj sm : TanitimVerisi.sohbet()) {
+            ok(ligAd.contains(sm.author) || sm.author.matches("\\p{Lu}\\p{Ll}+ \\p{Lu}\\."), "sohbet yazarı uydurma: " + sm.author);
+            ok(!sm.text.isEmpty() && sm.text.length() <= 120, "kısa sohbet mesajı");
+        }
         System.out.println("PASS: " + checks + " tanıtım verisi kontrolü");
     }
 }

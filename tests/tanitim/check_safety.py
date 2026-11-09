@@ -36,6 +36,23 @@ if '&& uid.equals(user.getUid());' not in mc: fails.append('piyasa: uid = Google
 if 'TanitimModu.OWNER.equals(databaseHelper.getActiveOwnerUid())' not in mc: fails.append('piyasa katkısı tanıtımda kilitli değil')
 tb = read(A / 'TezgahCloudBackup.java')
 if tb.count('if (owner == null || !owner.equals(uid))') < 2: fails.append('yedek: hesap eşleşmesi şartı kalkmış')
+# 5) Zeytin Ligi ve Sohbet tanıtımda gerçek kişileri göstermez, buluta yazmaz.
+lv = read(A / 'ZeytinLeagueView.java')
+if 'demo = TanitimModu.active(context);' not in lv or 'if (demo) { showDemo(); return; }' not in lv:
+    fails.append('Zeytin Ligi tanıtımda gerçek sıralamayı yüklüyor olabilir')
+if 'if (demo) return;   // tanıtımda bulut yok' not in lv or 'if (demo) { fillDemoRegions(); render(); return; }' not in lv:
+    fails.append('Zeytin Ligi tanıtımda buluta bağlanıyor')
+if 'if (demo) return;   // tanıtımda bölge raporu (bulut) açılmaz' not in lv: fails.append('tanıtımda bölge raporu bulutu açıyor')
+if 'if (TanitimModu.active(this)) { loadDemoFeed(); return; }' not in pf: fails.append('Sohbet tanıtımda gerçek mesajları gösteriyor')
+if 'tanıtımdan gerçek Meydan\'a mesaj gitmez' not in pf: fails.append('tanıtımda Sohbet\'ten mesaj gönderilebilir')
+if 'if (TanitimModu.active(this)) return;   // tanıtımda gerçek kişilerin "yazıyor"' not in pf: fails.append('tanıtımda "yazıyor" gerçek adları gösterir')
+if 'chatTyping == null || TanitimModu.active(ProducerFeedActivity.this)' not in pf: fails.append('tanıtımda "yazıyor" bilgisi gönderiliyor')
+if 'boolean isChat = "MEYDAN".equals(currentSection) && !TanitimModu.active(this);' not in pf: fails.append('tanıtımda canlı Sohbet akışı açılıyor')
+if 'if (p.id >= 0 && SocialReportManager.canReport(uid))' not in pf or 'reactionManager != null && p.id >= 0' not in pf:
+    fails.append('tanıtım mesajı şikâyet/Faydalı ile buluta yazabilir')
+if 'if (postId < 0) {   // tanıtım mesajı' not in pf: fails.append('tanıtım mesajı gerçek yanıt ekranını açıyor')
+if 'static final String KULLANICI = "Ahmet Yılmaz";' not in read(A / 'TanitimVerisi.java') or 'static final String NAME = "Ahmet Yılmaz";' not in modu:
+    fails.append('lig tanıtım kullanıcısı adı TanitimModu.NAME ile aynı değil')
 # 4) Silme ham SQL: bulut silme kaydı (tombstone) yazılmaz.
 if 'sync_tombstones' in modu and 'insert' in modu.lower(): fails.append('tanıtım tombstone yazıyor olabilir')
 if fails:

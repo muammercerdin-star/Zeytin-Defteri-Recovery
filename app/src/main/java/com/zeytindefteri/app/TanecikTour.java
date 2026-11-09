@@ -31,18 +31,18 @@ public final class TanecikTour {
     public static List<Step> steps() {
         return Arrays.asList(
                 new Step("HOME", "", "", "Selam! Ben Tanecik. Hadi gezelim!", ""),
-                new Step("HOME", "", TAG_TAKVIM, "Zeytin takvimi: hangi dönemdesin, hemen görürsün.", ""),
-                new Step("HOME", "", TAG_HAVA, "Hava kartı: yağmur, rüzgâr, ilaçlama için en kuru gün.", ""),
+                new Step("HOME", "", TAG_TAKVIM, "Takvim: hangi dönemdesin, hemen görürsün.", ""),
+                new Step("HOME", "", TAG_HAVA, "Hava: yağmur, rüzgâr, ilaçlama için en kuru gün.", ""),
                 new Step("GARDENS", NAV + "GARDENS", "", "Bahçelerim: her bahçenin masrafı, hasadı ayrı.", ""),
                 new Step("ELEK", NAV + "ELEK", "", "Elek: satışların burada. Nasıl kaydedilir, bak!", DO_ELEK),
                 new Step("HOME", NAV + "HOME", TAG_MIKROFON, "Ya da mikrofona bas: \"150 kilo topladım\" de, ben yazarım.", ""),
-                new Step("HOME", "", "", "Elek raporu: aynı zeytine hangi alıcı çok veriyor, söylerim!", DO_REPORT),
-                // Zeytin Ligi ve Sohbet'te başka üreticilerin adları/mesajları var: tur (reklam kaydı) bu ekranları
-                // AÇMAZ, Tanecik yalnız alt menüdeki düğmeyi eliyle gösterir.
-                new Step("HOME", "", NAV + "REPORTS", "Zeytin Ligi: bölgenin fiyatı ve üreticiler arasında sıran burada.", ""),
-                new Step("HOME", "", NAV + "MEYDAN", "Sohbet: komşu üreticilere soru sor, fiyat konuş.", ""),
-                new Step("HOME", "", NAV + "PROFILE", "Tezgâhçı mısın? Ayarlar'dan Tezgâh modunu seç: tartım, cari, kasa.", ""),
-                new Step("HOME", "", "", "Alacak bekleyince başımda ünlem çıkar.", ""),
+                new Step("HOME", "", "", "Elek raporu: hangi alıcı daha çok veriyor, söylerim!", DO_REPORT),
+                // Zeytin Ligi ve Sohbet açılır. Tanıtım modunda ikisi de uydurma veri gösterir (gerçek üretici adı,
+                // gerçek mesaj görünmez; Sohbet'ten mesaj gönderilmez).
+                new Step("REPORTS", NAV + "REPORTS", "", "Zeytin Ligi: bölgenin fiyatı ve üreticiler arasında sıran.", ""),
+                new Step("MEYDAN", NAV + "MEYDAN", "", "Sohbet: komşu üreticilere soru sor, fiyat konuş.", ""),
+                new Step("MEYDAN", "", NAV + "PROFILE", "Tezgâhçıysan Ayarlar'dan Tezgâh modunu seç: tartım, cari, kasa.", ""),
+                new Step("HOME", NAV + "HOME", "", "Alacak bekleyince başımda ünlem çıkar.", ""),
                 new Step("HOME", "", "", "Hepsi bu! Zeytin Defteri: üreticinin cebindeki defter.", ""));
     }
 
@@ -57,8 +57,7 @@ public final class TanecikTour {
         return Arrays.asList(
                 new GuideStep("btnElekVoice", "Buraya basıp konuşarak kaydedebilirsin.", ""),
                 new GuideStep("etKg2", "Ya da elle: kiloyu sınıfının yanına yaz.", "150"),
-                new GuideStep("tvPrice2", "Fiyatı bir kez girersin, defter hatırlar.", ""),
-                new GuideStep("tvTotalRevenue", "Toplam tutar kendiliğinden hesaplanır.", ""),
+                new GuideStep("tvPrice2", "Fiyatı bir kez girersin, tutarı ben hesaplarım.", ""),
                 new GuideStep("btnSaveElek", "Sonra Kaydet'e basarsın. Bu kadar kolay!", ""));
     }
 
