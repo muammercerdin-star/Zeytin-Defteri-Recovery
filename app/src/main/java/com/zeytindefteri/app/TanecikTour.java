@@ -30,14 +30,19 @@ public final class TanecikTour {
 
     public static List<Step> steps() {
         return Arrays.asList(
-                new Step("HOME", "", "", "Selam! Ben Tanecik. Zeytin Defteri'ni hızlıca gezelim!", ""),
-                new Step("HOME", "", TAG_TAKVIM, "Zeytin takvimi: hangi dönemdesin, son hasat ne zaman, hemen görürsün.", ""),
-                new Step("HOME", "", TAG_HAVA, "Hava kartı: yağmur, rüzgâr, en kuru gün. İlaçlamayı buna göre yap.", ""),
-                new Step("GARDENS", NAV + "GARDENS", "", "Bahçelerim: her bahçenin ağacı, masrafı, hasadı ayrı ayrı.", ""),
-                new Step("ELEK", NAV + "ELEK", "", "Elek: satışların burada. Bak, nasıl kaydedilir göstereyim!", DO_ELEK),
-                new Step("HOME", NAV + "HOME", TAG_MIKROFON, "Ya da mikrofona bas, konuş: \"150 kilo topladım\" de, ben yazarım.", ""),
-                new Step("HOME", "", "", "Elek raporu: aynı zeytine hangi alıcı daha çok veriyor, söylerim!", DO_REPORT),
-                new Step("HOME", "", "", "Alacak bekleyince başımda ünlem çıkar, unutturmam.", ""),
+                new Step("HOME", "", "", "Selam! Ben Tanecik. Hadi gezelim!", ""),
+                new Step("HOME", "", TAG_TAKVIM, "Zeytin takvimi: hangi dönemdesin, hemen görürsün.", ""),
+                new Step("HOME", "", TAG_HAVA, "Hava kartı: yağmur, rüzgâr, ilaçlama için en kuru gün.", ""),
+                new Step("GARDENS", NAV + "GARDENS", "", "Bahçelerim: her bahçenin masrafı, hasadı ayrı.", ""),
+                new Step("ELEK", NAV + "ELEK", "", "Elek: satışların burada. Nasıl kaydedilir, bak!", DO_ELEK),
+                new Step("HOME", NAV + "HOME", TAG_MIKROFON, "Ya da mikrofona bas: \"150 kilo topladım\" de, ben yazarım.", ""),
+                new Step("HOME", "", "", "Elek raporu: aynı zeytine hangi alıcı çok veriyor, söylerim!", DO_REPORT),
+                // Zeytin Ligi ve Sohbet'te başka üreticilerin adları/mesajları var: tur (reklam kaydı) bu ekranları
+                // AÇMAZ, Tanecik yalnız alt menüdeki düğmeyi eliyle gösterir.
+                new Step("HOME", "", NAV + "REPORTS", "Zeytin Ligi: bölgenin fiyatı ve üreticiler arasında sıran burada.", ""),
+                new Step("HOME", "", NAV + "MEYDAN", "Sohbet: komşu üreticilere soru sor, fiyat konuş.", ""),
+                new Step("HOME", "", NAV + "PROFILE", "Tezgâhçı mısın? Ayarlar'dan Tezgâh modunu seç: tartım, cari, kasa.", ""),
+                new Step("HOME", "", "", "Alacak bekleyince başımda ünlem çıkar.", ""),
                 new Step("HOME", "", "", "Hepsi bu! Zeytin Defteri: üreticinin cebindeki defter.", ""));
     }
 
@@ -79,6 +84,7 @@ public final class TanecikTour {
         for (Step st : steps()) {
             ms += st.tap.isEmpty() ? SETTLE_MS : (long) (200f / WALK_DP_S * 1000) + PRESS_MS + SETTLE_MS;
             if (TAG_TAKVIM.equals(st.tag) || TAG_HAVA.equals(st.tag)) ms += SCROLL_MS + Math.round(800 * 0.75);
+            else if (st.tag.startsWith(NAV) || TAG_MIKROFON.equals(st.tag)) ms += (long) (110f / WALK_DP_S * 1000);   // komşu düğmeye yürür
             else ms += FLY_MAX_MS / 2;
             ms += speechMs(st.text, TOUR_RATE) + GAP_MS;
             if (DO_ELEK.equals(st.after)) {

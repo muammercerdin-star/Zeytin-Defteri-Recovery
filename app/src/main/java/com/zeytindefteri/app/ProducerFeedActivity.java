@@ -6559,7 +6559,7 @@ public class ProducerFeedActivity extends Activity {
         tanecik.setActive(screenResumed && onPage && !seasonReportOpen);
     }
 
-    /** "Tanecik ile tanıtım turu": Ana sayfa → takvim → hava → mikrofon → Elek → elek raporu → kapanış. */
+    /** "Tanecik ile tanıtım turu": takvim → hava → Bahçelerim → Elek → mikrofon → elek raporu → Lig/Sohbet/Tezgâh (yalnız gösterir) → kapanış. */
     void startTanecikTour() {
         if (tanecik == null) return;
         if (!TanecikWalker.enabled(this)) TanecikWalker.setEnabled(this, true);

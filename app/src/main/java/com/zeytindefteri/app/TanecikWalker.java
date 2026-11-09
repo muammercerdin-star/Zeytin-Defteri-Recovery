@@ -1075,8 +1075,8 @@ final class TanecikWalker {
     private void moveForStep(TanecikTour.Step step) {
         if (tour == null || !active) return;
         View target = step.tag.isEmpty() || tourHost == null ? null : tourHost.find(step.tag);
-        if (target != null && TanecikTour.TAG_MIKROFON.equals(step.tag)) {
-            // Mikrofon alt menüde: yanına yürür ve eliyle gösterir.
+        if (target != null && (TanecikTour.TAG_MIKROFON.equals(step.tag) || step.tag.startsWith(TanecikTour.NAV))) {
+            // Mikrofon / alt menü düğmesi (Zeytin Ligi, Sohbet, Ayarlar): yanına yürür ve eliyle gösterir, basmaz.
             float cx = leftOf(target) + target.getWidth() / 2f;
             Runnable point = () -> {
                 face(true);

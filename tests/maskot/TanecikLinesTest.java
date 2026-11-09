@@ -152,7 +152,7 @@ public class TanecikLinesTest {
         List<TanecikTour.Step> steps = TanecikTour.steps();
         ok(steps.size() >= 8, "tur adımları");
         int reports = 0, guides = 0, taps = 0;
-        java.util.Set<String> sections = new java.util.HashSet<>();
+        java.util.Set<String> sections = new java.util.HashSet<>(), pointed = new java.util.HashSet<>();
         for (int i = 0; i < steps.size(); i++) {
             TanecikTour.Step st = steps.get(i);
             sections.add(st.section);
@@ -160,7 +160,8 @@ public class TanecikLinesTest {
             ok(st.tap.isEmpty() || st.tap.equals(TanecikTour.NAV + st.section), "basılan düğme bölümle aynı: " + st.tap);
             if (!st.tap.isEmpty()) taps++;
             ok(st.tag.isEmpty() || st.tag.equals(TanecikTour.TAG_TAKVIM) || st.tag.equals(TanecikTour.TAG_HAVA)
-                    || st.tag.equals(TanecikTour.TAG_MIKROFON), "hedef: " + st.tag);
+                    || st.tag.equals(TanecikTour.TAG_MIKROFON) || st.tag.startsWith(TanecikTour.NAV), "hedef: " + st.tag);
+            if (st.tag.startsWith(TanecikTour.NAV)) { pointed.add(st.tag); ok(st.tap.isEmpty(), "Lig/Sohbet/Ayarlar yalnız gösterilir, basılmaz"); }
             ok(!st.text.isEmpty() && st.text.length() <= 90, "kısa ve hızlı söz (" + st.text.length() + "): " + st.text);
             if (TanecikTour.DO_REPORT.equals(st.after)) reports++;
             if (TanecikTour.DO_ELEK.equals(st.after)) { guides++; ok(st.section.equals("ELEK"), "gösterim Elek'ten açılır"); }
@@ -168,6 +169,11 @@ public class TanecikLinesTest {
         }
         ok(reports == 1 && guides == 1 && taps >= 3, "rapor, Elek gösterimi ve menüye basma var");
         ok(sections.contains("GARDENS") && sections.contains("ELEK"), "başka menülere geçer");
+        ok(!sections.contains("REPORTS") && !sections.contains("MEYDAN"), "Lig ve Sohbet ekranı turda açılmaz (gerçek adlar)");
+        ok(pointed.contains(TanecikTour.NAV + "REPORTS") && pointed.contains(TanecikTour.NAV + "MEYDAN") && pointed.contains(TanecikTour.NAV + "PROFILE"),
+                "Zeytin Ligi, Sohbet ve Tezgâh modu anlatılır");
+        boolean tz = false; for (TanecikTour.Step st : steps) tz |= st.text.contains("Tezgâh");
+        ok(tz, "Tezgâh modundan bahseder");
         ok(steps.get(0).text.startsWith("Selam! Ben Tanecik.") && steps.get(steps.size() - 1).text.startsWith("Hepsi bu!"), "giriş ve kapanış");
         for (TanecikTour.GuideStep g : TanecikTour.elekGuide()) ok(!g.view.isEmpty() && g.text.length() <= 70, "gösterim adımı: " + g.text);
         ok(TanecikTour.elekGuide().get(1).view.equals("etKg2") && TanecikTour.elekGuide().get(1).type.equals("150"), "kilo yazılır");
