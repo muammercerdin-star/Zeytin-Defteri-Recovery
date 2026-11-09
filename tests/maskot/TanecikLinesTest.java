@@ -172,6 +172,11 @@ public class TanecikLinesTest {
         for (TanecikTour.GuideStep g : TanecikTour.elekGuide()) ok(!g.view.isEmpty() && g.text.length() <= 70, "gösterim adımı: " + g.text);
         ok(TanecikTour.elekGuide().get(1).view.equals("etKg2") && TanecikTour.elekGuide().get(1).type.equals("150"), "kilo yazılır");
         ok(TanecikTour.elekGuide().get(TanecikTour.elekGuide().size() - 1).view.equals("btnSaveElek"), "sonda Kaydet gösterilir (basılmaz)");
+        long est = TanecikTour.estimateMs();
+        System.out.println("Tahmini tur süresi: " + est / 1000 + " sn");
+        ok(est >= 60_000 && est <= 90_000, "tur 1–1,5 dakika sürer: " + est / 1000 + " sn");
+        ok(TanecikTour.TOUR_RATE > 1.12f , "turda ses normalden hızlı");
+        ok(TanecikTour.WALK_DP_S >= 3 * 38, "turda yürüme en az 3 kat hızlı");
 
         // --- Altyazı öbekleri
         String sp = TanecikCaptions.spoken("Rüzgâr kuvvetli (31 km/s), yağmur %70, kilo başı 5,1 TL.");

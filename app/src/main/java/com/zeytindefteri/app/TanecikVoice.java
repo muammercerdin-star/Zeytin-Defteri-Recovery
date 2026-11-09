@@ -27,6 +27,10 @@ import java.util.Locale;
 final class TanecikVoice {
     /** Biraz hızlı: tanıtım tempolu olsun ama anlaşılır kalsın. */
     static final float RATE = 1.12f;
+    /** Tanıtım turunda daha seri: tur 1–1,5 dakikada bitsin. */
+    static final float TOUR_RATE = TanecikTour.TOUR_RATE;
+
+    private float rate = RATE;
 
     private final Activity activity;
     private final TextView caption;
@@ -58,6 +62,13 @@ final class TanecikVoice {
 
     boolean speaking() { return speaking; }
 
+    /** Tur hızında konuşur (1,22). */
+    TanecikVoice fast() {
+        rate = TOUR_RATE;
+        if (tts != null && ready) { try { tts.setSpeechRate(rate); } catch (RuntimeException ignored) { } }
+        return this;
+    }
+
     /** Hazırlar; hazır olunca (ya da Türkçe ses yoksa) then çalışır. */
     void prepare(Runnable then) {
         if (tts != null || failed) { if (then != null) then.run(); return; }
@@ -68,7 +79,7 @@ final class TanecikVoice {
             ready = st == TextToSpeech.SUCCESS && lang >= 0;
             failed = !ready;
             if (ready) {
-                try { tts.setSpeechRate(RATE); } catch (RuntimeException ignored) { }
+                try { tts.setSpeechRate(rate); } catch (RuntimeException ignored) { }
                 tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                     @Override public void onStart(String id) { }
                     @Override public void onDone(String id) { handler.post(() -> finished(id)); }
@@ -101,7 +112,7 @@ final class TanecikVoice {
             for (int i = 0; i < chunks.size(); i++) {
                 final int k = i;
                 handler.postDelayed(() -> { if (id.equals(utterance)) showChunk(k); }, at);
-                at += TanecikCaptions.chunkMs(chunks.get(i).text, voiced ? RATE : 1f);
+                at += TanecikCaptions.chunkMs(chunks.get(i).text, voiced ? rate : 1f);
             }
             if (!voiced) handler.postDelayed(() -> finished(id), at + 250);
         } else {

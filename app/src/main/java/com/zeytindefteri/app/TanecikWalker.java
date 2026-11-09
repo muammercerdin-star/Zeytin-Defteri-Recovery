@@ -306,7 +306,7 @@ final class TanecikWalker {
         float dx = targetX - actor.getTranslationX();
         if (Math.abs(dx) < dp(8)) { then.run(); return; }
         face(dx > 0);
-        long duration = (long) (Math.abs(dx) / dp(38) * 1000);   // ~38 dp/sn: ağır ağır
+        long duration = (long) (Math.abs(dx) / dp(tour != null ? TanecikTour.WALK_DP_S : 38) * 1000);   // ~38 dp/sn: ağır ağır; turda seri
         handler.removeCallbacks(walkTick);
         handler.post(walkTick);
         actor.animate().translationX(targetX).setDuration(duration).setInterpolator(new LinearInterpolator())
@@ -420,6 +420,7 @@ final class TanecikWalker {
         if (Math.abs(x1 - x0) > dp(4)) face(x1 > x0);
         body.setImageResource(R.drawable.tanecik_zipliyor);
         long duration = 520 + (long) Math.min(500, Math.abs(y0 - y1Now) / getDensity() * 2.2);
+        if (tour != null) duration = Math.round(duration * 0.75);   // turda kısa zıplama
         jumpAnim = ValueAnimator.ofFloat(0f, 1f);
         jumpAnim.setDuration(duration);
         jumpAnim.setInterpolator(new LinearInterpolator());
@@ -493,7 +494,9 @@ final class TanecikWalker {
         float dist = Math.abs(yOn(target) - y0);
         if (Math.abs(x1 - x0) > dp(4)) face(x1 > x0);
         final float sway = dp(10), lift = dp(14);
-        long duration = Math.min(3200, 900 + (long) (dist / getDensity() * 6));
+        long duration = tour != null
+                ? Math.min(TanecikTour.FLY_MAX_MS, 500 + (long) (dist / getDensity() * 2))   // turda en fazla ~1 sn
+                : Math.min(3200, 900 + (long) (dist / getDensity() * 6));
         handler.removeCallbacks(propTick);
         handler.post(propTick);
         jumpAnim = ValueAnimator.ofFloat(0f, 1f);
@@ -983,7 +986,7 @@ final class TanecikWalker {
     private TextView tourStop;
 
     private TanecikVoice voice() {
-        if (voice == null) voice = new TanecikVoice(activity, layer);
+        if (voice == null) voice = new TanecikVoice(activity, layer).fast();
         return voice;
     }
 
@@ -1040,7 +1043,7 @@ final class TanecikWalker {
             if (platform != null && !step.section.equals("HOME")) { platform = null; actor.setTranslationY(floorY()); }
             tourHost.showSection(step.section);
         }
-        handler.postDelayed(() -> moveForStep(step), 450);   // ekran kurulsun
+        handler.postDelayed(() -> moveForStep(step), TanecikTour.SETTLE_MS);   // ekran kurulsun
     }
 
     /** Alt menüdeki düğmenin yanına yürür, elini uzatıp basar; düğme parlar ve bölüm açılır. */
@@ -1048,7 +1051,7 @@ final class TanecikWalker {
         View nav = tourHost.find(step.tap);
         if (nav == null) {
             tourHost.showSection(step.section);
-            handler.postDelayed(() -> moveForStep(step), 450);
+            handler.postDelayed(() -> moveForStep(step), TanecikTour.SETTLE_MS);
             return;
         }
         if (platform != null) { flyTo(actor.getTranslationX(), null, () -> pressNav(step)); return; }
@@ -1064,8 +1067,8 @@ final class TanecikWalker {
             handler.postDelayed(() -> {
                 if (tour == null || !active) return;
                 tourHost.showSection(step.section);
-                handler.postDelayed(() -> moveForStep(step), 450);
-            }, 420);
+                handler.postDelayed(() -> moveForStep(step), TanecikTour.SETTLE_MS);
+            }, TanecikTour.PRESS_MS);
         });
     }
 
@@ -1094,7 +1097,7 @@ final class TanecikWalker {
                 if (tour == null || !active) return;
                 if (validPlatform(target)) jumpTo(randomXOn(target), target, talkThen);
                 else talkThen.run();
-            }, 550);
+            }, TanecikTour.SCROLL_MS);
             return;
         }
         if (platform != null) flyTo(randomFloorX(), null, talkThen);
@@ -1113,7 +1116,7 @@ final class TanecikWalker {
         final int at = tourAt;
         voice().say(step.text, () -> {
             talking = false;
-            if (tour != null && tourAt == at) handler.postDelayed(this::tourAfterSpeech, 300);
+            if (tour != null && tourAt == at) handler.postDelayed(this::tourAfterSpeech, TanecikTour.GAP_MS);
         });
     }
 

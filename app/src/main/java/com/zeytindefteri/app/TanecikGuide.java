@@ -57,7 +57,7 @@ final class TanecikGuide {
         body.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         body.setVisibility(View.GONE);
         layer.addView(body, new FrameLayout.LayoutParams(w, h));
-        voice = new TanecikVoice(activity, layer);
+        voice = new TanecikVoice(activity, layer).fast();
 
         TextView stop = new TextView(activity);
         stop.setText("✕ Turu bitir");
@@ -94,7 +94,7 @@ final class TanecikGuide {
 
     private void step(int i) {
         if (done || activity.isFinishing()) return;
-        if (i >= steps.size()) { handler.postDelayed(this::finish, 500); return; }
+        if (i >= steps.size()) { handler.postDelayed(this::finish, 300); return; }
         TanecikTour.GuideStep st = steps.get(i);
         int id = activity.getResources().getIdentifier(st.view, "id", activity.getPackageName());
         View v = id == 0 ? null : activity.findViewById(id);
@@ -104,7 +104,7 @@ final class TanecikGuide {
             int top = offsetIn(v, sv);
             sv.smoothScrollTo(0, Math.max(0, top - Math.round(sv.getHeight() * 0.38f)));
         }
-        handler.postDelayed(() -> flyTo(v, () -> pointAndSay(v, st, i)), sv != null ? 450 : 50);
+        handler.postDelayed(() -> flyTo(v, () -> pointAndSay(v, st, i)), sv != null ? 350 : 40);
     }
 
     private void pointAndSay(View v, TanecikTour.GuideStep st, int i) {
@@ -112,7 +112,7 @@ final class TanecikGuide {
         body.setImageResource(R.drawable.tanecik_gosteriyor);
         v.animate().scaleX(1.06f).scaleY(1.06f).setDuration(160)
                 .withEndAction(() -> v.animate().scaleX(1f).scaleY(1f).setDuration(160).start()).start();
-        Runnable say = () -> voice.say(st.text, () -> handler.postDelayed(() -> step(i + 1), 250));
+        Runnable say = () -> voice.say(st.text, () -> handler.postDelayed(() -> step(i + 1), 120));
         if (!st.type.isEmpty() && v instanceof EditText) type((EditText) v, st.type, 0, say);
         else say.run();
     }
@@ -123,7 +123,7 @@ final class TanecikGuide {
         if (n == 0 && !typed.contains(e)) typed.add(e);
         e.setText(text.substring(0, n));
         if (n >= text.length()) { then.run(); return; }
-        handler.postDelayed(() -> type(e, text, n + 1, then), 170);
+        handler.postDelayed(() -> type(e, text, n + 1, then), 110);
     }
 
     /** Pervaneyle hedefin yanına uçar ve ona döner. */
@@ -139,7 +139,7 @@ final class TanecikGuide {
         body.setScaleX(rightSide ? -1f : 1f);   // çizim sağa bakar; hedef soldaysa aynala
         flying = true;
         handler.post(propTick);
-        body.animate().translationX(x).translationY(y).setDuration(520).withEndAction(() -> {
+        body.animate().translationX(x).translationY(y).setDuration(380).withEndAction(() -> {
             flying = false;
             handler.removeCallbacks(propTick);
             then.run();

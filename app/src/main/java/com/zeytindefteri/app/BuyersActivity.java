@@ -302,12 +302,11 @@ public final class BuyersActivity extends Activity {
             TextView back = pill("Tura dön ›", false);
             back.setOnClickListener(v -> finish());
             body.addView(back, sized(-1, 48, 10));
-            // Tanecik başlığı ve en iyi alıcının satırını okur; bitince tura döner (ses yoksa 12 sn sonra).
+            // Tanecik yalnız başlığı ve en iyi alıcıyı söyler (tur seri olsun); bitince tura döner.
             StringBuilder say = new StringBuilder(report.headline);
             if (!report.sections.isEmpty() && report.sections.get(0).compared) {
                 BuyerElekReport.Section first = report.sections.get(0);
                 say.append(' ').append(first.title).append('.');
-                if (!first.lines.isEmpty()) say.append(' ').append(first.lines.get(0));
             }
             final String text = say.toString();
             if (!tourStarted) {
@@ -316,12 +315,12 @@ public final class BuyersActivity extends Activity {
                 android.widget.FrameLayout over = new android.widget.FrameLayout(this);
                 ((android.view.ViewGroup) findViewById(android.R.id.content)).addView(over,
                         new android.widget.FrameLayout.LayoutParams(-1, -1));
-                tourVoice = new TanecikVoice(this, over);
+                tourVoice = new TanecikVoice(this, over).fast();
                 tourVoice.prepare(() -> mouthHandler.postDelayed(() -> {
                     if (isFinishing()) return;
                     setSpeaking(true);
                     tourVoice.say(text, () -> setSpeaking(false));
-                }, 500));
+                }, 250));
             }
         }
 
@@ -421,7 +420,7 @@ public final class BuyersActivity extends Activity {
         boolean was = speaking;
         speaking = on;
         if (on) tourSpoke = true;
-        if (tourMode && was && !on && tourSpoke) mouthHandler.postDelayed(() -> { if (!isFinishing()) finish(); }, 1500);
+        if (tourMode && was && !on && tourSpoke) mouthHandler.postDelayed(() -> { if (!isFinishing()) finish(); }, 600);
         mouthHandler.removeCallbacks(mouthTick);
         if (mascot != null) {
             if (on && !was) mouthHandler.post(mouthTick);
