@@ -41,6 +41,8 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
     private volatile long generation;
     private int latestStartId;
     private String diagnosis = "Bağlanıyor";
+    /** QR okutulup oturum başladığı an (SystemClock.elapsedRealtime); "takıldı" kararı için. */
+    private volatile long startedAt;
     private DatabaseHelper helper;
     private TezgahWebClient client;
     private TezgahWebCommands commands;
@@ -79,6 +81,18 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
 
     public static boolean running(String owner, String id) {
         return running(owner) && instance.room.equals(id);
+    }
+
+    /** Bağlantının son durumu (ekranda gösterilir): "Aktarıcıya ulaşılamıyor", "Bilgisayar bağlı" gibi. */
+    public static String diagnosis(String owner) {
+        TezgahWebService s = instance;
+        return running(owner) && s.diagnosis != null ? s.diagnosis : "";
+    }
+
+    /** QR okutulalı kaç ms oldu (oturum yoksa 0). */
+    public static long sinceMs(String owner) {
+        TezgahWebService s = instance;
+        return running(owner) && s.startedAt > 0 ? SystemClock.elapsedRealtime() - s.startedAt : 0;
     }
 
     public static boolean writable(String owner) {
@@ -162,6 +176,7 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
         ended = false;
         ready = false;
         diagnosis = "Bağlanıyor";
+        startedAt = SystemClock.elapsedRealtime();
         if (!sameOwner()) {
             end();
             return START_NOT_STICKY;

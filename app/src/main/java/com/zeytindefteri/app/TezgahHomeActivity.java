@@ -42,12 +42,29 @@ public final class TezgahHomeActivity extends Activity {
     private String owner = "";
     private LinearLayout body;
     private final android.os.Handler webHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-    private boolean webWasReady, webWasRunning;
+    private boolean webWasReady, webWasRunning, webWasStuck;
+    private String webWasDiagnosis = "";
     private final Runnable webRefresh = new Runnable() { public void run() {
         boolean ready = TezgahWebService.connected(owner), running = TezgahWebService.running(owner);
-        if (body != null && (ready != webWasReady || running != webWasRunning)) { webWasReady = ready; webWasRunning = running; render(); }
+        boolean stuck = TezgahWebLink.stuck(running, ready, TezgahWebService.sinceMs(owner));
+        String diagnosis = TezgahWebService.diagnosis(owner);
+        if (body != null && (ready != webWasReady || running != webWasRunning || stuck != webWasStuck
+                || (running && !ready && !diagnosis.equals(webWasDiagnosis)))) {
+            boolean justConnected = ready && !webWasReady && running;
+            webWasReady = ready; webWasRunning = running; webWasStuck = stuck; webWasDiagnosis = diagnosis;
+            render();
+            if (justConnected) {
+                android.widget.Toast.makeText(TezgahHomeActivity.this, TezgahWebLink.connectedToast(TezgahWebService.writable(owner)),
+                        android.widget.Toast.LENGTH_LONG).show();
+                performHaptic();
+            }
+        }
         webHandler.postDelayed(this, 1000);
     }};
+
+    private void performHaptic() {
+        if (body != null) body.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+    }
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -160,7 +177,13 @@ public final class TezgahHomeActivity extends Activity {
         ask.setOnClickListener(v -> askQuestion());
         titleRow.addView(ask, new LinearLayout.LayoutParams(-2, dp(42)));
         body.addView(titleRow);
-        if (TezgahWebClient.configured()) body.addView(row(TezgahWebReadyService.connectedCount(owner) > 0 ? TezgahWebReadyService.connectedCount(owner) + " bilgisayar bağlı ›" : TezgahWebService.connected(owner) ? "1 bilgisayar bağlı ›" : TezgahWebService.running(owner) ? "Bağlantı bekleniyor ›" : TezgahWebDevices.list(this, owner).length() > 0 ? "Kayıtlı bilgisayarlar ›" : "Bilgisayara bağlan", "Yetki telefondan verilir · QR ile güvenli bağlantı", "›", false, v -> webConnect()), margins(-1, -2, 12));
+        if (TezgahWebClient.configured()) {
+            boolean running = TezgahWebService.running(owner), ready = TezgahWebService.connected(owner);
+            TezgahWebLink.Row r = TezgahWebLink.row(TezgahWebReadyService.connectedCount(owner), ready, running,
+                    TezgahWebLink.stuck(running, ready, TezgahWebService.sinceMs(owner)),
+                    TezgahWebService.diagnosis(owner), TezgahWebDevices.list(this, owner).length());
+            body.addView(row(r.title, r.sub, "›", r.warn, v -> webConnect()), margins(-1, -2, 12));
+        }
         String cloud = TezgahCloudBackup.statusLine(this);
         if (!cloud.isEmpty()) {
             TextView cl = text(cloud, 12, cloud.contains("bekliyor") || cloud.contains("büyük") ? AMBER : MUTED, false);
@@ -242,46 +265,76 @@ public final class TezgahHomeActivity extends Activity {
 
     private void webConnect() {
         if (!TezgahWebClient.configured() || !owner.equals(new SessionManager(this).getUserUid())) return;
-        if (TezgahWebService.running(owner) || TezgahWebDevices.list(this, owner).length() > 0) {
+        boolean running = TezgahWebService.running(owner), ready = TezgahWebService.connected(owner);
+        if (running && !ready) {
+            // Okutuldu ama bağlanamadı: bekletmeden sebebini söyle, tek dokunuşla yeniden okut.
+            String why = TezgahWebService.diagnosis(owner);
+            new AlertDialog.Builder(this)
+                    .setTitle(TezgahWebLink.stuck(true, false, TezgahWebService.sinceMs(owner)) ? "Bağlanamadı" : "Bağlanıyor…")
+                    .setMessage(TezgahWebLink.advice(why))
+                    .setPositiveButton("Yeniden okut", (d, w) -> { TezgahWebService.disconnect(this); render(); webPair(); })
+                    .setNeutralButton("Ayrıntı", (d, w) -> webComputers())
+                    .setNegativeButton("Bekle", null)
+                    .show();
+            return;
+        }
+        if (ready || TezgahWebReadyService.connectedCount(owner) > 0 || TezgahWebDevices.list(this, owner).length() > 0) {
             webComputers();
             return;
         }
         webPair();
     }
 
+    /**
+     * Tek dokunuş bağlantı: Google'ın QR okuyucusu hemen açılır (Elek'teki "QR okut" ile aynı, kamera izni istemez).
+     * Bilgisayara ad yazdırılmaz ("Bilgisayar", "Bilgisayar 2"…). Yetki yalnız ilk seferde bir kez sorulur,
+     * sonra hatırlanır; "Bağlı bilgisayarlar"dan değiştirilebilir.
+     */
     private void webPair() {
         if (!TezgahWebClient.configured() || !owner.equals(new SessionManager(this).getUserUid())) return;
-        android.widget.EditText name = new android.widget.EditText(this);
-            name.setHint("Örn. Ev bilgisayarı");
-            name.setSingleLine(true);
-            name.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(40)});
-            LinearLayout form = new LinearLayout(this);
-            form.setOrientation(LinearLayout.VERTICAL);
-            form.setPadding(dp(20), dp(8), dp(20), 0);
-            form.addView(name, new LinearLayout.LayoutParams(-1, -2));
-            android.widget.RadioGroup permissions = new android.widget.RadioGroup(this);
-            android.widget.RadioButton read = new android.widget.RadioButton(this);
-            read.setId(android.view.View.generateViewId());
-            read.setText("Yalnız görüntüleme");
-            android.widget.RadioButton write = new android.widget.RadioButton(this);
-            write.setId(android.view.View.generateViewId());
-            write.setText("Tam kullanım");
-            permissions.addView(read);
-            permissions.addView(write);
-            permissions.check(read.getId());
-            form.addView(permissions);
-            new AlertDialog.Builder(this).setTitle("Bilgisayar bağlantısı")
-                    .setMessage("Bu bilgisayara ad ve yetki ver. Tam kullanım kayıt ekleme ve ödeme yapmaya izin verir. Silme ve kapanışlar ayrıca telefonda onaylanır.")
-                    .setView(form).setPositiveButton("Bağlan", (dialog, which) -> {
-                        if (!owner.equals(new SessionManager(this).getUserUid())) return;
-                        String label = name.getText().toString().trim();
-                        boolean full = permissions.getCheckedRadioButtonId() == write.getId();
-                        Intent scan = new Intent(this, TezgahWebScanActivity.class);
-                        scan.putExtra("name", label.isEmpty() ? "Bilgisayar" : label);
-                        scan.putExtra("owner", owner);
-                        scan.putExtra("full", full);
-                        startActivityForResult(scan, 7315);
-                    }).setNegativeButton("Vazgeç", null).show();
+        final android.content.SharedPreferences prefs = getSharedPreferences("zd_tezgah", MODE_PRIVATE);
+        final String key = "web_full_" + owner;
+        if (!prefs.contains(key)) {
+            new AlertDialog.Builder(this).setTitle("Bilgisayar ne yapabilsin?")
+                    .setMessage("Bir kez sorulur; sonra Bağlı bilgisayarlar'dan değiştirebilirsin.\n\n"
+                            + "Tam kullanım: bilgisayardan alım ve ödeme girilebilir. Silme ve kapanışlar her zaman telefonda onaylanır.")
+                    .setPositiveButton("Tam kullanım", (d, w) -> { prefs.edit().putBoolean(key, true).apply(); webScan(true); })
+                    .setNegativeButton("Yalnız görüntüleme", (d, w) -> { prefs.edit().putBoolean(key, false).apply(); webScan(false); })
+                    .show();
+            return;
+        }
+        webScan(prefs.getBoolean(key, false));
+    }
+
+    private void webScan(final boolean full) {
+        final String name = TezgahWebLink.computerName(TezgahWebDevices.list(this, owner).length());
+        TezgahQrUi.scan(this, raw -> webScanned(raw, name, full), message -> {
+            // Google okuyucu açılamazsa (Play hizmetleri yok / ilk indirme) yedek okuyucu.
+            Intent scan = new Intent(this, TezgahWebScanActivity.class);
+            scan.putExtra("name", name);
+            scan.putExtra("owner", owner);
+            scan.putExtra("full", full);
+            startActivityForResult(scan, 7315);
+        });
+    }
+
+    private void webScanned(String raw, String name, boolean full) {
+        if (!owner.equals(new SessionManager(this).getUserUid())) return;
+        if (!TezgahWebLink.looksLikePairing(raw)) {
+            android.widget.Toast.makeText(this, "Bu QR bilgisayar bağlantısı için değil. Bilgisayarda zeytin-tezgah.pages.dev sayfasındaki QR'ı okut.",
+                    android.widget.Toast.LENGTH_LONG).show();
+            return;
+        }
+        try {
+            TezgahWebPhone.Qr qr = TezgahWebPhone.Qr.parse(raw, System.currentTimeMillis() / 1000);
+            if (!qr.compact() && qr.expiresAt - System.currentTimeMillis() / 1000 < 30) throw new IllegalArgumentException();
+            TezgahWebService.launch(this, qr, owner, name, full);
+            android.widget.Toast.makeText(this, "QR okundu · bağlanıyor…", android.widget.Toast.LENGTH_SHORT).show();
+            render();
+        } catch (Exception e) {
+            android.widget.Toast.makeText(this, "QR'ın süresi dolmuş. Sayfa yeni QR'ı kendisi gösterir; onu okut.",
+                    android.widget.Toast.LENGTH_LONG).show();
+        }
     }
 
     private void webComputers() {
@@ -326,6 +379,13 @@ public final class TezgahHomeActivity extends Activity {
         TextView scan = text("Yeni QR okut", 16, GREEN, true);
         scan.setPadding(dp(20), dp(18), dp(20), dp(18));
         actions.addView(scan);
+        // Yeni bağlanan bilgisayarların yetkisi (ilk seferde sorulup hatırlanan seçim).
+        final android.content.SharedPreferences webPrefs = getSharedPreferences("zd_tezgah", MODE_PRIVATE);
+        final String webKey = "web_full_" + owner;
+        TextView perm = text("Yeni bilgisayarlara yetki: " + (webPrefs.getBoolean(webKey, false) ? "Tam kullanım" : "Yalnız görüntüleme")
+                + " · değiştir", 15, GREEN, true);
+        perm.setPadding(dp(20), dp(14), dp(20), dp(14));
+        actions.addView(perm);
         TextView clear = text("Geçmişi temizle", 16, GREEN, true);
         clear.setPadding(dp(20), dp(18), dp(20), dp(18));
         actions.addView(clear);
@@ -343,6 +403,11 @@ public final class TezgahHomeActivity extends Activity {
             shown.dismiss();
             TezgahWebService.disconnect(this);
             webPair();
+        });
+        perm.setOnClickListener(view -> {
+            webPrefs.edit().putBoolean(webKey, !webPrefs.getBoolean(webKey, false)).apply();
+            shown.dismiss();
+            webComputers();
         });
         clear.setOnClickListener(view -> {
             TezgahWebSessions.clearHistory(this, owner);
