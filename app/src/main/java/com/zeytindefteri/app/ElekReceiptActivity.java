@@ -34,6 +34,8 @@ import java.util.Locale;
 public class ElekReceiptActivity extends Activity {
 
     static final String EXTRA_RECORD_ID = "record_id";
+    /** true: fiş açılırken yazıcıdan çıkar gibi basılır (kayıttan hemen sonra). */
+    static final String EXTRA_PRINT = "print";
 
     private static final String[] GRADE_KEYS = {"DOUBLE", "1", "2", "3", "4", "YAGLIK"};
     private static final int PAPER = Color.parseColor("#F3EBD8");
@@ -62,6 +64,9 @@ public class ElekReceiptActivity extends Activity {
     private final double[] lineTotal = new double[6];
     /** Sınıfsız (toplam) kayıt satırı; yoksa 0. */
     private double mixedKg, mixedPrice, mixedTotal;
+    /** Yalnız ilk açılışta bir kez basılır; not/satış sonrası yeniden çizimde animasyon yok. */
+    private boolean printPending;
+    private android.animation.ValueAnimator printAnimator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,7 +91,19 @@ public class ElekReceiptActivity extends Activity {
             finish();
             return;
         }
+        printPending = savedInstanceState == null
+                && getIntent().getBooleanExtra(EXTRA_PRINT, false)
+                && animationsOn();
         render();
+    }
+
+    private boolean animationsOn() {
+        try {
+            return android.provider.Settings.Global.getFloat(getContentResolver(),
+                    android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f;
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private boolean loadRecord() {
@@ -167,7 +184,30 @@ public class ElekReceiptActivity extends Activity {
         scroll.addView(body);
         screen.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
 
-        body.addView(buildPaper());
+        LinearLayout ticket = buildTicket();
+        android.widget.FrameLayout printClip = null;
+        TextView printStamp = null;
+        int tailFrom = -1;
+        if (printPending) {
+            printPending = false;
+            LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, dp(22));
+            sp.setMargins(-dp(8), dp(2), -dp(8), 0);
+            body.addView(printerSlot(), sp);
+            printClip = new android.widget.FrameLayout(this);
+            printClip.setClipChildren(true);
+            printClip.setClipToPadding(true);
+            printClip.addView(ticket, new android.widget.FrameLayout.LayoutParams(-1, -2));
+            printStamp = stampView();
+            android.widget.FrameLayout.LayoutParams stl = new android.widget.FrameLayout.LayoutParams(-2, -2,
+                    Gravity.BOTTOM | Gravity.END);
+            stl.setMargins(0, 0, dp(20), dp(84));
+            printClip.addView(printStamp, stl);
+            body.addView(printClip, new LinearLayout.LayoutParams(-1, -2));
+            ticket.setVisibility(View.INVISIBLE);   // ilk karede tam fiş görünmesin
+            tailFrom = body.getChildCount();
+        } else {
+            body.addView(ticket);
+        }
 
         // Satış bağlantısı: dönüştürülmemişse düğme, dönüştürülmüşse durum satırı
         body.addView(buildSaleLink());
@@ -197,6 +237,162 @@ public class ElekReceiptActivity extends Activity {
         body.addView(delete, dpParams);
 
         setContentView(screen);
+        if (printClip != null) startPrint(body, printClip, ticket, printStamp, tailFrom);
+    }
+
+    // ===================== Yazıcıdan çıkan fiş =====================
+
+    /** Fiş: krem kâğıt + altta fiş numarası, süs barkodu ve yırtık (zikzak) kenar. */
+    private LinearLayout buildTicket() {
+        LinearLayout paper = (LinearLayout) buildPaper();
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(PAPER);
+        float r = dp(6);
+        bg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+        paper.setBackground(bg);
+        paper.setElevation(0);
+        paper.setPadding(paper.getPaddingLeft(), paper.getPaddingTop(), paper.getPaddingRight(), dp(10));
+
+        View code = new View(this) {
+            private final android.graphics.Paint ink = new android.graphics.Paint();
+            private final int[] bars = ReceiptPrint.barcode(recordId, 44);
+            @Override protected void onDraw(android.graphics.Canvas c) {
+                ink.setColor(INK);
+                int unit = Math.max(1, dp(1) + dp(1) / 2);
+                int total = 0;
+                for (int i = 0; i < bars.length; i++) total += bars[i] * unit + unit;
+                float x = Math.max(0, (getWidth() - total) / 2f);
+                for (int i = 0; i < bars.length; i++) {
+                    float w = bars[i] * unit;
+                    if (i % 2 == 0) c.drawRect(x, 0, x + w, getHeight(), ink);
+                    x += w + unit;
+                }
+            }
+        };
+        code.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-1, dp(30));
+        cl.setMargins(0, dp(16), 0, 0);
+        paper.addView(code, cl);
+        TextView no = text(ReceiptPrint.number(recordId) + " · teşekkürler, bereketli olsun", 10, PAPER_LABEL, false);
+        no.setTypeface(Typeface.MONOSPACE);
+        no.setGravity(Gravity.CENTER);
+        no.setPadding(0, dp(4), 0, 0);
+        paper.addView(no, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout ticket = new LinearLayout(this);
+        ticket.setOrientation(LinearLayout.VERTICAL);
+        ticket.addView(paper, new LinearLayout.LayoutParams(-1, -2));
+        View edge = new View(this) {
+            private final android.graphics.Paint fill = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+            private final android.graphics.Path path = new android.graphics.Path();
+            @Override protected void onDraw(android.graphics.Canvas c) {
+                fill.setColor(PAPER);
+                float tooth = dp(12), h = getHeight(), w = getWidth();
+                int n = Math.max(1, Math.round(w / tooth));
+                float step = w / n;
+                path.reset();
+                path.moveTo(0, 0);
+                for (int i = 0; i < n; i++) {
+                    path.lineTo(i * step + step / 2f, h);
+                    path.lineTo((i + 1) * step, 0);
+                }
+                path.close();
+                c.drawPath(path, fill);
+            }
+        };
+        edge.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        ticket.addView(edge, new LinearLayout.LayoutParams(-1, dp(8)));
+        return ticket;
+    }
+
+    /** Fişin çıktığı yazıcı ağzı: koyu, yuvarlak köşeli bir şerit ve ortasında ince yarık. */
+    private View printerSlot() {
+        android.widget.FrameLayout slot = new android.widget.FrameLayout(this);
+        GradientDrawable body = new GradientDrawable();
+        body.setColor(Color.parseColor("#11181D"));
+        body.setCornerRadius(dp(11));
+        body.setStroke(dp(1), Color.parseColor("#2C3A42"));
+        slot.setBackground(body);
+        View slit = new View(this);
+        GradientDrawable s = new GradientDrawable();
+        s.setColor(Color.parseColor("#000000"));
+        s.setCornerRadius(dp(2));
+        slit.setBackground(s);
+        android.widget.FrameLayout.LayoutParams sl = new android.widget.FrameLayout.LayoutParams(-1, dp(4), Gravity.BOTTOM);
+        sl.setMargins(dp(14), 0, dp(14), dp(4));
+        slot.addView(slit, sl);
+        View led = new View(this);
+        led.setBackground(rounded(GreenTheme.color(R.color.zd_green), Color.TRANSPARENT, 3));
+        android.widget.FrameLayout.LayoutParams ll = new android.widget.FrameLayout.LayoutParams(dp(6), dp(6), Gravity.TOP | Gravity.END);
+        ll.setMargins(0, dp(5), dp(14), 0);
+        slot.addView(led, ll);
+        slot.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        return slot;
+    }
+
+    /** Baskı bitince vurulan durum damgası (KAYDEDİLDİ / ÖDENDİ / ALACAK). */
+    private TextView stampView() {
+        double[] sale = null;
+        try { sale = new ElekSaleBridge(databaseHelper).linkedSaleTotals(recordId); } catch (RuntimeException ignored) { }
+        String label = ReceiptPrint.stamp(sale);
+        int color = "ALACAK".equals(label) ? Color.parseColor("#B5462F") : PAPER_ACCENT;
+        TextView t = text(label, 17, color, true);
+        t.setTypeface(Typeface.create(Typeface.SERIF, Typeface.BOLD));
+        t.setLetterSpacing(0.14f);
+        t.setPadding(dp(12), dp(5), dp(12), dp(5));
+        GradientDrawable b = new GradientDrawable();
+        b.setCornerRadius(dp(6));
+        b.setStroke(dp(2), color);
+        t.setBackground(b);
+        t.setRotation(-10f);
+        t.setAlpha(0f);
+        t.setContentDescription("Durum: " + label);
+        return t;
+    }
+
+    private void startPrint(LinearLayout body, View clip, LinearLayout ticket, TextView stamp, int tailFrom) {
+        final View[] tail = new View[Math.max(0, body.getChildCount() - tailFrom)];
+        for (int i = 0; i < tail.length; i++) {
+            tail[i] = body.getChildAt(tailFrom + i);
+            tail[i].setAlpha(0f);
+        }
+        ticket.getViewTreeObserver().addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener() {
+            @Override public boolean onPreDraw() {
+                ticket.getViewTreeObserver().removeOnPreDrawListener(this);
+                final float h = ticket.getHeight();
+                float density = getResources().getDisplayMetrics().density;
+                final int steps = ReceiptPrint.steps(h / density);
+                ticket.setTranslationY(-h);
+                ticket.setVisibility(View.VISIBLE);
+                printAnimator = android.animation.ValueAnimator.ofFloat(0f, 1f);
+                printAnimator.setDuration(ReceiptPrint.durationMs(h / density));
+                printAnimator.setInterpolator(new android.view.animation.LinearInterpolator());
+                final int[] lastStep = {0};
+                printAnimator.addUpdateListener(a -> {
+                    float t = (float) a.getAnimatedValue();
+                    ticket.setTranslationY(-h * (1f - ReceiptPrint.progress(t, steps)));
+                    int step = ReceiptPrint.stepIndex(t, steps);
+                    if (step != lastStep[0]) {
+                        lastStep[0] = step;
+                        if (step % 2 == 0) clip.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
+                    }
+                });
+                printAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+                    @Override public void onAnimationEnd(android.animation.Animator a) {
+                        ticket.setTranslationY(0f);
+                        stamp.setScaleX(1.9f);
+                        stamp.setScaleY(1.9f);
+                        stamp.animate().alpha(0.92f).scaleX(1f).scaleY(1f).setDuration(ReceiptPrint.STAMP_MS)
+                                .setInterpolator(new android.view.animation.DecelerateInterpolator(2f))
+                                .withEndAction(() -> stamp.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY))
+                                .start();
+                        for (View v : tail) v.animate().alpha(1f).setStartDelay(ReceiptPrint.STAMP_MS).setDuration(240).start();
+                    }
+                });
+                printAnimator.start();
+                return true;
+            }
+        });
     }
 
     private View buildSaleLink() {
@@ -737,6 +933,7 @@ public class ElekReceiptActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (printAnimator != null) printAnimator.cancel();
         if (databaseHelper != null) databaseHelper.close();
         super.onDestroy();
     }
