@@ -53,15 +53,19 @@ public final class TezgahWebClient implements AutoCloseable {
     public void start(){worker.execute(this::connect);worker.scheduleAtFixedRate(this::tick,100,100,TimeUnit.MILLISECONDS);}
     private void enqueue(String frame){if(stopped.get())return;int bytes=TezgahWebProtocol.utf8(frame).length;if(queue.size()>=128||queuedBytes+bytes>2*1024*1024)throw new IllegalStateException("KUYRUK_DOLU");queue.add(frame);queuedBytes+=bytes;}
     private void connect(){if(stopped.get()||!alive.getAsBoolean()){close();return;}opened=false;
+        // Aşama aşama durum: takılırsa hangi adımda kaldığı ekranda görünür.
+        if(!core.ready())state.update(false,"Aktarıcıya bağlanılıyor");
         socket=http.newWebSocket(new Request.Builder().url(url).build(),new WebSocketListener(){
             private void dispatch(Runnable run){if(!stopped.get())try{worker.execute(()->{if(!stopped.get()&&socket==current)run.run();});}catch(RejectedExecutionException ignored){}}
             private WebSocket current;
-            @Override public void onOpen(WebSocket ws,Response r){current=ws;dispatch(()->{opened=true;lastReceive=clock();heartbeat=clock();core.opened();});}
+            @Override public void onOpen(WebSocket ws,Response r){current=ws;dispatch(()->{opened=true;lastReceive=clock();heartbeat=clock();core.opened();
+                if(!core.ready())state.update(false,"Aktarıcıya bağlandı · bilgisayarın cevabı bekleniyor");});}
             @Override public void onMessage(WebSocket ws,String text){current=ws;dispatch(()->{
                 if(!alive.getAsBoolean()){close();return;}lastReceive=clock();
                 try{org.json.JSONObject control=new org.json.JSONObject(text);String type=control.optString("type");if(type.equals("hiz_siniri"))backoffUntil=clock()+1500;
                     if(core.ready()&&(type.equals("resume_offer")||((type.equals("peer_joined")||type.equals("peer_left"))&&control.optString("role").equals("browser")))){queue.clear();queuedBytes=0;}
                     core.receive(text,clock());
+                    if(!core.ready()&&!type.isEmpty()&&!type.equals("pong"))state.update(false,"Aktarıcıya bağlandı · bilgisayarla eşleşiyor ("+type+")");
                     if (type.equals("peer_left") && "browser".equals(control.optString("role"))) {
                         state.update(false, "Bilgisayar ekranı kapandı/arka plana alındı · 5 dk içinde dönerse devam eder");
                     }

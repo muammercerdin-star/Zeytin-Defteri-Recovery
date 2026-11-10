@@ -36,7 +36,8 @@ public final class TezgahWebLink {
     static String shortReason(String diagnosis) {
         String d = diagnosis == null ? "" : diagnosis.trim();
         if (d.isEmpty() || d.equals("Bağlanıyor") || d.startsWith("Bilgisayar bağlantısı bekleniyor")) return "Bilgisayar sayfası cevap vermedi";
-        if (d.startsWith("Aktarıcıya ulaşılamıyor")) return "İnternet / operatör bağlantıyı kesiyor";
+        if (d.startsWith("Aktarıcıya ulaşılamıyor") || d.equals("Aktarıcıya bağlanılıyor")) return "İnternet / operatör bağlantıyı kesiyor";
+        if (d.startsWith("Aktarıcıya bağlandı · bilgisayarın")) return "Bilgisayardaki sayfa telefonu görmedi";
         if (d.startsWith("Bilgisayar ekranı kapandı")) return "Bilgisayardaki sayfa kapandı ya da arka planda";
         return d.length() > 60 ? d.substring(0, 57) + "…" : d;
     }
@@ -45,7 +46,7 @@ public final class TezgahWebLink {
     public static String advice(String diagnosis) {
         String d = diagnosis == null ? "" : diagnosis.trim();
         StringBuilder b = new StringBuilder();
-        if (d.startsWith("Aktarıcıya ulaşılamıyor")) {
+        if (d.startsWith("Aktarıcıya ulaşılamıyor") || d.equals("Aktarıcıya bağlanılıyor")) {
             b.append("Telefon bağlantı sunucusuna ulaşamadı.\n\n")
              .append("• Telefonu Wi-Fi'ye bağlayıp tekrar dene.\n")
              .append("• Mobil veride operatör bu bağlantıyı kesiyor olabilir.");

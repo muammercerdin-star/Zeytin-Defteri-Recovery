@@ -26,6 +26,9 @@ public final class WebLinkTest {
         ok(TezgahWebLink.advice("Cihaz kaydedilemedi.").contains("Durum: Cihaz kaydedilemedi."), "ham durum da yazılır");
         ok(!TezgahWebLink.advice("Bağlanıyor").contains("Durum:"), "anlamsız durum yazılmaz");
 
+        ok(TezgahWebLink.row(0, false, true, true, "Aktarıcıya bağlanılıyor", 0).sub.contains("operatör"), "bağlanılamadıysa operatör");
+        ok(TezgahWebLink.advice("Aktarıcıya bağlanılıyor").contains("Wi-Fi"), "bağlanılamadıysa Wi-Fi öner");
+        ok(TezgahWebLink.row(0, false, true, true, "Aktarıcıya bağlandı · bilgisayarın cevabı bekleniyor", 0).sub.contains("sayfa"), "aktarıcı tamam, sayfa görmedi");
         ok(TezgahWebLink.computerName(0).equals("Bilgisayar"), "ilk ad");
         ok(TezgahWebLink.computerName(1).equals("Bilgisayar 2"), "ikinci ad");
 
