@@ -27,6 +27,11 @@ public class TezgahWizardFlowTest {
     ok(TezgahWizardFlow.slipOpenLeft(now-3_600_000,now)==0,"eski fiş kapalı");
     ok(TezgahWizardFlow.slipOpenLeft(0,now)==0,"zamanı bilinmeyen fiş kapalı");
     ok(TezgahWizardFlow.slipOpenLeft(now+5_000,now)==TezgahWizardFlow.SLIP_OPEN_MS,"ileri tarihli kayıt yeni sayılır");
+    // Sihirbaz üste sabit: ekran boyuna göre 48–96 dp
+    ok(TezgahWizardFlow.wizardTopDp(780)==70,"orta telefon ~%9");
+    ok(TezgahWizardFlow.wizardTopDp(400)==48,"küçük ekran en az 48");
+    ok(TezgahWizardFlow.wizardTopDp(2000)==96,"büyük ekran en çok 96");
+    ok(TezgahWizardFlow.wizardTopDp(-5)==48,"geçersiz boy");
     System.out.println("PASS: "+n+" tartım sihirbazı kontrolü");
   }
 }

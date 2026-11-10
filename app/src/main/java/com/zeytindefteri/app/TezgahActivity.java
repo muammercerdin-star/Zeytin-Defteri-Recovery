@@ -1326,6 +1326,14 @@ public final class TezgahActivity extends Activity {
         wizardBox.setOrientation(LinearLayout.VERTICAL);
         wizardBox.setPadding(dp(18), dp(14), dp(18), dp(16));
         wizardColumn.addView(wizardBox);
+        // Klavye tutucu: adım değişirken yazılan kutu silinir; odak bir an buna geçer, klavye kapanıp açılmaz
+        // (kapanıp açılınca pencere zıplıyordu).
+        wizardKeeper = new EditText(this);
+        wizardKeeper.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        wizardKeeper.setBackground(null);
+        wizardKeeper.setCursorVisible(false);
+        wizardKeeper.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        wizardColumn.addView(wizardKeeper, new LinearLayout.LayoutParams(1, 1));
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.parseColor("#0C1C27"));
         bg.setCornerRadius(dp(24));
@@ -1338,7 +1346,13 @@ public final class TezgahActivity extends Activity {
             w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
             int width = Math.round(getResources().getDisplayMetrics().widthPixels * 0.94f);
             w.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT);
-            w.setGravity(Gravity.CENTER);
+            // Üste sabit: içerik uzayıp kısalınca (uyarı, Ekle düğmesi) pencere ortalanıp kaymasın,
+            // yalnız alt kenarı uzasın; klavye açılıp kapanınca da üst kenar yerinde kalır.
+            w.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+            WindowManager.LayoutParams at = w.getAttributes();
+            float dens = getResources().getDisplayMetrics().density;
+            at.y = Math.round(TezgahWizardFlow.wizardTopDp(getResources().getDisplayMetrics().heightPixels / dens) * dens);
+            w.setAttributes(at);
             w.setDimAmount(0.55f);
             w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
@@ -1363,8 +1377,12 @@ public final class TezgahActivity extends Activity {
         renderWizard();
     }
 
+    private EditText wizardKeeper;
+
     private void renderWizard() {
         if (wizardBox == null) return;
+        View focused = wizardBox.findFocus();
+        if (focused instanceof EditText && wizardKeeper != null) wizardKeeper.requestFocus();
         wizardBox.removeAllViews();
         // Üst satır: ‹ Geri · adım · ✕
         LinearLayout top = new LinearLayout(this);

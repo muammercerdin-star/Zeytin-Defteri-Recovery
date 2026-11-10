@@ -18,6 +18,15 @@ public final class TezgahWizardFlow {
 
     public static int back(int step) { return step <= 0 ? 0 : step - 1; }
 
+    /**
+     * Sihirbaz penceresinin ekranın üstünden uzaklığı (dp). Pencere üste sabitlenir ki içerik uzayıp
+     * kısalınca ya da klavye açılıp kapanınca aşağı yukarı oynamasın. Ekran boyunun ~%9'u, 48–96 dp.
+     */
+    public static int wizardTopDp(float screenHeightDp) {
+        int y = Math.round(Math.max(0f, screenHeightDp) * 0.09f);
+        return Math.max(48, Math.min(96, y));
+    }
+
     /** Başlangıç: tartımı olmayan ilk numara (boş tezgahta Double; hepsi doluysa yine Double). */
     public static int start(TezgahModel model) {
         for (int g = 0; g < TezgahModel.GRADES.length; g++) if (model.gradeCount(g) == 0) return g;
