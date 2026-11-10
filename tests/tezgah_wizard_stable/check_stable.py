@@ -16,3 +16,15 @@ need(re.search(r"private void renderWizard\(\) \{\s*if \(wizardBox == null\) ret
 if bad:
     print("FAIL", bad); sys.exit(1)
 print("check_stable: ok")
+
+# Alımı bitir: "Kaydet" yalnız kaydeder (QR penceresi açılmaz; QR Son fiş kartında), WhatsApp düğmesi korunur.
+u = t[t.index("private void askPayment()"):t.index("private void askPayment()") + 9000]
+bad2 = []
+if 'text("Kaydet", 18, BG, true)' not in u: bad2.append("Kaydet etiketi")
+if "QR göster\", 18" in u or "Kaydet  ·  QR göster" in t: bad2.append("QR göster kalktı")
+if "savePurchase(paid, false, !justSave);" not in u: bad2.append("Kaydet pencere açmaz")
+if "Kaydet  ·  WhatsApp'a gönder" not in u: bad2.append("WhatsApp düğmesi korunur")
+if 'pill("QR göster", false)' not in t: bad2.append("Son fiş kartında QR göster korunur")
+if bad2:
+    print("FAIL", bad2); sys.exit(1)
+print("check_save: ok")

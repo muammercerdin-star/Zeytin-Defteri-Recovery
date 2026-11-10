@@ -1223,7 +1223,9 @@ public final class TezgahActivity extends Activity {
         paint.run();
 
         // Düğmeler
-        TextView qr = text("Kaydet  ·  QR göster", 18, BG, true);
+        // Kaydet: yalnız kaydeder; QR, WhatsApp ve Yazdır "Son fiş" kartında hazır durur (QR iki kez gösterilmez).
+        TextView qr = text("Kaydet", 18, BG, true);
+        qr.setContentDescription("Alımı kaydet; fiş Son fiş kartında görünür");
         qr.setGravity(Gravity.CENTER);
         qr.setBackground(round(GREEN, 0, 18));
         box.addView(qr, margins(-1, dp(58), 22));
@@ -1241,13 +1243,14 @@ public final class TezgahActivity extends Activity {
             String err = ElekSaleModel.partialError(pay[0], total, part);
             if (!err.isEmpty()) { partial.setError(err); partial.requestFocus(); return; }
             final double paid = ElekSaleModel.received(pay[0], total, part);
-            final boolean toQr = v == qr;
+            final boolean justSave = v == qr;
             Runnable save = () -> {
                 // Ad yazılmadıysa fişte "Münferit satıcı" yazar.
                 seller = TezgahWizardFlow.sellerOrWalkIn(name.getText().toString());
                 sellerPhone = phone.getText().toString().trim();
                 sheet.dismiss();
-                savePurchase(paid, toQr);
+                // Kaydet: pencere açılmaz, Son fiş kartı açık gelir. WhatsApp düğmesi: kaydedip fişi gönderir.
+                savePurchase(paid, false, !justSave);
             };
             String typed = name.getText().toString().trim();
             boolean noName = typed.isEmpty() || typed.equalsIgnoreCase(TezgahWizardFlow.WALK_IN);
