@@ -395,8 +395,6 @@ public class ElekActivity extends Activity {
     // ============================================================ SESLİ ELEK (konuşma penceresi)
     private ElekVoiceSession voice;
     private long voiceSavedId = -1;
-    /** Sesli asistan kaydederken fişi asistan açar (çift açılmasın). */
-    private boolean voiceSaving;
 
     private ElekVoiceSession voiceSession() {
         if (voice == null) voice = new ElekVoiceSession(this, new ElekVoiceSession.Host() {
@@ -430,14 +428,12 @@ public class ElekActivity extends Activity {
             }
             @Override public long save() {
                 voiceSavedId = -1;
-                voiceSaving = true;
-                try { saveElekRecord(); } finally { voiceSaving = false; }
+                saveElekRecord();
                 return voiceSavedId;
             }
             @Override public void openReceipt(long recordId) {
                 startActivity(new android.content.Intent(ElekActivity.this, ElekReceiptActivity.class)
-                        .putExtra(ElekReceiptActivity.EXTRA_RECORD_ID, recordId)
-                        .putExtra(ElekReceiptActivity.EXTRA_PRINT, true));
+                        .putExtra(ElekReceiptActivity.EXTRA_RECORD_ID, recordId));
             }
         }, (android.view.ViewGroup) findViewById(R.id.btnElekVoice));
         return voice;
@@ -2647,13 +2643,6 @@ public class ElekActivity extends Activity {
 
             // Yeni kayıt sonrası arşivi anında yenile
             loadSeasonArchive();
-
-            // Fiş yazıcıdan çıkar gibi basılır. Toplam kayıtla art arda eski kayıt girilirken açılmaz.
-            if (!voiceSaving && !mixedMode) {
-                startActivity(new android.content.Intent(this, ElekReceiptActivity.class)
-                        .putExtra(ElekReceiptActivity.EXTRA_RECORD_ID, result)
-                        .putExtra(ElekReceiptActivity.EXTRA_PRINT, true));
-            }
 
 
         } else {

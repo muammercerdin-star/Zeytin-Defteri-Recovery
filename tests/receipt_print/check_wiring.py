@@ -1,23 +1,23 @@
-"""Fiş baskısı bağlantıları: kayıttan sonra açılır, sesli asistanla çift açılmaz, toplu girişte açılmaz,
-yeniden çizimde tekrar basılmaz, animasyon kapalıysa atlanır, mevcut özellikler korunur."""
+"""Fiş baskısı Tezgâh baskı önizlemesinde: yalnız ilk açılışta basılır, ayar değişince yeniden basılmaz,
+animasyon kapalıysa atlanır, dokununca biter, kapanınca durur; Yazdır ve ayarlar korunur.
+Elek kaydı akışı değişmedi (kayıttan sonra fiş kendiliğinden açılmaz)."""
 import re, sys, pathlib
 J = pathlib.Path(__file__).resolve().parents[2] / "app/src/main/java/com/zeytindefteri/app"
-r = (J / "ElekReceiptActivity.java").read_text(encoding="utf-8")
+t = (J / "TezgahPrintPreview.java").read_text(encoding="utf-8")
 e = (J / "ElekActivity.java").read_text(encoding="utf-8")
+r = (J / "ElekReceiptActivity.java").read_text(encoding="utf-8")
 bad = []
 def need(c, m):
     if not c: bad.append(m)
-need('EXTRA_PRINT = "print"' in r, "EXTRA_PRINT")
-need("savedInstanceState == null" in r and "getBooleanExtra(EXTRA_PRINT, false)" in r, "yalnız ilk açılış")
-need("ANIMATOR_DURATION_SCALE" in r, "animasyon kapalıysa atla")
-need(re.search(r"if \(printPending\) \{\s*printPending = false;", r), "yeniden çizimde basılmaz")
-need("printAnimator.cancel()" in r, "onDestroy iptal")
-for f in ["private void share()", "private void editNote()", "private void confirmDelete()", "askPaymentAndConvert()", "buildSaleLink()"]:
-    need(f in r, "korunan özellik: " + f)
-m = re.search(r"loadSeasonArchive\(\);\s*//[^\n]*\n\s*if \(!voiceSaving && !mixedMode\) \{\s*startActivity\([^;]*EXTRA_PRINT, true\)\);", e)
-need(m, "kayıt sonrası fiş basılır (ses/toplu hariç)")
-need("voiceSaving = true;" in e and "finally { voiceSaving = false; }" in e, "sesli kayıtta bayrak")
-need(e.count("EXTRA_PRINT, true") == 2, "asistan da basarak açar")
+need("printed = !animationsOn();" in t and "ANIMATOR_DURATION_SCALE" in t, "animasyon kapalıysa atla")
+need(re.search(r"if \(!printed\) \{\s*printed = true;\s*startPrint\(", t), "yalnız bir kez basılır")
+need(re.search(r"private void render\(\) \{\s*//[^\n]*\n\s*if \(printAnimator != null && printAnimator.isRunning\(\)\) printAnimator.end\(\);", t), "ayar değişince baskı tamamlanır")
+need("printAnimator.cancel()" in t and "setOnDismissListener" in t, "kapanınca durur")
+need("printAnimator.end()" in t and "clip.setOnClickListener" in t, "dokununca biter")
+need("ReceiptPrint.progress(" in t and "ReceiptPrint.durationMs(" in t, "adım adım baskı")
+for f in ['"Yazdır"', '"Vazgeç"', "TezgahPrinter.setWidth", "TezgahPrinter.setTurkish", "TezgahPrinter.setPrintQr", "TezgahPrinter.choose", "TezgahQrUi.bitmap"]:
+    need(f in t, "korunan özellik: " + f)
+need("EXTRA_PRINT" not in e and "EXTRA_PRINT" not in r, "Elek akışı eski hâlinde")
 if bad:
     print("FAIL", bad); sys.exit(1)
 print("check_wiring: ok")
