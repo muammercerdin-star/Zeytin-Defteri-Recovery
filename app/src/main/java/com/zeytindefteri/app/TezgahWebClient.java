@@ -13,12 +13,12 @@ public final class TezgahWebClient implements AutoCloseable {
     private final ScheduledExecutorService worker=Executors.newSingleThreadScheduledExecutor();
     private final OkHttpClient http=TezgahWebNet.builder().readTimeout(0,TimeUnit.MILLISECONDS).pingInterval(30,TimeUnit.SECONDS).build();
     private final ArrayDeque<String> queue=new ArrayDeque<>();private final AtomicBoolean stopped=new AtomicBoolean();
-    private final BooleanSupplier alive;private final State state;private final String url;private TezgahWebPhone core;private volatile WebSocket socket;
+    private final BooleanSupplier alive;private final State state;private final String room;private boolean viaBridge;private TezgahWebPhone core;private volatile WebSocket socket;
     private boolean opened;private long connectStartedAt;private int connectTries;private int queuedBytes,attempt;private long lastReceive,heartbeat,backoffUntil,lastSent,lastPump=clock();private double tokens=65536;
     public static boolean configured(){try{URI u=new URI(BuildConfig.TEZGAH_RELAY_URL.trim());return u.getScheme().equals("https")&&u.getHost()!=null&&u.getUserInfo()==null&&(u.getPath().isEmpty()||u.getPath().equals("/"))&&u.getQuery()==null&&u.getFragment()==null;}catch(Exception e){return false;}}
     public TezgahWebClient(TezgahWebPhone.Qr qr,TezgahWebRepository repository,BooleanSupplier alive,State state)throws Exception{
         if(!configured())throw new IllegalArgumentException("YAPILANDIRILMADI");this.alive=alive;this.state=state;
-        String base=BuildConfig.TEZGAH_RELAY_URL.trim();while(base.endsWith("/"))base=base.substring(0,base.length()-1);url="wss"+base.substring(5)+"/v1/socket?room="+qr.room;
+        this.room=qr.room;
         core=new TezgahWebPhone(qr,repository,this::enqueue,ready -> {
             if (!stopped.get()) state.update(ready, ready ? "Bilgisayar bağlı" : "Bilgisayar bağlantısı bekleniyor");
         });core.approve();
@@ -54,13 +54,16 @@ public final class TezgahWebClient implements AutoCloseable {
     private void enqueue(String frame){if(stopped.get())return;int bytes=TezgahWebProtocol.utf8(frame).length;if(queue.size()>=128||queuedBytes+bytes>2*1024*1024)throw new IllegalStateException("KUYRUK_DOLU");queue.add(frame);queuedBytes+=bytes;}
     private void connect(){if(stopped.get()||!alive.getAsBoolean()){close();return;}opened=false;
         // Aşama aşama durum: takılırsa hangi adımda kaldığı ekranda görünür.
-        if(!core.ready())state.update(false,connectTries>0?"Aktarıcıya bağlanılıyor · "+(connectTries+1)+". deneme":"Aktarıcıya bağlanılıyor");
+        // Doğrudan yol (workers.dev) açılmazsa Supabase köprüsü; içerik yine uçtan uca şifreli.
+        String bridge=TezgahWebNet.bridgeBase();viaBridge=TezgahWebNet.useBridge(TezgahWebNet.preferBridge,bridge);
+        String url=TezgahWebNet.socketUrl(viaBridge?bridge:TezgahWebNet.directBase(BuildConfig.TEZGAH_RELAY_URL),room);
+        if(!core.ready())state.update(false,(viaBridge?"Aktarıcıya yedek yoldan bağlanılıyor":"Aktarıcıya bağlanılıyor")+(connectTries>0?" · "+(connectTries+1)+". deneme":""));
         connectStartedAt=clock();
         socket=http.newWebSocket(new Request.Builder().url(url).build(),new WebSocketListener(){
             private void dispatch(Runnable run){if(!stopped.get())try{worker.execute(()->{if(!stopped.get()&&socket==current)run.run();});}catch(RejectedExecutionException ignored){}}
             private WebSocket current;
             @Override public void onOpen(WebSocket ws,Response r){current=ws;dispatch(()->{opened=true;connectTries=0;lastReceive=clock();heartbeat=clock();core.opened();
-                if(!core.ready())state.update(false,"Aktarıcıya bağlandı · bilgisayarın cevabı bekleniyor");});}
+                if(!core.ready())state.update(false,"Aktarıcıya bağlandı"+(viaBridge?" (yedek yol)":"")+" · bilgisayarın cevabı bekleniyor");});}
             @Override public void onMessage(WebSocket ws,String text){current=ws;dispatch(()->{
                 if(!alive.getAsBoolean()){close();return;}lastReceive=clock();
                 try{org.json.JSONObject control=new org.json.JSONObject(text);String type=control.optString("type");if(type.equals("hiz_siniri"))backoffUntil=clock()+1500;
@@ -80,11 +83,16 @@ public final class TezgahWebClient implements AutoCloseable {
             });}
             @Override public void onMessage(WebSocket ws,ByteString binary){current=ws;dispatch(()->fail("Geçersiz bağlantı mesajı."));}
             @Override public void onFailure(WebSocket ws,Throwable error,Response r){current=ws;dispatch(() -> {
-                if (r != null && (r.code() == 403 || r.code() == 404 || r.code() == 410)) {
+                if (viaBridge && r != null && (r.code() == 401 || r.code() == 403 || r.code() == 404)) {
+                    // Köprü cevabı (relay değil): Supabase'de fonksiyon yok ya da JWT doğrulaması açık.
+                    fail("Yedek yol kurulmamış · Supabase tezgah-relay · HTTP " + r.code());
+                } else if (r != null && (r.code() == 403 || r.code() == 404 || r.code() == 410)) {
                     fail((r.code() == 410 ? "QR'ın veya oturumun süresi doldu" : "Bağlantı reddedildi") + " · HTTP " + r.code());
                 } else {
+                    // Doğrudan yolda ağ hatası: sonraki deneme köprüden.
+                    if (!viaBridge && r == null && !TezgahWebNet.bridgeBase().isEmpty()) TezgahWebNet.preferBridge = true;
                     lost(ws);
-                    state.update(false, "Aktarıcıya ulaşılamıyor" + (r == null ? " · " + TezgahWebLink.failureKind(error) : " · HTTP " + r.code()));
+                    state.update(false, "Aktarıcıya ulaşılamıyor" + (viaBridge ? " (yedek yol)" : "") + (r == null ? " · " + TezgahWebLink.failureKind(error) : " · HTTP " + r.code()));
                 }
             });}
             @Override public void onClosing(WebSocket ws,int code,String reason){ws.close(code,reason);onClosed(ws,code,reason);}
@@ -113,7 +121,10 @@ public final class TezgahWebClient implements AutoCloseable {
         core.tick();
         long now=clock();tokens=Math.min(65536,tokens+Math.max(0,now-lastPump)*32.768);lastPump=now;
         // Bağlantı birkaç saniyede açılmadıysa (cevapsız ağ yolu) beklemeden yeniden dene.
-        if(!opened&&socket!=null&&now-connectStartedAt>TezgahWebNet.CONNECT_TIMEOUT_S*1000+3000){WebSocket old=socket;socket=null;old.cancel();connectTries++;connect();return;}
+        if(!opened&&socket!=null&&now-connectStartedAt>(viaBridge?TezgahWebNet.BRIDGE_GIVE_UP_MS:TezgahWebNet.DIRECT_GIVE_UP_MS)){
+            WebSocket old=socket;socket=null;old.cancel();connectTries++;
+            if(!viaBridge&&!TezgahWebNet.bridgeBase().isEmpty())TezgahWebNet.preferBridge=true;   // doğrudan yol cevapsız: köprüye geç
+            connect();return;}
         if(!opened||socket==null)return;
         if(now-lastReceive>60000){WebSocket old=socket;old.cancel();lost(old);return;}
         if(now-heartbeat>=30000){enqueue("{\"v\":1,\"type\":\"ping\"}");heartbeat=now;}

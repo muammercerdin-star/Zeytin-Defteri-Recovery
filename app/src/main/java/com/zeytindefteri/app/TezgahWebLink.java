@@ -36,8 +36,10 @@ public final class TezgahWebLink {
     static String shortReason(String diagnosis) {
         String d = diagnosis == null ? "" : diagnosis.trim();
         if (d.isEmpty() || d.equals("Bağlanıyor") || d.startsWith("Bilgisayar bağlantısı bekleniyor")) return "Bilgisayar sayfası cevap vermedi";
-        if (d.startsWith("Aktarıcıya ulaşılamıyor") || d.equals("Aktarıcıya bağlanılıyor")) return "İnternet / operatör bağlantıyı kesiyor";
-        if (d.startsWith("Aktarıcıya bağlandı · bilgisayarın")) return "Bilgisayardaki sayfa telefonu görmedi";
+        if (d.startsWith("Yedek yol kurulmamış")) return "Yedek yol kurulmamış (Supabase)";
+        if (d.startsWith("Aktarıcıya yedek yoldan")) return "Yedek yol da açılmadı";
+        if (d.startsWith("Aktarıcıya ulaşılamıyor") || d.startsWith("Aktarıcıya bağlanılıyor")) return "İnternet / operatör bağlantıyı kesiyor";
+        if (d.startsWith("Aktarıcıya bağlandı") && d.contains("bilgisayarın")) return "Bilgisayardaki sayfa telefonu görmedi";
         if (d.startsWith("Bilgisayar ekranı kapandı")) return "Bilgisayardaki sayfa kapandı ya da arka planda";
         return d.length() > 60 ? d.substring(0, 57) + "…" : d;
     }
@@ -46,7 +48,13 @@ public final class TezgahWebLink {
     public static String advice(String diagnosis) {
         String d = diagnosis == null ? "" : diagnosis.trim();
         StringBuilder b = new StringBuilder();
-        if (d.startsWith("Aktarıcıya ulaşılamıyor") || d.equals("Aktarıcıya bağlanılıyor")) {
+        if (d.startsWith("Yedek yol kurulmamış")) {
+            b.append("Doğrudan yol açılmadı; yedek yol (Supabase) henüz kurulmamış.\n\n")
+             .append("• Supabase'de tezgah-relay fonksiyonu yayınlanmalı (Verify JWT kapalı).");
+        } else if (d.startsWith("Aktarıcıya yedek yoldan")) {
+            b.append("Doğrudan yol da yedek yol da açılmadı.\n\n")
+             .append("• İnternet bağlantını kontrol edip tekrar dene.");
+        } else if (d.startsWith("Aktarıcıya ulaşılamıyor") || d.startsWith("Aktarıcıya bağlanılıyor")) {
             b.append("Telefon bağlantı sunucusuna ulaşamadı.\n\n")
              .append("• Telefonu Wi-Fi'ye bağlayıp tekrar dene.\n")
              .append("• Mobil veride operatör bu bağlantıyı kesiyor olabilir.");

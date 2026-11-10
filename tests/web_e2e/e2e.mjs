@@ -72,6 +72,26 @@ async function relaySocket(room, origin) {
   return { status: 101, client, server, entry };
 }
 
+// Supabase köprüsü üzerinden telefon soketi (E2E_BRIDGE=1): telefon ↔ köprü (gerçek bridge()) ↔ relay.
+const bridgeMod = process.env.E2E_BRIDGE ? await import(pathToFileURL(join(process.cwd(), 'bridge.ts'))) : null;
+async function phoneSocket(room) {
+  if (!bridgeMod) return relaySocket(room, null);
+  const upstream = { readyState: 0, onopen: null, onmessage: null, onclose: null, onerror: null, inner: null,
+    send(t) { this.inner.send(t); }, close(c, r) { if (this.readyState === 3) return; this.readyState = 3; this.inner?.close(c, r); } };
+  relaySocket(room, null).then(s => {          // relay bağlantısı geç açılır: köprü aradaki çerçeveleri bekletmeli
+    if (s.status !== 101) { upstream.readyState = 3; upstream.onerror?.({}); return; }
+    upstream.inner = s.client; upstream.readyState = 1;
+    s.client.listener = (k, v) => { if (k === 'message') upstream.onmessage?.({ data: v }); else { upstream.readyState = 3; upstream.onclose?.(v); } };
+    setTimeout(() => upstream.onopen?.({}), 3);
+  });
+  const phone = { listener: null, send(t) { queueMicrotask(() => server.onmessage?.({ data: t })); } };
+  const server = { readyState: 1, onopen: null, onmessage: null, onclose: null, onerror: null,
+    send(t) { queueMicrotask(() => phone.listener?.('message', t)); },
+    close(c, r) { if (this.readyState === 3) return; this.readyState = 3; queueMicrotask(() => phone.listener?.('close', { code: c, reason: r })); } };
+  bridgeMod.bridge(server, upstream);
+  return { status: 101, client: phone };
+}
+
 // --- Java telefon ---
 const child = spawn('java', ['-cp', cp, 'com.zeytindefteri.app.E2EPhone', join(tmp, 'p.sqlite'), 'tests/buyers/sql_helper.py'], { stdio: ['pipe', 'pipe', 'inherit'] });
 const waiting = [];
@@ -113,7 +133,7 @@ async function trial(skewSec, ageSec, browserSec = 0) {
   const room = Buffer.from(qr.slice(4), 'base64url').subarray(0, 16).toString('base64url');
   let r = await java({ cmd: 'qr', text: qr });
   if (r.error) return { ok: false, why: 'tarama: ' + r.error };
-  const ph = await relaySocket(room, null);
+  const ph = await phoneSocket(room);
   if (ph.status !== 101) return { ok: false, why: 'telefon soketi HTTP ' + ph.status };
   let closed = null;
   const inbox = [];
@@ -156,5 +176,5 @@ if (unexpected) {
   console.log(`FAIL: beklenen ${expect}, ${unexpected} deneme farklı sonuçlandı`);
   process.exit(1);
 }
-console.log(`PASS: ${pass + fail} uçtan uca deneme (${expect === 'connect' ? 'hepsi bağlandı' : 'süresi dolan QR hepsi reddedildi'})`);
+console.log(`PASS: ${pass + fail} uçtan uca deneme${bridgeMod ? ' (Supabase köprüsü üzerinden)' : ''} (${expect === 'connect' ? 'hepsi bağlandı' : 'süresi dolan QR hepsi reddedildi'})`);
 process.exit(0);

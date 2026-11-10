@@ -48,6 +48,15 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
     private TezgahWebCommands commands;
     private final Handler main = new Handler(Looper.getMainLooper());
 
+    private static int registerDevice(okhttp3.OkHttpClient client, String base, String capability, String body) throws java.io.IOException {
+        okhttp3.Request register = new okhttp3.Request.Builder().url(base + "/v2/devices")
+                .header("Authorization", "Bearer " + capability)
+                .post(okhttp3.RequestBody.create(okhttp3.MediaType.get("application/json; charset=utf-8"), body)).build();
+        try (okhttp3.Response response = client.newCall(register).execute()) {
+            return response.code();
+        }
+    }
+
     public static void launch(Activity activity, TezgahWebPhone.Qr qr, String owner, String name) {
         launch(activity, qr, owner, name, false);
     }
@@ -244,14 +253,17 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
                     org.json.JSONObject body = TezgahWebDto.json("pairRoom", p.qr.room, "room", device.getString("room"),
                             "browserHash", TezgahWebCrypto.base64(TezgahWebCrypto.sha256(TezgahWebProtocol.utf8(device.getString("browserKey")))),
                             "phoneHash", TezgahWebCrypto.base64(TezgahWebCrypto.sha256(TezgahWebProtocol.utf8(device.getString("phoneKey")))));
-                    String base = BuildConfig.TEZGAH_RELAY_URL.trim();
-                    while (base.endsWith("/")) base = base.substring(0, base.length() - 1);
-                    okhttp3.Request register = new okhttp3.Request.Builder().url(base + "/v2/devices")
-                            .header("Authorization", "Bearer " + capability)
-                            .post(okhttp3.RequestBody.create(okhttp3.MediaType.get("application/json; charset=utf-8"), body.toString())).build();
-                    try (okhttp3.Response response = registration.newCall(register).execute()) {
-                        if (response.code() != 201 || !alive.getAsBoolean()) throw new IllegalStateException("Cihaz kaydedilemedi.");
+                    // Kayıt da soketle aynı yoldan: köprü tercih edildiyse köprü; doğrudan yol düşerse bir kez köprü.
+                    String bridge = TezgahWebNet.bridgeBase();
+                    boolean viaBridge = TezgahWebNet.useBridge(TezgahWebNet.preferBridge, bridge);
+                    int code;
+                    try { code = registerDevice(registration, viaBridge ? bridge : TezgahWebNet.directBase(BuildConfig.TEZGAH_RELAY_URL), capability, body.toString()); }
+                    catch (java.io.IOException direct) {
+                        if (viaBridge || bridge.isEmpty()) throw direct;
+                        TezgahWebNet.preferBridge = true;
+                        code = registerDevice(registration, bridge, capability, body.toString());
                     }
+                    if (code != 201 || !alive.getAsBoolean()) throw new IllegalStateException("Cihaz kaydedilemedi.");
                     device.put("tamKullanim", commands.writable());
                     TezgahWebDevices.save(this, p.owner, device);
                     saved = true;

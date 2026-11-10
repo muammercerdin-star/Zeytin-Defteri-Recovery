@@ -36,6 +36,11 @@ public final class WebLinkTest {
         ok(TezgahWebLink.failureKind(new java.net.ConnectException("Connection refused")).equals("bağlantı reddedildi"), "red");
         ok(TezgahWebLink.failureKind(null).equals("bilinmeyen hata"), "boş");
         ok(TezgahWebLink.advice("Aktarıcıya ulaşılamıyor · adres bulunamadı (DNS)").contains("Durum: Aktarıcıya ulaşılamıyor · adres bulunamadı (DNS)"), "tür pencerede yazar");
+        ok(TezgahWebLink.row(0, false, true, true, "Aktarıcıya bağlanılıyor · 3. deneme", 0).sub.contains("operatör"), "denemeli bağlanılıyor");
+        ok(TezgahWebLink.row(0, false, true, true, "Yedek yol kurulmamış · Supabase tezgah-relay · HTTP 404", 0).sub.contains("Supabase"), "köprü yok");
+        ok(TezgahWebLink.advice("Yedek yol kurulmamış · HTTP 404").contains("Verify JWT"), "köprü kurulumu öner");
+        ok(TezgahWebLink.row(0, false, true, true, "Aktarıcıya yedek yoldan bağlanılıyor · 2. deneme", 0).sub.equals("Yedek yol da açılmadı"), "köprü de açılmadı");
+        ok(TezgahWebLink.row(0, false, true, true, "Aktarıcıya bağlandı (yedek yol) · bilgisayarın cevabı bekleniyor", 0).sub.contains("sayfa"), "köprü açık, sayfa görmedi");
         ok(TezgahWebLink.computerName(0).equals("Bilgisayar"), "ilk ad");
         ok(TezgahWebLink.computerName(1).equals("Bilgisayar 2"), "ikinci ad");
 

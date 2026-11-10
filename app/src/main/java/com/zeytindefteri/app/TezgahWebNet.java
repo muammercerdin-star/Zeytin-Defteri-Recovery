@@ -17,6 +17,44 @@ final class TezgahWebNet {
     private TezgahWebNet() { }
 
     static final long CONNECT_TIMEOUT_S = 6;
+    /** Doğrudan yol bu kadar sürede açılmazsa Supabase köprüsüne geçilir. */
+    static final long DIRECT_GIVE_UP_MS = 5000;
+    /** Köprü yolunun açılması için beklenen süre (Supabase ilk çağrıda biraz yavaş olabilir). */
+    static final long BRIDGE_GIVE_UP_MS = 15000;
+
+    /**
+     * Doğrudan yol bu telefonda bir kez açılmadıysa sonraki bağlantılar baştan köprüden gider (uygulama
+     * açık kaldıkça hatırlanır). Köprü: supabase.co üzerindeki tezgah-relay fonksiyonu; içerik uçtan uca şifreli.
+     */
+    static volatile boolean preferBridge;
+
+    /** Köprü adresi: SUPABASE_URL + /functions/v1/tezgah-relay; Supabase yapılandırılmamışsa boş. */
+    static String bridgeBase(String supabaseUrl) {
+        String u = supabaseUrl == null ? "" : supabaseUrl.trim();
+        while (u.endsWith("/")) u = u.substring(0, u.length() - 1);
+        if (!u.startsWith("https://") || !u.endsWith(".supabase.co") || u.contains("REPLACE_ME")) return "";
+        return u + "/functions/v1/tezgah-relay";
+    }
+
+    static String bridgeBase() {
+        return bridgeBase(MarketBackendConfig.SUPABASE_URL);
+    }
+
+    static String directBase(String relayUrl) {
+        String u = relayUrl == null ? "" : relayUrl.trim();
+        while (u.endsWith("/")) u = u.substring(0, u.length() - 1);
+        return u;
+    }
+
+    /** https://… → wss://… ve oda soketi yolu. */
+    static String socketUrl(String httpsBase, String room) {
+        return "wss" + httpsBase.substring(5) + "/v1/socket?room=" + room;
+    }
+
+    /** Bu deneme hangi yoldan: köprü tercih edildiyse ve adresi varsa köprü. */
+    static boolean useBridge(boolean prefer, String bridge) {
+        return prefer && bridge != null && !bridge.isEmpty();
+    }
 
     /** IPv4 adreslerini öne alır, kendi içlerindeki sırayı korur. */
     static List<InetAddress> ipv4First(List<InetAddress> all) {

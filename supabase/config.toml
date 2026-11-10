@@ -4,3 +4,7 @@ verify_jwt = false
 # Firebase ID tokens are cryptographically verified inside the handler.
 [functions.moderation-api]
 verify_jwt = false
+
+# Tezgâh bilgisayar bağlantısı köprüsü: kimlik/oda kuralları relay'de; içerik uçtan uca şifreli.
+[functions.tezgah-relay]
+verify_jwt = false

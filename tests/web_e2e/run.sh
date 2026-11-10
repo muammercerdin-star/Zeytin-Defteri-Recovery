@@ -11,6 +11,7 @@ cp -r cloud/tezgah-relay "$D/cloud/"
 cp tests/buyers/sql_helper.py "$D/tests/buyers/"
 echo '{"type":"module"}' > "$D/package.json"
 cp tests/web_e2e/e2e.mjs "$D/e2e.mjs"
+cp supabase/functions/tezgah-relay/index.ts "$D/bridge.ts"
 java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d "$D/cls" $(find tests/buyers/stubs -name '*.java')
 SRC=""
 for n in TezgahModel TezgahSearch TezgahWizardFlow TezgahCrates TezgahPurchases TezgahPayments TezgahClosing TezgahZ TezgahWebCrypto TezgahWebProtocol TezgahWebChanges TezgahWebDto TezgahWebRepository TezgahWebPhone; do
@@ -23,3 +24,5 @@ CP="$D/cls:$JSON_JAR"
 node e2e.mjs "$CP" -300,-60,-20,-5,0,5,20,60,300 1,30,62,85 -120,0,120 connect
 # Süresi dolmuş QR saat kayması ne olursa olsun reddedilmeli (relay 410).
 node e2e.mjs "$CP" -300,0,300 91,600 0 reject
+# Aynı eşleşme Supabase köprüsü üzerinden (telefon ↔ köprü ↔ relay); köprü erken çerçeveleri bekletmeli.
+E2E_BRIDGE=1 node --experimental-strip-types --no-warnings e2e.mjs "$CP" -60,0,60 1,62,85 -120,0 connect

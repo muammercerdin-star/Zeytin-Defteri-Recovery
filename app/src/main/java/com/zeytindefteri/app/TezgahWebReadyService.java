@@ -201,9 +201,10 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
         void open() {
             if (!alive() || closed) return;
             final int version = ++generation;
-            String base = BuildConfig.TEZGAH_RELAY_URL.trim();
-            while (base.endsWith("/")) base = base.substring(0, base.length() - 1);
-            socket = http.newWebSocket(new Request.Builder().url("wss" + base.substring(5) + "/v1/socket?room=" + device.optString("room")).build(), new WebSocketListener() {
+            String bridge = TezgahWebNet.bridgeBase();
+            final boolean viaBridge = TezgahWebNet.useBridge(TezgahWebNet.preferBridge, bridge);
+            String base = viaBridge ? bridge : TezgahWebNet.directBase(BuildConfig.TEZGAH_RELAY_URL);
+            socket = http.newWebSocket(new Request.Builder().url(TezgahWebNet.socketUrl(base, device.optString("room"))).build(), new WebSocketListener() {
                 private void dispatch(Runnable task) {
                     if (stopped) return;
                     try {
@@ -216,7 +217,11 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
                         catch (Exception e) { ws.close(1000, "DOGRULAMA_RED"); }
                     });
                 }
-                @Override public void onFailure(WebSocket ws, Throwable error, Response response) { dispatch(() -> retry()); }
+                @Override public void onFailure(WebSocket ws, Throwable error, Response response) {
+                    // Doğrudan yolda ağ hatası (zaman aşımı dahil): sonraki deneme Supabase köprüsünden.
+                    if (!viaBridge && response == null && !TezgahWebNet.bridgeBase().isEmpty()) TezgahWebNet.preferBridge = true;
+                    dispatch(() -> retry());
+                }
                 @Override public void onClosing(WebSocket ws, int code, String reason) {
                     ws.close(code, reason);
                     dispatch(() -> {
