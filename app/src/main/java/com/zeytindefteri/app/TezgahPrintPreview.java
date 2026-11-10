@@ -48,6 +48,11 @@ final class TezgahPrintPreview {
     private LinearLayout box;
     /** Fiş bir kez basıldı mı (58/80 mm, Türkçe, QR değişince yeniden basılmaz). */
     private boolean printed;
+    /** Ekrana sığdırma: fiş bu oranda küçültülür ki pencere kaydırılmadan tamamı görünsün. */
+    private float fit = 1f;
+    private int fitPass;
+    private static final float MIN_FIT = 0.55f;
+    private ScrollView scroll;
     private android.animation.ValueAnimator printAnimator;
 
     private TezgahPrintPreview(Activity a, TezgahPrinter.Layout layout, String qrPayload, Runnable onPrint) {
@@ -62,7 +67,7 @@ final class TezgahPrintPreview {
     private void open() {
         dialog = new Dialog(a);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        ScrollView scroll = new ScrollView(a);
+        scroll = new ScrollView(a);
         box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(18), dp(10), dp(18), dp(18));
@@ -118,12 +123,12 @@ final class TezgahPrintPreview {
 
         // Kâğıt: 58 mm ≈ 260dp, 80 mm ≈ 340dp (ekrana sığacak kadar)
         int screen = a.getResources().getDisplayMetrics().widthPixels - dp(36);
-        int paperW = Math.min(screen, dp(w80 ? 340 : 260));
+        int paperW = Math.round(Math.min(screen, dp(w80 ? 340 : 260)) * fit);
         LinearLayout paper = new LinearLayout(a);
         paper.setOrientation(LinearLayout.VERTICAL);
         paper.setGravity(Gravity.CENTER_HORIZONTAL);
         int pad = dp(10);
-        paper.setPadding(pad, dp(14), pad, dp(22));
+        paper.setPadding(pad, dp(14), pad, dp(14));
         paper.setBackground(round(PAPER, Color.parseColor("#D9D6CC"), 4));
         String body = layout.text(width);
         if (!tr) body = TezgahPrintFormat.fold(body);
@@ -196,12 +201,12 @@ final class TezgahPrintPreview {
         // Ayarlar (dokununca önizleme yenilenir)
         LinearLayout opts = new LinearLayout(a);
         opts.addView(chip(w80 ? "80 mm" : "58 mm", true, () -> {
-            TezgahPrinter.setWidth(a, w80 ? TezgahPrintFormat.WIDTH_58 : TezgahPrintFormat.WIDTH_80); render(); }),
+            TezgahPrinter.setWidth(a, w80 ? TezgahPrintFormat.WIDTH_58 : TezgahPrintFormat.WIDTH_80); refit(); }),
                 new LinearLayout.LayoutParams(0, dp(44), 1));
-        opts.addView(chip(tr ? "Türkçe ✓" : "Türkçe ✗", tr, () -> { TezgahPrinter.setTurkish(a, !tr); render(); }), weighted());
+        opts.addView(chip(tr ? "Türkçe ✓" : "Türkçe ✗", tr, () -> { TezgahPrinter.setTurkish(a, !tr); refit(); }), weighted());
         if (qrPayload != null) {
             boolean on = TezgahPrinter.printQr(a);
-            opts.addView(chip(on ? "QR ✓" : "QR ✗", on, () -> { TezgahPrinter.setPrintQr(a, !on); render(); }), weighted());
+            opts.addView(chip(on ? "QR ✓" : "QR ✗", on, () -> { TezgahPrinter.setPrintQr(a, !on); refit(); }), weighted());
         }
         box.addView(opts, margins(14));
         String name = TezgahPrinter.printerName(a);
@@ -210,23 +215,69 @@ final class TezgahPrintPreview {
         printer.setOnClickListener(v -> TezgahPrinter.choose(a, this::render));
         box.addView(printer);
 
+        // Vazgeç ve Yazdır yan yana: ekranda yer kazanılır, fiş daha büyük sığar.
+        LinearLayout buttons = new LinearLayout(a);
+        TextView cancel = text("Vazgeç", 15, MUTED, true);
+        cancel.setGravity(Gravity.CENTER);
+        cancel.setBackground(round(CARD, LINE, 18));
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        buttons.addView(cancel, new LinearLayout.LayoutParams(0, dp(56), 1));
         TextView go = text("Yazdır", 19, BG, true);
         go.setGravity(Gravity.CENTER);
         go.setBackground(round(GREEN, 0, 18));
         go.setContentDescription("Fişi yazıcıya gönder");
         go.setOnClickListener(v -> { dialog.dismiss(); if (onPrint != null) onPrint.run(); });
-        LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(-1, dp(56));
-        gp.topMargin = dp(12);
-        box.addView(go, gp);
-        TextView cancel = text("Vazgeç", 15, MUTED, true);
-        cancel.setGravity(Gravity.CENTER);
-        cancel.setOnClickListener(v -> dialog.dismiss());
-        box.addView(cancel, new LinearLayout.LayoutParams(-1, dp(46)));
+        LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(0, dp(56), 2);
+        gp.setMarginStart(dp(10));
+        buttons.addView(go, gp);
+        box.addView(buttons, margins(10));
 
+        // İlk baskıdan önce fiş ve alttakiler gizli: sığdırma ölçüsü alınırken tam fiş bir an görünmesin.
+        final android.view.View[] tail = new android.view.View[Math.max(0, box.getChildCount() - tailFrom)];
+        for (int i = 0; i < tail.length; i++) tail[i] = box.getChildAt(tailFrom + i);
         if (!printed) {
-            printed = true;
-            startPrint(clip, ticket, tailFrom);
+            ticket.setVisibility(android.view.View.INVISIBLE);
+            for (android.view.View v : tail) v.setAlpha(0f);
         }
+        box.getViewTreeObserver().addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener() {
+            @Override public boolean onPreDraw() {
+                box.getViewTreeObserver().removeOnPreDrawListener(this);
+                if (!box.isAttachedToWindow() || clip.getParent() != box) return true;   // eski çizimin dinleyicisi
+                if (scroll.getHeight() <= 0) {           // pencere boyu henüz belli değil: bir sonraki karede ölç
+                    box.getViewTreeObserver().addOnPreDrawListener(this);
+                    return true;
+                }
+                float next = fitFor(scroll.getHeight(), box.getHeight(), clip.getHeight());
+                if (fitPass < 2 && next < fit - 0.005f) {
+                    fitPass++;
+                    fit = next;
+                    render();                 // küçültülmüş fişle yeniden çiz
+                    return false;
+                }
+                if (!printed) {
+                    printed = true;
+                    startPrint(clip, ticket, tail);
+                }
+                return true;
+            }
+        });
+    }
+
+    /** Ayar (58/80 mm, Türkçe, QR) değişince fiş boyu değişir: sığdırma baştan hesaplanır. */
+    private void refit() {
+        fit = 1f;
+        fitPass = 0;
+        render();
+    }
+
+    /**
+     * Pencereye sığdırma oranı: içerik pencereden uzunsa, fişin dışındaki her şey sabit kalır,
+     * fiş kalan yüksekliğe sığacak kadar küçülür (en az MIN_FIT). Sığıyorsa oran değişmez.
+     */
+    private float fitFor(int viewport, int content, int paperH) {
+        if (viewport <= 0 || paperH <= 0 || content <= viewport) return fit;
+        float room = viewport - (content - paperH) - dp(4);
+        return Math.max(MIN_FIT, fit * Math.min(1f, room / paperH));
     }
 
     // ===================== Yazıcıdan çıkan fiş =====================
@@ -274,50 +325,38 @@ final class TezgahPrintPreview {
     }
 
     /** Fiş ağızdan akıcı biçimde iner, ara ara hafif titreşim; bitince alttaki ayarlar ve Yazdır belirir. */
-    private void startPrint(android.view.View clip, LinearLayout ticket, int tailFrom) {
-        final android.view.View[] tail = new android.view.View[Math.max(0, box.getChildCount() - tailFrom)];
-        for (int i = 0; i < tail.length; i++) {
-            tail[i] = box.getChildAt(tailFrom + i);
-            tail[i].setAlpha(0f);
-        }
-        ticket.setVisibility(android.view.View.INVISIBLE);   // ilk karede tam fiş görünmesin
-        ticket.getViewTreeObserver().addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener() {
-            @Override public boolean onPreDraw() {
-                ticket.getViewTreeObserver().removeOnPreDrawListener(this);
-                final float h = ticket.getHeight();
-                final int steps = ReceiptPrint.steps(h / density);
-                ticket.setTranslationY(-h);
-                ticket.setVisibility(android.view.View.VISIBLE);
-                // Fiş bir kez çizilip kaydırılır (her karede yeniden çizilmez): takılmasız akış.
-                ticket.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
-                printAnimator = android.animation.ValueAnimator.ofFloat(0f, 1f);
-                printAnimator.setDuration(ReceiptPrint.durationMs(h / density));
-                printAnimator.setInterpolator(new android.view.animation.LinearInterpolator());
-                final int[] last = {0};
-                printAnimator.addUpdateListener(an -> {
-                    float t = (float) an.getAnimatedValue();
-                    ticket.setTranslationY(-h * (1f - ReceiptPrint.progress(t, steps)));
-                    int step = ReceiptPrint.stepIndex(t, steps);
-                    if (step != last[0]) {
-                        last[0] = step;
-                        if (step % 2 == 0) clip.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
-                    }
-                });
-                printAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
-                    @Override public void onAnimationEnd(android.animation.Animator an) {
-                        ticket.setTranslationY(0f);
-                        ticket.setLayerType(android.view.View.LAYER_TYPE_NONE, null);
-                        clip.setOnClickListener(null);
-                        clip.setClickable(false);
-                        for (android.view.View v : tail) v.animate().alpha(1f).setDuration(220).start();
-                    }
-                });
-                // Beklemek istemeyen fişe dokunur, baskı hemen biter.
-                clip.setOnClickListener(v -> { if (printAnimator != null) printAnimator.end(); });
-                printAnimator.start();
-                return true;
+    private void startPrint(android.view.View clip, LinearLayout ticket, android.view.View[] tail) {
+        final float h = ticket.getHeight();
+        final int steps = ReceiptPrint.steps(h / density);
+        ticket.setTranslationY(-h);
+        ticket.setVisibility(android.view.View.VISIBLE);
+        // Fiş bir kez çizilip kaydırılır (her karede yeniden çizilmez): takılmasız akış.
+        ticket.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
+        printAnimator = android.animation.ValueAnimator.ofFloat(0f, 1f);
+        printAnimator.setDuration(ReceiptPrint.durationMs(h / density));
+        printAnimator.setInterpolator(new android.view.animation.LinearInterpolator());
+        final int[] last = {0};
+        printAnimator.addUpdateListener(an -> {
+            float t = (float) an.getAnimatedValue();
+            ticket.setTranslationY(-h * (1f - ReceiptPrint.progress(t, steps)));
+            int step = ReceiptPrint.stepIndex(t, steps);
+            if (step != last[0]) {
+                last[0] = step;
+                if (step % 2 == 0) clip.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
             }
         });
+        printAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override public void onAnimationEnd(android.animation.Animator an) {
+                ticket.setTranslationY(0f);
+                ticket.setLayerType(android.view.View.LAYER_TYPE_NONE, null);
+                clip.setOnClickListener(null);
+                clip.setClickable(false);
+                for (android.view.View v : tail) v.animate().alpha(1f).setDuration(220).start();
+            }
+        });
+        // Beklemek istemeyen fişe dokunur, baskı hemen biter.
+        clip.setOnClickListener(v -> { if (printAnimator != null) printAnimator.end(); });
+        printAnimator.start();
     }
 
     private TextView chip(String label, boolean on, Runnable action) {
