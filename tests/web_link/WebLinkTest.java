@@ -29,6 +29,13 @@ public final class WebLinkTest {
         ok(TezgahWebLink.row(0, false, true, true, "Aktarıcıya bağlanılıyor", 0).sub.contains("operatör"), "bağlanılamadıysa operatör");
         ok(TezgahWebLink.advice("Aktarıcıya bağlanılıyor").contains("Wi-Fi"), "bağlanılamadıysa Wi-Fi öner");
         ok(TezgahWebLink.row(0, false, true, true, "Aktarıcıya bağlandı · bilgisayarın cevabı bekleniyor", 0).sub.contains("sayfa"), "aktarıcı tamam, sayfa görmedi");
+        ok(TezgahWebLink.failureKind(new java.net.UnknownHostException("tezgah-relay")).contains("DNS"), "DNS");
+        ok(TezgahWebLink.failureKind(new java.net.SocketTimeoutException("connect timed out")).equals("zaman aşımı"), "zaman aşımı");
+        ok(TezgahWebLink.failureKind(new java.io.IOException("x", new java.net.SocketException("Connection reset"))).equals("bağlantı sıfırlandı"), "sıfırlama (iç hata)");
+        ok(TezgahWebLink.failureKind(new javax.net.ssl.SSLHandshakeException("Handshake failed")).contains("TLS"), "TLS");
+        ok(TezgahWebLink.failureKind(new java.net.ConnectException("Connection refused")).equals("bağlantı reddedildi"), "red");
+        ok(TezgahWebLink.failureKind(null).equals("bilinmeyen hata"), "boş");
+        ok(TezgahWebLink.advice("Aktarıcıya ulaşılamıyor · adres bulunamadı (DNS)").contains("Durum: Aktarıcıya ulaşılamıyor · adres bulunamadı (DNS)"), "tür pencerede yazar");
         ok(TezgahWebLink.computerName(0).equals("Bilgisayar"), "ilk ad");
         ok(TezgahWebLink.computerName(1).equals("Bilgisayar 2"), "ikinci ad");
 

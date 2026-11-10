@@ -63,6 +63,24 @@ public final class TezgahWebLink {
         return b.toString();
     }
 
+    /**
+     * Bağlantı hatasının türü (içerik/anahtar içermez): DNS mi, zaman aşımı mı, sıfırlama mı, güvenli bağlantı mı.
+     * Operatör engelini ayırt etmeye yarar: DNS ya da sıfırlama genelde engel, zaman aşımı zayıf çekim.
+     */
+    public static String failureKind(Throwable error) {
+        for (Throwable e = error; e != null; e = e.getCause() == e ? null : e.getCause()) {
+            String n = e.getClass().getSimpleName();
+            String m = e.getMessage() == null ? "" : e.getMessage().toLowerCase(java.util.Locale.ROOT);
+            if (n.equals("UnknownHostException")) return "adres bulunamadı (DNS)";
+            if (n.equals("SocketTimeoutException") || n.equals("InterruptedIOException") || m.contains("timeout")) return "zaman aşımı";
+            if (n.startsWith("SSL") || m.contains("handshake") || m.contains("certificate")) return "güvenli bağlantı kurulamadı (TLS)";
+            if (m.contains("reset")) return "bağlantı sıfırlandı";
+            if (n.equals("ConnectException") || m.contains("refused")) return "bağlantı reddedildi";
+            if (n.equals("EOFException") || m.contains("closed")) return "bağlantı yarıda kapandı";
+        }
+        return error == null ? "bilinmeyen hata" : error.getClass().getSimpleName();
+    }
+
     /** Bilgisayara ad yazdırılmaz: "Bilgisayar", sonra "Bilgisayar 2", "Bilgisayar 3"… */
     public static String computerName(int savedDevices) {
         return savedDevices <= 0 ? "Bilgisayar" : "Bilgisayar " + (savedDevices + 1);

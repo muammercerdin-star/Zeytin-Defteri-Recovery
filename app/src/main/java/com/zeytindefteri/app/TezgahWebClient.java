@@ -83,7 +83,7 @@ public final class TezgahWebClient implements AutoCloseable {
                     fail((r.code() == 410 ? "QR'ın veya oturumun süresi doldu" : "Bağlantı reddedildi") + " · HTTP " + r.code());
                 } else {
                     lost(ws);
-                    state.update(false, "Aktarıcıya ulaşılamıyor" + (r == null ? "" : " · HTTP " + r.code()));
+                    state.update(false, "Aktarıcıya ulaşılamıyor" + (r == null ? " · " + TezgahWebLink.failureKind(error) : " · HTTP " + r.code()));
                 }
             });}
             @Override public void onClosing(WebSocket ws,int code,String reason){ws.close(code,reason);onClosed(ws,code,reason);}
