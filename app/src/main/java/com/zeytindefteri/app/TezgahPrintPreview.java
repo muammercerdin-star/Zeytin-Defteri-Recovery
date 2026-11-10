@@ -24,7 +24,7 @@ import android.widget.TextView;
  * Baskı önizlemesi: fiş kâğıtta nasıl çıkacaksa öyle gösterilir (beyaz kâğıt, sabit genişlikli yazı,
  * Türkçe karakter kapalıysa sadeleşmiş hâli, altta QR). Kâğıt 58/80 mm, Türkçe karakter ve QR buradan
  * değiştirilir, önizleme hemen yenilenir. "Yazdır" ile yazıcıya gider.
- * Açılışta fiş, üstteki yazıcı ağzından termal yazıcı gibi adım adım çıkar (ReceiptPrint); yalnız ilk açılışta,
+ * Açılışta fiş, üstteki yazıcı ağzından akıcı biçimde çıkar, sonda yavaşlar (ReceiptPrint); yalnız ilk açılışta,
  * ayar değişince yeniden basılmaz. Telefonda animasyonlar kapalıysa doğrudan görünür; fişe dokununca baskı biter.
  */
 final class TezgahPrintPreview {
@@ -273,7 +273,7 @@ final class TezgahPrintPreview {
         return edge;
     }
 
-    /** Fiş ağızdan adım adım iner, ara ara hafif titreşim; bitince alttaki ayarlar ve Yazdır belirir. */
+    /** Fiş ağızdan akıcı biçimde iner, ara ara hafif titreşim; bitince alttaki ayarlar ve Yazdır belirir. */
     private void startPrint(android.view.View clip, LinearLayout ticket, int tailFrom) {
         final android.view.View[] tail = new android.view.View[Math.max(0, box.getChildCount() - tailFrom)];
         for (int i = 0; i < tail.length; i++) {
@@ -288,6 +288,8 @@ final class TezgahPrintPreview {
                 final int steps = ReceiptPrint.steps(h / density);
                 ticket.setTranslationY(-h);
                 ticket.setVisibility(android.view.View.VISIBLE);
+                // Fiş bir kez çizilip kaydırılır (her karede yeniden çizilmez): takılmasız akış.
+                ticket.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
                 printAnimator = android.animation.ValueAnimator.ofFloat(0f, 1f);
                 printAnimator.setDuration(ReceiptPrint.durationMs(h / density));
                 printAnimator.setInterpolator(new android.view.animation.LinearInterpolator());
@@ -304,6 +306,7 @@ final class TezgahPrintPreview {
                 printAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
                     @Override public void onAnimationEnd(android.animation.Animator an) {
                         ticket.setTranslationY(0f);
+                        ticket.setLayerType(android.view.View.LAYER_TYPE_NONE, null);
                         clip.setOnClickListener(null);
                         clip.setClickable(false);
                         for (android.view.View v : tail) v.animate().alpha(1f).setDuration(220).start();

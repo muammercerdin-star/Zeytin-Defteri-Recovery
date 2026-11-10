@@ -14,7 +14,8 @@ need(re.search(r"if \(!printed\) \{\s*printed = true;\s*startPrint\(", t), "yaln
 need(re.search(r"private void render\(\) \{\s*//[^\n]*\n\s*if \(printAnimator != null && printAnimator.isRunning\(\)\) printAnimator.end\(\);", t), "ayar değişince baskı tamamlanır")
 need("printAnimator.cancel()" in t and "setOnDismissListener" in t, "kapanınca durur")
 need("printAnimator.end()" in t and "clip.setOnClickListener" in t, "dokununca biter")
-need("ReceiptPrint.progress(" in t and "ReceiptPrint.durationMs(" in t, "adım adım baskı")
+need("ReceiptPrint.progress(" in t and "ReceiptPrint.durationMs(" in t, "baskı eğrisi")
+need("LAYER_TYPE_HARDWARE" in t and "LAYER_TYPE_NONE" in t, "hareket sırasında donanım katmanı")
 for f in ['"Yazdır"', '"Vazgeç"', "TezgahPrinter.setWidth", "TezgahPrinter.setTurkish", "TezgahPrinter.setPrintQr", "TezgahPrinter.choose", "TezgahQrUi.bitmap"]:
     need(f in t, "korunan özellik: " + f)
 need("EXTRA_PRINT" not in e and "EXTRA_PRINT" not in r, "Elek akışı eski hâlinde")

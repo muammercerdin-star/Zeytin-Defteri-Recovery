@@ -11,21 +11,25 @@ public final class ReceiptPrintTest {
             ok(ReceiptPrint.progress(0f, steps) == 0f, "başta 0");
             ok(ReceiptPrint.progress(1f, steps) == 1f, "sonda 1");
             ok(ReceiptPrint.progress(-1f, steps) == 0f && ReceiptPrint.progress(2f, steps) == 1f, "sınır dışı");
-            float prev = 0f; int still = 0;
+            float prev = 0f, maxJump = 0f;
             for (int i = 1; i <= 1000; i++) {
                 float p = ReceiptPrint.progress(i / 1000f, steps);
-                ok(p >= prev - 1e-6f, "monoton " + steps + " @" + i);
-                if (Math.abs(p - prev) < 1e-6f) still++;
+                ok(p >= prev, "monoton " + steps + " @" + i);
+                if (i < 990) ok(p > prev, "duraklama yok (akıcı) @" + i);
+                maxJump = Math.max(maxJump, p - prev);
                 prev = p;
             }
-            ok(still > 300, "itişler arasında duraklar var (" + still + ")");
-            // Her adımın sonunda tam o adım kadar çıkmış olmalı
-            ok(Math.abs(ReceiptPrint.progress(0.5f / steps + 0.4999f / steps, steps) - 1f / steps) < 1e-4f, "ilk adım tamam");
+            ok(maxJump < 0.0016f, "sıçrama yok (" + maxJump + ")");
+            // Sonda yavaşlar: son %5'te çıkan pay, ortadaki %5'ten az
+            float end = 1f - ReceiptPrint.progress(0.95f, steps);
+            float mid = ReceiptPrint.progress(0.50f, steps) - ReceiptPrint.progress(0.45f, steps);
+            ok(end < mid * 0.3f, "sonda yumuşak duruş");
+            ok(Math.abs(ReceiptPrint.progress(0.5f, steps) - ReceiptPrint.progress(0.5f, 99)) < 1e-6f, "adım sayısı hareketi değiştirmez");
             ok(ReceiptPrint.stepIndex(0.999f, steps) == steps - 1 && ReceiptPrint.stepIndex(1f, steps) == steps, "adım sayacı");
         }
         // Süre ve adım sınırları
         ok(ReceiptPrint.durationMs(0) == ReceiptPrint.MIN_MS, "kısa fiş en az");
-        ok(ReceiptPrint.durationMs(5000) == ReceiptPrint.MAX_MS, "uzun fiş en çok 2 sn");
+        ok(ReceiptPrint.durationMs(5000) == ReceiptPrint.MAX_MS, "uzun fiş en çok 1,7 sn");
         ok(ReceiptPrint.durationMs(600) > ReceiptPrint.durationMs(400), "uzun fiş biraz daha uzun");
         ok(ReceiptPrint.steps(100) == 8 && ReceiptPrint.steps(5000) == 22 && ReceiptPrint.steps(560) == 14, "adım sayısı");
         // Damga

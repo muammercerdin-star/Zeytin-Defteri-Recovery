@@ -1,22 +1,22 @@
 package com.zeytindefteri.app;
 
 /**
- * Elek fişinin "yazıcıdan çıkma" animasyonunun saf hesapları (Android'e bağlı değil, test edilir).
- * Kâğıt yuvadan tek hamlede kaymaz; termal yazıcı gibi kısa itişlerle (adım adım) iner.
+ * Fişin (Tezgâh baskı önizlemesi) "yazıcıdan çıkma" animasyonunun saf hesapları (Android'e bağlı değil, test edilir).
+ * Kâğıt yazıcı ağzından akıcı biçimde iner, sonda yavaşlar; ara ara hafif titreşim tıkı verilir.
  */
 public final class ReceiptPrint {
 
     private ReceiptPrint() { }
 
     /** En az / en çok baskı süresi (ms). Uzun fiş biraz daha uzun basılır ama sabırsızlandırmaz. */
-    public static final long MIN_MS = 1100;
-    public static final long MAX_MS = 2000;
+    public static final long MIN_MS = 1000;
+    public static final long MAX_MS = 1700;
     /** Damganın vurulması (ms). */
     public static final long STAMP_MS = 260;
 
     /** Fişin boyuna göre baskı süresi: her 100 dp için ~150 ms, sınırlar içinde. */
     public static long durationMs(float heightDp) {
-        long ms = (long) (600 + Math.max(0f, heightDp) * 1.5f);
+        long ms = (long) (600 + Math.max(0f, heightDp) * 1.4f);
         return Math.max(MIN_MS, Math.min(MAX_MS, ms));
     }
 
@@ -27,19 +27,19 @@ public final class ReceiptPrint {
     }
 
     /**
-     * Zaman (0..1) -> kâğıdın çıkmış oranı (0..1). Her adımın ilk %45'inde kâğıt itilir,
-     * kalanında durur; böylece "tık tık" ilerleyen bir baskı hissi oluşur. Monoton artar, 0 ve 1'de sabittir.
+     * Zaman (0..1) -> kâğıdın çıkmış oranı (0..1). Akıcı ve kesintisiz: kâğıt sabit hızla akar,
+     * sonda yumuşakça yavaşlayıp durur (duraklama yok; ekranda takılma gibi görünmesin).
+     * steps yalnız titreşim tıkları içindir, harekete etki etmez.
      */
     public static float progress(float t, int steps) {
         if (t <= 0f) return 0f;
         if (t >= 1f) return 1f;
-        int n = Math.max(1, steps);
-        float x = t * n;
-        int i = (int) Math.floor(x);
-        float f = x - i;
-        float push = Math.min(1f, f / 0.45f);
-        push = 1f - (1f - push) * (1f - push);          // itişin içinde yumuşak duruş
-        return Math.min(1f, (i + push) / n);
+        // İlk %70 doğrusal, son %30'da hız sıfıra iner (iki parça, hız sürekli).
+        final float k = 0.70f;
+        final float v = 1f / (k + (1f - k) / 2f);          // doğrusal bölümün hızı
+        if (t <= k) return v * t;
+        float u = (t - k) / (1f - k);                      // 0..1
+        return Math.min(1f, v * k + v * (1f - k) * (u - u * u / 2f));
     }
 
     /** Hangi adımdayız (titreşim tıkı için): 0..steps. */
