@@ -238,7 +238,7 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
                 }
                 org.json.JSONObject device = TezgahWebDevices.create(this, p.owner, p.name, commands.writable(), request);
                 boolean saved = false;
-                okhttp3.OkHttpClient registration = new okhttp3.OkHttpClient.Builder()
+                okhttp3.OkHttpClient registration = TezgahWebNet.builder()
                         .callTimeout(15, java.util.concurrent.TimeUnit.SECONDS).build();
                 try {
                     org.json.JSONObject body = TezgahWebDto.json("pairRoom", p.qr.room, "room", device.getString("room"),

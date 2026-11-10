@@ -17,7 +17,7 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
     private final Map<String, Link> links = new HashMap<>();
     private final Map<String, Long> approvalTimes = new HashMap<>();
     private final Map<String, String> approvals = new HashMap<>();
-    private final OkHttpClient http = new OkHttpClient.Builder().pingInterval(30, TimeUnit.SECONDS).build();
+    private final OkHttpClient http = TezgahWebNet.builder().pingInterval(30, TimeUnit.SECONDS).build();
     private String owner;
     private DatabaseHelper helper;
     private volatile boolean stopped;

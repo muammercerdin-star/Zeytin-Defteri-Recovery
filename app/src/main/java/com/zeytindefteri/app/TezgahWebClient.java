@@ -11,10 +11,10 @@ import java.util.function.*;
 public final class TezgahWebClient implements AutoCloseable {
     public interface State {void update(boolean ready,String detail);}
     private final ScheduledExecutorService worker=Executors.newSingleThreadScheduledExecutor();
-    private final OkHttpClient http=new OkHttpClient.Builder().connectTimeout(15,TimeUnit.SECONDS).readTimeout(0,TimeUnit.MILLISECONDS).pingInterval(30,TimeUnit.SECONDS).build();
+    private final OkHttpClient http=TezgahWebNet.builder().readTimeout(0,TimeUnit.MILLISECONDS).pingInterval(30,TimeUnit.SECONDS).build();
     private final ArrayDeque<String> queue=new ArrayDeque<>();private final AtomicBoolean stopped=new AtomicBoolean();
     private final BooleanSupplier alive;private final State state;private final String url;private TezgahWebPhone core;private volatile WebSocket socket;
-    private boolean opened;private int queuedBytes,attempt;private long lastReceive,heartbeat,backoffUntil,lastSent,lastPump=clock();private double tokens=65536;
+    private boolean opened;private long connectStartedAt;private int connectTries;private int queuedBytes,attempt;private long lastReceive,heartbeat,backoffUntil,lastSent,lastPump=clock();private double tokens=65536;
     public static boolean configured(){try{URI u=new URI(BuildConfig.TEZGAH_RELAY_URL.trim());return u.getScheme().equals("https")&&u.getHost()!=null&&u.getUserInfo()==null&&(u.getPath().isEmpty()||u.getPath().equals("/"))&&u.getQuery()==null&&u.getFragment()==null;}catch(Exception e){return false;}}
     public TezgahWebClient(TezgahWebPhone.Qr qr,TezgahWebRepository repository,BooleanSupplier alive,State state)throws Exception{
         if(!configured())throw new IllegalArgumentException("YAPILANDIRILMADI");this.alive=alive;this.state=state;
@@ -54,11 +54,12 @@ public final class TezgahWebClient implements AutoCloseable {
     private void enqueue(String frame){if(stopped.get())return;int bytes=TezgahWebProtocol.utf8(frame).length;if(queue.size()>=128||queuedBytes+bytes>2*1024*1024)throw new IllegalStateException("KUYRUK_DOLU");queue.add(frame);queuedBytes+=bytes;}
     private void connect(){if(stopped.get()||!alive.getAsBoolean()){close();return;}opened=false;
         // Aşama aşama durum: takılırsa hangi adımda kaldığı ekranda görünür.
-        if(!core.ready())state.update(false,"Aktarıcıya bağlanılıyor");
+        if(!core.ready())state.update(false,connectTries>0?"Aktarıcıya bağlanılıyor · "+(connectTries+1)+". deneme":"Aktarıcıya bağlanılıyor");
+        connectStartedAt=clock();
         socket=http.newWebSocket(new Request.Builder().url(url).build(),new WebSocketListener(){
             private void dispatch(Runnable run){if(!stopped.get())try{worker.execute(()->{if(!stopped.get()&&socket==current)run.run();});}catch(RejectedExecutionException ignored){}}
             private WebSocket current;
-            @Override public void onOpen(WebSocket ws,Response r){current=ws;dispatch(()->{opened=true;lastReceive=clock();heartbeat=clock();core.opened();
+            @Override public void onOpen(WebSocket ws,Response r){current=ws;dispatch(()->{opened=true;connectTries=0;lastReceive=clock();heartbeat=clock();core.opened();
                 if(!core.ready())state.update(false,"Aktarıcıya bağlandı · bilgisayarın cevabı bekleniyor");});}
             @Override public void onMessage(WebSocket ws,String text){current=ws;dispatch(()->{
                 if(!alive.getAsBoolean()){close();return;}lastReceive=clock();
@@ -111,6 +112,8 @@ public final class TezgahWebClient implements AutoCloseable {
         }
         core.tick();
         long now=clock();tokens=Math.min(65536,tokens+Math.max(0,now-lastPump)*32.768);lastPump=now;
+        // Bağlantı birkaç saniyede açılmadıysa (cevapsız ağ yolu) beklemeden yeniden dene.
+        if(!opened&&socket!=null&&now-connectStartedAt>TezgahWebNet.CONNECT_TIMEOUT_S*1000+3000){WebSocket old=socket;socket=null;old.cancel();connectTries++;connect();return;}
         if(!opened||socket==null)return;
         if(now-lastReceive>60000){WebSocket old=socket;old.cancel();lost(old);return;}
         if(now-heartbeat>=30000){enqueue("{\"v\":1,\"type\":\"ping\"}");heartbeat=now;}
