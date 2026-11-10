@@ -1,0 +1,58 @@
+import {readFileSync,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';import {join} from 'node:path';import {pathToFileURL} from 'node:url';
+import assert from 'node:assert/strict';
+const temp=mkdtempSync(join(tmpdir(),'zd-web-crypto-'));
+try {
+ for(const name of ['crypto','protocol'])writeFileSync(join(temp,name+'.mjs'),readFileSync('web/tezgah/js/'+name+'.js','utf8').replaceAll("'./crypto.js'","'./crypto.mjs'").replaceAll("'./protocol.js'","'./protocol.mjs'"));
+ const C=await import(pathToFileURL(join(temp,'crypto.mjs'))),P=await import(pathToFileURL(join(temp,'protocol.mjs')));
+ const v=JSON.parse(readFileSync('tests/web_crypto/vectors.json','utf8')),s=v.shared,b=s=>C.unbase64(s),u=P.utf8;
+ let n=0;const ok=(v,m)=>{assert.ok(v,m);n++;},eq=(a,b,m)=>{assert.deepEqual(a,b,m);n++;};
+ const reject=async(f,m)=>{await assert.rejects(async()=>f(),undefined,m);n++;};
+ for(const r of v.rfc5869){eq(await C.extract(Buffer.from(r.salt,'hex'),Buffer.from(r.ikm,'hex')),new Uint8Array(Buffer.from(r.prk,'hex')),'RFC PRK');eq(await C.hkdf(Buffer.from(r.salt,'hex'),Buffer.from(r.ikm,'hex'),Buffer.from(r.info,'hex'),r.length),new Uint8Array(Buffer.from(r.okm,'hex')),'RFC OKM');}
+ const t=await P.transcript(s.room,s.expiresAt,s.nb,s.np,s.browserSpki,s.phoneSpki);eq(t,u(s.transcript),'transcript');
+ const priv=async pk=>crypto.subtle.importKey('pkcs8',b(pk),{name:'ECDH',namedCurve:'P-256'},false,['deriveBits']);
+ eq(await C.ecdh(await priv(s.testBrowserPkcs8),s.phoneSpki),b(s.ecdh),'B-P ECDH');eq(await C.ecdh(await priv(s.testPhonePkcs8),s.browserSpki),b(s.ecdh),'P-B ECDH');
+ const k=await C.initial(b(s.ecdh),b(s.secret),t);
+ eq(k.direction('p2w'),b(s.keys.p2w),'p2w');eq(k.direction('w2p'),b(s.keys.w2p),'w2p');eq(k.confirmation(),b(s.keys.confirm),'confirm');eq(k.resumeRoot(),b(s.keys.resume),'resume');
+ eq(P.aad(s.session,s.epoch,'p2w','1'),u(s.aad),'AAD');
+ const phone=new C.Channel(k,s.session,s.epoch,'p2w'),web=new C.Channel(k,s.session,s.epoch,'w2p'),f=await phone.seal(u(s.plain));ok(f.ct===s.ct,'same ciphertext');eq(await web.open(P.parseFrame(JSON.stringify(f))),u(s.plain),'roundtrip');await reject(()=>web.open(f),'replay');
+ const receiver=new C.Channel(k,s.session,s.epoch,'w2p'),tag=b(s.ct);tag[tag.length-1]^=1;
+ await reject(()=>receiver.open({...f,ct:C.base64(tag)}),'bad tag');eq(await receiver.open(f),u(s.plain),'bad tag did not advance seq');
+ await reject(()=>C.decrypt(k.direction('p2w'),'1',u(s.aad+'x'),b(s.ct)),'wrong AAD');await reject(()=>C.decrypt(new Uint8Array(32),'1',u(s.aad),b(s.ct)),'wrong key');
+ await reject(()=>new C.Channel(k,s.session,s.epoch,'w2p').open({...f,epoch:s.resume.epoch}),'wrong epoch');
+ const racer=new C.Channel(k,s.session,s.epoch,'w2p'),race=await Promise.allSettled([racer.open(f),racer.open(f)]);ok(race.filter(r=>r.status==='fulfilled').length===1,'concurrent duplicate rejected');
+ for(const bad of ['A','AA=','AA+','AB','a\n','é'])await reject(()=>C.unbase64(bad),'canonical base64');
+ for(let i=1;i<=100;i++){const a=C.random(i);eq(C.unbase64(C.base64(a)),a,'base64 roundtrip');}
+ for(const seq of ['0','01','-1','9223372036854775808','1.0'])await reject(()=>P.sequence(seq),'seq bounds');
+ for(const text of [JSON.stringify(f).replace('"v":1','"v":1,"v":1'),JSON.stringify(f).replace('"v":1','"v":"#1"'),JSON.stringify(f)+'x'])await reject(()=>P.parseFrame(text),'strict JSON');
+ await reject(()=>C.publicKey(C.base64(new Uint8Array(91))),'invalid P256');
+ const a=await C.keyPair(),z=await C.keyPair(),spki=async k=>C.base64(await crypto.subtle.exportKey('spki',k));
+ eq(await C.ecdh(a.privateKey,await spki(z.publicKey)),await C.ecdh(z.privateKey,await spki(a.publicKey)),'random ECDH');
+ const rt=P.resumeTranscript(s.session,s.epoch,s.resume.epoch,s.resume.nb,s.resume.np),rk=await C.resume(k.resumeRoot(),rt);eq(rt,u(s.resume.transcript),'resume transcript');
+ for(const dir of ['p2w','w2p'])eq(rk.direction(dir),b(s.resume.keys[dir]),'resume keys');eq(rk.confirmation(),b(s.resume.keys.confirm),'resume confirm');eq(rk.resumeRoot(),b(s.resume.keys.resume),'ratchet root');ok(C.base64(rk.direction('p2w'))!==C.base64(k.direction('p2w')),'new key');
+ const guard=new C.ResumeGuard(s.session,s.epoch,k.resumeRoot());guard.disconnected(1000);
+ await reject(()=>guard.accept(1001,s.epoch,s.resume.epoch,s.resume.nb,s.resume.np,new Uint8Array(32),b(s.resume.webProof)),'two proofs');
+ const rr=await guard.accept(301000,s.epoch,s.resume.epoch,s.resume.nb,s.resume.np,b(s.resume.phoneProof),b(s.resume.webProof));eq(rr.direction('p2w'),rk.direction('p2w'),'resume guard');guard.disconnected(302000);
+ await reject(()=>guard.accept(302001,s.epoch,s.resume.epoch,s.resume.nb,s.resume.np,b(s.resume.phoneProof),b(s.resume.webProof)),'old epoch');
+ const expired=new C.ResumeGuard(s.session,s.epoch,k.resumeRoot());expired.disconnected(0);await reject(()=>expired.accept(300001,s.epoch,s.resume.epoch,s.resume.nb,s.resume.np,b(s.resume.phoneProof),b(s.resume.webProof)),'expired window');
+ const newPhone=new C.Channel(rk,s.session,s.resume.epoch,'p2w'),newWeb=new C.Channel(rk,s.session,s.resume.epoch,'w2p'),nf=await newPhone.seal(u(s.plain));ok(nf.seq==='1'&&nf.ct!==f.ct,'reset seq with new key');eq(await newWeb.open(nf),u(s.plain),'resumed ciphertext');await reject(()=>newWeb.open(f),'old frame');
+ const approval=new P.Approval();ok(!approval.canRead(),'no approval');await reject(()=>approval.phoneApproved(),'proof first');approval.peerConfirmed();ok(!approval.canRead(),'proof not approval');approval.phoneApproved();ok(approval.canRead(),'approved');approval.close();ok(!approval.canRead(),'revoked');
+ const thief=await C.initial(await C.ecdh(a.privateKey,s.browserSpki),b(s.secret),t);await reject(()=>C.decrypt(thief.direction('p2w'),'1',u(s.aad),b(s.ct)),'QR photo cannot decrypt genuine phone');
+ const browserPair={privateKey:await priv(s.testBrowserPkcs8),publicKey:await C.publicKey(s.browserSpki)},phonePair={privateKey:await priv(s.testPhonePkcs8),publicKey:await C.publicKey(s.phoneSpki)};
+ const pairing=new C.Pairing(s.room,s.expiresAt,b(s.secret),s.browserSpki,s.nb);
+ eq((await pairing.phoneKeys(phonePair,s.np,1)).direction('p2w'),k.direction('p2w'),'optical B phone');
+ eq((await pairing.browserKeys(browserPair,s.phoneSpki,s.np,1)).confirmation(),k.confirmation(),'optical B browser');
+ await reject(()=>pairing.browserKeys(a,s.phoneSpki,s.np,1),'cannot replace optical B');await reject(()=>pairing.phoneKeys(phonePair,s.np,s.expiresAt),'QR expiry');
+ const fakePhone=await pairing.phoneKeys(a,s.np,1),fakeBrowser=await pairing.browserKeys(browserPair,await spki(a.publicKey),s.np,1);
+ eq(fakePhone.confirmation(),fakeBrowser.confirmation(),'QR thief CAN establish fake-phone channel');ok(C.base64(fakePhone.direction('p2w'))!==C.base64(k.direction('p2w')),'fake is not genuine channel');
+ const iproof=await C.proof(k.confirmation(),'phone-hello',await C.sha256(t));await C.verify(k.confirmation(),'phone-hello',await C.sha256(t),iproof);ok(true,'initial proof');
+ await reject(async()=>C.verify(k.confirmation(),'web-finished',await C.sha256(t),iproof),'proof reflection');
+ await reject(()=>P.resumeTranscript(s.session,s.epoch,s.epoch,s.resume.nb,s.resume.np),'new epoch required');
+ const otherT=P.resumeTranscript(s.session,s.epoch,s.resume.epoch,s.resume.np,s.resume.nb);ok(C.base64((await C.resume(k.resumeRoot(),otherT)).direction('p2w'))!==C.base64(rk.direction('p2w')),'nonce ordering changes key');
+ await reject(()=>C.expand(new Uint8Array(32),new Uint8Array(),8161),'HKDF max length');await reject(()=>phone.seal(new Uint8Array(32769)),'plain size');
+ pairing.close();await reject(()=>pairing.phoneKeys(phonePair,s.np,1),'closed pairing');rk.close();await reject(()=>rk.direction('p2w'),'closed keys');
+ phone.close();await reject(()=>phone.seal(new Uint8Array()),'closed channel');
+ const javaFrame=P.parseFrame(readFileSync(process.argv[2],'utf8'));eq(await new C.Channel(k,s.session,s.epoch,'w2p').open(javaFrame),u(s.plain),'Java to JS');
+ writeFileSync(process.argv[3],JSON.stringify(await new C.Channel(k,s.session,s.epoch,'w2p').seal(u(s.plain))));
+ console.log(`PASS ${n}/${n} JS web crypto/protocol (Java frame dahil)`);
+} finally {rmSync(temp,{recursive:true,force:true});}

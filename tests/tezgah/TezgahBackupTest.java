@@ -80,7 +80,7 @@ public class TezgahBackupTest {
     bad("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE tezgah_z\n#TABLE tezgah_purchases\n#COLS id\nI1\n"); // sütunsuz tablo
     bad("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE tezgah_z\nI1\n"); // sütun satırından önce kayıt
     bad("ZEYTIN-DEFTERI-YEDEK 1\n#TABLE tezgah_z\n"); // son tablo yarım
-    ok(text.contains("\n@tables 8\n")&&text.contains("\n@rows "),"kayıt sayısı işareti yazılır");
+    ok(text.contains("\n@tables 9\n")&&text.contains("\n@rows "),"kayıt sayısı işareti yazılır");
     ok(text.indexOf("@rows ")<text.indexOf("#TABLE "),"işaret tablolardan önce (eski sürüm yok sayar)");
     String[] ls=text.split("\n",-1);
     StringBuilder cut=new StringBuilder(); boolean dropped=false;
@@ -103,6 +103,14 @@ public class TezgahBackupTest {
     ok(TezgahBackup.restore(db,"u3",op2)==2,"yalnız alımlar yazıldı");
     ok(TezgahCrates.balanceOf(db,"u3","aracı")==40,"yedekte olmayan kasa defteri olduğu gibi kaldı");
     ok(TezgahPayments.history(db,"u3",find(TezgahPurchases.all(db,"u3",100),p1)).size()==3,"yedekte olmayan ödemeler kaldı");
+    db.execSQL("INSERT INTO tezgah_producers(owner_uid,name,name_key,phone,created_at) VALUES('u3','Yeni Üretici','yeni uretici','555',800)");
+    String producerBackup = TezgahBackup.export(db, "u3", null, 900);
+    TezgahBackup.Data producers = TezgahBackup.parse(producerBackup);
+    ok(producers.rowCount("tezgah_producers") == 1, "üretici kartı yedekte");
+    ok(!producerBackup.contains("tezgah_web_commands"), "web komut günlüğü yedekte yok");
+    db.execSQL("DELETE FROM tezgah_producers WHERE owner_uid='u3'");
+    TezgahBackup.restore(db, "u3", producers);
+    ok(TezgahBackup.parse(TezgahBackup.export(db, "u3", null, 901)).rowCount("tezgah_producers") == 1, "üretici kartı geri yüklendi");
     System.out.println("PASS: "+n+" ödeme ve yedek kontrolü");
   }
   static void bad(String s){ try{ TezgahBackup.parse(s); throw new AssertionError("bozuk kabul edildi: "+s);}catch(IllegalArgumentException e){ n++; } }

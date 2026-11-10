@@ -95,13 +95,17 @@ public final class TezgahCrates {
         v.put("note", note == null ? "" : note.trim());
         v.put("created_at", now);
         v.put("owner_uid", owner == null ? "" : owner);
-        return db.insert(TABLE, null, v);
+        long id = db.insert(TABLE, null, v);
+        if (id > 0) signal(db, owner);
+        return id;
     }
 
     public static boolean delete(SQLiteDatabase db, String owner, long id) {
         ensure(db);
-        return db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=?",
+        boolean deleted = db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=?",
                 new String[]{String.valueOf(id), owner == null ? "" : owner}) > 0;
+        if (deleted) signal(db, owner);
+        return deleted;
     }
 
     /** Alım silinince ondan işlenen kasa hareketleri de silinir. */
@@ -249,6 +253,15 @@ public final class TezgahCrates {
         else b.append("Kasa hesabımız kapalı görünüyor, teşekkürler.");
         b.append("\n").append(t.isEmpty() ? "" : t + " · ").append("Zeytin Defteri kasa defteri");
         return b.toString();
+    }
+
+    private static void signal(Object db, String owner) {
+        try {
+            Class.forName("com.zeytindefteri.app.TezgahWebChanges")
+                    .getMethod("committed", Object.class, String.class).invoke(null, db, owner);
+        } catch (Exception | LinkageError ignored) {
+            // Opsiyonel bağlantı sinyali kayıt sonucunu değiştirmez.
+        }
     }
 
     private static String nz(String s) { return s == null ? "" : s; }

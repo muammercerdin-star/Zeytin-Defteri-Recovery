@@ -88,13 +88,60 @@ public final class TezgahLedger {
         v.put("z_id", Math.max(0, zId));
         v.put("created_at", now);
         v.put("owner_uid", owner == null ? "" : owner);
-        return db.insert(TABLE, null, v);
+        long id = db.insert(TABLE, null, v);
+        if (id > 0) signal(db, owner);
+        return id;
     }
 
     public static boolean delete(SQLiteDatabase db, String owner, long id) {
         ensure(db);
-        return db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=?",
+        boolean deleted = db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=?",
                 new String[]{String.valueOf(id), owner == null ? "" : owner}) > 0;
+        if (deleted) signal(db, owner);
+        return deleted;
+    }
+
+    /** Satış ve şimdi tahsil edilen tek transaction'dır; toplam her iki arayüzde burada hesaplanır. */
+    public static long recordSale(SQLiteDatabase db, String owner, String party, double[] kg, double[] price,
+                                  double totalKg, double unitPrice, int method, double received,
+                                  String note, String date, long now) {
+        double amount = method == METHOD_GRADES ? gradeAmount(kg, price) : times(totalKg, unitPrice);
+        double weight = method == METHOD_GRADES ? sum(kg) : totalKg;
+        String detail = method == METHOD_GRADES ? gradeDetail(kg, price)
+                : TezgahModel.kg(weight) + " × " + TezgahModel.money(unitPrice)
+                + (method == METHOD_COMMISSION ? " komisyon" : "");
+        if (method < METHOD_GRADES || method > METHOD_COMMISSION || received < 0
+                || !Double.isFinite(received) || received > amount + 0.005) return -1;
+        return recordPair(db, owner, party, amount, weight, method, received, detail, note, date, 0, now);
+    }
+
+    /** Z borcu ve tahsilat/iade aynı transaction; aynı Z tekrar işlenmez. */
+    public static long recordDay(SQLiteDatabase db, String owner, String party, double owes, double kg,
+                                 double paid, String detail, String date, long zId, long now) {
+        if (zId <= 0 || paid < 0 || !Double.isFinite(paid) || paid > Math.abs(owes) + 0.005) return -1;
+        return recordPair(db, owner, party, owes, kg, METHOD_DAY, paid, detail, "", date, zId, now);
+    }
+
+    private static long recordPair(SQLiteDatabase db, String owner, String party, double amount, double kg,
+                                   int method, double paid, String detail, String note, String date,
+                                   long zId, long now) {
+        ensure(db);
+        boolean committed = false;
+        db.beginTransaction();
+        try {
+            if (zId > 0 && hasZ(db, owner, zId)) return -1;
+            long id = add(db, owner, party, SALE, amount, kg, method, detail, note, date, zId, now);
+            if (id <= 0) return -1;
+            int payKind = amount < 0 ? PAID : RECEIVED;
+            if (paid >= 0.01 && add(db, owner, party, payKind, paid, 0, 0,
+                    zId > 0 ? detail.split(" · teslim ", 2)[0] : "satışta alındı", "", date, 0, now + 1) <= 0) return -1;
+            db.setTransactionSuccessful();
+            committed = true;
+            return id;
+        } finally {
+            db.endTransaction();
+            if (committed) signal(db, owner);
+        }
     }
 
     /** Bu gün sonu (Z) cari hesaba işlendi mi (alacak satırı var mı)? */
@@ -269,6 +316,15 @@ public final class TezgahLedger {
     }
 
     static double r2(double v) { return Math.round(v * 100) / 100.0; }
+
+    private static void signal(Object db, String owner) {
+        try {
+            Class.forName("com.zeytindefteri.app.TezgahWebChanges")
+                    .getMethod("committed", Object.class, String.class).invoke(null, db, owner);
+        } catch (Exception | LinkageError ignored) {
+            // Opsiyonel bağlantı sinyali kayıt sonucunu değiştirmez.
+        }
+    }
 
     private static String nz(String s) { return s == null ? "" : s; }
 }

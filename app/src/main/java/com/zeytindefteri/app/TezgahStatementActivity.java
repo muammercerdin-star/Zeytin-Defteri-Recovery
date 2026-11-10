@@ -201,21 +201,13 @@ public final class TezgahStatementActivity extends Activity {
                     if (v > st.remaining() + 0.5) { toast("Borçtan fazla: en çok " + TezgahModel.tl(st.remaining())); return; }
                     String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
                     long now = System.currentTimeMillis();
-                    // Tek işlem: biri bile yazılamazsa hiçbiri yazılmaz (yarım dağıtılıp "tamam" denmesin).
                     int done = 0;
                     boolean ok = true;
                     android.database.sqlite.SQLiteDatabase w2 = db.getWritableDatabase();
-                    w2.beginTransaction();
                     try {
-                        for (long[] part : st.allocate(v)) {
-                            if (!TezgahPayments.pay(w2, owner, part[0], part[1] / 100.0, today, now + done)) { ok = false; break; }
-                            done++;
-                        }
-                        if (ok && done > 0) w2.setTransactionSuccessful();
+                        done = TezgahPayments.payBulk(w2, owner, st.name, v, today, now);
                     } catch (RuntimeException e) {
                         ok = false;
-                    } finally {
-                        w2.endTransaction();
                     }
                     toast(!ok || done == 0 ? "Ödeme kaydedilemedi; hiçbir şey değişmedi." : TezgahModel.tl(v) + " · " + done + " alıma dağıtıldı ✓");
                     render();

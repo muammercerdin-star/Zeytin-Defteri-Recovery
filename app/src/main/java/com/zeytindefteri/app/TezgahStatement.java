@@ -55,17 +55,7 @@ public final class TezgahStatement {
 
     /** Toplu ödemenin dağıtımı: en eski borçtan başlar. Dönüş {purchaseId, tutar} çiftleri; artan para dağıtılmaz. */
     public List<long[]> allocate(double amount) {
-        List<long[]> out = new ArrayList<>();
-        double left = amount;
-        for (TezgahPurchases.Purchase p : purchases) {
-            if (left <= 0.009) break;
-            double owe = p.remaining();
-            if (owe <= 0.5) continue;
-            double take = Math.min(owe, left);
-            out.add(new long[]{p.id, Math.round(take * 100)}); // kuruş olarak
-            left -= take;
-        }
-        return out;
+        return TezgahPurchases.allocatePayments(purchases, amount);
     }
 
     /** WhatsApp'tan gönderilecek ekstre metni. dates: her alımın gösterilecek tarihi (purchases ile aynı sırada). */

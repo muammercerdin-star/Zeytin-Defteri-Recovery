@@ -35,7 +35,7 @@ public final class TezgahBackup {
     public static final String MAGIC = "ZEYTIN-DEFTERI-YEDEK";
     public static final int VERSION = 1;
     /** Sıra önemli: geri yüklemede bağlı tablolar sonra yazılır. */
-    public static final String[] TABLES = {"tezgah_z", "tezgah_purchases", "tezgah_payments", "tezgah_closings", "sale_payments", "oil_pressings", "tezgah_crates", "tezgah_ledger"};
+    public static final String[] TABLES = {"tezgah_z", "tezgah_purchases", "tezgah_payments", "tezgah_closings", "sale_payments", "oil_pressings", "tezgah_crates", "tezgah_ledger", "tezgah_producers"};
 
     private TezgahBackup() {}
 
@@ -263,6 +263,7 @@ public final class TezgahBackup {
         ensureAll(db);
         String o = owner == null ? "" : owner;
         int written = 0;
+        boolean committed = false;
         db.beginTransaction();
         try {
             for (String t : TABLES) {
@@ -283,12 +284,12 @@ public final class TezgahBackup {
                     written++;
                 }
             }
-            db.setTransactionSuccessful();
+            db.setTransactionSuccessful(); committed = true;
             return written;
         } catch (RuntimeException e) {
             return -1;
         } finally {
-            db.endTransaction();
+            db.endTransaction(); if (committed) TezgahPurchases.webSignal(db, owner, "restored");
         }
     }
 

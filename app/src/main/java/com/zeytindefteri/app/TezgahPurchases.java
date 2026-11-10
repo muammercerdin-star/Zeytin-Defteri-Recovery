@@ -42,6 +42,9 @@ public final class TezgahPurchases {
     private TezgahPurchases() {}
 
     public static void ensure(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS tezgah_producers (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + "owner_uid TEXT NOT NULL, name TEXT NOT NULL, name_key TEXT NOT NULL, phone TEXT DEFAULT '', "
+                + "created_at INTEGER DEFAULT 0, UNIQUE(owner_uid,name_key))");
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE + " ("
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "owner_uid TEXT DEFAULT '', "
@@ -86,7 +89,7 @@ public final class TezgahPurchases {
         v.put("amount_paid", Math.max(0, Math.min(gross, paid)));
         v.put("data", model.encode());
         v.put("created_at", now);
-        return db.insert(TABLE, null, v);
+        long saved = db.insert(TABLE, null, v); if (saved > 0) webSignal(db, owner, "committed"); return saved;
     }
 
     private static final String COLS = "SELECT id, record_date, seller_name, seller_phone, total_kg, total_kasa, gross_total, "
@@ -178,14 +181,16 @@ public final class TezgahPurchases {
         }
         ContentValues v = new ContentValues();
         v.put("amount_paid", Math.max(0, Math.min(gross, paid)));
-        return db.update(TABLE, v, "id=? AND COALESCE(owner_uid,'')=?",
+        boolean changed = db.update(TABLE, v, "id=? AND COALESCE(owner_uid,'')=?",
                 new String[]{String.valueOf(id), owner == null ? "" : owner}) > 0;
+        if (changed) webSignal(db, owner, "committed"); return changed;
     }
 
     /** Yalnız açık dönemdeki alım silinir; gün sonu alınmış (Z'li) alım kilitlidir. */
     public static boolean delete(SQLiteDatabase db, String owner, long id) {
         ensure(db);
         // Tek işlem: alım, ödemeleri ve kasa hareketleri birlikte silinir ya da hiçbiri silinmez.
+        boolean committed = false;
         db.beginTransaction();
         try {
             boolean ok = db.delete(TABLE, "id=? AND COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0",
@@ -193,12 +198,65 @@ public final class TezgahPurchases {
             if (ok) {
                 TezgahPayments.deleteFor(db, owner, id);
                 TezgahCrates.deleteFor(db, owner, id);
-                db.setTransactionSuccessful();
+                db.setTransactionSuccessful(); committed = true;
             }
             return ok;
         } finally {
-            db.endTransaction();
+            db.endTransaction(); if (committed) webSignal(db, owner, "committed");
         }
+    }
+
+    /** Owner kapsamlı tek kayıt; web ve telefon düzenleme yolu aynı satırı kullanır. */
+    public static Purchase get(SQLiteDatabase db, String owner, long id) {
+        ensure(db);
+        List<Purchase> rows = query(db, COLS + " WHERE id=? AND COALESCE(owner_uid,'')=?",
+                new String[]{Long.toString(id), nz(owner)});
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    /** Ödeneni ve ödeme geçmişini korur; Z kilidi onayla da aşılamaz. */
+    public static boolean update(SQLiteDatabase db, String owner, long id, String date,
+                                 String seller, String phone, TezgahModel model) {
+        if (model == null || model.totalNet() <= 0 || !Double.isFinite(model.total())
+                || date == null || date.trim().isEmpty()) return false;
+        ensure(db);
+        boolean committed = false;
+        db.beginTransaction();
+        try {
+            Purchase before = get(db, owner, id);
+            if (before == null || before.zId > 0 || model.total() + 0.005 < before.paid) return false;
+            ContentValues v = new ContentValues();
+            v.put("record_date", date);
+            v.put("seller_name", nz(seller).trim());
+            v.put("seller_phone", nz(phone).trim());
+            v.put("total_kg", model.totalNet());
+            v.put("total_kasa", model.totalKasa());
+            v.put("gross_total", model.total());
+            v.put("data", model.encode());
+            if (db.update(TABLE, v, "id=? AND COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0",
+                    new String[]{Long.toString(id), nz(owner)}) != 1) return false;
+            db.setTransactionSuccessful();
+            committed = true;
+            return true;
+        } finally {
+            db.endTransaction();
+            if (committed) webSignal(db, owner, "committed");
+        }
+    }
+
+    /** Eskiden yeniye alımlar için ortak kuruş bazlı ödeme dağıtımı. */
+    public static List<long[]> allocatePayments(List<Purchase> rows, double amount) {
+        List<long[]> out = new ArrayList<>();
+        double left = amount;
+        for (Purchase p : rows) {
+            if (left <= 0.009) break;
+            double owe = p.remaining();
+            if (owe <= 0.5) continue;
+            double take = Math.min(owe, left);
+            out.add(new long[]{p.id, Math.round(take * 100)});
+            left -= take;
+        }
+        return out;
     }
 
     /** Gün özeti satırı: "3 alım · 1.240 kg · 98.500 ₺ · 12.000 ₺ borç". */
@@ -207,6 +265,12 @@ public final class TezgahPurchases {
         String s = d.count + " alım · " + TezgahModel.kg(d.kg) + " · " + TezgahModel.tl(d.gross);
         if (d.remaining() > 0.5) s += " · " + TezgahModel.tl(d.remaining()) + " borç";
         return s;
+    }
+
+    /** Bağımsız host derlemeleriyle uyumlu opsiyonel hook; hata yazma işlemini değiştirmez. Minify kapalı. */
+    static void webSignal(Object db, String owner, String method) {
+        try { Class.forName("com.zeytindefteri.app.TezgahWebChanges").getMethod(method, Object.class, String.class).invoke(null, db, owner); }
+        catch (Exception | LinkageError ignored) { }
     }
 
     private static String nz(String s) { return s == null ? "" : s; }

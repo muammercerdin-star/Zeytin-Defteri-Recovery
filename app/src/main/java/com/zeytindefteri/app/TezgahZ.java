@@ -60,15 +60,22 @@ public final class TezgahZ {
     public static long close(SQLiteDatabase db, String owner, TezgahClosing closing, long now) {
         ensure(db);
         String o = owner == null ? "" : owner;
-        List<TezgahPurchases.Purchase> open = TezgahPurchases.open(db, o);
-        if (open.isEmpty()) return -1;
-        TezgahClosing c = closing != null ? closing : TezgahClosing.fromPurchases(open);
-        TezgahPurchases.Day d = TezgahPurchases.sum(open);
-        long first = Long.MAX_VALUE, last = 0;
-        for (TezgahPurchases.Purchase p : open) { first = Math.min(first, p.createdAt); last = Math.max(last, p.createdAt); }
-
+        boolean committed = false;
         db.beginTransaction();
         try {
+            List<TezgahPurchases.Purchase> open = TezgahPurchases.open(db, o);
+            if (open.isEmpty()) return -1;
+            TezgahClosing c = TezgahClosing.fromPurchases(open);
+            if (closing != null) {
+                c.rate = closing.rate;
+                c.advance = closing.advance;
+                for (int g = 0; g < TezgahClosing.N; g++) {
+                    if (closing.edited[g]) c.setDelivered(g, closing.delivered[g]);
+                }
+            }
+            TezgahPurchases.Day d = TezgahPurchases.sum(open);
+            long first = Long.MAX_VALUE, last = 0;
+            for (TezgahPurchases.Purchase p : open) { first = Math.min(first, p.createdAt); last = Math.max(last, p.createdAt); }
             int number = nextNumber(db, o);
             ContentValues v = new ContentValues();
             v.put("owner_uid", o);
@@ -92,12 +99,12 @@ public final class TezgahZ {
             int moved = db.update(TezgahPurchases.TABLE, z, "COALESCE(owner_uid,'')=? AND COALESCE(z_id,0)=0", new String[]{o});
             if (moved != open.size()) return -1;
             db.delete(TezgahClosing.TABLE, "COALESCE(owner_uid,'')=? AND record_date=?", new String[]{o, OPEN_KEY});
-            db.setTransactionSuccessful();
+            db.setTransactionSuccessful(); committed = true;
             return id;
         } catch (RuntimeException e) {
             return -1;
         } finally {
-            db.endTransaction();
+            db.endTransaction(); if (committed) TezgahPurchases.webSignal(db, owner, "committed");
         }
     }
 

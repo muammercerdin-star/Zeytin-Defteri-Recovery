@@ -195,10 +195,21 @@ public final class TezgahClosing {
         v.put("rate", Math.max(0, c.rate));
         v.put("advance", Math.max(0, c.advance));
         v.put("updated_at", now);
-        if (db.update(TABLE, v, "COALESCE(owner_uid,'')=? AND record_date=?", new String[]{o, date}) > 0) return true;
-        v.put("owner_uid", o);
-        v.put("record_date", date);
-        return db.insert(TABLE, null, v) > 0;
+        boolean saved = false;
+        db.beginTransaction();
+        try {
+            saved = db.update(TABLE, v, "COALESCE(owner_uid,'')=? AND record_date=?", new String[]{o, date}) > 0;
+            if (!saved) {
+                v.put("owner_uid", o);
+                v.put("record_date", date);
+                saved = db.insert(TABLE, null, v) > 0;
+            }
+            if (saved) db.setTransactionSuccessful();
+            return saved;
+        } finally {
+            db.endTransaction();
+            if (saved) TezgahPurchases.webSignal(db, owner, "committed");
+        }
     }
 
     private static double r1(double v) { return Math.round(v * 10) / 10.0; }

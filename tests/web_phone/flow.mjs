@@ -1,0 +1,38 @@
+import {spawn} from 'node:child_process';import {createInterface} from 'node:readline';
+import {readFileSync,writeFileSync,mkdtempSync,rmSync} from 'node:fs';import {join} from 'node:path';import {tmpdir} from 'node:os';import {pathToFileURL} from 'node:url';import assert from 'node:assert/strict';
+const temp=mkdtempSync(join(tmpdir(),'zd-phone-flow-'));let child;
+try{
+ for(const name of ['crypto','protocol'])writeFileSync(join(temp,name+'.mjs'),readFileSync('web/tezgah/js/'+name+'.js','utf8').replaceAll("'./crypto.js'","'./crypto.mjs'").replaceAll("'./protocol.js'","'./protocol.mjs'"));
+ const C=await import(pathToFileURL(join(temp,'crypto.mjs'))),P=await import(pathToFileURL(join(temp,'protocol.mjs')));
+ child=spawn('java',['-cp',process.argv[2],'com.zeytindefteri.app.PhoneBridge',join(temp,'flow.sqlite'),'tests/buyers/sql_helper.py'],{stdio:['pipe','pipe','inherit']});
+ const waiting=[];createInterface({input:child.stdout}).on('line',line=>waiting.shift()?.(JSON.parse(line)));
+ const call=c=>new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('JAVA_TIMEOUT')),15000);waiting.push(r=>{clearTimeout(timeout);resolve(r);});child.stdin.write(JSON.stringify(c)+'\n');});
+ let n=0;const ok=(v,m)=>{assert.ok(v,m);n++;};
+ const b=await C.keyPair(),B=C.base64(await crypto.subtle.exportKey('spki',b.publicKey)),S=C.random(32),nb=C.base64(C.random(32));
+ const qr={kind:'ZD_WEB_PAIR',v:1,room:C.base64(C.random(16)),expiresAt:Math.floor(Date.now()/1000)+85,phoneCapability:C.base64(C.random(32)),secret:C.base64(S),browserPublicKey:B,nb};
+ for(const bad of [{...qr,expiresAt:1},{...qr,v:0},{...qr,v:1.5},{...qr,browserPublicKey:C.base64(new Uint8Array(91))},{...qr,relay:'https://evil.test'}])ok((await call({cmd:'qr',text:JSON.stringify(bad)})).error,'bad QR rejected');
+ let r=await call({cmd:'qr',text:JSON.stringify(qr)});ok(!r.error&&r.frames[0].type==='auth','phone auth');
+ r=await call({cmd:'receive',frame:JSON.stringify({v:1,type:'auth_ok',stage:'pending'})});const hello=r.frames[0];ok(hello.type==='phone_hello','phone hello');
+ const t=await P.transcript(qr.room,qr.expiresAt,nb,hello.np,B,hello.phonePublicKey),k=await C.initial(await C.ecdh(b.privateKey,hello.phonePublicKey),S,t),h=await C.sha256(t);
+ await C.verify(k.confirmation(),'phone-hello',h,C.unbase64(hello.proof));ok(true,'Java proof verified by JS');
+ const session=C.base64(h.slice(0,16)),epoch=C.base64(h.slice(16)),channel=new C.Channel(k,session,epoch,'w2p');
+ const request=await channel.seal(P.utf8(JSON.stringify({v:1,type:'istek',id:'before',op:'bugunun_alimlari',args:{}})));
+ r=await call({cmd:'receive',frame:JSON.stringify(request)});ok(r.error==='ONAY_GEREKLI'&&r.frames.length===0,'no response before approval');
+ r=await call({cmd:'receive',frame:JSON.stringify({v:1,type:'web_finished',room:qr.room,proof:C.base64(new Uint8Array(32))})});ok(r.error==='KANIT_RED','wrong handshake key');
+ const finish={v:1,type:'web_finished',room:qr.room,proof:C.base64(await C.proof(k.confirmation(),'web-finished',h))};r=await call({cmd:'receive',frame:JSON.stringify(finish)});ok(!r.error&&r.frames.length===0,'peer proof alone no consume');
+ r=await call({cmd:'approve'});ok(r.frames[0].type==='consume','local approval enables consume');
+ r=await call({cmd:'receive',frame:JSON.stringify({v:1,type:'consumed',session,capability:C.base64(C.random(32))})});
+ const approved=JSON.parse(new TextDecoder().decode(await channel.open(r.frames[0])));ok(approved.type==='onaylandi'&&approved.permissions[0]==='tezgah.read','onaylandi encrypted');
+ const ask=async(id,op='bugunun_alimlari')=>call({cmd:'receive',frame:JSON.stringify(await channel.seal(P.utf8(JSON.stringify({v:1,type:'istek',id,op,args:{kapsam:'acik_donem'}}))))});
+ r=await ask('after');let answer=JSON.parse(new TextDecoder().decode(await channel.open(r.frames[0])));ok(answer.ok&&answer.data.items[0].uretici==='Java Uretici'&&answer.data.totals.kalanTL==='75.00','real SQLite Java to JS response');
+ r=await ask('write','kaydet');answer=JSON.parse(new TextDecoder().decode(await channel.open(r.frames[0])));ok(answer.type==='hata'&&answer.code==='SALT_OKUNUR','write not allowed');
+ r=await call({cmd:'change'});answer=JSON.parse(new TextDecoder().decode(await channel.open(r.frames[0])));ok(answer.event==='veri_degisti'&&answer.revision==='2','invalidation');
+ await call({cmd:'lost'});const next=C.base64(C.random(16)),rnb=C.base64(C.random(32));
+ r=await call({cmd:'receive',frame:JSON.stringify({v:1,type:'resume_offer',session,oldEpoch:epoch,epoch:next,nb:rnb})});const ra=r.frames[0],rt=P.resumeTranscript(session,epoch,next,rnb,ra.np),rh=await C.sha256(rt);
+ await C.verify(k.resumeRoot(),'resume-phone',rh,C.unbase64(ra.proof));ok(true,'resume phone proof');
+ r=await call({cmd:'receive',frame:JSON.stringify({v:1,type:'resume_finished',proof:C.base64(await C.proof(k.resumeRoot(),'resume-browser',rh))})});
+ const rk=await C.resume(k.resumeRoot(),rt),resumed=new C.Channel(rk,session,next,'w2p');ok(r.frames[0].type==='resume_complete','resume complete relay control');ok(JSON.parse(new TextDecoder().decode(await resumed.open(r.frames[1]))).type==='onaylandi','new epoch onaylandi');
+ r=await call({cmd:'receive',frame:JSON.stringify(request)});ok(r.error==='ESKI_EPOCH_VEYA_YON','old epoch rejected');
+ child.stdin.write(JSON.stringify({cmd:'close'})+'\n');child.stdin.end();await new Promise(resolve=>child.on('exit',resolve));
+ console.log(`PASS ${n}/${n} Java phone ↔ JS browser flow (host simulation)`);
+}finally{child?.kill();rmSync(temp,{recursive:true,force:true});}
