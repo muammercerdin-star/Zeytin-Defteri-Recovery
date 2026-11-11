@@ -6611,6 +6611,27 @@ public class ProducerFeedActivity extends Activity {
         tanecik.setActive(screenResumed && onPage && !seasonReportOpen);
     }
 
+    /** Açık bölümde aşağı kaydırılabilen en büyük alan (Tanecik'in elle kaydırması için). */
+    private View tourScroller() {
+        if (contentHost == null) return null;
+        View best = null;
+        java.util.ArrayDeque<View> queue = new java.util.ArrayDeque<>();
+        queue.add(contentHost);
+        int seen = 0;
+        while (!queue.isEmpty() && seen < 400) {
+            View v = queue.poll();
+            seen++;
+            if (!v.isShown()) continue;
+            if (v != contentHost && v.canScrollVertically(1)
+                    && (best == null || v.getHeight() > best.getHeight())) best = v;
+            if (v instanceof android.view.ViewGroup) {
+                android.view.ViewGroup g = (android.view.ViewGroup) v;
+                for (int i = 0; i < g.getChildCount(); i++) queue.add(g.getChildAt(i));
+            }
+        }
+        return best;
+    }
+
     /** "Tanecik ile tanıtım turu": takvim → hava → Bahçelerim → Elek → mikrofon → elek raporu → Zeytin Ligi → Sohbet → Tezgâh → kapanış. */
     void startTanecikTour() {
         if (tanecik == null) return;
@@ -6632,6 +6653,9 @@ public class ProducerFeedActivity extends Activity {
                 try { garden = loadHomeGardenSnapshot().id; } catch (RuntimeException ignored) { }
                 startActivity(new Intent(ProducerFeedActivity.this, ElekActivity.class)
                         .putExtra("garden_id", garden).putExtra(TanecikGuide.EXTRA, true));
+            }
+            @Override public View scroller() {
+                return tourScroller();
             }
             @Override public void openTezgahGuide() {
                 // Tur kipi: son ekran/rol değişmez, yedek sorulmaz, bilgisayar servisi başlamaz; gösterim bitince kapanır.

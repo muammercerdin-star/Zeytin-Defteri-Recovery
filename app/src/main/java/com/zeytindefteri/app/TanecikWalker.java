@@ -112,6 +112,8 @@ final class TanecikWalker {
         void openReport();
         void openElekGuide();
         void openTezgahGuide();
+        /** Açık bölümün kaydırılabilen ana alanı (liste/sayfa); yoksa null. */
+        View scroller();
         void tourEnded();
     }
 
@@ -241,6 +243,9 @@ final class TanecikWalker {
         if (attached) {
             layer.removeView(actor);
             layer.removeView(bubble);
+            stopSwipe();
+            if (touchDot != null) layer.removeView(touchDot);
+            touchDot = null;
             if (dismissTarget != null) layer.removeView(dismissTarget);
             dismissTarget = null;
             attached = false;
@@ -1121,10 +1126,117 @@ final class TanecikWalker {
         talking = true;
         if (!pointing) mouth(-1);
         final int at = tourAt;
+        final long swipeEnd = step.swipe ? startSwipe() : 0;
         voice().say(step.text, () -> {
             talking = false;
-            if (tour != null && tourAt == at) handler.postDelayed(this::tourAfterSpeech, TanecikTour.GAP_MS);
+            long wait = Math.max(TanecikTour.GAP_MS, swipeEnd - SystemClock.uptimeMillis() + TanecikTour.GAP_MS);
+            if (tour != null && tourAt == at) handler.postDelayed(this::tourAfterSpeech, wait);
         });
+    }
+
+    // ------------------------------------------------------------ elle kaydırma (tur)
+
+    private ValueAnimator swipeAnim;
+    private View touchDot;
+
+    /**
+     * Tanecik eliyle sayfayı yukarı iter: sayfa aşağı kayar, bir an durur, geri gelir. Parmak izi gibi bir nokta
+     * hareketi gösterir. Dönüş: hareketin biteceği an (uptimeMillis); yapılamazsa 0 (beklenmez).
+     */
+    private long startSwipe() {
+        if (!motionAllowed() || tourHost == null) return 0;
+        final View sc;
+        try { sc = tourHost.scroller(); } catch (RuntimeException e) { return 0; }
+        if (sc == null || !sc.canScrollVertically(1)) return 0;
+        final int want = Math.round(sc.getHeight() * TanecikTour.SWIPE_PAGE);
+        if (want < dp(80)) return 0;
+        if (swipeAnim != null) swipeAnim.cancel();
+        final View dot = touchDot();
+        final float handX = actor.getTranslationX() + (actor.getScaleX() < 0 ? w * 0.15f : w * 0.85f) - dot.getLayoutParams().width / 2f;
+        final float handY = actor.getTranslationY() + h * 0.25f;
+        final float rise = Math.min(dp(170), Math.max(dp(90), handY - dp(60)));
+        dot.setTranslationX(handX);
+        dot.setTranslationY(handY);
+        dot.setAlpha(0f);
+        dot.setVisibility(View.VISIBLE);
+        body.setImageResource(R.drawable.tanecik_gosteriyor);
+        final long down = TanecikTour.SWIPE_DOWN_MS, hold = TanecikTour.SWIPE_HOLD_MS, up = TanecikTour.SWIPE_UP_MS;
+        final long total = down + hold + up;
+        final int[] applied = {0};
+        final boolean[] returning = {false};
+        final float baseY = actor.getTranslationY();
+        swipeAnim = ValueAnimator.ofFloat(0f, 1f);
+        swipeAnim.setDuration(total);
+        swipeAnim.setInterpolator(new LinearInterpolator());
+        swipeAnim.addUpdateListener(a -> {
+            long t = a.getCurrentPlayTime();
+            float goal;
+            if (t <= down) {
+                float u = ease(t / (float) down);
+                goal = want * u;
+                dot.setAlpha(Math.min(1f, u * 4f));
+                dot.setTranslationY(handY - rise * u);
+                actor.setTranslationY(baseY - dp(10) * (float) Math.sin(Math.PI * u));
+            } else if (t <= down + hold) {
+                goal = want;
+                dot.setAlpha(Math.max(0f, 1f - (t - down) / (float) hold * 1.5f));
+                if (t - down > hold * 0.6f) dot.setTranslationY(handY - rise);
+            } else {
+                float u = ease((t - down - hold) / (float) up);
+                goal = want * (1f - u);
+                // Geri getirirken parmak yukarıdan aşağı iner.
+                dot.setAlpha(Math.min(1f, u * 4f) * (1f - u));
+                dot.setTranslationY(handY - rise + rise * u);
+                if (!returning[0]) {
+                    returning[0] = true;
+                    body.setImageResource(R.drawable.tanecik_gosteriyor_asagi);
+                }
+            }
+            int delta = Math.round(goal) - applied[0];
+            if (delta > 0 && !sc.canScrollVertically(1)) delta = 0;
+            if (delta < 0 && !sc.canScrollVertically(-1)) delta = 0;
+            if (delta != 0) {
+                sc.scrollBy(0, delta);
+                applied[0] += delta;
+            }
+        });
+        swipeAnim.addListener(new AnimatorListenerAdapter() {
+            @Override public void onAnimationEnd(Animator a) {
+                dot.setVisibility(View.GONE);
+                actor.setTranslationY(baseY);
+                if (tour != null) body.setImageResource(R.drawable.tanecik_merhaba);
+            }
+        });
+        swipeAnim.start();
+        return SystemClock.uptimeMillis() + total;
+    }
+
+    private static float ease(float u) {
+        float x = Math.max(0f, Math.min(1f, u));
+        return x < 0.5f ? 2f * x * x : 1f - (float) Math.pow(-2f * x + 2f, 2) / 2f;
+    }
+
+    /** Parmak izi: yarı saydam beyaz daire. */
+    private View touchDot() {
+        if (touchDot != null) return touchDot;
+        int size = dp(30);
+        View v = new View(activity);
+        GradientDrawable g = new GradientDrawable();
+        g.setShape(GradientDrawable.OVAL);
+        g.setColor(0x66FFFFFF);
+        g.setStroke(dp(2), 0xCCFFFFFF);
+        v.setBackground(g);
+        v.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        v.setVisibility(View.GONE);
+        layer.addView(v, new FrameLayout.LayoutParams(size, size));
+        touchDot = v;
+        return v;
+    }
+
+    private void stopSwipe() {
+        if (swipeAnim != null) swipeAnim.cancel();
+        swipeAnim = null;
+        if (touchDot != null) touchDot.setVisibility(View.GONE);
     }
 
     /** Söz bitti: rapor / Elek gösterimi adımıysa o ekranı açar, değilse sıradaki adım. */
@@ -1157,6 +1269,7 @@ final class TanecikWalker {
 
     void endTour() {
         if (tour == null) return;
+        stopSwipe();
         tour = null;
         tourAt = -1;
         TanecikTour.cancelRequested = false;

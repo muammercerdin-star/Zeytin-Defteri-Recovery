@@ -35,6 +35,9 @@ if 'if (!tour) RoleActivity.setLastView(this, UserRole.VIEW_TEZGAH);' not in th:
 if 'if (tour) return;   // gösterim' not in th: fails.append('turda bilgisayar servisi/izin başlıyor')
 if 'openTezgahGuide()' not in pf or 'TourHost' not in wk or 'tourHost.openTezgahGuide()' not in wk: fails.append('tur Tezgâh\'ı açmıyor')
 if 'findViewWithTag(name)' not in gd: fails.append('gösterim etiketle hedef bulamıyor')
+if 'startSwipe()' not in wk or 'tourHost.scroller()' not in wk or 'stopSwipe();' not in wk: fails.append('elle kaydırma bağlı değil')
+if 'private View tourScroller()' not in pf: fails.append('bölümün kaydırma alanı bulunmuyor')
+if 'if (!motionAllowed() || tourHost == null) return 0;' not in wk: fails.append('animasyon kapalıyken kaydırma yapılmamalı')
 if fails:
     print('\n'.join(fails)); sys.exit(1)
 print('PASS: Tanecik turu bağlantıları')

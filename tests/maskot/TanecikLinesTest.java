@@ -183,6 +183,13 @@ public class TanecikLinesTest {
         for (TanecikTour.GuideStep g : TanecikTour.elekGuide()) ok(!g.view.isEmpty() && g.text.length() <= 70, "gösterim adımı: " + g.text);
         ok(TanecikTour.elekGuide().get(1).view.equals("etKg2") && TanecikTour.elekGuide().get(1).type.equals("150"), "kilo yazılır");
         ok(TanecikTour.elekGuide().get(TanecikTour.elekGuide().size() - 1).view.equals("btnSaveElek"), "sonda Kaydet gösterilir (basılmaz)");
+        int swipes = 0;
+        for (TanecikTour.Step st : steps) if (st.swipe) {
+            swipes++;
+            ok(!st.section.equals("HOME") && TanecikTour.speechMs(st.text, TanecikTour.TOUR_RATE) + 600 >= TanecikTour.swipeMs(),
+                    "elle kaydırma konuşmayla aynı anda biter: " + st.text);
+        }
+        ok(swipes >= 3, "Bahçelerim, Elek ve Lig'de sayfayı elle kaydırır");
         long est = TanecikTour.estimateMs();
         System.out.println("Tahmini tur süresi: " + est / 1000 + " sn");
         ok(est >= 60_000 && est <= 90_000, "tur 1–1,5 dakika sürer: " + est / 1000 + " sn");
