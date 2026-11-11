@@ -89,6 +89,9 @@ final class TanecikWalker {
     private final int w, h, slop, longPressMs;
 
     private boolean active, attached, sleeping, walkFrame, dragging, longPressed, idling;
+    /** Sürüklerken altta beliren "X": üstüne bırakılırsa Tanecik kapanır. */
+    private TextView dismissTarget;
+    private boolean overDismiss;
     /** Gece uyandırıldıysa bu ana kadar uyanık (uptime). Uygulama açık kaldıkça geçerli. */
     private static long awakeUntil;
     private float downX, downY, grabDx, grabDy;
@@ -237,6 +240,8 @@ final class TanecikWalker {
         if (attached) {
             layer.removeView(actor);
             layer.removeView(bubble);
+            if (dismissTarget != null) layer.removeView(dismissTarget);
+            dismissTarget = null;
             attached = false;
         }
     }
@@ -295,6 +300,7 @@ final class TanecikWalker {
         stopTalk();
         dragging = false;
         idling = false;
+        hideDismissTarget();
     }
 
     // ------------------------------------------------------------ davranış
@@ -1193,21 +1199,26 @@ final class TanecikWalker {
                     cancelMotion();
                     hideBubble();
                     body.setImageResource(R.drawable.tanecik_konusuyor);   // "aaa!" havada
+                    showDismissTarget();
                 }
                 if (dragging) {
                     actor.setTranslationX(Math.max(-w / 3f, Math.min(maxX() + w / 3f, e.getRawX() - grabDx)));
                     actor.setTranslationY(Math.max(0, Math.min(floorY(), e.getRawY() - grabDy)));
+                    trackDismissTarget();
                 }
                 return true;
             case MotionEvent.ACTION_UP:
                 handler.removeCallbacks(longPressCheck);
                 if (longPressed) return true;
-                if (dragging) drop();
+                if (dragging && overDismiss) closeByDrop();
+                else if (dragging) drop();
                 else if (!jumping && SystemClock.uptimeMillis() - downAt < longPressMs) speak();
+                hideDismissTarget();
                 return true;
             case MotionEvent.ACTION_CANCEL:
                 handler.removeCallbacks(longPressCheck);
                 if (dragging) drop();
+                hideDismissTarget();
                 return true;
             default:
                 return false;
@@ -1259,6 +1270,79 @@ final class TanecikWalker {
         long duration = (long) Math.min(900, 250 + fall / getDensity() * 1.6);
         actor.animate().translationX(x).translationY(targetY).setDuration(duration)
                 .setInterpolator(new BounceInterpolator()).withEndAction(landed).start();
+    }
+
+    // ------------------------------------------------------------ sürükle-bırak ile kapatma
+
+    private void showDismissTarget() {
+        if (dismissTarget == null) {
+            float d = getDensity();
+            int size = Math.round(TanecikDismiss.SIZE_DP * d);
+            dismissTarget = new TextView(activity);
+            dismissTarget.setText("✕");
+            dismissTarget.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
+            dismissTarget.setTextColor(0xFFFFFFFF);
+            dismissTarget.setGravity(Gravity.CENTER);
+            dismissTarget.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            GradientDrawable bg = new GradientDrawable();
+            bg.setShape(GradientDrawable.OVAL);
+            bg.setColor(0xCC10181F);
+            bg.setStroke(Math.round(2 * d), 0xE6FFFFFF);
+            dismissTarget.setBackground(bg);
+            dismissTarget.setElevation(4 * d);
+            int at = Math.max(0, layer.indexOfChild(actor));
+            layer.addView(dismissTarget, at, new FrameLayout.LayoutParams(size, size));
+        }
+        int size = dismissTarget.getLayoutParams().width;
+        dismissTarget.setTranslationX(TanecikDismiss.centerX(layer.getWidth()) - size / 2f);
+        dismissTarget.setTranslationY(TanecikDismiss.centerY(floorRef.getTop(), getDensity()) - size / 2f);
+        overDismiss = false;
+        setDismissLook(false);
+        dismissTarget.setVisibility(View.VISIBLE);
+        dismissTarget.setAlpha(0f);
+        dismissTarget.setScaleX(0.6f);
+        dismissTarget.setScaleY(0.6f);
+        long ms = motionAllowed() ? 160 : 0;
+        dismissTarget.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(ms).start();
+    }
+
+    private void trackDismissTarget() {
+        if (dismissTarget == null || dismissTarget.getVisibility() != View.VISIBLE) return;
+        int size = dismissTarget.getLayoutParams().width;
+        float cx = dismissTarget.getTranslationX() + size / 2f;
+        float cy = dismissTarget.getTranslationY() + size / 2f;
+        float ax = actor.getTranslationX() + w / 2f;
+        float ay = actor.getTranslationY() + h / 2f;
+        boolean over = TanecikDismiss.over(ax, ay, cx, cy, getDensity());
+        if (over == overDismiss) return;
+        overDismiss = over;
+        setDismissLook(over);
+        if (over) actor.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+    }
+
+    private void setDismissLook(boolean over) {
+        if (dismissTarget == null) return;
+        GradientDrawable bg = (GradientDrawable) dismissTarget.getBackground();
+        bg.setColor(over ? 0xF2E5484D : 0xCC10181F);
+        float scale = over ? 1.25f : 1f;
+        long ms = motionAllowed() ? 120 : 0;
+        dismissTarget.animate().scaleX(scale).scaleY(scale).setDuration(ms).start();
+    }
+
+    private void hideDismissTarget() {
+        overDismiss = false;
+        if (dismissTarget == null || dismissTarget.getVisibility() != View.VISIBLE) return;
+        dismissTarget.animate().cancel();
+        dismissTarget.setVisibility(View.GONE);
+    }
+
+    /** X'in üstüne bırakıldı: Tanecik kapanır (Ayarlar'daki anahtar da kapanır; oradan geri açılır). */
+    private void closeByDrop() {
+        dragging = false;
+        overDismiss = false;
+        setEnabled(activity, false);
+        setActive(false);
+        Toast.makeText(activity, TanecikDismiss.CLOSED_TOAST, Toast.LENGTH_LONG).show();
     }
 
     private void askHide() {
