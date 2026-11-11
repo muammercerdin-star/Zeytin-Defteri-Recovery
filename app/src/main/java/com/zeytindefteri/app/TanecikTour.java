@@ -18,6 +18,11 @@ public final class TanecikTour {
     public static final String NAV = "nav:";
     /** Adım bitince: elek raporu açılır / Elek kayıt ekranında gösterim yapılır. İkisi de bitince tura döner. */
     public static final String DO_REPORT = "REPORT", DO_ELEK = "ELEK_GUIDE";
+    /** Adım bitince Tezgâh ana ekranı tur kipinde açılır (rol/son ekran değişmez, servis başlamaz), gösterim, dönüş. */
+    public static final String DO_TEZGAH = "TEZGAH_GUIDE";
+    /** Tezgâh ana ekranındaki hedefler (TezgahHomeActivity bu etiketleri koyar). */
+    public static final String TZ_START = "tur:tz_baslat", TZ_TODAY = "tur:tz_bugun", TZ_BOOK = "tur:tz_defter",
+            TZ_WEB = "tur:tz_bilgisayar";
 
     public static final class Step {
         /** section: açılacak bölüm; tap: önce basılacak alt menü düğmesi (boş: yok); tag: gidilecek/gösterilecek yer. */
@@ -30,20 +35,18 @@ public final class TanecikTour {
 
     public static List<Step> steps() {
         return Arrays.asList(
-                new Step("HOME", "", "", "Selam! Ben Tanecik. Hadi gezelim!", ""),
-                new Step("HOME", "", TAG_TAKVIM, "Takvim: hangi dönemdesin, hemen görürsün.", ""),
-                new Step("HOME", "", TAG_HAVA, "Hava: yağmur, rüzgâr, ilaçlama için en kuru gün.", ""),
-                new Step("GARDENS", NAV + "GARDENS", "", "Bahçelerim: her bahçenin masrafı, hasadı ayrı.", ""),
-                new Step("ELEK", NAV + "ELEK", "", "Elek: satışların burada. Nasıl kaydedilir, bak!", DO_ELEK),
-                new Step("HOME", NAV + "HOME", TAG_MIKROFON, "Ya da mikrofona bas: \"150 kilo topladım\" de, ben yazarım.", ""),
-                new Step("HOME", "", "", "Elek raporu: hangi alıcı daha çok veriyor, söylerim!", DO_REPORT),
+                new Step("HOME", "", "", "Selam! Ben Tanecik. Hızlıca gezelim!", ""),
+                new Step("HOME", "", TAG_TAKVIM, "Takvim ve hava: dönemin, ilaç için en kuru gün.", ""),
+                new Step("GARDENS", NAV + "GARDENS", "", "Bahçelerim: her bahçenin hasadı, masrafı ayrı.", ""),
+                new Step("ELEK", NAV + "ELEK", "", "Elek: satışların burada. Bak, nasıl yazılır!", DO_ELEK),
+                new Step("HOME", NAV + "HOME", TAG_MIKROFON, "Ya da mikrofona bas, \"150 kilo topladım\" de.", ""),
+                new Step("HOME", "", "", "Elek raporu: en iyi alıcıyı söylerim!", DO_REPORT),
                 // Zeytin Ligi ve Sohbet açılır. Tanıtım modunda ikisi de uydurma veri gösterir (gerçek üretici adı,
                 // gerçek mesaj görünmez; Sohbet'ten mesaj gönderilmez).
-                new Step("REPORTS", NAV + "REPORTS", "", "Zeytin Ligi: bölgenin fiyatı ve üreticiler arasında sıran.", ""),
-                new Step("MEYDAN", NAV + "MEYDAN", "", "Sohbet: komşu üreticilere soru sor, fiyat konuş.", ""),
-                new Step("MEYDAN", "", NAV + "PROFILE", "Tezgâhçıysan Ayarlar'dan Tezgâh modunu seç: tartım, cari, kasa.", ""),
-                new Step("HOME", NAV + "HOME", "", "Alacak bekleyince başımda ünlem çıkar.", ""),
-                new Step("HOME", "", "", "Hepsi bu! Zeytin Defteri: üreticinin cebindeki defter.", ""));
+                new Step("REPORTS", NAV + "REPORTS", "", "Zeytin Ligi: bölgenin fiyatı ve senin sıran.", ""),
+                new Step("MEYDAN", NAV + "MEYDAN", "", "Sohbet: komşu üreticilerle fiyat konuş.", ""),
+                new Step("HOME", NAV + "HOME", "", "Tezgâhçıysan, gel tezgâhı göstereyim!", DO_TEZGAH),
+                new Step("HOME", "", NAV + "PROFILE", "Hepsi bu! Tezgâh için Ayarlar → Kullanım şekli.", ""));
     }
 
     /** Elek kayıt ekranındaki gösterim: görünüm adı (R.id), söz, alana yazılacak örnek (boş: yazma). Kaydet'e basılmaz. */
@@ -55,10 +58,21 @@ public final class TanecikTour {
 
     public static List<GuideStep> elekGuide() {
         return Arrays.asList(
-                new GuideStep("btnElekVoice", "Buraya basıp konuşarak kaydedebilirsin.", ""),
-                new GuideStep("etKg2", "Ya da elle: kiloyu sınıfının yanına yaz.", "150"),
-                new GuideStep("tvPrice2", "Fiyatı bir kez girersin, tutarı ben hesaplarım.", ""),
-                new GuideStep("btnSaveElek", "Sonra Kaydet'e basarsın. Bu kadar kolay!", ""));
+                new GuideStep("btnElekVoice", "Basıp konuşarak da kaydedersin.", ""),
+                new GuideStep("etKg2", "Ya da elle yaz; tutarı ben hesaplarım.", "150"),
+                new GuideStep("btnSaveElek", "Sonra Kaydet. Bu kadar kolay!", ""));
+    }
+
+    /**
+     * Tezgâh ana ekranındaki gösterim (etiketle bulunur; görünmeyen adım atlanır, ör. bilgisayar satırı yoksa).
+     * Hiçbir düğmeye basılmaz, kayıt oluşmaz.
+     */
+    public static List<GuideStep> tezgahGuide() {
+        return Arrays.asList(
+                new GuideStep(TZ_START, "Tartım başlat: kiloyu sınıf sınıf yaz, fişi ben basarım.", ""),
+                new GuideStep(TZ_TODAY, "Bugün: kaç kilo aldın, kime ne borç; akşam gün sonu.", ""),
+                new GuideStep(TZ_BOOK, "Alım defteri, cari, kasa: herkesin hesabı burada.", ""),
+                new GuideStep(TZ_WEB, "Bilgisayara bağlan: QR'ı okut, tezgâh büyük ekranda!", ""));
     }
 
     // ---------------------------------------------------------------- tur temposu (1–1,5 dakika)
@@ -91,6 +105,10 @@ public final class TanecikTour {
                 for (GuideStep g : elekGuide()) ms += 350 + 380 + g.type.length() * 110L + speechMs(g.text, TOUR_RATE) + 120;
             }
             if (DO_REPORT.equals(st.after)) ms += 2 * SCREEN_MS + 250 + Math.round((REPORT_CHARS * 72L + 300) / TOUR_RATE) + 600;
+            if (DO_TEZGAH.equals(st.after)) {
+                ms += 2 * SCREEN_MS + 600 + 300;
+                for (GuideStep g : tezgahGuide()) ms += 350 + 380 + speechMs(g.text, TOUR_RATE) + 120;
+            }
         }
         return ms;
     }

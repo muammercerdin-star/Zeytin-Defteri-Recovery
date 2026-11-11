@@ -151,7 +151,7 @@ public class TanecikLinesTest {
         // --- Tanıtım turu (v2: menüye basar, Elek gösterimi, altyazı)
         List<TanecikTour.Step> steps = TanecikTour.steps();
         ok(steps.size() >= 8, "tur adımları");
-        int reports = 0, guides = 0, taps = 0;
+        int reports = 0, guides = 0, taps = 0, tezgah = 0;
         java.util.Set<String> sections = new java.util.HashSet<>(), pointed = new java.util.HashSet<>();
         for (int i = 0; i < steps.size(); i++) {
             TanecikTour.Step st = steps.get(i);
@@ -166,15 +166,19 @@ public class TanecikLinesTest {
             ok(!st.text.isEmpty() && st.text.length() <= 90, "kısa ve hızlı söz (" + st.text.length() + "): " + st.text);
             if (TanecikTour.DO_REPORT.equals(st.after)) reports++;
             if (TanecikTour.DO_ELEK.equals(st.after)) { guides++; ok(st.section.equals("ELEK"), "gösterim Elek'ten açılır"); }
+            if (TanecikTour.DO_TEZGAH.equals(st.after)) { tezgah++; ok(st.section.equals("HOME"), "Tezgâh ana sayfadan açılır"); }
             if (!st.after.isEmpty()) ok(i < steps.size() - 1, "ekran açan adım son olamaz (dönüş adımı lazım)");
         }
-        ok(reports == 1 && guides == 1 && taps >= 3, "rapor, Elek gösterimi ve menüye basma var");
+        ok(reports == 1 && guides == 1 && tezgah == 1 && taps >= 3, "rapor, Elek ve Tezgâh gösterimi, menüye basma var");
+        List<TanecikTour.GuideStep> tz = TanecikTour.tezgahGuide();
+        ok(tz.size() >= 3 && tz.get(0).view.equals(TanecikTour.TZ_START), "Tezgâh gösterimi tartımla başlar");
+        for (TanecikTour.GuideStep g : tz) ok(g.view.startsWith("tur:tz_") && g.type.isEmpty() && g.text.length() <= 70, "Tezgâh adımı (yazmaz): " + g.text);
         ok(sections.contains("GARDENS") && sections.contains("ELEK"), "başka menülere geçer");
         ok(sections.contains("REPORTS") && sections.contains("MEYDAN"), "Zeytin Ligi ve Sohbet ekranı açılır");
         ok(pointed.contains(TanecikTour.NAV + "PROFILE") && !sections.contains("PROFILE"),
                 "Tezgâh modu Ayarlar düğmesi gösterilerek anlatılır (Ayarlar'da hesap bilgisi var, açılmaz)");
-        boolean tz = false; for (TanecikTour.Step st : steps) tz |= st.text.contains("Tezgâh");
-        ok(tz, "Tezgâh modundan bahseder");
+        boolean tzSaid = false; for (TanecikTour.Step st : steps) tzSaid |= st.text.contains("Tezgâh");
+        ok(tzSaid, "Tezgâh modundan bahseder");
         ok(steps.get(0).text.startsWith("Selam! Ben Tanecik.") && steps.get(steps.size() - 1).text.startsWith("Hepsi bu!"), "giriş ve kapanış");
         for (TanecikTour.GuideStep g : TanecikTour.elekGuide()) ok(!g.view.isEmpty() && g.text.length() <= 70, "gösterim adımı: " + g.text);
         ok(TanecikTour.elekGuide().get(1).view.equals("etKg2") && TanecikTour.elekGuide().get(1).type.equals("150"), "kilo yazılır");

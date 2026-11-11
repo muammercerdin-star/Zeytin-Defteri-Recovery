@@ -6633,6 +6633,11 @@ public class ProducerFeedActivity extends Activity {
                 startActivity(new Intent(ProducerFeedActivity.this, ElekActivity.class)
                         .putExtra("garden_id", garden).putExtra(TanecikGuide.EXTRA, true));
             }
+            @Override public void openTezgahGuide() {
+                // Tur kipi: son ekran/rol değişmez, yedek sorulmaz, bilgisayar servisi başlamaz; gösterim bitince kapanır.
+                startActivity(new Intent(ProducerFeedActivity.this, TezgahHomeActivity.class)
+                        .putExtra(TanecikGuide.EXTRA, true));
+            }
             @Override public void tourEnded() {
                 if (!"HOME".equals(currentSection)) ProducerFeedActivity.this.showSection("HOME");
                 updateTanecik();

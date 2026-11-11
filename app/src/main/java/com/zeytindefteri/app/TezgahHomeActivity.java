@@ -41,6 +41,9 @@ public final class TezgahHomeActivity extends Activity {
     private DatabaseHelper db;
     private String owner = "";
     private LinearLayout body;
+    /** Tanecik tanıtım turu: bu ekran yalnız gösterim için açıldı (kalıcı hiçbir şey değişmez). */
+    private boolean tour;
+    private TanecikGuide tanecikGuide;
     private final android.os.Handler webHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private boolean webWasReady, webWasRunning, webWasStuck;
     private String webWasDiagnosis = "";
@@ -76,7 +79,9 @@ public final class TezgahHomeActivity extends Activity {
         db = new DatabaseHelper(this);
         owner = db.getActiveOwnerUid();
         if (owner == null) owner = "";
-        RoleActivity.setLastView(this, UserRole.VIEW_TEZGAH);
+        boolean guide = state == null && getIntent() != null && getIntent().getBooleanExtra(TanecikGuide.EXTRA, false);
+        tour = guide || (state != null && state.getBoolean(TOUR_STATE, false));
+        if (!tour) RoleActivity.setLastView(this, UserRole.VIEW_TEZGAH);
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
 
@@ -93,6 +98,13 @@ public final class TezgahHomeActivity extends Activity {
         root.addView(nav(), new LinearLayout.LayoutParams(-1, dp(68)));
         setContentView(root);
         render();
+        if (tour && !guide) { finish(); return; }   // tur sırasında ekran döndü: gösterim yarıda, tura dön
+        if (tour) {
+            getIntent().removeExtra(TanecikGuide.EXTRA);
+            tanecikGuide = new TanecikGuide(this, TanecikTour.tezgahGuide());
+            getWindow().getDecorView().postDelayed(() -> { if (tanecikGuide != null) tanecikGuide.start(); }, 600);
+            return;
+        }
         offerCloudRestore();
     }
 
@@ -122,10 +134,18 @@ public final class TezgahHomeActivity extends Activity {
     /** Tezgâhçı üretici ekranını hiç açmayabilir: bildirim izni (gün sonu, elek hatırlatması) burada da sorulur. */
     @Override protected void onResume() {
         super.onResume();
+        if (tour) return;   // gösterim: servis başlamaz, izin sorulmaz
         TezgahWebReadyService.prepare(this);
         TezgahWebService.review(this, owner);
         if (body != null && TezgahWebClient.configured()) { render(); webHandler.removeCallbacks(webRefresh); webHandler.post(webRefresh); }
         try { PushRegistration.requestPermission(this); } catch (RuntimeException ignored) { }
+    }
+
+    private static final String TOUR_STATE = "tanecik_tour_mode";
+
+    @Override protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        out.putBoolean(TOUR_STATE, tour);
     }
 
     @Override protected void onPause() { webHandler.removeCallbacks(webRefresh); super.onPause(); }
@@ -136,6 +156,7 @@ public final class TezgahHomeActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        if (tanecikGuide != null) { tanecikGuide.release(); tanecikGuide = null; }
         if (tts != null) { try { tts.shutdown(); } catch (RuntimeException ignored) { } }
         if (db != null) db.close();
         super.onDestroy();
@@ -182,7 +203,9 @@ public final class TezgahHomeActivity extends Activity {
             TezgahWebLink.Row r = TezgahWebLink.row(TezgahWebReadyService.connectedCount(owner), ready, running,
                     TezgahWebLink.stuck(running, ready, TezgahWebService.sinceMs(owner)),
                     TezgahWebService.diagnosis(owner), TezgahWebDevices.list(this, owner).length());
-            body.addView(row(r.title, r.sub, "›", r.warn, v -> webConnect()), margins(-1, -2, 12));
+            View web = row(r.title, r.sub, "›", r.warn, v -> webConnect());
+            web.setTag(TanecikTour.TZ_WEB);
+            body.addView(web, margins(-1, -2, 12));
         }
         String cloud = TezgahCloudBackup.statusLine(this);
         if (!cloud.isEmpty()) {
@@ -211,6 +234,7 @@ public final class TezgahHomeActivity extends Activity {
         // Doğrudan tartım sihirbazı açılır (Double → … → Yağlık → satan → ödeme).
         start.setOnClickListener(v -> startActivity(new Intent(this, TezgahActivity.class)
                 .putExtra(TezgahActivity.EXTRA_WIZARD, true)));
+        start.setTag(TanecikTour.TZ_START);
         body.addView(start, margins(-1, dp(64), 14));
 
         // Bugün (açık dönem)
@@ -237,15 +261,18 @@ public final class TezgahHomeActivity extends Activity {
         z.setContentDescription("Alım defteri, akşam hesabı ve gün sonu");
         z.setOnClickListener(v -> startActivity(new Intent(this, TezgahDayActivity.class)));
         card.addView(z, margins(-1, dp(48), 12));
+        card.setTag(TanecikTour.TZ_TODAY);
         body.addView(card, margins(-1, -2, 12));
 
         // Alım defteri · cari · kasa
         double debt = TezgahSearch.totalRemaining(all);
         int debtors = 0;
         for (TezgahSearch.Group g : TezgahSearch.byProducer(TezgahSearch.filter(all, "", true), true)) debtors++;
-        body.addView(row("Alım defteri", debtors > 0 ? debtors + " borçlu · ara, ekstre, toplu ödeme" : "Ara, ekstre, toplu ödeme",
+        View book = row("Alım defteri", debtors > 0 ? debtors + " borçlu · ara, ekstre, toplu ödeme" : "Ara, ekstre, toplu ödeme",
                 debt > 0.5 ? TezgahModel.tl(debt) : "›", debt > 0.5,
-                v -> startActivity(new Intent(this, TezgahDayActivity.class))), margins(-1, -2, 10));
+                v -> startActivity(new Intent(this, TezgahDayActivity.class)));
+        book.setTag(TanecikTour.TZ_BOOK);
+        body.addView(book, margins(-1, -2, 10));
         body.addView(row("Cari hesap · tüccar", "Tahsilat, satış, hesap dökümü",
                 ledger[0] > 0.5 ? TezgahModel.tl(ledger[0]) : ledger[1] > 0.5 ? "borç " + TezgahModel.tl(ledger[1]) : "›",
                 ledger[0] > 0.5 || ledger[1] > 0.5, v -> TezgahLedgerActivity.open(this, null)), margins(-1, -2, 8));

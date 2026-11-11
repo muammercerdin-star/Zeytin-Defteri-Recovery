@@ -111,6 +111,7 @@ final class TanecikWalker {
         View find(String tag);
         void openReport();
         void openElekGuide();
+        void openTezgahGuide();
         void tourEnded();
     }
 
@@ -1130,9 +1131,11 @@ final class TanecikWalker {
     private void tourAfterSpeech() {
         if (tour == null || !active) return;
         TanecikTour.Step step = tour.get(Math.min(tourAt, tour.size() - 1));
-        if (tourHost != null && (TanecikTour.DO_REPORT.equals(step.after) || TanecikTour.DO_ELEK.equals(step.after))) {
+        if (tourHost != null && (TanecikTour.DO_REPORT.equals(step.after) || TanecikTour.DO_ELEK.equals(step.after)
+                || TanecikTour.DO_TEZGAH.equals(step.after))) {
             tourAt++;
             if (TanecikTour.DO_REPORT.equals(step.after)) tourHost.openReport();
+            else if (TanecikTour.DO_TEZGAH.equals(step.after)) tourHost.openTezgahGuide();
             else tourHost.openElekGuide();   // dönünce startAfterLayout turu sürdürür
             return;
         }

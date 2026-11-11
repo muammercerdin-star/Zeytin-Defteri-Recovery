@@ -27,6 +27,14 @@ if 'new TanecikGuide(this, TanecikTour.elekGuide())' not in el or 'tanecikGuide.
 gd = (A / 'TanecikGuide.java').read_text(encoding='utf-8')
 if 'performClick' in gd or 'btnSaveElek' in gd: fails.append('gösterim Kaydet\'e basıyor olabilir')
 if 'e.setText("")' not in gd: fails.append('gösterimde yazılan silinmiyor')
+th = (A / 'TezgahHomeActivity.java').read_text(encoding='utf-8')
+for tag in ['TZ_START', 'TZ_TODAY', 'TZ_BOOK', 'TZ_WEB']:
+    if f'setTag(TanecikTour.{tag})' not in th: fails.append('Tezgâh hedef etiketi konmamış: ' + tag)
+if 'new TanecikGuide(this, TanecikTour.tezgahGuide())' not in th or 'tanecikGuide.release()' not in th: fails.append('Tezgâh gösterimi bağlı değil')
+if 'if (!tour) RoleActivity.setLastView(this, UserRole.VIEW_TEZGAH);' not in th: fails.append('tur Tezgâh\'ı son ekran yapıyor')
+if 'if (tour) return;   // gösterim' not in th: fails.append('turda bilgisayar servisi/izin başlıyor')
+if 'openTezgahGuide()' not in pf or 'TourHost' not in wk or 'tourHost.openTezgahGuide()' not in wk: fails.append('tur Tezgâh\'ı açmıyor')
+if 'findViewWithTag(name)' not in gd: fails.append('gösterim etiketle hedef bulamıyor')
 if fails:
     print('\n'.join(fails)); sys.exit(1)
 print('PASS: Tanecik turu bağlantıları')

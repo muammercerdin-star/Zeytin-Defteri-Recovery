@@ -96,8 +96,7 @@ final class TanecikGuide {
         if (done || activity.isFinishing()) return;
         if (i >= steps.size()) { handler.postDelayed(this::finish, 300); return; }
         TanecikTour.GuideStep st = steps.get(i);
-        int id = activity.getResources().getIdentifier(st.view, "id", activity.getPackageName());
-        View v = id == 0 ? null : activity.findViewById(id);
+        View v = target(st.view);
         if (v == null || !v.isShown()) { step(i + 1); return; }
         ScrollView sv = scrollerOf(v);
         if (sv != null) {
@@ -115,6 +114,13 @@ final class TanecikGuide {
         Runnable say = () -> voice.say(st.text, () -> handler.postDelayed(() -> step(i + 1), 120));
         if (!st.type.isEmpty() && v instanceof EditText) type((EditText) v, st.type, 0, say);
         else say.run();
+    }
+
+    /** Hedef: "tur:" ile başlıyorsa etiket (programla kurulan ekranlar, ör. Tezgâh), değilse görünüm adı (R.id). */
+    private View target(String name) {
+        if (name.startsWith("tur:")) return activity.getWindow().getDecorView().findViewWithTag(name);
+        int id = activity.getResources().getIdentifier(name, "id", activity.getPackageName());
+        return id == 0 ? null : activity.findViewById(id);
     }
 
     /** Örnek değeri harf harf yazar (klavye açılmaz). */
