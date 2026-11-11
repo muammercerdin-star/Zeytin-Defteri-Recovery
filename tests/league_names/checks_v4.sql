@@ -68,4 +68,41 @@ begin
   assert cols !~ '(\mkg\M|amount|total)', 'kg/tutar dönmemeli: ' || cols;
   assert has_function_privilege('authenticated','public.league_region_ranking_v3(integer,text,text,integer)','execute'), 'yetki';
 end $$;
+-- Canlıdaki durumun aynısı: diğerleri 3-12 Kasım'da hem eski (120/90/60/35) hem yeni (110/80/55/30) fiyat yazmış;
+-- ±7 gün ortası eski fiyatta kalıyor (120/90/60/35). y 10 Kasım'da 130/100/70/40 + yuvarlak kilo yazıyor.
+delete from private.market_contributions;
+do $$
+declare p text; i int := 0;
+begin
+  foreach p in array array['q1','q2','q3','q4','q5','q6'] loop
+    i := i + 1;
+    if i <= 3 then
+      perform pg_temp.put(p, p||'a', 'Double', 3, 120, ('2026-11-03'::date + i));
+      perform pg_temp.put(p, p||'b', '1 No', 30, 90, ('2026-11-03'::date + i));
+      perform pg_temp.put(p, p||'c', '2 No', 60, 60, ('2026-11-03'::date + i));
+      perform pg_temp.put(p, p||'d', '3 No', 40, 35, ('2026-11-03'::date + i));
+    else
+      perform pg_temp.put(p, p||'a', 'Double', 3, 110, ('2026-11-05'::date + i));
+      perform pg_temp.put(p, p||'b', '1 No', 30, 80, ('2026-11-05'::date + i));
+      perform pg_temp.put(p, p||'c', '2 No', 60, 55, ('2026-11-05'::date + i));
+      perform pg_temp.put(p, p||'d', '3 No', 40, 30, ('2026-11-05'::date + i));
+    end if;
+  end loop;
+  perform pg_temp.put('y', 'y1', 'Double', 50, 130, '2026-11-10');
+  perform pg_temp.put('y', 'y2', '1 No', 300, 100, '2026-11-10');
+  perform pg_temp.put('y', 'y3', '2 No', 500, 70, '2026-11-10');
+  perform pg_temp.put('y', 'y4', '3 No', 40, 40, '2026-11-10');
+end $$;
+do $$
+declare n int; r record;
+begin
+  perform set_config('test.sub', 'y', false);
+  select count(*) into n from public.league_region_ranking_v3(2026,'alasehir','',0) where is_me;
+  assert n = 0, 'y (herkesten yüksek + yuvarlak) sıralamada olmamalı';
+  -- herkes kadar yüksek fiyat yazan (ama aşmayan) satıcı sıralamada kalır
+  perform pg_temp.put('z', 'z1', '2 No', 120, 60, '2026-11-09');
+  perform set_config('test.sub', 'z', false);
+  select * into r from public.league_region_ranking_v3(2026,'alasehir','',0) where is_me;
+  assert r.rank is not null and r.avg_price = 60, 'en yüksek fiyata eşit satıcı kalır';
+end $$;
 select 'PASS: güven V4 SQL kontrolleri (haftalık piyasa, süzgeç, yuvarlak kilo)' as sonuc;

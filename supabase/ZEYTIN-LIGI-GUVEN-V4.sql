@@ -8,13 +8,15 @@
 -- kasımda 110); ekimde satan kayırılıyor, bugün ekim fiyatını yazan da fark edilmiyordu. Ayrıca 300, 500 gibi
 -- büyük yuvarlak kilolar (tartıdan değil, tahminen yazılmış) sıralamayı tek başına sürükleyebiliyordu.
 --
--- Kurallar (her kayıt satırı için):
---   1. Piyasa fiyatı = aynı bölge + aynı numaranın, satış gününün ±7 günündeki DİĞER üreticilerin orta fiyatı
---      (en az 3 farklı üretici). Yetmezse ±21 gün, o da yetmezse sezonun ortası (yine diğer üreticiler, en az 3).
---      Kişinin kendi kayıtları kendi piyasa fiyatını belirleyemez.
+-- Kurallar (her kayıt satırı için; "diğerleri" = aynı bölge + aynı numara, kişinin KENDİSİ HARİÇ üreticiler):
+--   1. Piyasa fiyatı = satış gününün ±3 günündeki diğerlerinin orta fiyatı (en az 2 üretici); yetmezse ±7 gün,
+--      ±21 gün, sezon (en az 3 üretici). Fiyat sezonda hızla düştüğü için en yakın günler önce gelir.
 --   2. Piyasa fiyatının %20'den fazla üstü ya da %25'ten fazla altı: kayıt ortalamaya ve puana KATILMAZ.
---   3. 200 kg ve üstü, 50'nin katı (ör. 200, 300, 500) kilolar YARIM ağırlıkla sayılır.
---   4. Sıralamaya girmek için süzgeçten geçen (ağırlıklı) en az 100 kg gerekir.
+--   3. ±7 günde diğerlerinin EN YÜKSEK fiyatını %5'ten fazla aşan kayıt KATILMAZ (eski/şişik fiyat; ör. kasımda
+--      herkes 110-120 yazarken 130).
+--   4. 200 kg ve üstü, 50'nin katı (ör. 200, 300, 500) kilolar YARIM ağırlıkla sayılır; böyle bir kayıt piyasanın
+--      %5'ten fazla üstündeyse hiç sayılmaz.
+--   5. Sıralamaya girmek için süzgeçten geçen (ağırlıklı) en az 100 kg gerekir.
 -- Kişinin kendi defteri, kayıtları ve bölge kartları bu dosyadan ETKİLENMEZ; yalnız ön sıralama hesabı değişir.
 
 begin;
@@ -78,8 +80,21 @@ begin
     ),
     priced as (
         select r.*,
-               coalesce(w7.med, w21.med, ws.med) as ref
+               coalesce(w3.med, w7.med, w21.med, ws.med) as ref,
+               hi.mx as hi
         from rows r
+        left join lateral (
+            select percentile_cont(0.5) within group (order by s.price)::numeric as med
+            from season s
+            where s.gr = r.gr and s.ph <> r.ph and abs(s.d - r.d) <= 3
+            having count(distinct s.ph) >= 2
+        ) w3 on true
+        left join lateral (
+            select max(s.price) as mx
+            from season s
+            where s.gr = r.gr and s.ph <> r.ph and abs(s.d - r.d) <= 7
+            having count(distinct s.ph) >= 2
+        ) hi on true
         left join lateral (
             select percentile_cont(0.5) within group (order by s.price)::numeric as med
             from season s
@@ -103,6 +118,8 @@ begin
         select p.*,
                case
                    when p.ref is not null and (p.price > p.ref * 1.20 or p.price < p.ref * 0.75) then 0::numeric
+                   when p.hi is not null and p.price > p.hi * 1.05 then 0::numeric
+                   when p.kg >= 200 and mod(p.kg, 50) = 0 and p.ref is not null and p.price > p.ref * 1.05 then 0::numeric
                    when p.kg >= 200 and mod(p.kg, 50) = 0 then 0.5::numeric
                    else 1::numeric
                end as w
