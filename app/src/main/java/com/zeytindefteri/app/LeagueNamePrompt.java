@@ -84,6 +84,74 @@ final class LeagueNamePrompt {
         dialog.show();
     }
 
+    /**
+     * "Ligde adınla görünmek ister misin?" sorusu (LeagueNameAsk karar verir). İki EŞİT düğme: hiçbiri öne
+     * çıkarılmaz, varsayılan seçim yoktur (açık rıza). "Adımla görüneyim" adı yazıp onaylatan pencereyi açar;
+     * ad, kullanıcı orada onaylamadan kaydedilmez. Pencere nasıl kapanırsa kapansın soru bir daha sorulmaz.
+     */
+    static void ask(Activity activity, LeagueNameAsk.Kind kind, int rank, String district, Runnable onChanged) {
+        if (kind == LeagueNameAsk.Kind.NONE || activity.isFinishing()) return;
+        MarketCloudRepository repo = MarketContributionPrompt.repository(activity);
+        repo.markLeagueAsk(LeagueNameAsk.FIRST_KEY);
+        if (kind == LeagueNameAsk.Kind.TOP3) repo.markLeagueAsk(LeagueNameAsk.TOP3_KEY);
+
+        float density = activity.getResources().getDisplayMetrics().density;
+        int pad = Math.round(20 * density);
+        LinearLayout box = new LinearLayout(activity);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(pad, pad / 2, pad, pad / 2);
+        TextView info = new TextView(activity);
+        info.setText(LeagueNameAsk.body(kind));
+        info.setTextSize(14);
+        info.setTextColor(GreenTheme.color(R.color.zd_text));
+        box.addView(info);
+
+        LinearLayout buttons = new LinearLayout(activity);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(-1, -2);
+        bl.topMargin = pad;
+        box.addView(buttons, bl);
+
+        AlertDialog dialog = new AlertDialog.Builder(activity)
+                .setTitle(LeagueNameAsk.title(kind, rank, district))
+                .setView(box)
+                .create();
+        TextView yes = choice(activity, LeagueNameAsk.YES, density);
+        TextView no = choice(activity, LeagueNameAsk.NO, density);
+        LinearLayout.LayoutParams left = new LinearLayout.LayoutParams(0, Math.round(48 * density), 1f);
+        left.rightMargin = Math.round(5 * density);
+        LinearLayout.LayoutParams right = new LinearLayout.LayoutParams(0, Math.round(48 * density), 1f);
+        right.leftMargin = Math.round(5 * density);
+        buttons.addView(no, left);
+        buttons.addView(yes, right);
+        no.setOnClickListener(v -> {
+            dialog.dismiss();
+            Toast.makeText(activity, "Anonim kalıyorsun. Ayarlar'dan istediğin zaman değiştirebilirsin.", Toast.LENGTH_SHORT).show();
+        });
+        yes.setOnClickListener(v -> { dialog.dismiss(); show(activity, onChanged); });
+        dialog.show();
+    }
+
+    /** İki seçenek aynı görünür (biri ötekinden çekici yapılmaz). */
+    private static TextView choice(Activity activity, String label, float density) {
+        TextView b = new TextView(activity);
+        b.setText(label);
+        b.setTextSize(14);
+        b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        b.setGravity(android.view.Gravity.CENTER);
+        b.setTextColor(GreenTheme.color(R.color.zd_green));
+        b.setMaxLines(1);
+        android.graphics.drawable.GradientDrawable d = new android.graphics.drawable.GradientDrawable();
+        d.setCornerRadius(12 * density);
+        d.setColor(GreenTheme.color(R.color.zd_card));
+        d.setStroke(Math.round(1.5f * density), GreenTheme.color(R.color.zd_green));
+        b.setBackground(d);
+        b.setClickable(true);
+        b.setFocusable(true);
+        b.setContentDescription(label);
+        return b;
+    }
+
     private static void apply(Activity activity, MarketCloudRepository repo, String name, boolean show, Runnable onChanged) {
         repo.setLeagueProfile(name, show, (saved, nowShown, error) -> {
             if (activity.isFinishing()) return;

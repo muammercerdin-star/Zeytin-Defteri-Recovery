@@ -1356,6 +1356,17 @@ public final class MarketCloudRepository {
 
     public interface LeagueProfileCallback { void onComplete(String name, boolean show, Exception error); }
 
+    /** "Adınla görünmek ister misin?" sorusu (LeagueNameAsk) bu kullanıcıya soruldu mu? */
+    public boolean leagueAskDone(String key) {
+        return uid.isEmpty() || "1".equals(databaseHelper.getSetting(key + uid, "0"));
+    }
+
+    public void markLeagueAsk(String key) {
+        if (!uid.isEmpty()) databaseHelper.setSetting(key + uid, "1");
+    }
+
+    public boolean signedIn() { return !uid.isEmpty(); }
+
     /** Bu cihazda son bilinen ayar (çevrimdışıyken Ayarlar'da göstermek için). */
     public boolean leagueNameShownLocally() {
         return !uid.isEmpty() && "1".equals(databaseHelper.getSetting(LEAGUE_NAME_SHOW_PREFIX + uid, "0"));

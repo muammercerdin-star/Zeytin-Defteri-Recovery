@@ -54,6 +54,8 @@ public final class ZeytinLeagueView extends ScrollView {
     /** Adlı ön sıralama (Supabase league_region_ranking): bölge → satırlar; yüklenenler. */
     private final java.util.Map<String, List<MarketCloudRepository.RankRow>> previewCache = new java.util.HashMap<>();
     private final java.util.Set<String> previewLoading = new java.util.HashSet<>();
+    /** Bu ekranda ad sorusu gösterildi mi (bir açılışta en fazla bir soru). */
+    private boolean askedNameThisView;
     /** Ön sıralama filtreleri: ay (0 = sezon) ve cins ("" = tümü); bölge → cins/ay üretici sayıları. */
     private int previewMonth = 0;
     private String previewVariety = "";
@@ -892,6 +894,30 @@ public final class ZeytinLeagueView extends ScrollView {
             body.addView(why);
         }
         nameSettingLink();
+        maybeAskName(region);
+    }
+
+    /** Ad sorusu (LeagueNameAsk): ön sıralama göründüğünde bir kez, ilk 3'e girince bir kez. Varsayılan anonim. */
+    private void maybeAskName(ZeytinLeagueRepository.Region region) {
+        if (askedNameThisView || !(getContext() instanceof android.app.Activity) || leagueCloudRepository == null) return;
+        MarketCloudRepository.RankRow me = myPreviewRow(region.id);
+        int myRank = me == null ? 0 : me.rank;
+        final LeagueNameAsk.Kind kind = LeagueNameAsk.decide(demo, leagueCloudRepository.signedIn(),
+                leagueCloudRepository.isContributionOptedIn(), leagueCloudRepository.leagueNameShownLocally(),
+                leagueCloudRepository.leagueAskDone(LeagueNameAsk.FIRST_KEY),
+                leagueCloudRepository.leagueAskDone(LeagueNameAsk.TOP3_KEY), myRank, false);
+        if (kind == LeagueNameAsk.Kind.NONE) return;
+        askedNameThisView = true;
+        final String district = LeagueBoardModel.splitRegion(region.name)[0];
+        final int token = generation;
+        // Ekran çizildikten biraz sonra: liste görünsün, soru üstüne aniden düşmesin.
+        postDelayed(() -> {
+            if (!current(token) || !isAttachedToWindow()) { askedNameThisView = false; return; }
+            LeagueNamePrompt.ask((android.app.Activity) getContext(), kind, myRank, district, () -> {
+                previewCache.clear();
+                render();
+            });
+        }, 700);
     }
 
     /** Listede olmayan kullanıcıya neden ve ne yapacağı. */
