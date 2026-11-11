@@ -24,6 +24,8 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
     private final java.util.concurrent.ConcurrentHashMap<String, String> statuses = new java.util.concurrent.ConcurrentHashMap<>();
     private boolean ticking;
     private long lastCheck;
+    /** Son "meşgul" an: bir bilgisayar bağlıyken ya da onay beklerken. Boşta kalınca hizmet kendini kapatır. */
+    private volatile long lastBusy;
 
     public static void prepare(Activity activity) {
         SessionManager session = new SessionManager(activity);
@@ -105,6 +107,7 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
             });
             return START_NOT_STICKY;
         }
+        lastBusy = SystemClock.elapsedRealtime();     // her açılış (Tezgâh ekranı) süreyi baştan başlatır
         Notification notification = notification("Bilgisayarlar için hazır", null, null);
         if (Build.VERSION.SDK_INT >= 29) startForeground(ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
         else startForeground(ID, notification);
@@ -160,6 +163,14 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
         if (now - lastCheck < 1000) return;
         lastCheck = now;
         if (!alive()) {
+            stopSelf();
+            return;
+        }
+        // Bağlı bilgisayar ya da bekleyen onay yoksa birkaç dakika sonra kapan (pil, ücretsiz kotalar, Play kuralları).
+        boolean busy = !approvals.isEmpty();
+        for (String status : statuses.values()) if ("Bağlı".equals(status)) busy = true;
+        if (busy) lastBusy = now;
+        if (TezgahWebLink.readyIdle(now, lastBusy)) {
             stopSelf();
             return;
         }

@@ -18,6 +18,13 @@ public final class TezgahWebLink {
         Row(String title, String sub, boolean warn) { this.title = title; this.sub = sub; this.warn = warn; }
     }
 
+    /** Kayıtlı bilgisayar hizmeti bu kadar süre bağlantısız kalırsa kendini kapatır; Tezgâh açılınca yeniden başlar. */
+    public static final long READY_IDLE_MS = 10 * 60 * 1000L;
+
+    public static boolean readyIdle(long now, long lastBusy) {
+        return lastBusy > 0 && now - lastBusy >= READY_IDLE_MS;
+    }
+
     public static boolean stuck(boolean running, boolean ready, long sinceMs) {
         return running && !ready && sinceMs >= STUCK_MS;
     }

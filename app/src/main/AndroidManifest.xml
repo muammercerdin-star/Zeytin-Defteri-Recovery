@@ -41,8 +41,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
         android:name=".ZeytinApplication"
         android:allowBackup="true"
@@ -60,7 +58,6 @@
         android:enableOnBackInvokedCallback="true"
 
         android:theme="@style/Theme.App">
-        <activity android:name=".TezgahWebScanActivity" android:exported="false" android:screenOrientation="portrait" />
         <service android:name=".TezgahWebService" android:exported="false" android:foregroundServiceType="connectedDevice" />
 
 

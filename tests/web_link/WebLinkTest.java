@@ -41,6 +41,11 @@ public final class WebLinkTest {
         ok(TezgahWebLink.advice("Yedek yol kurulmamış · HTTP 404").contains("Verify JWT"), "köprü kurulumu öner");
         ok(TezgahWebLink.row(0, false, true, true, "Aktarıcıya yedek yoldan bağlanılıyor · 2. deneme", 0).sub.equals("Yedek yol da açılmadı"), "köprü de açılmadı");
         ok(TezgahWebLink.row(0, false, true, true, "Aktarıcıya bağlandı (yedek yol) · bilgisayarın cevabı bekleniyor", 0).sub.contains("sayfa"), "köprü açık, sayfa görmedi");
+        long M = 60_000L;
+        ok(!TezgahWebLink.readyIdle(10 * M, 1 * M), "9 dk boşta: açık");
+        ok(TezgahWebLink.readyIdle(11 * M, 1 * M), "10 dk boşta: kapanır");
+        ok(!TezgahWebLink.readyIdle(99 * M, 0), "başlamadan kapanmaz");
+        ok(TezgahWebLink.READY_IDLE_MS == 10 * M, "süre 10 dk");
         ok(TezgahWebLink.computerName(0).equals("Bilgisayar"), "ilk ad");
         ok(TezgahWebLink.computerName(1).equals("Bilgisayar 2"), "ikinci ad");
 

@@ -308,14 +308,11 @@ public final class TezgahHomeActivity extends Activity {
 
     private void webScan(final boolean full) {
         final String name = TezgahWebLink.computerName(TezgahWebDevices.list(this, owner).length());
-        TezgahQrUi.scan(this, raw -> webScanned(raw, name, full), message -> {
-            // Google okuyucu açılamazsa (Play hizmetleri yok / ilk indirme) yedek okuyucu.
-            Intent scan = new Intent(this, TezgahWebScanActivity.class);
-            scan.putExtra("name", name);
-            scan.putExtra("owner", owner);
-            scan.putExtra("full", full);
-            startActivityForResult(scan, 7315);
-        });
+        // Google'ın QR okuyucusu: kamera izni istemez. Uygulama CAMERA iznini bildirmez; bildirseydi
+        // izin verilmemişken defter fotoğrafındaki sistem kamerası (ACTION_IMAGE_CAPTURE) da açılmazdı.
+        TezgahQrUi.scan(this, raw -> webScanned(raw, name, full), message ->
+                android.widget.Toast.makeText(this, "QR okuyucu açılamadı. Google Play hizmetlerini güncelleyip tekrar dene.",
+                        android.widget.Toast.LENGTH_LONG).show());
     }
 
     private void webScanned(String raw, String name, boolean full) {
@@ -469,18 +466,6 @@ public final class TezgahHomeActivity extends Activity {
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
-        if (request == 7315) {
-            if (result != RESULT_OK || data == null || !owner.equals(data.getStringExtra("owner")) || !owner.equals(new SessionManager(this).getUserUid())) return;
-            try {
-                TezgahWebPhone.Qr qr = TezgahWebPhone.Qr.parse(data.getStringExtra("qr"), System.currentTimeMillis() / 1000);
-                if (!qr.compact() && qr.expiresAt - System.currentTimeMillis() / 1000 < 30) throw new IllegalArgumentException();
-                TezgahWebService.launch(this, qr, owner, data.getStringExtra("name"), data.getBooleanExtra("full", false));
-                render();
-            } catch (Exception e) {
-                android.widget.Toast.makeText(this, "QR geçersiz veya yenilenmek üzere. Yeni QR okut.", android.widget.Toast.LENGTH_LONG).show();
-            }
-            return;
-        }
         if (request != REQ_SPEECH || result != RESULT_OK || data == null) return;
         ArrayList<String> words = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
         if (words != null && !words.isEmpty()) answer(words.get(0));

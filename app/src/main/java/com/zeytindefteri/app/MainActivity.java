@@ -10,8 +10,5 @@ package com.zeytindefteri.app;
  */
 public class MainActivity extends ProducerFeedActivity {
     // Bilerek boş: tüm ana ekran davranışı ProducerFeedActivity içinde.
-    @Override protected void onResume() {
-        super.onResume();
-        TezgahWebReadyService.prepare(this);
-    }
+    // Kayıtlı bilgisayarlar için bekleyen hizmet artık yalnız Tezgâh ekranından başlar (her açılışta değil).
 }
