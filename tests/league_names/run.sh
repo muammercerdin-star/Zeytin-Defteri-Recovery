@@ -17,3 +17,6 @@ psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f tests/league_names/checks_v2.sql
 psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f supabase/ZEYTIN-LIGI-ORT-FIYAT-V3.sql >/dev/null
 psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f supabase/ZEYTIN-LIGI-ORT-FIYAT-V3.sql >/dev/null  # tekrar çalıştırmak zararsız
 psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f tests/league_names/checks_v3.sql
+psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f supabase/ZEYTIN-LIGI-GUVEN-V4.sql >/dev/null
+psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f supabase/ZEYTIN-LIGI-GUVEN-V4.sql >/dev/null  # tekrar çalıştırmak zararsız
+psql $PG -d $DB -q -v ON_ERROR_STOP=1 -f tests/league_names/checks_v4.sql
