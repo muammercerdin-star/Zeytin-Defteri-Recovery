@@ -842,6 +842,36 @@ public class HarvestRepository {
     }
 
     /**
+     * Bir "Hasat" işlem hareketinin bağlı olduğu hasat kaydı (aynı bahçe, aynı gün, aynı kilo; birden çok varsa
+     * kayıt anına en yakını). Hasat hareketi değilse ya da bulunamazsa -1. Yalnız etkin hesabın bahçeleri.
+     */
+    public long harvestIdForOperation(long operationId) {
+        if (operationId <= 0) return -1;
+        String owner = databaseHelper.getActiveOwnerUid();
+        String o = owner == null ? "" : owner.trim();
+        SQLiteDatabase db = databaseHelper.getReadableDatabase();
+        long gardenId;
+        long createdAt;
+        String date;
+        double kg;
+        try (Cursor c = db.rawQuery("SELECT o.garden_id, o.operation_date, o.quantity, o.created_at FROM operations o "
+                + "INNER JOIN gardens g ON g.id = o.garden_id "
+                + "WHERE o.id = ? AND o.type = 'Hasat' AND TRIM(COALESCE(g.owner_uid, '')) = ? LIMIT 1",
+                new String[]{String.valueOf(operationId), o})) {
+            if (!c.moveToFirst()) return -1;
+            gardenId = c.getLong(0);
+            date = c.getString(1) == null ? "" : c.getString(1).trim();
+            kg = c.getDouble(2);
+            createdAt = c.getLong(3);
+        }
+        try (Cursor c = db.rawQuery("SELECT id FROM harvests WHERE garden_id = ? AND TRIM(harvest_date) = ? "
+                + "AND ABS(COALESCE(total_kg, 0) - ?) < 0.01 ORDER BY ABS(COALESCE(created_at, 0) - ?) LIMIT 1",
+                new String[]{String.valueOf(gardenId), date, String.valueOf(kg), String.valueOf(createdAt)})) {
+            return c.moveToFirst() ? c.getLong(0) : -1;
+        }
+    }
+
+    /**
      * Hasadı ve kaydedilirken oluşturulan "Hasat" işlem hareketini (işçilik/nakliye masrafı) birlikte siler;
      * ikisi de buluttan silinmek üzere işaretlenir. Boy satırları (harvest_grades) CASCADE ile gider.
      * Elek kayıtlarına dokunulmaz. Dönüş: silinen hasat sayısı (0: bulunamadı / başka hesabın).

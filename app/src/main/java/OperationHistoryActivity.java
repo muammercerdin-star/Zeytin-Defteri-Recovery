@@ -19,6 +19,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -375,17 +376,32 @@ public class OperationHistoryActivity extends Activity {
         sheet.addView(noteTitle);
         sheet.addView(label(r.note.trim().isEmpty() ? "—" : r.note.trim(), 14, soft, false));
 
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(-1, dp(48));
+        ap.topMargin = dp(18);
+        sheet.addView(actions, ap);
+
+        TextView delete = label("Sil", 14, GreenTheme.color(R.color.zd_danger), true);
+        delete.setGravity(Gravity.CENTER);
+        delete.setBackgroundResource(R.drawable.bg_search);
+        delete.setContentDescription("İşlemi sil");
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(0, -1, 1);
+        dlp.rightMargin = dp(6);
+        actions.addView(delete, dlp);
+
         TextView close = label("Kapat", 14, soft, true);
         close.setGravity(Gravity.CENTER);
         close.setBackgroundResource(R.drawable.bg_search);
-        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-1, dp(48));
-        clp.topMargin = dp(18);
-        sheet.addView(close, clp);
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(0, -1, 1);
+        clp.leftMargin = dp(6);
+        actions.addView(close, clp);
 
         detailSheet = new Dialog(this);
         detailSheet.requestWindowFeature(Window.FEATURE_NO_TITLE);
         detailSheet.setContentView(sheet);
         close.setOnClickListener(v -> detailSheet.dismiss());
+        delete.setOnClickListener(v -> confirmDelete(r));
         Window w = detailSheet.getWindow();
         if (w != null) {
             w.setBackgroundDrawable(new ColorDrawable(0));
@@ -393,6 +409,59 @@ public class OperationHistoryActivity extends Activity {
             w.setGravity(Gravity.BOTTOM);
         }
         detailSheet.show();
+    }
+
+    /** Masraf/işlem silme: onay sorulur; hasat hareketi bağlı hasat kaydıyla birlikte silinir. */
+    private void confirmDelete(OperationHistoryModel.Row r) {
+        HarvestRepository harvests = new HarvestRepository(databaseHelper);
+        long harvestId;
+        try {
+            harvestId = harvests.harvestIdForOperation(r.id);
+        } catch (RuntimeException e) {
+            harvestId = -1;
+        }
+        final long linkedHarvest = harvestId;
+        final boolean linked = linkedHarvest > 0;
+        new AlertDialog.Builder(this)
+                .setTitle(OperationDeleteText.title(linked))
+                .setMessage(OperationDeleteText.message(OperationKinds.label(r.type), r.garden, r.date, r.cost, linked))
+                .setPositiveButton("Sil", (d, w) -> deleteOperation(r, linkedHarvest))
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
+    private void deleteOperation(OperationHistoryModel.Row r, long linkedHarvest) {
+        boolean linked = linkedHarvest > 0;
+        int n;
+        try {
+            if (linked) {
+                n = new HarvestRepository(databaseHelper).deleteHarvestWithOperation(linkedHarvest);
+            } else {
+                n = new OperationRepository(databaseHelper).deleteOperation(r.id);
+            }
+        } catch (RuntimeException e) {
+            n = 0;
+        }
+        if (n <= 0) {
+            Toast.makeText(this, "Silinemedi", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (detailSheet != null && detailSheet.isShowing()) detailSheet.dismiss();
+        setResult(RESULT_OK);
+        Toast.makeText(this, OperationDeleteText.done(linked), Toast.LENGTH_SHORT).show();
+        pushDeletions();
+        refreshOperations();
+    }
+
+    /** Silme bilgisi buluta hemen gitsin (internet yoksa sonraki eşitlemede). */
+    private void pushDeletions() {
+        com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+        try {
+            new PrivateCloudSyncManager(databaseHelper).sync(user.getUid(), null);
+        } catch (RuntimeException ignored) {
+            // Sonraki eşitlemede gider.
+        }
     }
 
     private View detailGrid(String n1, String v1, String n2, String v2) {
