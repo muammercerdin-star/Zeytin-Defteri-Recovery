@@ -25,7 +25,7 @@
     <string name="auth_email_label">E-posta</string>
     <string name="auth_password_label">Şifre</string>
     <string name="auth_confirm_label">Şifre tekrar</string>
-    <string name="auth_name_hint">Örn. Muammer Çerdin</string>
+    <string name="auth_name_hint">Örn. Ahmet Yılmaz</string>
     <string name="auth_email_hint">ornek@eposta.com</string>
     <string name="auth_password_hint">En az 8 karakter</string>
     <string name="auth_login_password_hint">Şifreni yaz</string>

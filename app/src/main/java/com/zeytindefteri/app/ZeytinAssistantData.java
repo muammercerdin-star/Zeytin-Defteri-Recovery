@@ -309,7 +309,7 @@ public final class ZeytinAssistantData implements AutoCloseable {
         return winner.isEmpty()?"Karşılaştırılabilir kayıt bulunamadı.":season+" sezonu"+(cmd.period.limited()?", "+cmd.period.label():"")+": "+winner+" en yüksek kayıtlı değere sahip: "+number(max)+" "+unit+".";
     }
     private String compare(ZeytinAssistantCommand cmd,List<Garden> owned){
-        String[] parts=cmd.text.split("\\bile\\b");if(parts.length!=2)return "Karşılaştırmak istediğin iki bahçeyi 'Girelli ile Afşar' şeklinde söyle.";
+        String[] parts=cmd.text.split("\\bile\\b");if(parts.length!=2)return "Karşılaştırmak istediğin iki bahçeyi 'Pınarlı ile Tepeüstü' şeklinde söyle.";
         ZeytinAssistantCommand.Resolution a=ZeytinAssistantCommand.resolve(parts[0],owned,0,false),b=ZeytinAssistantCommand.resolve(parts[1],owned,0,false);
         if(!a.explicit||!b.explicit||a.garden==null||b.garden==null||a.garden.id==b.garden.id)return "İki farklı bahçeyi kesin olarak eşleştiremedim. Tam adlarını söyle.";
         StringBuilder out=new StringBuilder(season+" sezonu: ");

@@ -61,7 +61,7 @@ public final class OnboardingReferencePage extends ScrollView {
                 firstLine = "Piyasayı";
                 secondLine = "Anlık Takip Et";
                 description = "Bölgesel fiyatları gör, Zeytin Ligi'nde üreticileri keşfet, daha doğru kararlar ver.";
-                artworkDescription = "Zeytin Ligi ve Piyasa telefon tanıtımı. Örnek sıralama: Muammer Çerdin, Volkan Afşar, Yusuf Soyaslan, Hakan Yıldırım, Emre Karataş.";
+                artworkDescription = "Zeytin Ligi ve Piyasa telefon tanıtımı. Örnek sıralama: Ali Kaya, Hasan Bey, Mehmet Bey, Kemal Usta, Ahmet Yılmaz.";
                 benefits = new String[]{"Bölgesel fiyatlar", "Zeytin Ligi sıralaması", "Piyasa analizleri"};
                 scene = new Rect(221, 191, 877, 1334);
                 icons = new Rect[]{new Rect(181, 1360, 267, 1445), new Rect(502, 1352, 590, 1445), new Rect(829, 1364, 918, 1445)};
