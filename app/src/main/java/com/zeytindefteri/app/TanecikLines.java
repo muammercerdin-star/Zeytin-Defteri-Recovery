@@ -169,7 +169,7 @@ public final class TanecikLines {
         out.add(ask("ask_expense", "Masrafını bilmek ister misin? \"Bu sezon masraf ne kadar?\" de.", "bu sezon masraf ne kadar?", "Sor ›"));
         out.add(new Line("tour_offer", "Uygulamayı bilmiyorsan seni bir dakikada gezdireyim mi?", GO_TOUR, "Gezdir ›", "", false));
         out.add(new Line("tip_mic", "Ortadaki mikrofona bas, konuşarak kaydet. \"150 kilo topladım\" demen yeter.", "", "", "", false));
-        out.add(new Line("tip_drag", "Beni parmağınla tutup taşıyabilirsin. Gizlemek istersen üstüme basılı tut.", "", "", "", false));
+        out.add(new Line("tip_drag", "Beni parmağınla tutup taşıyabilirsin. Gizlemek istersen aşağıdaki ✕ işaretine sürükle.", "", "", "", false));
         return out;
     }
 

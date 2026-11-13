@@ -66,8 +66,12 @@ public final class ZeytinAssistantData implements AutoCloseable {
                 return scope+value(t.harvestRows,t.harvest,"kg hasat");
             }
             case EXPENSE:return scope+value(t.expenseRows,t.expenses,"TL masraf");
-            case REVENUE:return scope+value(t.saleRows,t.revenue,"TL satış geliri (nakliye ve kesintiler sonrası)");
-            case SOLD:return scope+value(t.saleRows,t.sold,"kg satış");
+            case REVENUE:{
+                String r=scope+value(t.sellRows(),t.sellTl(),"TL satış (brüt, Elek'teki toplamla aynı)");
+                if(t.sellRows()>0&&t.deductions>0.5)r+=" Nakliye ve kesintiler düşülünce "+number(t.sellTl()-t.deductions)+" TL.";
+                return r;
+            }
+            case SOLD:return scope+value(t.sellRows(),t.sellKg(),"kg satış");
             case BRINE:return scope+(t.brineRows==0?"salamura kaydı bulunamadı.":number(t.brine)+" kg salamuraya giriş kayıtlı. Bu değer kalan stok değildir.");
             case READY:return scope+value(t.brineRows,t.ready,"kg hazır ürün");
             case ELEK:
@@ -79,8 +83,10 @@ public final class ZeytinAssistantData implements AutoCloseable {
                 for(Map.Entry<String,Double> entry:t.grades.entrySet())distribution.append(gradeName(entry.getKey())).append(": ").append(number(entry.getValue())).append(" kg; ");
                 return distribution.substring(0,distribution.length()-2)+".";
             case SUMMARY:
-                String summary=scope+"hasat "+brief(t.harvestRows,t.harvest,"kg")+", masraf "+brief(t.expenseRows,t.expenses,"TL")+", satış geliri "+brief(t.saleRows,t.revenue,"TL")+".";
-                if(t.saleRows>0 && t.expenseRows>0)summary+=" Kayıtlı gelir eksi masraf "+number(t.revenue-t.expenses)+" TL. Bu, kayıtların tamamlığına bağlıdır.";
+                String sold=t.sellRows()==0?brief(0,0,"kg"):number(t.sellKg())+" kg · "+number(t.sellTl())+" TL";
+                String summary=scope+"hasat "+brief(t.harvestRows,t.harvest,"kg")+", satış "+sold+", masraf "+brief(t.expenseRows,t.expenses,"TL")+".";
+                double net=t.sellTl()-t.deductions;
+                if(t.sellRows()>0 && t.expenseRows>0)summary+=" Satış eksi masraf"+(t.deductions>0.5?" (nakliye ve kesintiler de düşülmüş)":"")+" "+number(net-t.expenses)+" TL. Bu, kayıtların tamamlığına bağlıdır.";
                 return summary;
             default:return "Bu soruyu henüz cevaplayamıyorum.";
         }
@@ -118,8 +124,13 @@ public final class ZeytinAssistantData implements AutoCloseable {
         return garden.name+", "+season+" sezonunda son "+label+" "+(days==0?"bugün":iso.format(new Date(latest)))+" yapılmış.";
     }
     private static final class Totals {
-        int harvestRows,expenseRows,saleRows,brineRows;
+        int harvestRows,expenseRows,saleRows,brineRows,elekRows,manualRows;
         double harvest,expenses,revenue,sold,brine,ready;
+        /** Satış toplamı = elek kayıtları + elekten gelmeyen satışlar (Elek kartı ve Tanecik ile aynı, brüt). */
+        double elekKg,elekTl,manualKg,manualTl,deductions;
+        int sellRows(){return elekRows+manualRows;}
+        double sellKg(){return elekKg+manualKg;}
+        double sellTl(){return elekTl+manualTl;}
         Map<String,Double> grades=new LinkedHashMap<>();
     }
     private Totals totals(List<Garden> gardens,boolean all,ZeytinAssistantPeriod period) {
@@ -133,12 +144,18 @@ public final class ZeytinAssistantData implements AutoCloseable {
                 t.expenses+=num(c,"labor_cost")+num(c,"transport_cost")+num(c,"other_cost");}}
             try(Cursor c=db.getGardenSales(g.id)){while(c.moveToNext())if("SALE".equals(str(c,"sale_kind"))){
                 if(!inPeriod(c,"sale_date",period))continue;
-                t.saleRows++;t.sold+=num(c,"total_kg");t.revenue+=num(c,"gross_total")-num(c,"transport_cost")-num(c,"deductions");}}
+                t.saleRows++;t.sold+=num(c,"total_kg");t.revenue+=num(c,"gross_total")-num(c,"transport_cost")-num(c,"deductions");
+                t.deductions+=num(c,"transport_cost")+num(c,"deductions");
+                // Elekten oluşmuş satış elek toplamında zaten var (SeasonSales ile aynı kural).
+                if(!SeasonSales.fromElek(id(c,"source_elek_id"),str(c,"source_elek_cloud_id"))){
+                    t.manualRows++;t.manualKg+=num(c,"total_kg");t.manualTl+=num(c,"gross_total");}}}
             try(Cursor c=db.getGardenElekRecords(g.id)){while(c.moveToNext()){
                 if(!inPeriod(c,"record_date",period))continue;
+                t.elekRows++;
                 try(Cursor grades=db.getElekGrades(id(c,"id"))){while(grades.moveToNext()){
                     String grade=str(grades,"grade");Double old=t.grades.get(grade);
-                    t.grades.put(grade,(old==null?0:old)+num(grades,"kg"));}}}}
+                    t.grades.put(grade,(old==null?0:old)+num(grades,"kg"));
+                    t.elekKg+=num(grades,"kg");t.elekTl+=num(grades,"line_total");}}}}
         }
         // Existing owner + season scope; apply selected garden in memory, not a new SQL rule.
         try(Cursor c=db.getBrineBatches()){while(c.moveToNext())if(all || ids.contains(id(c,"garden_id"))){

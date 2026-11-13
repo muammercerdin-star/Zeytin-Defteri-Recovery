@@ -6522,11 +6522,17 @@ public class ProducerFeedActivity extends Activity {
             List<BuyerDirectory.Summary> buyers = BuyerDirectory.list(rdb, owner, season);
             List<BuyerElekReport.Buyer> active = new ArrayList<>();
             for (BuyerDirectory.Summary b : buyers) {
-                f.seasonKg += b.kg;
-                f.seasonTl += b.gross;
-                if (b.receivable > 0.009) { f.receivableTotal += b.receivable; f.receivableCount++; }
                 if (b.saleCount > 0) active.add(new BuyerElekReport.Buyer(b.id, b.name, b.receivable));
             }
+            // Elek kartıyla aynı toplam (alıcısız elek kayıtları ve elle girilen satışlar dahil).
+            SeasonSales.Totals sales = SeasonSales.season(new ElekRepository(db), rdb, owner, season);
+            f.seasonKg = sales.kg;
+            f.seasonTl = sales.tl;
+            // Alacaklarım kartıyla aynı toplam ve alıcı sayısı.
+            String todayIso = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
+            SalePayments.Outstanding open = SalePayments.outstanding(rdb, owner == null ? "" : owner, todayIso);
+            f.receivableTotal = open.total;
+            f.receivableCount = open.count > 0 ? Math.max(1, open.buyers) : 0;
             tanecikSalesFacts(rdb, owner, season, f);
             if (active.size() >= 2) {
                 BuyerElekReport.Report r = BuyerElekReport.build(BuyerDirectory.fairSales(rdb, owner, season), active);
