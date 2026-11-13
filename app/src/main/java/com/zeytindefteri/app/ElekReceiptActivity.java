@@ -187,6 +187,14 @@ public class ElekReceiptActivity extends Activity {
         ap.setMargins(0, dp(16), 0, 0);
         body.addView(actions, ap);
 
+        // Yanlış günle girilmiş fişi düzeltme (bağlı satış da birlikte değişir).
+        TextView dateButton = actionButton("Tarihi düzelt · " + longDate(dateIso), false);
+        dateButton.setContentDescription("Fişin tarihini düzelt. Şu an " + longDate(dateIso));
+        dateButton.setOnClickListener(v -> editDate());
+        LinearLayout.LayoutParams dbp = new LinearLayout.LayoutParams(-1, dp(48));
+        dbp.setMargins(0, dp(10), 0, 0);
+        body.addView(dateButton, dbp);
+
         TextView delete = text("Kaydı sil", 14, Color.parseColor("#FF8A7A"), true);
         delete.setGravity(Gravity.CENTER);
         delete.setBackground(rounded(Color.TRANSPARENT, Color.parseColor("#5A2F31"), 22));
@@ -588,6 +596,75 @@ public class ElekReceiptActivity extends Activity {
                 .putExtra(Intent.EXTRA_SUBJECT, "Elek makbuzu · " + gardenName)
                 .putExtra(Intent.EXTRA_TEXT, text);
         startActivity(Intent.createChooser(send, "Makbuzu paylaş"));
+    }
+
+    private void editDate() {
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        try {
+            java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            f.setLenient(false);
+            java.util.Date d = f.parse(dateIso);
+            if (d != null) cal.setTime(d);
+        } catch (Exception ignored) {
+            // Okunamazsa bugünden açılır.
+        }
+        android.app.DatePickerDialog dlg = new android.app.DatePickerDialog(this, (view, y, m, dd) -> {
+            String picked = String.format(Locale.US, "%04d-%02d-%02d", y, m + 1, dd);
+            confirmDate(picked);
+        }, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH));
+        dlg.getDatePicker().setMaxDate(System.currentTimeMillis());
+        dlg.show();
+    }
+
+    private void confirmDate(String picked) {
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new java.util.Date());
+        String problem = ElekDateFix.problem(dateIso, picked, today);
+        if (problem != null) {
+            Toast.makeText(this, problem, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        ElekSaleBridge bridge = new ElekSaleBridge(databaseHelper);
+        final long saleId = bridge.linkedSaleId(recordId);
+        String msg = ElekDateFix.confirm(longDate(dateIso), longDate(picked), saleId > 0, dateIso, picked);
+        new AlertDialog.Builder(this)
+                .setTitle("Tarih düzeltilsin mi?")
+                .setMessage(msg)
+                .setPositiveButton("Düzelt", (d, w) -> {
+                    if (bridge.changeDate(recordId, picked) <= 0) {
+                        Toast.makeText(this, "Tarih düzeltilemedi.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    syncCloud();
+                    syncSale(saleId);
+                    setResult(RESULT_OK);
+                    Toast.makeText(this, "Tarih düzeltildi: " + longDate(picked), Toast.LENGTH_SHORT).show();
+                    if (loadRecord()) render();
+                    else finish();
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
+    }
+
+    private void syncSale(long saleId) {
+        if (saleId <= 0) return;
+        try {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) new ProductionCloudRepository(databaseHelper).syncSaleByLocalId(user.getUid(), saleId);
+        } catch (Exception ignored) {
+            // Sonraki genel senkronda gider.
+        }
+    }
+
+    /** "13 Kasım 2026" */
+    private String longDate(String iso) {
+        try {
+            java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            f.setLenient(false);
+            java.util.Date d = f.parse(iso);
+            return d == null ? iso : new java.text.SimpleDateFormat("d MMMM yyyy", turkishLocale).format(d);
+        } catch (Exception e) {
+            return iso == null ? "" : iso;
+        }
     }
 
     private void editNote() {

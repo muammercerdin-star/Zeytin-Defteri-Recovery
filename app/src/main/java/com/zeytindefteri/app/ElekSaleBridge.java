@@ -44,6 +44,44 @@ public final class ElekSaleBridge {
         try { return c.moveToFirst() ? c.getLong(0) : -1; } finally { c.close(); }
     }
 
+    /**
+     * Fiş tarihini düzeltir: elek kaydı ve (varsa) bağlı satış birlikte, sezon yılıyla; tek işlem.
+     * Dönüş: güncellenen satır sayısı (0 = olmadı). Yalnız etkin hesabın kaydı.
+     */
+    public int changeDate(long elekId, String iso) {
+        if (elekId <= 0 || !ElekDateFix.valid(iso)) return 0;
+        SQLiteDatabase db = databaseHelper.getWritableDatabase();
+        long now = System.currentTimeMillis();
+        int year = ElekDateFix.year(iso);
+        long saleId = linkedSaleId(db, elekId);
+        db.beginTransaction();
+        try {
+            ContentValues e = new ContentValues();
+            e.put("record_date", iso);
+            e.put("season_year", year);
+            e.put("updated_at", now);
+            int n = db.update("elek_records", e, "id=? AND COALESCE(owner_uid,'')=?",
+                    new String[]{String.valueOf(elekId), owner()});
+            if (n <= 0) return 0;
+            if (saleId > 0) {
+                ContentValues s = new ContentValues();
+                s.put("sale_date", ElekSaleModel.saleDate(iso));
+                s.put("season_year", year);
+                s.put("updated_at", now);
+                int m = db.update("sales", s, "id=? AND COALESCE(owner_uid,'')=?",
+                        new String[]{String.valueOf(saleId), owner()});
+                if (m <= 0) return 0;
+                n += m;
+            }
+            db.setTransactionSuccessful();
+            return n;
+        } catch (RuntimeException ex) {
+            return 0;
+        } finally {
+            db.endTransaction();
+        }
+    }
+
     /** Bu eleğe bağlı satışın id'si; yoksa -1. */
     public long linkedSaleId(long elekId) {
         return linkedSaleId(databaseHelper.getReadableDatabase(), elekId);
