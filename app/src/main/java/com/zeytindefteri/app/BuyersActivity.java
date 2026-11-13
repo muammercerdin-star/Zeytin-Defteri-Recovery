@@ -473,6 +473,17 @@ public final class BuyersActivity extends Activity {
             line.addView(text("ALACAĞIN", 14, GreenTheme.color(R.color.zd_warning), true), new LinearLayout.LayoutParams(0, -2, 1));
             line.addView(text(ElekSaleModel.tl(buyer.receivable), 22, GreenTheme.color(R.color.zd_warning), true));
             due.addView(line);
+            // Toplu tahsilat: alıcı borcunun hepsini ya da bir kısmını getirdi (en eski satıştan başlayarak işlenir).
+            TextView pay = pill("Ödeme aldım", true);
+            pay.setContentDescription(buyer.name + " için ödeme aldım. Alacak " + ElekSaleModel.tl(buyer.receivable));
+            pay.setOnClickListener(v -> {
+                if (!BuyerPaymentSheet.show(this, databaseHelper, buyer.id, buyer.name, this::render)) {
+                    Toast.makeText(this, "Açık borç bulunamadı.", Toast.LENGTH_SHORT).show();
+                }
+            });
+            LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-1, dp(48));
+            pp.topMargin = dp(12);
+            due.addView(pay, pp);
             body.addView(due, gap(12));
         }
 
@@ -538,8 +549,8 @@ public final class BuyersActivity extends Activity {
                 row.setClickable(true);
                 row.setFocusable(true);
                 row.setContentDescription(BuyerDirectory.shortDate(l.date) + ", " + kg(l.kg) + ", " + ElekSaleModel.tl(l.gross)
-                        + ", " + sub + (l.elekDeleted ? ", elek kaydı silinmiş" : "") + ". Seçenekler");
-                row.setOnClickListener(v -> askDeleteSale(l));
+                        + ", " + sub + (l.elekDeleted ? ", elek kaydı silinmiş" : "") + ". Ödeme ya da silme için dokun");
+                row.setOnClickListener(v -> saleOptions(l));
                 list.addView(row);
                 if (i < sales.size() - 1) {
                     View rule = new View(this);
@@ -555,6 +566,26 @@ public final class BuyersActivity extends Activity {
         TextView edit = pill("Bilgileri düzenle", false);
         edit.setOnClickListener(v -> editBuyer(buyer));
         body.addView(edit, sized(-1, 48, 18));
+    }
+
+    /** Satış satırı: ödeme (açıksa "Ödeme aldım", kapalıysa geçmiş) ya da silme. */
+    private void saleOptions(BuyerDirectory.SaleLine l) {
+        boolean open = l.open > 0.009;
+        String payLabel = open ? "Ödeme aldım · " + ElekSaleModel.tl(l.open) + " kaldı" : "Ödeme geçmişi";
+        String[] items = {payLabel, "Satışı sil"};
+        new AlertDialog.Builder(this)
+                .setTitle(BuyerDirectory.shortDate(l.date) + " · " + kg(l.kg) + " · " + ElekSaleModel.tl(l.gross))
+                .setItems(items, (d, which) -> {
+                    if (which == 0) {
+                        if (!PaymentSheet.show(this, databaseHelper, l.saleId, this::render)) {
+                            Toast.makeText(this, "Satış bulunamadı.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        askDeleteSale(l);
+                    }
+                })
+                .setNegativeButton("Vazgeç", null)
+                .show();
     }
 
     /** Yanlış ya da eleği silinmiş satışı alacağıyla birlikte silme. */

@@ -207,6 +207,27 @@ public final class SalePayments {
         }
     }
 
+    /**
+     * Toplu tahsilat (BuyerPayPlan): her pay kendi satışına record ile işlenir, hepsi TEK işlemde.
+     * Biri bile yazılamazsa hiçbiri kaydedilmez (yarım tahsilat kalmaz).
+     */
+    public static boolean recordPlan(SQLiteDatabase db, String owner, BuyerPayPlan.Result plan, String method,
+                                     String today, long now) {
+        if (plan == null || plan.empty() || plan.excess > 0.009) return false;
+        db.beginTransaction();
+        try {
+            for (BuyerPayPlan.Part p : plan.parts) {
+                if (!record(db, owner, p.saleId, p.amount, method, today, now)) return false;
+            }
+            db.setTransactionSuccessful();
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        } finally {
+            db.endTransaction();
+        }
+    }
+
     /** Söz verilen günü satışa ve alacağına yazar ("" = gün yok; yyyy-MM-dd ya da dd.MM.yyyy kabul edilir). */
     public static boolean setDue(SQLiteDatabase db, String owner, long saleId, String due, long now) {
         if (saleId <= 0) return false;

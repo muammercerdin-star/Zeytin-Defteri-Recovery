@@ -9,6 +9,10 @@ with tempfile.TemporaryDirectory(prefix='zeytin-buyers-') as out:
                     str(root / 'app/src/main/java/com/zeytindefteri/app/BuyerDirectory.java'),
                     str(root / 'app/src/main/java/com/zeytindefteri/app/BuyerFairCompare.java'),
                     str(root / 'app/src/main/java/com/zeytindefteri/app/BuyerElekReport.java'),
+                    str(root / 'app/src/main/java/com/zeytindefteri/app/BuyerPayPlan.java'),
+                    str(root / 'app/src/main/java/com/zeytindefteri/app/SalePayments.java'),
+                    str(root / 'app/src/main/java/com/zeytindefteri/app/SalePayStatus.java'),
+                    str(root / 'app/src/main/java/com/zeytindefteri/app/ElekSaleModel.java'),
                     str(here / 'BuyerDirectoryTest.java')], check=True)
     db = pathlib.Path(out) / 'test.sqlite'
     subprocess.run(['java', '-cp', out, 'com.zeytindefteri.app.BuyerDirectoryTest', str(db), str(here / 'sql_helper.py')],

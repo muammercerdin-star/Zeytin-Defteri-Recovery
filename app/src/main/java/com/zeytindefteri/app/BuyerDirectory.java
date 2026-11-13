@@ -273,6 +273,31 @@ public final class BuyerDirectory {
         return out;
     }
 
+    /**
+     * Toplu tahsilat için alıcının BÜTÜN sezonlardaki açık satışları (Alıcılarım'daki "Alacağın" ile aynı kapsam).
+     * Kalan, ödeme kaydıyla aynı kuraldan (SalePayments.Info.remaining) alınır.
+     */
+    public static List<BuyerPayPlan.Open> openSales(SQLiteDatabase db, String owner, long buyerId) {
+        List<long[]> ids = new ArrayList<>();
+        List<String> dates = new ArrayList<>();
+        Cursor c = db.rawQuery("SELECT s.id, " + ISO_DATE + " FROM sales s WHERE s.buyer_id=? AND COALESCE(s.owner_uid,'')=? "
+                + "AND COALESCE(s.sale_kind,'SALE')='SALE' AND " + OPEN_SUM + " > 0.009",
+                new String[]{String.valueOf(buyerId), owner(owner)});
+        try {
+            while (c.moveToNext()) {
+                ids.add(new long[]{c.getLong(0)});
+                dates.add(c.getString(1));
+            }
+        } finally { c.close(); }
+        List<BuyerPayPlan.Open> out = new ArrayList<>();
+        for (int i = 0; i < ids.size(); i++) {
+            SalePayments.Info info = SalePayments.sale(db, owner(owner), ids.get(i)[0]);
+            if (info == null || info.remaining() <= 0.009) continue;
+            out.add(new BuyerPayPlan.Open(info.saleId, dates.get(i), info.remaining()));
+        }
+        return out;
+    }
+
     /** Elek sınıfına göre bu alıcının ve diğer alıcıların bu sezon kg ağırlıklı ortalama fiyatı. */
     public static List<PriceRow> priceComparison(SQLiteDatabase db, String owner, long buyerId, int season) {
         double[] bKg = new double[GRADES.length], bTl = new double[GRADES.length];
