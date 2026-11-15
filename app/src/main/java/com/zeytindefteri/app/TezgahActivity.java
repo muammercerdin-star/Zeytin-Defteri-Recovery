@@ -141,6 +141,8 @@ public final class TezgahActivity extends Activity {
                 .putString("seller_phone_" + owner, sellerPhone);
         if (model.isEmpty()) e.remove(draftKey()); else e.putString(draftKey(), model.encode());
         e.apply();
+        // Bağlı bilgisayardaki "Şu an tartılıyor" kartı güncellensin (400 ms birleştirilir; bağlı yoksa iş yapmaz).
+        TezgahWebChanges.changed(owner);
     }
 
     /** Tezgahta en son kullanılan alım fiyatları (ilk seferde boş: "fiyat?" ile sorulur). */
@@ -156,7 +158,10 @@ public final class TezgahActivity extends Activity {
 
     // ================================================================== günün fiyatı
 
-    private void markPricesToday() { prefs.edit().putString("price_day_" + owner, today()).apply(); }
+    private void markPricesToday() {
+        prefs.edit().putString("price_day_" + owner, today()).apply();
+        TezgahWebChanges.changed(owner);
+    }
 
     /**
      * Günün ilk tartımında fiyatlar bir kez sorulur (eski fiyatla alım yapılmasın): altı numaranın fiyatı
@@ -219,6 +224,8 @@ public final class TezgahActivity extends Activity {
         TezgahModel p = new TezgahModel();
         for (int g = 0; g < TezgahModel.GRADES.length; g++) p.setPrice(g, model.price(g));
         prefs.edit().putString("buy_prices_" + owner, p.encode()).apply();
+        // Bilgisayardaki "Günün fiyatları" telefondan yenilensin.
+        TezgahWebChanges.changed(owner);
     }
 
     // ================================================================== ekran

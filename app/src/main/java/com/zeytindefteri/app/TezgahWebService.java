@@ -228,6 +228,7 @@ public final class TezgahWebService extends Service implements TezgahWebChanges.
                         }
                     }, System::currentTimeMillis, SystemClock::elapsedRealtime,
                     () -> getSharedPreferences("zd_tezgah", MODE_PRIVATE).getFloat("rate_" + owner, 0f));
+            commands.live(TezgahWebLivePrefs.source(this, owner));
             client = new TezgahWebClient(p.qr, new TezgahWebRepository(helper.getWritableDatabase(), owner), alive, (on, detail) -> {
                 if (generation != currentGeneration) return;
                 ready = on;

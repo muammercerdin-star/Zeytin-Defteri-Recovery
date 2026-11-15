@@ -34,6 +34,13 @@ public final class CommandPhoneBridge {
                                     public void trace(String message) { traces.add(message); }
                                     public void backup(String id) { }
                                 }, System::currentTimeMillis, clock::get, () -> 0);
+                        TezgahModel livePrices = new TezgahModel();
+                        livePrices.setPrice(0, 130);
+                        TezgahModel liveDraft = new TezgahModel();
+                        liveDraft.setPrice(0, 130);
+                        liveDraft.add(0, 10, 258);
+                        final String liveDay = commands.today();
+                        commands.live(() -> new TezgahWebLive.State(livePrices.encode(), liveDay, liveDraft.encode(), "<b>Canlı</b>", 2.0));
                         phone.commands(commands);
                         phone.opened();
                         break;

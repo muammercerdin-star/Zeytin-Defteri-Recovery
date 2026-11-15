@@ -9,6 +9,16 @@ public final class TezgahWebLink {
 
     private TezgahWebLink() { }
 
+    /** Kullanıcıya söylenen bilgisayar sayfası adresi (kendi alan adımız; bazı sağlayıcılar pages.dev'i engelliyor). */
+    public static final String WEB_HOST = "web.zeytindefteri.tr";
+
+    /** Bildirim izni neden istenir (bağlanmadan önce bir kez). */
+    public static final String NOTIFY_WHY = "Bilgisayar bağlıyken telefonun bildirim çubuğunda \"Bilgisayar bağlantısı açık\" yazar. "
+            + "Böylece bağlantının açık olduğunu her an görür, istediğin an kapatırsın.\n\nBunun için bildirim izni gerekiyor.";
+
+    /** İzin verilmediğinde kısa hatırlatma. */
+    public static final String NOTIFY_OFF_HINT = "Bildirim kapalı: bağlantı çalışır ama bildirimde görünmez. Ayarlar › Uygulamalar › Zeytin Defteri › Bildirimler'den açabilirsin.";
+
     /** Okutulduktan bu kadar sonra hâlâ bağlanmadıysa "bağlanamadı" sayılır (normalde birkaç saniye). */
     public static final long STUCK_MS = 20000;
 
@@ -29,7 +39,7 @@ public final class TezgahWebLink {
         if (running && stuck) return new Row("Bağlanamadı · dokun, yeniden okut", shortReason(diagnosis), true);
         if (running) return new Row("Bağlanıyor…", "QR okundu · birkaç saniye sürer", false);
         if (savedDevices > 0) return new Row("Kayıtlı bilgisayarlar ›", "Bilgisayarda sayfayı aç, kendisi bağlanır · yeni için dokun", false);
-        return new Row("Bilgisayara bağlan", "Bilgisayarda zeytin-tezgah.pages.dev'i aç, QR'ı okut", false);
+        return new Row("Bilgisayara bağlan", "Bilgisayarda " + WEB_HOST + "'yi aç, QR'ı okut", false);
     }
 
     /** Satırın altına sığacak kısa sebep. */

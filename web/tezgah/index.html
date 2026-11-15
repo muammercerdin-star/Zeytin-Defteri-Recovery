@@ -25,11 +25,11 @@
       <section class="heading">
         <div><p class="eyebrow">BİLGİSAYARDA TEZGÂHINIZ</p>
           <h1>Tezgâh <span class="separator">·</span> <span id="period">Açık dönem</span></h1>
-          <p class="subtitle">Veriler doğrudan telefonunuzdan gelir.</p>
+          <p class="subtitle">Veriler doğrudan telefonunuzdan gelir, bu bilgisayarda saklanmaz.</p>
         </div>
         <div class="filters">
           <button id="open-period" class="quiet" type="button">Açık dönem</button>
-          <label for="day">Takvim günü<input id="day" type="date"></label>
+          <label for="day">Gün seç<input id="day" type="date"></label>
         </div>
       </section>
       <p id="message" class="message" role="status"></p>
@@ -55,8 +55,12 @@
       </section>
       <section id="ledger" hidden>
         <div id="stale" class="offline" role="alert" hidden>Telefon bağlantısı koptu · Son alınan veriler gösteriliyor.</div>
+        <div id="workspace" class="workspace solo">
+        <aside id="quick-entry" class="quick-entry" aria-label="Yeni alım" hidden></aside>
+        <div class="board">
+        <section id="live-weighing" class="card live-weighing" aria-live="polite" hidden></section>
         <div class="stats">
-          <article class="card stat"><p>Alım sayısı</p><strong id="count">—</strong><small>Seçili kapsamın toplamı</small></article>
+          <article class="card stat"><p>Alım sayısı</p><strong id="count">—</strong><small>Listelenen alımlar</small></article>
           <article class="card stat"><p>Net ağırlık</p><strong id="weight">—</strong><small>Dara sonrası</small></article>
           <article class="card stat"><p>Toplam tutar</p><strong id="amount">—</strong><small>Alım bedeli</small></article>
           <article class="card stat"><p>Ödenen</p><strong id="paid">—</strong><small>Sonraki ödemeler dahil</small></article>
@@ -76,7 +80,9 @@
           <p id="empty" class="empty" hidden>Bu kapsamda alım bulunmuyor.</p>
           <div class="pagination"><span id="page">Sayfa 1</span><div><button id="previous" class="quiet" type="button">← Önceki</button><button id="next" class="quiet" type="button">Sonraki →</button></div></div>
         </section>
-        <p class="footnote">Açık dönem, Z ile kapanmamış alımları gösterir; tek bir takvim günüyle sınırlı değildir. Alım saati mevcut telefon verisinde bulunmaz.</p>
+        <p class="footnote">Açık dönem: gün sonu (Z) yapılmamış bütün alımlar. Tek bir günü görmek için sağ üstten gün seçin.</p>
+        </div>
+        </div>
       </section>
       <section id="operations" hidden></section>
     </main>

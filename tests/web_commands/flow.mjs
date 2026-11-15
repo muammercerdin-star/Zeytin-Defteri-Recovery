@@ -96,7 +96,13 @@ try {
   check(results.at(-1).durum === 'tamam', 'producer command completes');
   const meta = page.operation('web_meta');
   await pump();
-  const today = (await meta).tarih;
+  const metaData = await meta;
+  const today = metaData.tarih;
+  check(metaData.canli === true && metaData.gunFiyat.fiyatlar[0] === '130.00', 'encrypted channel carries phone day prices');
+  const livePromise = page.operation('canli_tartim');
+  await pump();
+  const liveData = await livePromise;
+  check(liveData.aktif === true && liveData.uretici === '<b>Canlı</b>' && liveData.netKg === '238.0', 'encrypted channel carries live weighing');
   const fields = { uretici: '<img onerror>', tarih: today, odenen: '20', model: { dara: '2', fiyatlar: ['10', '0', '0', '0', '0', '0'], tartimlar: [{ elek: 0, kasa: 1, kg: '22' }] } };
   const id = await page.command('alim_ekle', fields);
   const original = page.commands.get(id).request;
