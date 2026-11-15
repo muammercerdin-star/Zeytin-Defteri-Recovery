@@ -68,6 +68,8 @@ export class Operations {
     app.onWipe = () => this.clear();
     app.onChange = () => {
       this.reportDirty = true;
+      this.liveDirty = true;
+      if (this.online && this.liveSupported) void this.refreshLive();
     };
   }
 
@@ -185,7 +187,7 @@ export class Operations {
     if (this.quick) {
       this.quick.replaceChildren();
       this.quick.hidden = true;
-      this.workspace?.classList.add('solo');
+      this.workspace?.classList.toggle('solo', true);
       this.quickFields = this.element('fieldset', '', 'write-fields');
       this.quickFields.hidden = true;
       this.quickFields.disabled = true;
@@ -338,7 +340,9 @@ export class Operations {
       const value = guess(input);
       return value > 0 ? grades[index].replace(' numara', ' no') + ' ' + amount(value, ' ₺') : null;
     }).filter(Boolean);
-    this.priceSummary.textContent = filled ? 'Günün fiyatları · ' + parts.join(' · ') : 'Günün fiyatları · önce fiyatları girin';
+    const source = this.priceSource === 'telefon' ? ' · telefondan' : '';
+    const empty = this.priceSource === 'eksik' ? 'telefonda bugünün fiyatları girilmedi, buraya yazın' : 'önce fiyatları girin';
+    this.priceSummary.textContent = filled ? 'Günün fiyatları' + source + ' · ' + parts.join(' · ') : 'Günün fiyatları · ' + empty;
     if (!filled) this.priceBox.open = true;
     const tare = guess(this.tare, 1);
     const prices = this.prices.map(input => guess(input));
@@ -683,6 +687,9 @@ export class Operations {
         if (epoch !== this.epoch) return;
         this.today = data.tarih;
         this.date.value = this.today;
+        this.liveSupported = data.canli === true;
+        this.applyDayPrices(data.gunFiyat);
+        if (this.liveSupported) void this.refreshLive();
       }).catch(() => {}).finally(() => {
         if (epoch === this.epoch) this.metaLoading = false;
       });
@@ -704,7 +711,100 @@ export class Operations {
     this.reportDirty = false;
     this.reportLoading = false;
     this.metaLoading = false;
+    this.liveSupported = false;
+    this.liveLoading = false;
+    this.liveDirty = false;
+    this.priceSource = '';
+    this.renderLive(null);
     this.full = false;
     this.build();
+  }
+
+  /**
+   * Telefondaki günün fiyatlarını kutulara yazar (telefon esastır). Yazılmakta olan kutuya ve
+   * düzenlenen eski alıma dokunmaz. Eski uygulamada bilgi gelmez; elle giriş aynen sürer.
+   */
+  applyDayPrices(info) {
+    if (!info || !this.prices) return;
+    if (info.bugun !== true || !Array.isArray(info.fiyatlar) || info.fiyatlar.length !== grades.length) {
+      this.priceSource = 'eksik';
+      this.updatePreview();
+      return;
+    }
+    this.priceSource = 'telefon';
+    if (this.editing) {
+      this.updatePreview();
+      return;
+    }
+    const focused = this.document.activeElement;
+    info.fiyatlar.forEach((value, index) => {
+      const input = this.prices[index];
+      if (input === focused) return;
+      const number = Number(value);
+      input.value = number > 0 ? localized(String(number)) : '';
+    });
+    const tare = Number(info.dara);
+    if (this.tare !== focused && tare >= 0 && tare <= 20) this.tare.value = localized(String(tare));
+    this.updatePreview();
+  }
+
+  /** Telefon değişti dediğinde fiyatları ve "Şu an tartılıyor" kartını yeniler; üst üste istek göndermez. */
+  async refreshLive() {
+    if (this.liveLoading || !this.online || !this.liveSupported) return;
+    this.liveLoading = true;
+    this.liveDirty = false;
+    const epoch = this.epoch;
+    try {
+      const meta = await this.app.operation('web_meta');
+      if (epoch !== this.epoch) return;
+      this.applyDayPrices(meta.gunFiyat);
+      const live = await this.app.operation('canli_tartim');
+      if (epoch !== this.epoch) return;
+      this.renderLive(live);
+    } catch {
+      if (epoch === this.epoch) this.renderLive(null);
+    } finally {
+      if (epoch === this.epoch) {
+        this.liveLoading = false;
+        if (this.liveDirty) void this.refreshLive();
+      }
+    }
+  }
+
+  /** "Şu an tartılıyor" kartı: yalnız metin düğümleri, HTML yok. */
+  renderLive(live) {
+    const box = this.document.getElementById('live-weighing');
+    if (!box || box === this.root) return;
+    box.replaceChildren();
+    box.hidden = !(live && live.aktif === true);
+    if (box.hidden) return;
+    const head = this.element('div', '', 'live-head');
+    head.append(this.element('span', 'Şu an tartılıyor', 'live-tag'));
+    head.append(this.element('strong', live.uretici || 'Üretici henüz seçilmedi', 'live-seller'));
+    box.append(head);
+    const totals = grades.map(() => ({ kasa: 0, net: 0, count: 0 }));
+    for (const row of Array.isArray(live.tartimlar) ? live.tartimlar : []) {
+      const total = totals[row.elek];
+      if (!total) continue;
+      total.kasa += Number(row.kasa) || 0;
+      total.net += Number(row.netKg) || 0;
+      total.count += 1;
+    }
+    const list = this.element('div', '', 'live-grades');
+    totals.forEach((total, index) => {
+      if (!total.count) return;
+      const line = this.element('div', '', 'live-grade');
+      line.append(this.element('span', grades[index]));
+      line.append(this.element('span', total.kasa + ' kasa'));
+      line.append(this.element('strong', amount(Math.round(total.net * 10) / 10, ' kg')));
+      list.append(line);
+    });
+    box.append(list);
+    const sum = this.element('p', 'Net ' + amount(live.netKg, ' kg') + ' · ' + live.kasa + ' kasa · ' + amount(live.tutarTL, ' ₺'), 'live-sum');
+    box.append(sum);
+    let note = 'Tahmini · telefonda kaydedilince alımlar listesine düşer.';
+    if (live.eksikFiyat) note = 'Bazı eleklerin fiyatı telefonda girilmedi · tutar eksik görünebilir.';
+    if (Number(live.satir) > (live.tartimlar || []).length) note += ' Son ' + live.tartimlar.length + ' tartım gösteriliyor.';
+    box.append(this.element('p', note, 'live-note'));
   }
 }

@@ -263,4 +263,83 @@ page.permissions = ['tezgah.read'];
 await assert.rejects(page.command('odeme', {}));
 checks++;
 page.stop();
+// Günün fiyatları telefondan gelir; "Şu an tartılıyor" kartı yalnız metinle çizilir.
+{
+  const opsRoot = new Element('section');
+  const quick = new Element('aside');
+  const liveBox = new Element('section');
+  const ids = { operations: opsRoot, 'quick-entry': quick, 'live-weighing': liveBox, workspace: new Element('div') };
+  const doc = { getElementById: id => ids[id] || null, createElement: tag => new Element(tag), activeElement: null };
+  const calls = [];
+  let phone = { gunFiyat: { bugun: true, fiyatlar: ['130.00', '100.00', '0.00', '0.00', '0.00', '20.50'], dara: '2.0', kaynak: 'gun' }, canli: true };
+  let live = { aktif: true, uretici: malicious, dara: '2.0', tartimlar: [{ elek: 0, kasa: 10, kg: '258.0', netKg: '238.0' }, { elek: 0, kasa: 2, kg: '40.0', netKg: '36.0' }], satir: 2, kasa: 12, netKg: '274.0', tutarTL: '35620.00', eksikFiyat: false };
+  const phoneApp = {
+    commands: new Map(),
+    canWrite() { return true; },
+    async command() { return 'x'; },
+    async operation(op) {
+      calls.push(op);
+      if (op === 'web_meta') return { tarih: '2026-11-16', ...phone };
+      if (op === 'canli_tartim') return live;
+      return { items: [], complete: true };
+    }
+  };
+  const lv = new Operations(doc, phoneApp);
+  lv.state({ approved: true, writable: true, stale: false, data: {} });
+  await pause(); await pause(); await pause();
+  equal(lv.prices[0].value, '130', 'phone price fills Double');
+  equal(lv.prices[5].value, '20,5', 'phone price uses Turkish comma');
+  equal(lv.prices[2].value, '', 'zero phone price stays empty');
+  check(lv.priceSummary.textContent.startsWith('Günün fiyatları · telefondan'), 'summary says prices came from phone');
+  check(!liveBox.hidden, 'live card shown while phone weighs');
+  const texts = walk(liveBox).map(node => node.textContent);
+  check(texts.includes(malicious), 'seller rendered as literal text');
+  check(texts.includes('Şu an tartılıyor'), 'live tag');
+  check(texts.some(t => t === '12 kasa'), 'grade rows aggregated (10+2 kasa)');
+  check(texts.some(t => t.startsWith('Net 274 kg')), 'live total net');
+  // Telefon değişti: yazılmakta olan kutu ezilmez, öteki kutular güncellenir; tartım bitince kart kapanır.
+  lv.prices[1].value = '105';
+  doc.activeElement = lv.prices[1];
+  phone = { gunFiyat: { bugun: true, fiyatlar: ['140.00', '110.00', '0.00', '0.00', '0.00', '20.00'], dara: '2.0', kaynak: 'gun' }, canli: true };
+  live = { aktif: false };
+  const before = calls.length;
+  phoneApp.onChange();
+  await pause(); await pause(); await pause();
+  check(calls.length > before, 'change event refetches phone state');
+  equal(lv.prices[0].value, '140', 'updated phone price applied');
+  equal(lv.prices[1].value, '105', 'focused price box not overwritten');
+  check(liveBox.hidden && liveBox.children.length === 0, 'live card hidden when weighing saved');
+  // Dünkü fiyat gelmez: kutular elle doldurulabilir kalır, özet uyarır.
+  doc.activeElement = null;
+  phone = { gunFiyat: { bugun: false }, canli: true };
+  phoneApp.onChange();
+  await pause(); await pause(); await pause();
+  check(lv.priceSummary.textContent.includes('Günün fiyatları') , 'summary still rendered');
+  check(lv.priceSource === 'eksik', 'missing phone prices noted');
+  // Bağlantı kesilince kart ve canlı durum silinir.
+  live = { aktif: true, uretici: 'A', tartimlar: [], satir: 0, kasa: 0, netKg: '0', tutarTL: '0' };
+  phoneApp.onChange();
+  await pause(); await pause(); await pause();
+  check(!liveBox.hidden, 'card back while weighing');
+  phoneApp.onWipe();
+  check(liveBox.hidden && liveBox.children.length === 0 && !lv.liveSupported, 'wipe clears live card');
+}
+// Eski uygulama: canli/gunFiyat yok → canlı istek gönderilmez, elle fiyat girişi aynen.
+{
+  const oldCard = new Element('section');
+  oldCard.hidden = true;
+  const ids = { operations: new Element('section'), 'quick-entry': new Element('aside'), 'live-weighing': oldCard, workspace: new Element('div') };
+  const doc = { getElementById: id => ids[id] || null, createElement: tag => new Element(tag) };
+  const calls = [];
+  const oldApp = { commands: new Map(), canWrite() { return true; }, async command() { return 'x'; },
+    async operation(op) { calls.push(op); if (op === 'web_meta') return { tarih: '2026-11-16' }; return { items: [] }; } };
+  const old = new Operations(doc, oldApp);
+  old.state({ approved: true, writable: true, stale: false, data: {} });
+  await pause(); await pause();
+  oldApp.onChange();
+  await pause();
+  check(!calls.includes('canli_tartim'), 'old phone: no live operation requested');
+  check(oldCard.hidden === true && oldCard.children.length === 0, 'old phone: no live card');
+  equal(old.prices[0].value, '', 'old phone: price boxes stay manual');
+}
 console.log(`PASS ${checks} web operations / forms / permissions / XSS checks`);

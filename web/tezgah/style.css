@@ -187,3 +187,14 @@ tr.due td:nth-child(7) { color: var(--gold); font-weight: 700; }
 .workspace:not(.solo) .row-action { font-size: 13px; padding: 6px 9px; margin: 0 2px; }
 .workspace:not(.solo) th, .workspace:not(.solo) td { padding: 13px 9px; }
 .workspace:not(.solo) td:last-child { white-space: nowrap; }
+
+/* Şu an telefonda tartılan alım (salt okunur) */
+.live-weighing { border-color: #3c6b3a; background: #10261d; padding: 18px 20px; margin-bottom: 16px; }
+.live-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.live-tag { color: var(--bg); background: var(--green); border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; letter-spacing: .5px; }
+.live-seller { font-size: 19px; }
+.live-grades { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 18px; margin: 14px 0 6px; }
+.live-grade { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid #23423a; padding: 6px 0; font-variant-numeric: tabular-nums; }
+.live-grade span:first-child { color: var(--muted); }
+.live-sum { font-size: 22px; font-weight: 650; color: var(--green); margin: 10px 0 4px; font-variant-numeric: tabular-nums; }
+.live-note { color: var(--muted); font-size: 13px; margin: 0; }
