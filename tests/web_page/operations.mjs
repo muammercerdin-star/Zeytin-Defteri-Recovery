@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { Operations, decimal } from '../../web/tezgah/js/operations.js';
+import { Operations, decimal, estimate } from '../../web/tezgah/js/operations.js';
 import { TezgahPage } from '../../web/tezgah/app.js';
 let checks = 0;
 function check(value, message) {
@@ -60,6 +60,10 @@ for (const invalid of ['1.14', '-1', 'NaN', 'Infinity', '1e6', '<img>', '1,234',
   assert.throws(() => decimal(invalid));
   checks++;
 }
+// Önizleme, telefondaki TezgahModel formülüyle aynı: net = kg − kasa × dara (eksiye düşmez).
+equal(estimate(2, [60, 50, 0, 0, 0, 0], [{ elek: 0, kasa: 10, kg: 258 }, { elek: 1, kasa: 2, kg: 40 }]),
+  { net: 274, total: 238 * 60 + 36 * 50, gradeNet: [238, 36, 0, 0, 0, 0] }, 'preview formula matches phone');
+equal(estimate(2, [10, 0, 0, 0, 0, 0], [{ elek: 0, kasa: 5, kg: 6 }]).net, 0, 'tare never makes net negative');
 const root = new Element('section');
 const document = { getElementById: () => root, createElement: tag => new Element(tag) };
 const sent = [];
@@ -115,12 +119,39 @@ complete();
 ui.seller.value = malicious;
 await ui.searchProducers();
 equal(ui.producers.children[0].textContent, malicious, 'producer suggestion no HTML');
+equal(ui.paid.value, '', 'paid box starts empty, no 0 to delete');
+equal(ui.prices[0].value, '', 'price boxes start empty');
+check(ui.priceSummary.textContent.includes('önce fiyatları girin') && ui.priceBox.open, 'empty day prices open and ask');
+ui.prices[0].value = '60';
+ui.prices[0].events.input();
+ui.weighings[0].crates.value = '10';
+ui.weighings[0].kg.value = '258';
+ui.weighings[0].kg.events.input();
+equal(ui.previewMain.textContent, 'Net 238 kg · 14.280 ₺', 'live net and amount preview');
+check(ui.priceSummary.textContent.includes('Double 60 ₺'), 'day prices summarised in one line');
+ui.weighings[0].grade.value = '1';
+ui.weighings[0].grade.events.change();
+check(ui.previewNote.textContent.includes('1 numara fiyatı girilmedi'), 'missing grade price warned');
+ui.weighings[0].grade.value = '0';
+ui.weighings[0].kg.value = '12,5,0';
+ui.weighings[0].kg.events.input();
+equal(ui.previewMain.textContent, 'Sayıyı kontrol edin', 'bad number flagged before sending');
+let moved = false;
+ui.paid.focus = () => { moved = true; };
+let stopped = false;
+ui.weighings[0].kg.events.keydown({ key: 'Enter', preventDefault() { stopped = true; } });
+check(stopped && moved, 'Enter in kg moves to paid instead of submitting');
+ui.paid.focus = Element.prototype.focus;
+ui.weighings[0].crates.value = '';
 ui.prices[0].value = '12,50';
 ui.weighings[0].kg.value = '1.140,5';
 await submit(ui.purchaseSection);
 equal(sent.at(-1).alanlar.model.tartimlar[0].kg, '1140.5', 'purchase number normalized');
 equal(sent.at(-1).alanlar.model.fiyatlar[0], '12.50', 'price sent as text');
 check(!('tutar' in sent.at(-1).alanlar), 'browser never sends trusted total');
+equal(sent.at(-1).alanlar.model.fiyatlar.slice(1), ['0', '0', '0', '0', '0'], 'empty price boxes sent as 0');
+equal(sent.at(-1).alanlar.odenen, '0', 'empty paid sent as 0');
+equal(sent.at(-1).alanlar.model.tartimlar[0].kasa, 0, 'empty crate box sent as 0');
 complete();
 await ui.rowAction('edit', { id: '9' });
 check(ui.paid.disabled, 'edit preserves paid amount');
