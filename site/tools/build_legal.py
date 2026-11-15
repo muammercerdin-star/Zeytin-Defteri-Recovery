@@ -108,6 +108,7 @@ def render():
         return esc('mailto:' + config['CONTACT_EMAIL'] + '?subject=' + quote(subject, safe='') +
                    '&body=' + quote(body, safe=''))
     shared = {
+        '{{SITE_BASE}}': esc(base),
         '{{WEB_URL}}': esc(web),
         '{{HABER_MAILTO}}': mailto('Zeytin Defteri erken erişim',
                                    'Merhaba,\nZeytin Defteri erken erişimine katılmak istiyorum.\n\n'
@@ -141,6 +142,8 @@ def render():
 <meta property="og:type" content="website">
 <meta property="og:locale" content="tr_TR">
 <meta property="og:url" content="{esc(base)}/{filename}">
+<meta property="og:image" content="{esc(base)}/og.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/style.css">
 </head>
