@@ -196,7 +196,7 @@ def render():
             'aria-labelledby="real-screen-title">'
             '<div class="real-screen-heading"><p class="eyebrow">UYGULAMANIN İÇİNDEN</p>'
             '<h2 id="real-screen-title">Bir bakışta Zeytin Defteri.</h2>'
-            '<p>Uygulamanın Ekim 2026 sürümünden alınmış gerçek ekran görüntüleri. '
+            '<p>Uygulamanın Kasım 2026 sürümünden alınmış gerçek ekran görüntüleri. '
             'Kişisel alanlar gizlenmiştir; görünüm güncel sürümde farklı olabilir.</p></div>'
             '<div class="real-screen-grid">' + photo_items + '</div></section>'
         )

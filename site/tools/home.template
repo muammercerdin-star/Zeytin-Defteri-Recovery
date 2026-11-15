@@ -106,12 +106,12 @@
 
 <div class="tiles tiles-soon">
  <section class="tile tile-dark tile-short" aria-labelledby="piyasa-title">
-  <p class="chip">Yakında</p>
+  <p class="chip">Geliştiriliyor</p>
   <h2 id="piyasa-title">Bölge Piyasası</h2>
   <p>Üreticilerin anonim satış kayıtlarından bölgendeki gerçek fiyat.</p>
  </section>
  <section class="tile tile-light tile-short" aria-labelledby="lig-title">
-  <p class="chip chip-dark">Yakında</p>
+  <p class="chip chip-dark">Geliştiriliyor</p>
   <h2 id="lig-title">Zeytin Ligi</h2>
   <p>Emeğini bölgendeki üreticilerle karşılaştır.</p>
  </section>
