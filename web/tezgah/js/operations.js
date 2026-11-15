@@ -162,6 +162,7 @@ export class Operations {
     this.lock(!this.online || !!this.app.commands.size);
     if (result.durum === 'tamam') {
       this.reportDirty = true;
+      if (result.id === this.paymentCommand) this.closePayment();
       if (result.id === this.purchaseCommand) {
         this.resetPurchase();
         this.seller.focus();
@@ -300,9 +301,15 @@ export class Operations {
     section.form.append(after);
     this.cancelEdit = this.button(after, 'Düzenlemeyi bırak', () => this.resetPurchase());
     this.cancelEdit.hidden = true;
-    after.append(this.element('p', 'Enter ile sonraki kutuya geçin. Kesin tutarı telefon hesaplar ve kaydeder.', 'hint'));
+    after.append(this.element('p', 'Enter: sonraki kutu · kilodan sonra Enter: yeni tartım · boş satırda Enter: ödemeye geç · Ctrl+Enter: gönder. Kesin tutarı telefon hesaplar.', 'hint'));
 
     this.purchaseForm = section.form;
+    section.form.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        section.form.requestSubmit?.();
+      }
+    });
     for (const input of [...this.prices, this.tare]) {
       input.addEventListener('input', () => this.updatePreview());
     }
@@ -313,7 +320,7 @@ export class Operations {
 
   /** Enter: bir sonraki kutu. Son kutuda (Şimdi ödenen) form gönderilir. */
   enter(event, next) {
-    if (event.key !== 'Enter' || event.isComposing) return;
+    if (event.key !== 'Enter' || event.isComposing || event.ctrlKey || event.metaKey) return;
     event.preventDefault();
     const target = next?.();
     if (target) {
@@ -388,7 +395,20 @@ export class Operations {
     };
     grade.addEventListener('keydown', event => this.enter(event, () => crates));
     crates.addEventListener('keydown', event => this.enter(event, () => kg));
-    kg.addEventListener('keydown', event => this.enter(event, following));
+    kg.addEventListener('keydown', event => this.enter(event, () => {
+      const last = this.weighings.at(-1) === row;
+      if (!last) return following();
+      if (!kg.value.trim()) {
+        if (this.weighings.length > 1) {
+          this.weighings = this.weighings.filter(item => item !== row);
+          box.remove();
+          this.updatePreview();
+        }
+        return this.paid;
+      }
+      const next = this.addWeighing({ elek: Math.min(grades.length - 1, Number(grade.value) + 1), kasa: 0, kg: '' });
+      return next.grade;
+    }));
     for (const input of [crates, kg]) input.addEventListener('input', () => this.updatePreview());
     grade.addEventListener('change', () => this.updatePreview());
     this.weighingBox.append(box);
@@ -410,14 +430,25 @@ export class Operations {
     this.addWeighing();
   }
 
+  closePayment() {
+    if (!this.quickFields) return;
+    this.paymentSection.hidden = true;
+    this.paymentCommand = null;
+    this.payInfo.textContent = '';
+  }
+
   async rowAction(type, item) {
     return this.safe(async () => {
       if (!this.app.canWrite()) throw new Error('Tam kullanım yetkisi gerekli.');
       if (type === 'pay') {
         this.payId.value = item.id;
         this.payAmount.value = localized(item.kalanTL);
+        this.payInfo.textContent = (item.uretici || 'Alım #' + item.id) + ' · kalan ' + amount(item.kalanTL || 0, ' ₺');
+        this.paymentSection.hidden = false;
         this.paymentSection.open = true;
+        this.paymentSection.scrollIntoView?.({ block: 'nearest' });
         this.payAmount.focus();
+        this.payAmount.select?.();
         return;
       }
       const epoch = this.epoch;
@@ -447,10 +478,32 @@ export class Operations {
   }
 
   buildPayment() {
-    const section = this.form('Üretici ödemesi', () => this.send('odeme', { alimId: this.payId.value.trim(), tutar: decimal(this.payAmount.value) }));
+    const host = this.quickFields || this.writeFields;
+    const section = this.form('Üretici ödemesi', async () => {
+      this.paymentCommand = await this.send('odeme', { alimId: this.payId.value.trim(), tutar: decimal(this.payAmount.value) });
+    }, host);
     this.paymentSection = section.details;
+    this.payInfo = this.element('p', '', 'pay-info');
+    section.form.insertBefore(this.payInfo, section.fields);
     this.payId = this.input(section.fields, 'Alım numarası (satırdaki Öde düğmesi doldurur)');
     this.payAmount = this.input(section.fields, 'Ödeme ₺', '', true);
+    this.payAmount.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && !event.isComposing) {
+        event.preventDefault();
+        section.form.requestSubmit?.();
+      }
+    });
+    if (this.quickFields) {
+      section.details.className = 'card operation quick pay-panel';
+      section.submit.className = 'primary send';
+      section.submit.textContent = 'Ödemeyi telefona gönder';
+      this.payId.readOnly = true;
+      const idBox = this.payId.parentElement ?? this.payId.parent;
+      if (idBox) idBox.hidden = true;
+      this.button(section.form, 'Vazgeç', () => this.closePayment());
+      this.quickFields.insertBefore(section.details, this.purchaseSection);
+      section.details.hidden = true;
+    }
     const bulk = this.form('Toplu ödeme · telefonda onay', () => this.send('toplu_odeme', { uretici: seller.value.trim(), tutar: decimal(total.value) }));
     const seller = this.input(bulk.fields, 'Üretici adı');
     const total = this.input(bulk.fields, 'Toplam ödeme ₺', '', true);

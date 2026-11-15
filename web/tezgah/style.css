@@ -175,3 +175,15 @@ canvas { min-width: 320px; }
 @media (max-width: 1100px) {
   .workspace:not(.solo) .stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 }
+/* Kasa görünümü */
+tr.settled td { color: #8fa29e; }
+tr.settled td:nth-child(2) { color: #c3d0ca; font-weight: 500; }
+tr.due td:nth-child(7) { color: var(--gold); font-weight: 700; }
+.row-action.primary { color: var(--bg); }
+.pay-panel { border-color: #8c6b38; margin-bottom: 16px !important; background: #1d2a26; }
+.pay-panel .form-grid { grid-template-columns: minmax(0, 1fr); }
+.pay-info { color: var(--gold); font-size: 17px; font-weight: 650; margin: 0 0 12px; }
+.pay-panel .send + button, .pay-panel form > button.quiet { width: 100%; margin-top: 8px !important; }
+.workspace:not(.solo) .row-action { font-size: 13px; padding: 6px 9px; margin: 0 2px; }
+.workspace:not(.solo) th, .workspace:not(.solo) td { padding: 13px 9px; }
+.workspace:not(.solo) td:last-child { white-space: nowrap; }
