@@ -89,12 +89,44 @@ def render():
     parsed = urlsplit(base)
     if parsed.scheme != 'https' or not parsed.netloc or parsed.query or parsed.fragment:
         raise ValueError('SITE_URL geçerli bir HTTPS site adresi olmalı')
+    # Zeytin Defteri Web (Tezgâh) ayrı bir sitedir; sitenin izin verdiği tek dış adres budur.
+    web = config['WEB_URL'].rstrip('/')
+    parsed_web = urlsplit(web)
+    if parsed_web.scheme != 'https' or not parsed_web.netloc or parsed_web.path or parsed_web.query or parsed_web.fragment:
+        raise ValueError('WEB_URL yalnız https://alan-adi biçiminde olmalı')
     esc = html.escape
     email = esc(config['CONTACT_EMAIL'])
     links = [('gizlilik.html', 'Gizlilik'), ('kvkk.html', 'KVKK'), ('kosullar.html', 'Kullanım Koşulları'),
              ('hesap-silme.html', 'Hesap silme'), ('iletisim.html', 'İletişim')]
-    footer = '<footer><nav aria-label="Yasal bilgiler">' + ''.join(
-        f'<a href="{href}">{label}</a>' for href, label in links) + '</nav><p>© 2026 Zeytin Defteri</p></footer>'
+    footer = ('<footer class="site-footer"><div class="footer-inner"><div class="footer-top">'
+              '<a class="brand" href="/index.html"><span class="mark" aria-hidden="true">Z</span>Zeytin Defteri</a>'
+              '<a href="/isletmeler.html">İşletmeler</a></div><nav aria-label="Yasal bilgiler">' + ''.join(
+                  f'<a href="/{href}">{label}</a>' for href, label in links) +
+              '</nav><p>© 2026 Zeytin Defteri</p></div></footer>')
+
+    def mailto(subject, body):
+        return esc('mailto:' + config['CONTACT_EMAIL'] + '?subject=' + quote(subject, safe='') +
+                   '&body=' + quote(body, safe=''))
+    shared = {
+        '{{WEB_URL}}': esc(web),
+        '{{HABER_MAILTO}}': mailto('Zeytin Defteri yayınlanınca haber ver',
+                                   'Merhaba,\nZeytin Defteri yayınlandığında bana haber verin.\n\nAdım:\nİlçem:\n'),
+        '{{ISLETME_MAILTO}}': mailto('Zeytin Defteri işletme ön kaydı',
+                                     'Merhaba,\nİşletmem için Zeytin Defteri hakkında bilgi almak istiyorum.\n\n'
+                                     'İşletme türü (tüccar / yağhane):\nAdım:\nİlçem:\nTelefonum:\n'),
+        '{{FOOTER}}': footer,
+    }
+
+    def marketing(template_name, required_site_url=1):
+        text = (SITE / 'tools' / template_name).read_text(encoding='utf-8')
+        if text.count('{{SITE_URL}}') != required_site_url:
+            raise ValueError(f'{template_name}: bir SITE_URL alanı bekleniyordu')
+        text = text.replace('{{SITE_URL}}', esc(base))
+        for key, value in shared.items():
+            text = text.replace(key, value)
+        if '{{' in text:
+            raise ValueError(f'{template_name}: doldurulmamış alan kaldı')
+        return text
     def page(filename, title, description, body):
         return f'''<!doctype html>
 <html lang="tr">
@@ -114,8 +146,8 @@ def render():
 <body>
 <a class="skip" href="#icerik">İçeriğe geç</a>
 <div class="shell">
-<header><a class="brand" href="/index.html"><img src="/favicon.svg" width="34" height="34" alt="">Zeytin Defteri</a><span class="header-note">Emeğinin kaydı.</span></header>
-<main id="icerik">{body}</main>
+<header class="site-nav"><div class="nav-inner"><a class="brand" href="/index.html"><span class="mark" aria-hidden="true">Z</span>Zeytin Defteri</a><a class="nav-back" href="/index.html">Ana sayfa</a></div></header>
+<main id="icerik" class="doc-main">{body}</main>
 {footer}
 </div>
 </body>
@@ -131,9 +163,7 @@ def render():
         output[file] = page(file, lines[0], f'Zeytin Defteri {lines[0]}; sürüm {values["VERSION"]}, {values["DATE"]}.', body)
     # Pazarlama sayfası özgün şablondan üretilir; yasal içeriklerin yeniden
     # derlenmesi yeni ana sayfayı eskiye döndürmez.
-    homepage_template = (SITE / 'tools/home.template').read_text(encoding='utf-8')
-    if homepage_template.count('{{SITE_URL}}') != 1:
-        raise ValueError('Ana sayfa şablonunda bir SITE_URL alanı bekleniyordu')
+    homepage_template = marketing('home.template')
     # Gerçek ekran fotoğrafları yalnız tam ve doğrulanmış üçlü set varsa yayına girer.
     # Eksik dosya -> kırık img değil; yanlış WebP -> üretim durur.
     gallery_marker = '<!-- GERCEK_EKRANLAR -->'
@@ -170,9 +200,8 @@ def render():
             'Kişisel alanlar gizlenmiştir; görünüm güncel sürümde farklı olabilir.</p></div>'
             '<div class="real-screen-grid">' + photo_items + '</div></section>'
         )
-    output['index.html'] = (homepage_template
-                            .replace('{{SITE_URL}}', esc(base))
-                            .replace(gallery_marker, screen_gallery))
+    output['index.html'] = homepage_template.replace(gallery_marker, screen_gallery)
+    output['isletmeler.html'] = marketing('isletmeler.template')
     subject, body = method_string('deletionSubject'), method_string('deletionBody')
     mailto = 'mailto:' + config['CONTACT_EMAIL'] + '?subject=' + quote(subject, safe='') + '&body=' + quote(body, safe='')
     retention = re.search(r'(?m)^# 10\. Saklama ve silme\n(.*?)(?=^# 11\.)', legal['gizlilik.html'], re.S | re.M)[1].rstrip()

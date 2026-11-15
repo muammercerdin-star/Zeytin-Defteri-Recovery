@@ -77,7 +77,9 @@ public class SiteLegalOracle {
         retention = re.search(r'(?ms)^# 10\. Saklama ve silme\n(.*?)(?=^# 11\.)', java(build.RAW / 'legal_privacy.txt'))[1]
         assert normal(re.sub(r'(?m)^- ', '', retention)) in normal(''.join(deletion.text))
     docs = {p.name: Document(p.read_text()) for p in SITE.glob('*.html')}
-    assert len(docs) == 7
+    assert len(docs) == 8
+    # Tek izinli dış adres: Zeytin Defteri Web (Tezgâh). Yalnız kök adresine bağlantı verilebilir.
+    web = config['WEB_URL'].rstrip('/')
     for filename, doc in docs.items():
         assert any(t == 'html' and a.get('lang') == 'tr' for t, a in doc.tags), filename
         assert any(t == 'title' for t, a in doc.tags), filename
@@ -95,6 +97,9 @@ public class SiteLegalOracle {
                 address = attrs[attribute]
                 parsed = urlsplit(address)
                 if parsed.scheme == 'mailto':
+                    continue
+                if address == web:
+                    assert filename in ('index.html', 'isletmeler.html'), (filename, address)
                     continue
                 assert not parsed.scheme and not parsed.netloc, (filename, address)
                 target = SITE / unquote(parsed.path.lstrip('/')) if parsed.path else SITE / filename
@@ -137,7 +142,7 @@ public class SiteLegalOracle {
     svg = ET.parse(SITE / 'favicon.svg').getroot()
     ns = '{http://schemas.android.com/apk/res/android}'
     assert [(p.get(ns+'pathData'), p.get(ns+'fillColor')) for p in vector] == [(p.get('d'), p.get('fill')) for p in svg]
-    print(f'PASS: 7 HTML, Java fill/paragraflar/mailto, bağlantılar, metadata, CSP, SVG; site {size:,} bayt')
+    print(f'PASS: 8 HTML, Java fill/paragraflar/mailto, bağlantılar, metadata, CSP, SVG; site {size:,} bayt')
 
 if __name__ == '__main__':
     test_site()
