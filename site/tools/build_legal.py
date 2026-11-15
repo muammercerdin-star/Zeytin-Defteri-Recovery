@@ -109,8 +109,9 @@ def render():
                    '&body=' + quote(body, safe=''))
     shared = {
         '{{WEB_URL}}': esc(web),
-        '{{HABER_MAILTO}}': mailto('Zeytin Defteri yayınlanınca haber ver',
-                                   'Merhaba,\nZeytin Defteri yayınlandığında bana haber verin.\n\nAdım:\nİlçem:\n'),
+        '{{HABER_MAILTO}}': mailto('Zeytin Defteri erken erişim',
+                                   'Merhaba,\nZeytin Defteri erken erişimine katılmak istiyorum.\n\n'
+                                   'Adım:\nİlçem:\nGoogle Play e-postam:\n'),
         '{{ISLETME_MAILTO}}': mailto('Zeytin Defteri işletme ön kaydı',
                                      'Merhaba,\nİşletmem için Zeytin Defteri hakkında bilgi almak istiyorum.\n\n'
                                      'İşletme türü (tüccar / yağhane):\nAdım:\nİlçem:\nTelefonum:\n'),
@@ -200,7 +201,18 @@ def render():
             'Kişisel alanlar gizlenmiştir; görünüm güncel sürümde farklı olabilir.</p></div>'
             '<div class="real-screen-grid">' + photo_items + '</div></section>'
         )
-    output['index.html'] = homepage_template.replace(gallery_marker, screen_gallery)
+    # Gerçek ekranlar varsa girişteki temsili telefon yerine gerçek ana sayfa görüntüsü gösterilir.
+    hero = re.search(r'<!-- HERO_GORSEL_BASLA -->.*?<!-- HERO_GORSEL_BITIR -->', homepage_template, re.S)
+    if not hero:
+        raise ValueError('Ana sayfa giriş görseli işaretleri eksik')
+    hero_html = hero[0]
+    if present:
+        hero_html = ('<figure class="hero-shot"><img width="360" height="731" fetchpriority="high" '
+                     'src="/assets/screenshots/ana-sayfa.webp" alt="Zeytin Defteri ana sayfa ekranı: '
+                     'zeytin takvimi ve hava durumu"><figcaption>Uygulamadan gerçek ekran görüntüsü. '
+                     'Kişisel alanlar gizlenmiştir.</figcaption></figure>')
+    output['index.html'] = (homepage_template.replace(hero[0], hero_html)
+                             .replace(gallery_marker, screen_gallery))
     output['isletmeler.html'] = marketing('isletmeler.template')
     subject, body = method_string('deletionSubject'), method_string('deletionBody')
     mailto = 'mailto:' + config['CONTACT_EMAIL'] + '?subject=' + quote(subject, safe='') + '&body=' + quote(body, safe='')

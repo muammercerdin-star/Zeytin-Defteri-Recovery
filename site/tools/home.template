@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0B1D28">
 <title>Zeytin Defteri · Kağıt defter emekli oldu</title>
-<meta name="description" content="Bahçeni, hasadını, elek kayıtlarını, masrafını ve satışını tek yerde tut. Zeytin Defteri yakında Google Play'de.">
+<meta name="description" content="Bahçeni, hasadını, elek kayıtlarını, masrafını ve satışını tek yerde tut. Zeytin Defteri ile emeğinin kaydı cebinde.">
 <meta property="og:title" content="Zeytin Defteri · Kağıt defter emekli oldu">
 <meta property="og:description" content="Bahçeden hasada, elekten satışa: emeğinin kaydı Zeytin Defteri'nde.">
 <meta property="og:type" content="website">
@@ -21,9 +21,9 @@
  <div class="nav-inner">
   <a class="brand" href="/index.html" aria-label="Zeytin Defteri ana sayfa"><span class="mark" aria-hidden="true">Z</span>Zeytin Defteri</a>
   <nav class="primary-nav" aria-label="Ana menü"><a href="#elek">Elek</a><a href="#bahce">Bahçelerim</a><a href="#masraf">Masraf ve Satış</a><a href="#ses">Sesli kayıt</a><a href="/isletmeler.html">İşletmeler</a></nav>
-  <a class="nav-cta" href="#haber">Haber ver</a>
+  <a class="nav-cta" href="#haber">Erken erişim</a>
   <details class="mobile-menu"><summary>Menü</summary>
-   <nav aria-label="Mobil menü"><a href="#elek">Elek</a><a href="#bahce">Bahçelerim</a><a href="#masraf">Masraf ve Satış</a><a href="#ses">Sesli kayıt</a><a href="/isletmeler.html">İşletmeler</a><a href="#haber">Haber ver</a></nav>
+   <nav aria-label="Mobil menü"><a href="#elek">Elek</a><a href="#bahce">Bahçelerim</a><a href="#masraf">Masraf ve Satış</a><a href="#ses">Sesli kayıt</a><a href="/isletmeler.html">İşletmeler</a><a href="#haber">Erken erişim</a></nav>
   </details>
  </div>
 </header>
@@ -34,7 +34,8 @@
  <h1 id="hero-title">Zeytin Defteri</h1>
  <p class="tagline">Kağıt defter emekli oldu.</p>
  <p class="lead">Bahçeni, hasadını, elek kayıtlarını, masrafını ve satışını tek yerde tut.</p>
- <div class="actions"><a class="btn btn-primary" href="{{HABER_MAILTO}}">Yayınlanınca haber ver</a><a class="btn btn-outline" href="#elek">Daha fazla bilgi</a></div>
+ <div class="actions"><a class="btn btn-primary" href="{{HABER_MAILTO}}">Erken erişime katıl</a><a class="btn btn-outline" href="#elek">Daha fazla bilgi</a></div>
+ <!-- HERO_GORSEL_BASLA -->
  <figure class="hero-phone">
   <div class="phone">
    <div class="phone-screen">
@@ -51,6 +52,7 @@
   </div>
   <figcaption>Temsili görünüm. Örnek değerlerdir.</figcaption>
  </figure>
+ <!-- HERO_GORSEL_BITIR -->
 </section>
 <!-- GERCEK_EKRANLAR -->
 
@@ -138,8 +140,8 @@
 <section class="band cta" id="haber" aria-labelledby="haber-title">
  <span class="mark mark-big" aria-hidden="true">Z</span>
  <h2 id="haber-title">Emeğinin kaydı.<br>Cebinde.</h2>
- <p class="sub">Google Play'de yakında. Çıktığı gün ilk sen bil.</p>
- <div class="actions"><a class="btn btn-primary" href="{{HABER_MAILTO}}">E-postayla haber al</a></div>
+ <p class="sub">Zeytin Defteri erken erişimde. Katıl, ilk kullananlardan ol.</p>
+ <div class="actions"><a class="btn btn-primary" href="{{HABER_MAILTO}}">Erken erişime katıl</a></div>
  <p class="fine">Butona dokununca e-posta uygulaman hazır bir mesajla açılır; göndermek senin elinde.</p>
 </section>
 </main>

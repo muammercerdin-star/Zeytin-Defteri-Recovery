@@ -96,6 +96,9 @@ a:hover { color: var(--green-ink-2); }
 figcaption, .fine { font-size: 13px; color: var(--muted-2); padding: 14px 0 24px; }
 .fine-light { color: var(--on-dark-muted); padding-bottom: 0; }
 
+.hero-shot { margin: 56px auto 0; }
+.hero-shot img { display: block; width: 320px; height: auto; margin: 0 auto; border-radius: 44px; border: 10px solid var(--navy); box-shadow: 0 30px 60px rgba(11, 29, 40, 0.18); }
+
 /* Bantlar */
 .band { text-align: center; padding: 88px 20px; }
 .band h2 { font-size: clamp(36px, 5.6vw, 60px); font-weight: 700; }
@@ -218,6 +221,7 @@ figcaption, .fine { font-size: 13px; color: var(--muted-2); padding: 14px 0 24px
   .band { padding: 64px 20px; }
   .hero { padding-top: 48px; }
   .phone { width: 280px; height: 440px; }
+  .hero-shot img { width: 270px; border-width: 8px; border-radius: 38px; }
   .phone-screen { padding: 24px 16px; }
   .grade-list li { padding: 10px 12px; font-size: 14px; }
   .dash-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }

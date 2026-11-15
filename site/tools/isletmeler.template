@@ -84,7 +84,7 @@
 
 <section class="band" id="yaghane" aria-labelledby="yaghane-title">
  <div class="tile tile-light tile-wide">
-  <p class="chip chip-dark">Yakında</p>
+  <p class="chip chip-dark">Hazırlanıyor</p>
   <h2 id="yaghane-title">Yağhaneler için</h2>
   <p>Zeytin kabulü, randıman ve sıra takibi için hazırlık yapıyoruz. Yağhaneniz varsa ihtiyaçlarınızı bize yazın; modülü sizinle birlikte şekillendirelim.</p>
   <div class="actions"><a class="btn btn-primary" href="{{ISLETME_MAILTO}}">Ön kayıt olun</a></div>
