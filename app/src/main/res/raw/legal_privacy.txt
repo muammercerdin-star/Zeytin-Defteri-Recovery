@@ -13,6 +13,7 @@ Google ile giriş yaparsan Google hesabındaki ad, e-posta adresi ve profil foto
 # 2. Bahçe ve sezon kayıtları
 Bahçe, işlem, hasat, elek, salamura, stok, satış ve hatırlatma kayıtların önce cihazındaki uygulama veritabanında tutulur. Giriş yaptığında bu kayıtlar, yalnızca senin hesabının erişebileceği şekilde Cloud Firestore'da saklanır ve cihazların arasında eşitlenir.
 Tezgâh kayıtların (alım fişleri, ödemeler, borçlar, akşam hesabı ve gün sonu, cari hesap, kasa defteri; alım yaptığın üreticilerin ve alıcıların adı, telefonu, tartım, tutar ve borç bilgileri dahil), satış ödeme geçmişin ve yağhane sıkım kayıtların telefonun kaybolması ya da bozulması hâlinde geri getirilebilmesi için sıkıştırılmış bir yedek olarak, yalnızca senin hesabının erişebileceği şekilde Cloud Firestore'da saklanır. Yedek gün sonunda ve uygulamadan çıktığında, yalnız kayıtların değiştiyse güncellenir; yeni bir telefonda aynı hesapla girdiğinde geri yüklemeyi sen onaylarsın. Bu kayıtlara adı geçen üreticileri ve alıcıları bu durum hakkında bilgilendirmek, kayıtları tutan kullanıcı olarak senin sorumluluğundadır.
+Tezgâh'ı bilgisayara bağlarsan (web.zeytindefteri.tr), kayıtlar telefonundan bilgisayarındaki tarayıcıya uçtan uca şifreli olarak iletilir. Bağlantı, Cloudflare üzerinde çalışan bir aktarıcıdan geçer; aktarıcı şifreli içeriği okuyamaz ve saklamaz, yalnızca bağlantıyı kurmak için gereken teknik bilgileri (oturum bilgisi, IP adresi gibi) bağlantı süresince işler. Kayıtlar bilgisayarda saklanmaz; "Bu tarayıcıda oturumum açık kalsın" seçeneğini işaretlersen yalnızca o tarayıcıya ait bağlantı anahtarı tarayıcıda tutulur. Bağlı bilgisayarları telefonundan istediğin zaman kaldırabilirsin.
 Android'in uygulama yedekleme özelliği açıksa, cihazındaki uygulama verileri Android'in kendi yedekleme mekanizmasına dahil olabilir; bu yedekleme Google hesabın ve cihaz ayarların tarafından yönetilir.
 
 # 3. Konum ve hava durumu
@@ -44,6 +45,7 @@ Uygulama çöktüğünde hatayı bulup düzeltebilmemiz için Google Firebase Cr
 - Google ile giriş (Android Credential Manager)
 - Supabase (anonim piyasa istatistikleri ve moderasyon)
 - Open-Meteo (hava durumu ve konum araması)
+- Cloudflare (zeytindefteri.tr sitesi, Tezgâh bilgisayar ekranı ve telefon ile bilgisayar arasındaki şifreli bağlantı)
 - Türkiye il/ilçe/mahalle veri servisleri
 - Android konuşma tanıma ve metin okuma hizmetleri (cihazdaki sağlayıcı)
 Bu hizmetler verileri kendi gizlilik koşullarına göre işler ve sunucuları yurt dışında bulunabilir.
