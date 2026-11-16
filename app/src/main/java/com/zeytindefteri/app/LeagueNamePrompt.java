@@ -44,10 +44,11 @@ final class LeagueNamePrompt {
         TextView info = new TextView(activity);
         info.setText((repo.leagueConsentOutdated()
                 ? "Yenilik: ligde artık ortalama kilogram fiyatı da görünüyor. Onaylarsan adınla birlikte ortalama fiyatın da görünür; onaylamazsan adın görünür, fiyatın \"—\" olur.\n\n" : "")
-                + "Açarsan Zeytin Ligi'ndeki bölge sıralamasında adın görünür: sıran, puanın, en çok çıkan "
+                + "Açarsan Zeytin Ligi'ndeki bölge sıralamasına katılırsın ve adın görünür: sıran, puanın, en çok çıkan "
                 + "elek numaran ve ortalama kilogram fiyatın (TL/kg) ile birlikte. Bölgendeki diğer Zeytin Defteri kullanıcıları görebilir.\n\n"
                 + "Kilon ve toplam tutarın GÖSTERİLMEZ.\n\n"
-                + "Kapatırsan adın sunucudan silinir; sıralamada \"Anonim üretici\" olarak kalırsın."
+                + "Kapatırsan adın sunucudan silinir; sıralamada \"Anonim üretici\" olarak kalırsın. "
+                + "Sıralamadan tamamen çıkmak için Ayarlar → Zeytin Ligi'nde Yer Al."
                 + (repo.isContributionOptedIn() ? "" : "\n\nNot: Piyasaya anonim katkın kapalı; sıralamada yer almak için onu da açmalısın."));
         info.setTextSize(14);
         box.addView(info);

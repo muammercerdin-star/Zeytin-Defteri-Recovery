@@ -27,7 +27,9 @@ checks = {
     "watcher ignores cache snapshots": re.search(r"isFromCache\(\)\) return;", lr) is not None
         and "isFromCache()) { changed.accept(null)" not in lr,
     "privacy text: default on, notified, can be turned off, elek source": "Piyasaya Anonim Katkı" in priv and "varsayılan olarak açıktır" in priv and "kapatabilirsin" in priv and "elek kayıtlarındaki" in priv,
-    "texts no longer claim default off": "varsayılan kapalı" not in priv + kvkk and "varsayılan olarak kapalıdır" not in priv,
+    # Ayrı lig izni ("Zeytin Ligi'nde Yer Al") varsayılan kapalıdır; piyasa katkısı için kapalı denmemeli.
+    "texts no longer claim default off": all("varsayılan kapalı" not in l and "varsayılan olarak kapalıdır" not in l
+        for l in (priv + kvkk).splitlines() if "Zeytin Ligi'nde Yer Al" not in l),
     "privacy text: no stale 'satış kayıtlarından' claim for stats": "Piyasa paylaşımını açarsan satış kayıtlarından" not in priv,
     "kvkk text updated": "Piyasaya Anonim Katkı" in kvkk and "varsayılan açık" in kvkk,
     "legal version bumped (>= 1.4)": (lambda m: m is not None and tuple(int(x) for x in m.group(1).split('.')) >= (1, 4))(__import__('re').search(r'VERSION = "([0-9.]+)"', ld)),
