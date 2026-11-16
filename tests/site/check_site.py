@@ -101,13 +101,17 @@ public class SiteLegalOracle {
                 if address == web:
                     assert filename in ('index.html', 'isletmeler.html'), (filename, address)
                     continue
+                if address == config['PLAY_URL']:
+                    assert filename in ('index.html', 'isletmeler.html'), (filename, address)
+                    continue
                 assert not parsed.scheme and not parsed.netloc, (filename, address)
                 target = SITE / unquote(parsed.path.lstrip('/')) if parsed.path else SITE / filename
                 assert target.is_file(), (filename, target)
                 if parsed.fragment:
                     target_doc = docs.get(target.name)
                     assert target_doc and any(a.get('id') == parsed.fragment for _, a in target_doc.tags), address
-        assert not re.search(r"google\s+play['’]den\s+indir|play\.google\.com", (SITE / filename).read_text(), re.I)
+        if filename not in ('index.html', 'isletmeler.html'):
+            assert not re.search(r"play\.google\.com", (SITE / filename).read_text(), re.I), filename
     css = (SITE / 'style.css').read_text()
     assert '@import' not in css and not re.search(r'url\s*\(', css, re.I)
     assert ':focus-visible' in css and '@media' in css

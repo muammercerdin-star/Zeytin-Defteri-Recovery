@@ -94,6 +94,10 @@ def render():
     parsed_web = urlsplit(web)
     if parsed_web.scheme != 'https' or not parsed_web.netloc or parsed_web.path or parsed_web.query or parsed_web.fragment:
         raise ValueError('WEB_URL yalnız https://alan-adi biçiminde olmalı')
+    # Google Play sayfası: yalnız bu tam adres (uygulama kimliği sabit).
+    play = config['PLAY_URL']
+    if play != 'https://play.google.com/store/apps/details?id=com.zeytindefteri.app':
+        raise ValueError('PLAY_URL yalnız Zeytin Defteri Play sayfası olabilir')
     esc = html.escape
     email = esc(config['CONTACT_EMAIL'])
     links = [('gizlilik.html', 'Gizlilik'), ('kvkk.html', 'KVKK'), ('kosullar.html', 'Kullanım Koşulları'),
@@ -110,6 +114,7 @@ def render():
     shared = {
         '{{SITE_BASE}}': esc(base),
         '{{WEB_URL}}': esc(web),
+        '{{PLAY_URL}}': esc(play),
         '{{HABER_MAILTO}}': mailto('Zeytin Defteri erken erişim',
                                    'Merhaba,\nZeytin Defteri erken erişimine katılmak istiyorum.\n\n'
                                    'Adım:\nİlçem:\nGoogle Play e-postam:\n'),

@@ -25,9 +25,9 @@
  <div class="nav-inner">
   <a class="brand" href="/index.html" aria-label="Zeytin Defteri ana sayfa"><span class="mark" aria-hidden="true">Z</span>Zeytin Defteri</a>
   <nav class="primary-nav" aria-label="Ana menü"><a href="#elek">Elek</a><a href="#bahce">Bahçelerim</a><a href="#masraf">Masraf ve Satış</a><a href="#ses">Sesli kayıt</a><a href="/isletmeler.html">İşletmeler</a></nav>
-  <a class="nav-cta" href="#haber">Erken erişim</a>
+  <a class="nav-cta" href="{{PLAY_URL}}">İndir</a>
   <details class="mobile-menu"><summary>Menü</summary>
-   <nav aria-label="Mobil menü"><a href="#elek">Elek</a><a href="#bahce">Bahçelerim</a><a href="#masraf">Masraf ve Satış</a><a href="#ses">Sesli kayıt</a><a href="/isletmeler.html">İşletmeler</a><a href="#haber">Erken erişim</a></nav>
+   <nav aria-label="Mobil menü"><a href="#elek">Elek</a><a href="#bahce">Bahçelerim</a><a href="#masraf">Masraf ve Satış</a><a href="#ses">Sesli kayıt</a><a href="/isletmeler.html">İşletmeler</a><a href="#haber">İndir</a></nav>
   </details>
  </div>
 </header>
@@ -38,7 +38,7 @@
  <h1 id="hero-title">Zeytin Defteri</h1>
  <p class="tagline">Kağıt defter emekli oldu.</p>
  <p class="lead">Bahçeni, hasadını, elek kayıtlarını, masrafını ve satışını tek yerde tut.</p>
- <div class="actions"><a class="btn btn-primary" href="{{HABER_MAILTO}}">Erken erişime katıl</a><a class="btn btn-outline" href="#elek">Daha fazla bilgi</a></div>
+ <div class="actions"><a class="btn btn-primary" href="{{PLAY_URL}}">Google Play’den indir</a><a class="btn btn-outline" href="#elek">Daha fazla bilgi</a></div>
  <!-- HERO_GORSEL_BASLA -->
  <figure class="hero-phone">
   <div class="phone">
@@ -144,9 +144,9 @@
 <section class="band cta" id="haber" aria-labelledby="haber-title">
  <span class="mark mark-big" aria-hidden="true">Z</span>
  <h2 id="haber-title">Emeğinin kaydı.<br>Cebinde.</h2>
- <p class="sub">Zeytin Defteri erken erişimde. Katıl, ilk kullananlardan ol.</p>
- <div class="actions"><a class="btn btn-primary" href="{{HABER_MAILTO}}">Erken erişime katıl</a></div>
- <p class="fine">Butona dokununca e-posta uygulaman hazır bir mesajla açılır; göndermek senin elinde.</p>
+ <p class="sub">Zeytin Defteri Google Play’de. Ücretsiz indir, bu sezondan kullanmaya başla.</p>
+ <div class="actions"><a class="btn btn-primary" href="{{PLAY_URL}}">Google Play’den indir</a></div>
+ <p class="fine">Android telefonlar için. Bu sezon tüm özellikler ücretsiz.</p>
 </section>
 </main>
 {{FOOTER}}
