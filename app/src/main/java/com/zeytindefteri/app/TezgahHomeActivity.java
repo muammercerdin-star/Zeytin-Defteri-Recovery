@@ -318,6 +318,36 @@ public final class TezgahHomeActivity extends Activity {
         return false;
     }
 
+    /**
+     * Ekran kilitlenince bazı telefonlar (pil tasarrufu) arka plandaki bağlantıyı uyutur. Bağlanmadan önce bir kez
+     * açıklayıp pil ayar ekranını açar; izin istemez (Play kısıtlı izni kullanılmaz), kullanıcı ayarı kendisi seçer.
+     */
+    private boolean webBatteryReady(Runnable then) {
+        if (android.os.Build.VERSION.SDK_INT < 23) return true;
+        android.os.PowerManager power = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+        if (power == null || power.isIgnoringBatteryOptimizations(getPackageName())) return true;
+        final android.content.SharedPreferences prefs = getSharedPreferences("zd_tezgah", MODE_PRIVATE);
+        final String asked = "web_battery_asked_" + owner;
+        if (prefs.getBoolean(asked, false)) return true;
+        prefs.edit().putBoolean(asked, true).apply();
+        new AlertDialog.Builder(this).setTitle("Ekran kapalıyken de bağlı kalsın")
+                .setMessage(TezgahWebLink.BATTERY_WHY)
+                .setPositiveButton("Ayarı aç", (d, w) -> openBatterySettings())
+                .setNegativeButton("Şimdi değil", (d, w) -> then.run())
+                .setOnCancelListener(d -> then.run())
+                .show();
+        return false;
+    }
+
+    private void openBatterySettings() {
+        Intent settings = new Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+        try {
+            startActivity(settings);
+        } catch (RuntimeException e) {
+            android.widget.Toast.makeText(this, TezgahWebLink.BATTERY_HINT, android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void runAfterNotify() {
         Runnable r = afterNotify;
         afterNotify = null;
@@ -336,6 +366,7 @@ public final class TezgahHomeActivity extends Activity {
     private void webPair() {
         if (!TezgahWebClient.configured() || !owner.equals(new SessionManager(this).getUserUid())) return;
         if (!webNotifyReady(this::webPair)) return;
+        if (!webBatteryReady(this::webPair)) return;
         final android.content.SharedPreferences prefs = getSharedPreferences("zd_tezgah", MODE_PRIVATE);
         final String key = "web_full_" + owner;
         if (!prefs.contains(key)) {

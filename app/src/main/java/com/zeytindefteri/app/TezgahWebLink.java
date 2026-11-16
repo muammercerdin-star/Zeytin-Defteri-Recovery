@@ -19,6 +19,13 @@ public final class TezgahWebLink {
     /** İzin verilmediğinde kısa hatırlatma. */
     public static final String NOTIFY_OFF_HINT = "Bildirim kapalı: bağlantı çalışır ama bildirimde görünmez. Ayarlar › Uygulamalar › Zeytin Defteri › Bildirimler'den açabilirsin.";
 
+    /** Pil kısıtlaması neden kapatılmalı (bağlanmadan önce bir kez). */
+    public static final String BATTERY_WHY = "Telefonun ekranı kilitlenince pil tasarrufu bilgisayar bağlantısını kesebilir.\n\n"
+            + "Açılan listede Zeytin Defteri'ni bulup \"Kısıtlama yok\" ya da \"Optimize etme\" seç. Sonra geri dönüp QR'ı okut.";
+
+    /** Ayar ekranı açılamazsa kısa yol tarifi. */
+    public static final String BATTERY_HINT = "Ayarlar › Uygulamalar › Zeytin Defteri › Pil › Kısıtlama yok";
+
     /** Okutulduktan bu kadar sonra hâlâ bağlanmadıysa "bağlanamadı" sayılır (normalde birkaç saniye). */
     public static final long STUCK_MS = 20000;
 

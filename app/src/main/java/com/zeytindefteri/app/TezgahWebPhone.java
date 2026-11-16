@@ -28,6 +28,15 @@ public final class TezgahWebPhone implements AutoCloseable {
     private boolean persistentDevice;
     private Commands commands;
 
+    /** Kayıt hatasında kullanıcıya gerçek nedeni söyle (yalnız bizim yazdığımız kısa Türkçe mesajlar geçer). */
+    static String enrollFailure(Exception e) {
+        String base = "Bilgisayar kaydedilemedi. Bu bağlantı geçici olarak devam ediyor.";
+        if (!(e instanceof IllegalArgumentException)) return base;
+        String reason = e.getMessage();
+        if (reason == null || reason.isEmpty() || reason.length() > 120) return base;
+        return base + " Neden: " + reason;
+    }
+
     public void commands(Commands handler) {
         if (active) throw new IllegalStateException("Oturum zaten başladı.");
         commands = handler;
@@ -246,7 +255,7 @@ public final class TezgahWebPhone implements AutoCloseable {
                     send(TezgahWebDto.json("v", 1, "type", "device_enrolled", "ok", true, "device", result));
                 } catch (Exception e) {
                     send(TezgahWebDto.json("v", 1, "type", "device_enrolled", "ok", false,
-                            "message", "Bilgisayar kaydedilemedi. Bu bağlantı geçici olarak devam ediyor."));
+                            "message", enrollFailure(e)));
                 }
                 return;
             }
