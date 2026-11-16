@@ -18,9 +18,10 @@ Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlen
 - Güvenlik ve topluluk kayıtları: oluşturduğun şikâyetler ve engellediğin kullanıcılar; sana yönelik şikâyet ve moderasyon kayıtları.
 - Cihaz ve bildirim bilgileri: bildirim gönderebilmek için cihazına ait bildirim anahtarı (FCM token) ve oturum kimliği.
 - Çökme raporları: uygulama çöktüğünde hatanın teknik ayrıntıları, uygulama sürümü, cihaz modeli, Android sürümü ve rastgele bir kurulum kimliği (Firebase Crashlytics).
-- Piyasa katkısı ("Piyasaya Anonim Katkı" seçeneği açıkken; varsayılan açık, Ayarlar'dan kapatılabilir): elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi. Bu kayıtlar kullanıcı kimliğin yerine geri döndürülemez şekilde dönüştürülmüş bir üretici koduyla saklanır.
-- Zeytin Ligi (yalnızca satış kaydında piyasa paylaşımını işaretlediğin satışlar için): ilgili satış ve elek kaydının miktar, tutar ve sınıf bilgileri; sıralamada adın yerine sıra etiketi gösterilir.
-- Ligde adla görünme (yalnızca "Ligde Adımla Görüneyim" seçeneğini açarsan, açık rızana dayanarak): belirlediğin görünen ad; bölgendeki ön sıralamada sıran, puanın, en çok çıkan elek numaran ve ortalama kilogram fiyatınla birlikte diğer kullanıcılara gösterilir. Kilogram ve toplam tutar bilgin gösterilmez. Adını açmasan da ön sıralamada adın olmadan puanın ve ortalama kilogram fiyatın yer alır. Rızanı istediğin zaman aynı seçenekle geri alabilirsin; geri aldığında adın silinir.
+- Piyasa katkısı ("Piyasaya Anonim Katkı" seçeneği açıkken; varsayılan açık, Ayarlar'dan kapatılabilir): elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin il/ilçesi. Bu kayıtlar adın ve hesap kimliğin yerine, sunucuda gizli bir anahtarla üretilen takma bir üretici koduyla saklanır. Bu kod, izni geri alma ve hesap silme taleplerini yerine getirebilmek için hesabınla eşleştirilebildiğinden takma adlandırılmış kişisel veri olarak korunur. Yayınlanan bölge istatistikleri, en az 5 farklı üreticinin verisinden hesaplanan toplu rakamlardır.
+- Zeytin Ligi satış sıralaması (yalnızca satış kaydında "Zeytin Ligi'ne dahil et" seçeneğini işaretlediğin satışlar için): ilgili satış ve elek kaydının miktar, tutar ve sınıf bilgileri; sıralamada adın yerine sıra etiketi gösterilir.
+- Bölge sıralamasında yer alma (yalnızca "Zeytin Ligi'nde Yer Al" iznini verirsen, açık rızana dayanarak; varsayılan kapalı): piyasa katkısı olarak gönderilen elek kayıtlarından hesaplanan sıran, puanın, en çok çıkan elek numaran ve ortalama kilogram fiyatın, adın olmadan bölgendeki diğer kullanıcılara gösterilir. Bu izni vermezsen katkıların yalnızca toplu istatistiklerde kullanılır. İzni istediğin zaman geri alabilirsin; geri aldığında sıralamadan çıkarsın ve ligdeki adın silinir.
+- Ligde adla görünme (yalnızca "Ligde Adımla Görüneyim" seçeneğini açarsan, açık rızana dayanarak): belirlediğin görünen ad; bölgendeki ön sıralamada sıran, puanın, en çok çıkan elek numaran ve ortalama kilogram fiyatınla birlikte diğer kullanıcılara gösterilir. Kilogram ve toplam tutar bilgin gösterilmez. Adını açmak, bölge sıralamasında yer alma iznini de kapsar. Rızanı istediğin zaman aynı seçenekle geri alabilirsin; geri aldığında adın silinir.
 - Sesli asistan: mikrofon iznini verirsen konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.
 
 # 3. İşleme amaçları
@@ -35,10 +36,12 @@ Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlen
 Kişisel verilerin, hesabın açık olduğu ve sen silmediğin sürece saklanır. Saklama ve silmeye ilişkin ayrıntılar Gizlilik Politikası'nın 10. bölümündedir.
 
 # 4. Hukuki sebepler
-- Hesap, bahçe kayıtları, eşitleme, bildirimler ve topluluk özelliği: bir sözleşmenin kurulması veya ifasıyla doğrudan ilgili olması (KVKK m. 5/2-c).
+- Hesap, bahçe kayıtları, eşitleme, Tezgâh yedeği ve bilgisayar bağlantısı, sesli asistan, bildirimler ve topluluk özelliği: bir sözleşmenin kurulması veya ifasıyla doğrudan ilgili olması (KVKK m. 5/2-c).
 - Güvenlik, çökme raporları, kötüye kullanımın önlenmesi ve moderasyon: temel hak ve özgürlüklerine zarar vermemek kaydıyla veri sorumlusunun meşru menfaati (KVKK m. 5/2-f) ve bir hakkın tesisi, kullanılması veya korunması (KVKK m. 5/2-e).
 - Kanundan doğan talepler ve yükümlülükler: hukuki yükümlülüğün yerine getirilmesi (KVKK m. 5/2-ç).
-- Piyasa katkısı ve Zeytin Ligi: "Piyasaya Anonim Katkı" ayarı varsayılan olarak açıktır ve ilk kullanımda bildirilir; Zeytin Ligi sıralaması ise yalnızca satıştaki piyasa paylaşımı seçeneğini işaretlediğin satışları kapsar. Tercihlerini istediğin zaman kapatabilirsin; kapattığında bu cihazdan gönderilen anonim katkıların geri çekilir. Kapatman uygulamanın diğer özelliklerini kullanmanı engellemez.
+- Piyasaya Anonim Katkı: toplu bölge istatistikleri üretmekteki meşru menfaat (KVKK m. 5/2-f). Ayar varsayılan olarak açıktır, ilk kullanımda bildirilir ve istediğin zaman kapatılabilir; kapattığında bu cihazdan gönderilen katkıların geri çekilir. Bu ayar açık rıza değildir ve kapatman diğer özellikleri kullanmanı engellemez.
+- Zeytin Ligi satış sıralaması: yalnızca işaretlediğin satışlar için, talep ettiğin lig özelliğinin sunulması (KVKK m. 5/2-c).
+- Bölge sıralamasında yer alma ve ligde adla görünme: açık rızan (KVKK m. 5/1). Bu izinler isteğe bağlıdır, hiçbir hizmet bunlara bağlanmaz ve istediğin zaman geri alınabilir; geri alma, önceki işlemlerin hukuka uygunluğunu etkilemez.
 
 # 5. Toplama yöntemi
 Veriler; uygulamadaki formlara girdiğin bilgilerden, Google ile giriş yaptığında Google hesabından, uygulamanın çalışması sırasında otomatik olarak (bildirim anahtarı, eşitleme bilgileri, çökme raporları) ve elektronik ortamda toplanır.
