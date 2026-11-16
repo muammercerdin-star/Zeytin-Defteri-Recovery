@@ -1010,12 +1010,12 @@ export function boot(document) {
   byId('previous').addEventListener('click', () => safe(app.navigate(-1)));
   byId('next').addEventListener('click', () => safe(app.navigate(1)));
   byId('day').addEventListener('change', event => {
-    byId('period').textContent = event.target.value ? 'Takvim günü' : 'Açık dönem';
+    byId('period').textContent = event.target.value ? 'Seçilen gün' : 'Gün sonu yapılmamış';
     safe(app.setFilter(event.target.value));
   });
   byId('open-period').addEventListener('click', () => {
     byId('day').value = '';
-    byId('period').textContent = 'Açık dönem';
+    byId('period').textContent = 'Gün sonu yapılmamış';
     safe(app.setFilter(null));
   });
   for (const name of ['pointerdown', 'keydown', 'wheel']) {

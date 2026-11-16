@@ -184,6 +184,12 @@ export class Operations {
     const quick = this.document.getElementById('quick-entry');
     this.quick = quick && quick !== this.root ? quick : null;
     this.workspace = this.quick ? this.document.getElementById('workspace') : null;
+    this.entryButton = this.quick ? this.document.getElementById('new-purchase') : null;
+    if (this.entryButton && !this.entryButton.dataset?.wired) {
+      if (this.entryButton.dataset) this.entryButton.dataset.wired = '1';
+      this.entryButton.addEventListener('click', () => this.toggleEntry());
+    }
+    this.showEntry(false);
     if (this.quick) {
       this.quick.replaceChildren();
       this.quick.hidden = true;
@@ -434,6 +440,20 @@ export class Operations {
     this.addWeighing();
   }
 
+  /** "+ Yeni alım" düğmesi formu açar/kapatır; Öde ve Düzenle formu kendiliğinden açar. */
+  showEntry(open) {
+    this.workspace?.classList.toggle('entry-open', open);
+    if (!this.entryButton) return;
+    this.entryButton.textContent = open ? 'Formu kapat' : '+ Yeni alım';
+    this.entryButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  toggleEntry() {
+    const open = !this.workspace?.classList.contains('entry-open');
+    this.showEntry(open);
+    if (open) this.seller?.focus();
+  }
+
   closePayment() {
     if (!this.quickFields) return;
     this.paymentSection.hidden = true;
@@ -448,6 +468,7 @@ export class Operations {
         this.payId.value = item.id;
         this.payAmount.value = localized(item.kalanTL);
         this.payInfo.textContent = (item.uretici || 'Alım #' + item.id) + ' · kalan ' + amount(item.kalanTL || 0, ' ₺');
+        this.showEntry(true);
         this.paymentSection.hidden = false;
         this.paymentSection.open = true;
         this.paymentSection.scrollIntoView?.({ block: 'nearest' });
@@ -472,6 +493,7 @@ export class Operations {
       this.weighingBox.replaceChildren();
       this.weighings = [];
       for (const row of detail.model.tartimlar) this.addWeighing(row);
+      this.showEntry(true);
       this.purchaseSection.open = true;
       this.purchaseTitle.textContent = 'Alım #' + item.id + ' düzenleniyor';
       this.cancelEdit.hidden = false;
