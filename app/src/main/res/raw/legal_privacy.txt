@@ -34,7 +34,7 @@ Bu tercihlerin her birini istediğin zaman kapatabilirsin.
 Meydan yanıtları gibi bildirimleri gönderebilmek için cihazının Firebase Cloud Messaging bildirim anahtarı hesabınla ilişkilendirilir. Çıkış yaptığında bu anahtar silinir. Hatırlatmalar cihazında yerel olarak planlanır. Bildirim iznini Android ayarlarından istediğin zaman kapatabilirsin.
 
 # 7. Sesli asistan
-Mikrofon izni yalnızca sesli asistanı kullandığında istenir. Konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür; bu hizmetin işleyişi cihazındaki sağlayıcının (çoğunlukla Google) koşullarına tabidir. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.
+Mikrofon izni yalnızca sesli asistanı kullandığında istenir. Konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür; bu hizmetin işleyişi cihazındaki sağlayıcının (çoğunlukla Google) koşullarına tabidir. Bu hizmet, cihazına ve ayarlarına bağlı olarak sesi metne dönüştürmek için sağlayıcının (çoğunlukla Google) sunucularına gönderebilir. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.
 
 # 8. Analitik, reklam ve hata kayıtları
 Uygulamada reklam, reklam kimliği veya analitik kütüphanesi bulunmaz.

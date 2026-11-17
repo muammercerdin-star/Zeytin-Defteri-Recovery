@@ -22,7 +22,7 @@ Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlen
 - Zeytin Ligi satış sıralaması (yalnızca satış kaydında "Zeytin Ligi'ne dahil et" seçeneğini işaretlediğin satışlar için): ilgili satış ve elek kaydının miktar, tutar ve sınıf bilgileri; sıralamada adın yerine sıra etiketi gösterilir.
 - Bölge sıralamasında yer alma (yalnızca "Zeytin Ligi'nde Yer Al" iznini verirsen, açık rızana dayanarak; varsayılan kapalı): piyasa katkısı olarak gönderilen elek kayıtlarından hesaplanan sıran, puanın, en çok çıkan elek numaran ve ortalama kilogram fiyatın, adın olmadan bölgendeki diğer kullanıcılara gösterilir. Bu izni vermezsen katkıların yalnızca toplu istatistiklerde kullanılır. İzni istediğin zaman geri alabilirsin; geri aldığında sıralamadan çıkarsın ve ligdeki adın silinir.
 - Ligde adla görünme (yalnızca "Ligde Adımla Görüneyim" seçeneğini açarsan, açık rızana dayanarak): belirlediğin görünen ad; bölgendeki ön sıralamada sıran, puanın, en çok çıkan elek numaran ve ortalama kilogram fiyatınla birlikte diğer kullanıcılara gösterilir. Kilogram ve toplam tutar bilgin gösterilmez. Adını açmak, bölge sıralamasında yer alma iznini de kapsar. Rızanı istediğin zaman aynı seçenekle geri alabilirsin; geri aldığında adın silinir.
-- Sesli asistan: mikrofon iznini verirsen konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.
+- Sesli asistan: mikrofon iznini verirsen konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür. Bu hizmet, cihazına ve ayarlarına bağlı olarak sesi metne dönüştürmek için sağlayıcının (çoğunlukla Google) sunucularına gönderebilir. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.
 
 # 3. İşleme amaçları
 - Hesabını oluşturmak, giriş yapmanı sağlamak ve hesabını güvende tutmak,
@@ -49,7 +49,7 @@ Veriler; uygulamadaki formlara girdiğin bilgilerden, Google ile giriş yaptığ
 # 6. Veri alıcıları ve aktarım amaçları
 Kişisel verilerin satılmaz. Hizmetin çalışması için yalnızca aşağıdaki hizmet sağlayıcılarla, belirtilen amaçlarla paylaşılır:
 - Google LLC / Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging, Crashlytics): hesap yönetimi, verilerin saklanması ve eşitlenmesi, bildirim gönderimi, uygulama hatalarının tespiti.
-- Google Android konuşma tanıma hizmeti (cihazındaki sağlayıcı): sesli asistan komutlarının metne dönüştürülmesi.
+- Google Android konuşma tanıma hizmeti (cihazındaki sağlayıcı): sesli asistan komutlarının metne dönüştürülmesi; dönüştürme cihazda ya da Google sunucularında yapılabilir.
 - Supabase: anonim piyasa istatistikleri ve moderasyon işlemleri.
 - Cloudflare, Inc.: zeytindefteri.tr sitesinin ve Tezgâh bilgisayar ekranının yayınlanması, telefonun ile bilgisayarın arasındaki bağlantının aktarılması. Tezgâh kayıtları bu aktarımda uçtan uca şifrelidir; Cloudflare içeriği okuyamaz. Yalnızca bağlantı için gereken IP adresi ve oturum bilgisi gibi teknik veriler işlenir.
 - Open-Meteo: bahçe konumuna ait koordinat veya yer adıyla hava durumu ve konum araması; hesap bilgilerin bu hizmete gönderilmez.
