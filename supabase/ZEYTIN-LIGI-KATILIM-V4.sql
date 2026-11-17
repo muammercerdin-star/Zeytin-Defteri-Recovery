@@ -22,8 +22,29 @@
 --     tüm sürümleri önce V3'ü çağırdığı için hiçbir sürüm bozulmaz.
 --
 -- Mevcut tabloların verisine DOKUNMAZ.
+--
+-- KURAL: Ligde yer almayı seçmeyen üreticinin satış kayıtları ve anonim bölge istatistiklerine katkısı
+-- KAYBOLMAZ. private.market_contributions'a ve istatistik fonksiyonlarına hiç dokunulmaz; izin yalnız
+-- kişi bazlı sıralamada (league_region_ranking_v3) satırın görünüp görünmeyeceğini belirler.
+-- Ligden ayrılmak da yalnız katılım kaydını ve ligdeki adı siler, katkıları silmez.
 
 begin;
+
+-- ÖN KONTROL: beklenen tablo ve fonksiyonlar tam bu imzalarla yoksa hiçbir şey yapmadan durur.
+do $$
+declare
+    missing text := '';
+begin
+    if to_regclass('private.market_contributions') is null then missing := missing || ' private.market_contributions'; end if;
+    if to_regclass('private.league_profiles') is null then missing := missing || ' private.league_profiles'; end if;
+    if to_regprocedure('private.market_producer_hash()') is null then missing := missing || ' private.market_producer_hash()'; end if;
+    if to_regprocedure('public.league_region_ranking(integer, text)') is null then missing := missing || ' league_region_ranking(integer, text)'; end if;
+    if to_regprocedure('public.league_region_ranking_v2(integer, text, text, integer)') is null then missing := missing || ' league_region_ranking_v2(integer, text, text, integer)'; end if;
+    if to_regprocedure('public.league_region_ranking_v3(integer, text, text, integer)') is null then missing := missing || ' league_region_ranking_v3(integer, text, text, integer)'; end if;
+    if missing <> '' then
+        raise exception 'V4 durduruldu, beklenen nesneler yok:%', missing;
+    end if;
+end $$;
 
 create table if not exists private.league_participants (
     producer_hash text primary key,
@@ -249,6 +270,11 @@ begin
 end;
 $$;
 
+-- PUBLIC (herkes) izinleri: Postgres yeni fonksiyonlara varsayılan olarak PUBLIC çalıştırma izni verir.
+-- Eski süzgeçsiz sıralamalarda bu izin kalmışsa anon/authenticated'dan almak yetmez; önce PUBLIC'ten alınır.
+revoke all on function public.league_region_ranking(integer, text) from public;
+revoke all on function public.league_region_ranking_v2(integer, text, text, integer) from public;
+revoke all on function private.league_join_on_name() from public;
 revoke all on function public.league_set_participation(boolean) from public;
 revoke all on function public.league_get_participation() from public;
 revoke all on function public.league_region_ranking_v3(integer, text, text, integer) from public;

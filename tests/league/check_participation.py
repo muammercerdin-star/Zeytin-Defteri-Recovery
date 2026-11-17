@@ -31,6 +31,22 @@ checks = {
     "sql: adı açan katılımcı olur (tetikleyici)": "after insert or update of show_name on private.league_profiles" in sql,
     "sql: süzgeçsiz eski sıralamalar kapatılır": "revoke execute on function public.league_region_ranking(integer, text)" in sql
         and "revoke execute on function public.league_region_ranking_v2(integer, text, text, integer)" in sql,
+    "sql: ön kontrol imzaları doğrular": all(s in sql for s in [
+        "to_regprocedure('public.league_region_ranking(integer, text)')",
+        "to_regprocedure('public.league_region_ranking_v2(integer, text, text, integer)')",
+        "to_regprocedure('public.league_region_ranking_v3(integer, text, text, integer)')",
+        "to_regprocedure('private.market_producer_hash()')"]) and "raise exception 'V4 durduruldu" in sql,
+    "sql: eski sıralamalardan PUBLIC izni kaldırılır":
+        "revoke all on function public.league_region_ranking(integer, text) from public;" in sql
+        and "revoke all on function public.league_region_ranking_v2(integer, text, text, integer) from public;" in sql,
+    # KURAL: izin vermeyenin katkısı ve istatistikler kaybolmaz; V4 yalnız sıralamayı süzer.
+    "kural: katkı tablosu değiştirilmez": re.search(
+        r"(delete\s+from|update|truncate|insert\s+into|alter\s+table)\s+private\.market_contributions", sql, re.I) is None,
+    "kural: yalnız izinli fonksiyonlar değişir": sorted(set(re.findall(r"create or replace function ([a-z0-9_.]+)", sql))) == sorted([
+        "private.league_join_on_name", "public.league_get_participation",
+        "public.league_region_ranking_v3", "public.league_set_participation"]),
+    "kural: ayrılınca katkı silinmez": "delete from private.market_contributions" not in sql,
+    "geri al: V3 tanımı birebir": body(read("supabase/ZEYTIN-LIGI-KATILIM-V4-GERI-AL.sql")) == body(v3),
     "uygulama: katılım varsayılan kapalı": 'getSetting(LEAGUE_JOIN_PREFIX + uid, "0")' in m,
     "uygulama: RPC çağrıları": '"league_set_participation"' in m and '"league_get_participation"' in m,
     "uygulama: Ayarlar satırı": "leagueJoinRow(activity)" in sv and "Zeytin Ligi'nde Yer Al" in sv,
