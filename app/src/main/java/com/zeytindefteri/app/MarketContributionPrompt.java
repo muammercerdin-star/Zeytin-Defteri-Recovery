@@ -24,12 +24,13 @@ final class MarketContributionPrompt {
         MarketCloudRepository repo = repository(activity);
         boolean on = repo.isContributionOptedIn();
         String message = "Açarsan elek kayıtlarındaki elek sınıfı, kilogram, kilogram fiyatı, tarih ve bahçenin "
-                + "il/ilçesi; adın ve hesap bilgin olmadan, geri döndürülemez bir üretici koduyla bölge "
-                + "istatistiklerine katılır.\n\n"
+                + "il/ilçesi; adın ve hesap bilgin yerine, sunucuda gizli bir anahtarla üretilen takma bir "
+                + "üretici koduyla toplu bölge istatistiklerine katılır.\n\n"
                 + "Bir bölgede en az " + MarketBackendConfig.PUBLIC_MARKET_MIN_PRODUCERS
                 + " farklı üretici olmadan hiçbir rakam yayınlanmaz.\n\n"
                 + "Kapatırsan bu cihazdan gönderilen katkıların sunucudan geri çekilir. "
                 + "Kapalıyken de bölge istatistiklerini görmeye devam edersin.\n\n"
+                + "Zeytin Ligi sıralamasında görünmek ayrı bir izindir: Ayarlar → Zeytin Ligi'nde Yer Al.\n\n"
                 + "Şu an: " + (on ? "Açık" : "Kapalı");
         new AlertDialog.Builder(activity)
                 .setTitle("Piyasaya Anonim Katkı")

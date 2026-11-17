@@ -93,6 +93,7 @@ final class SettingsView extends ScrollView {
                 row(activity, R.drawable.ic_archive_document, "Fiş Yazıcısı", "Bluetooth fiş yazıcısı: seç, kâğıt, Türkçe, deneme fişi", null,
                         () -> TezgahPrinter.settings(activity)),
                 contributionRow(activity),
+                leagueJoinRow(activity),
                 leagueNameRow(activity));
         addSection(body, activity, "UYGULAMA",
                 row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant),
@@ -214,13 +215,26 @@ final class SettingsView extends ScrollView {
     private static View contributionRow(Activity activity) {
         final TextView[] value = new TextView[1];
         View row = row(activity, R.drawable.ic_settings_shield, "Piyasaya Anonim Katkı",
-                "Elek kayıtların adın olmadan bölge istatistiklerine katılır",
+                "Elek kayıtların adın olmadan toplu bölge istatistiklerine katılır",
                 MarketContributionPrompt.stateLabel(activity),
                 () -> MarketContributionPrompt.show(activity, () -> {
                     if (value[0] != null) value[0].setText(MarketContributionPrompt.stateLabel(activity));
                 }));
         LinearLayout line = (LinearLayout) row;
         value[0] = (TextView) line.getChildAt(2);
+        return row;
+    }
+
+    /** Zeytin Ligi sıralamasında yer al (varsayılan kapalı, açık rıza); değer pencere kapanınca güncellenir. */
+    private static View leagueJoinRow(Activity activity) {
+        final TextView[] value = new TextView[1];
+        View row = row(activity, R.drawable.ic_league_nav, "Zeytin Ligi'nde Yer Al",
+                "Bölge sıralamasında sıran, puanın ve ortalama TL/kg fiyatın adsız görünsün",
+                LeagueJoinPrompt.stateLabel(activity),
+                () -> LeagueJoinPrompt.show(activity, () -> {
+                    if (value[0] != null) value[0].setText(LeagueJoinPrompt.stateLabel(activity));
+                }));
+        value[0] = (TextView) ((LinearLayout) row).getChildAt(2);
         return row;
     }
 

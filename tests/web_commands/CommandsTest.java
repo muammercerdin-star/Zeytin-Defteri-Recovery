@@ -197,6 +197,53 @@ public final class CommandsTest {
         check(TezgahProducers.search(db, "devices", "", 20).size() == 1, "persistent duplicate not saved twice");
         db.execSQL("WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<2048) INSERT INTO tezgah_web_commands(id,owner_uid,session_id,hash,request,result,state) SELECT 'old'||x,'devices','device:two','x','{}','{}','tamam' FROM n");
         check(deviceTwo.submit(command("uretici_ekle", j("ad", "Yeni Cihaz Üretici"))).getString("durum").equals("tamam"), "persistent bounded journal retires oldest completed id");
+        // Günün fiyatları ve canlı tartım: servis bağlamadıysa gönderilmez; bağlıysa salt okunur gelir.
+        check(!engine.read("web_meta", j()).has("gunFiyat"), "no live source: meta has no prices");
+        check(!engine.read("canli_tartim", j()).getBoolean("aktif"), "no live source: no live weighing");
+        String liveToday = engine.today();
+        TezgahModel prices = new TezgahModel();
+        prices.setPrice(0, 130);
+        prices.setPrice(1, 100);
+        final String[] draft = {""};
+        final String[] day = {liveToday};
+        engine.live(() -> new TezgahWebLive.State(prices.encode(), day[0], draft[0], "<b>Ahmet</b>", 2.0));
+        JSONObject meta = engine.read("web_meta", j());
+        check(meta.getBoolean("canli"), "meta advertises live support");
+        JSONObject gun = meta.getJSONObject("gunFiyat");
+        check(gun.getBoolean("bugun") && gun.getString("kaynak").equals("gun"), "today's prices sent");
+        check(gun.getJSONArray("fiyatlar").getString(0).equals("130.00") && gun.getJSONArray("fiyatlar").length() == 6, "six prices as text");
+        check(gun.getString("dara").equals("2.0"), "tare sent");
+        day[0] = "2000-01-01";
+        check(!engine.read("web_meta", j()).getJSONObject("gunFiyat").getBoolean("bugun"), "yesterday's prices are not sent");
+        check(!engine.read("web_meta", j()).getJSONObject("gunFiyat").has("fiyatlar"), "stale prices withheld");
+        TezgahModel weighing = new TezgahModel();
+        weighing.setTare(2);
+        weighing.setPrice(0, 150);
+        weighing.add(0, 10, 258);
+        weighing.add(1, 2, 40);
+        draft[0] = weighing.encode();
+        JSONObject live = engine.read("canli_tartim", j());
+        check(live.getBoolean("aktif") && live.getString("uretici").equals("<b>Ahmet</b>"), "live weighing with seller as plain text");
+        check(live.getJSONArray("tartimlar").length() == 2 && live.getString("netKg").equals("274.0"), "rows and net match phone model");
+        check(live.getString("tutarTL").equals("35700.00"), "amount uses draft prices (238 x 150)");
+        check(live.getBoolean("eksikFiyat"), "missing grade price flagged");
+        check(live.getJSONArray("tartimlar").getJSONObject(0).getString("netKg").equals("238.0"), "row net = kg - kasa x tare");
+        JSONObject draftPrices = engine.read("web_meta", j()).getJSONObject("gunFiyat");
+        check(draftPrices.getBoolean("bugun") && draftPrices.getString("kaynak").equals("tartim"), "open weighing prices win even on a new day");
+        check(draftPrices.getJSONArray("fiyatlar").getString(0).equals("150.00"), "draft price sent");
+        for (int i = 0; i < 130; i++) weighing.add(2, 1, 20);
+        draft[0] = weighing.encode();
+        JSONObject big = engine.read("canli_tartim", j());
+        check(big.getJSONArray("tartimlar").length() == TezgahWebLive.MAX_ROWS && big.getInt("satir") == 132, "rows capped, total count kept");
+        draft[0] = "bozuk|metin";
+        check(!engine.read("canli_tartim", j()).getBoolean("aktif"), "corrupt draft is not live");
+        boolean refused = false;
+        try {
+            engine.read("canli_tartim", j("x", 1));
+        } catch (Exception e) {
+            refused = true;
+        }
+        check(refused, "live op rejects unknown fields");
         deviceOne.close();
         deviceTwo.close();
         temporary.close();

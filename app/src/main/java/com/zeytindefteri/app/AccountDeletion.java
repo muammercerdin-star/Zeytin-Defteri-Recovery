@@ -134,9 +134,9 @@ public final class AccountDeletion {
         final String uid = user.getUid();
         DatabaseHelper db = new DatabaseHelper(activity);
 
-        // 0) Zeytin Ligi'ndeki adını sil (Supabase). Fonksiyon sunucuda yoksa (kurulmamış) engellemez.
+        // 0) Zeytin Ligi sıralamasından çık ve ligdeki adını sil (Supabase). Fonksiyon sunucuda yoksa engellemez.
         MarketCloudRepository market = new MarketCloudRepository(db, uid);
-        market.setLeagueProfile("", false, (savedName, shown, nameError) -> {
+        market.setLeagueParticipation(false, (joined, nameError) -> {
             String m = nameError == null || nameError.getMessage() == null ? "" : nameError.getMessage();
             if (nameError != null && !(m.contains("PGRST202") || m.contains("Could not find the function") || m.contains("404"))) {
                 db.close();

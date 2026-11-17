@@ -21,6 +21,32 @@ export function decimal(value, scale = 2) {
   return normalized;
 }
 
+// Boş bırakılan isteğe bağlı sayı kutusu 0 sayılır; tezgâhçı önce "0" silmek zorunda kalmaz.
+function numberOrZero(input, scale = 2) {
+  return decimal(input.value.trim() || '0', scale);
+}
+
+function guess(input, scale = 2) {
+  try {
+    return Number(numberOrZero(input, scale));
+  } catch {
+    return NaN;
+  }
+}
+
+const round1 = value => Math.round(value * 10) / 10;
+
+/** Telefondaki TezgahModel ile aynı formül; yalnız önizleme, tutar otoritesi telefondur. */
+export function estimate(tare, prices, rows) {
+  const net = prices.map(() => 0);
+  for (const row of rows) {
+    net[row.elek] += Math.max(0, row.kg - Math.max(0, row.kasa) * Math.max(0, tare));
+  }
+  const gradeNet = net.map(round1);
+  const total = gradeNet.reduce((sum, value, index) => sum + value * prices[index], 0);
+  return { net: round1(gradeNet.reduce((a, b) => a + b, 0)), total: Math.round(total * 100) / 100, gradeNet };
+}
+
 function localized(value) {
   return String(value ?? '').replace('.', ',');
 }
@@ -42,6 +68,8 @@ export class Operations {
     app.onWipe = () => this.clear();
     app.onChange = () => {
       this.reportDirty = true;
+      this.liveDirty = true;
+      if (this.online && this.liveSupported) void this.refreshLive();
     };
   }
 
@@ -60,10 +88,11 @@ export class Operations {
     return button;
   }
 
-  input(parent, label, value = '', numeric = false) {
+  input(parent, label, value = '', numeric = false, hint = '') {
     const wrapper = this.element('label', label);
     const input = this.element('input');
     input.value = value;
+    if (hint) input.placeholder = hint;
     input.autocomplete = 'off';
     input.maxLength = numeric ? 24 : 100;
     if (numeric) input.inputMode = 'decimal';
@@ -85,7 +114,7 @@ export class Operations {
     return select;
   }
 
-  form(title, action) {
+  form(title, action, host = this.writeFields) {
     const details = this.element('details', '', 'card operation');
     const heading = this.element('summary', title);
     details.append(heading);
@@ -103,7 +132,7 @@ export class Operations {
       });
     });
     details.append(form);
-    this.writeFields.append(details);
+    host.append(details);
     return { fields, details, form, submit };
   }
 
@@ -123,7 +152,7 @@ export class Operations {
   async send(type, fields) {
     this.say('Telefon işlemi doğruluyor…');
     const id = await this.app.command(type, fields);
-    this.writeFields.disabled = true;
+    this.lock(true);
     return id;
   }
 
@@ -132,9 +161,10 @@ export class Operations {
     const message = waiting ? 'Telefonda onay bekleniyor · 60 saniye içinde onaylayın.' :
       result.hata || result.ozet?.mesaj || result.durum;
     this.say(message);
-    this.writeFields.disabled = !this.online || !!this.app.commands.size;
+    this.lock(!this.online || !!this.app.commands.size);
     if (result.durum === 'tamam') {
       this.reportDirty = true;
+      if (result.id === this.paymentCommand) this.closePayment();
       if (result.id === this.purchaseCommand) {
         this.resetPurchase();
         this.seller.focus();
@@ -142,9 +172,29 @@ export class Operations {
     }
   }
 
+  lock(disabled) {
+    this.writeFields.disabled = disabled;
+    if (this.quickFields) this.quickFields.disabled = disabled;
+  }
+
   build() {
     this.root.replaceChildren();
     this.root.hidden = true;
+    // Alım girişi, ayrı bir yer varsa tablonun yanında hep açık durur.
+    const quick = this.document.getElementById('quick-entry');
+    this.quick = quick && quick !== this.root ? quick : null;
+    this.workspace = this.quick ? this.document.getElementById('workspace') : null;
+    if (this.quick) {
+      this.quick.replaceChildren();
+      this.quick.hidden = true;
+      this.workspace?.classList.toggle('solo', true);
+      this.quickFields = this.element('fieldset', '', 'write-fields');
+      this.quickFields.hidden = true;
+      this.quickFields.disabled = true;
+      this.quick.append(this.quickFields);
+    } else {
+      this.quickFields = null;
+    }
     this.root.append(this.element('h2', 'Tezgâh işlemleri'));
     this.permission = this.element('p', 'Yalnız görüntüleme', 'permission-label');
     this.root.append(this.permission);
@@ -180,24 +230,38 @@ export class Operations {
   }
 
   buildPurchase() {
-    const section = this.form('Alım girişi / düzenleme', async () => {
+    const host = this.quickFields || this.writeFields;
+    const section = this.form('Yeni alım', async () => {
       const model = {
         dara: decimal(this.tare.value, 1),
-        fiyatlar: this.prices.map(input => decimal(input.value)),
-        tartimlar: this.weighings.map(row => ({ elek: Number(row.grade.value), kasa: Number(decimal(row.crates.value, 0)), kg: decimal(row.kg.value, 1) }))
+        fiyatlar: this.prices.map(input => numberOrZero(input)),
+        tartimlar: this.weighings.map(row => ({ elek: Number(row.grade.value), kasa: Number(numberOrZero(row.crates, 0)), kg: decimal(row.kg.value, 1) }))
       };
       const fields = { uretici: this.seller.value.trim(), tarih: this.date.value, model };
       if (this.editing) {
         fields.alimId = this.editing.id;
         fields.surum = this.editing.surum;
       } else {
-        fields.odenen = decimal(this.paid.value);
+        fields.odenen = numberOrZero(this.paid);
       }
       this.purchaseCommand = await this.send(this.editing ? 'alim_duzenle' : 'alim_ekle', fields);
-    });
+    }, host);
     this.purchaseSection = section.details;
     this.purchaseSection.open = true;
-    this.seller = this.input(section.fields, 'Üretici ara / seç');
+    this.purchaseTitle = section.details.children[0];
+    section.details.className = 'card operation quick';
+
+    // Günün fiyatları: sabah bir kez girilir, her alımda korunur (bu oturumun belleğinde).
+    this.priceBox = this.element('details', '', 'day-prices');
+    this.priceSummary = this.element('summary', 'Günün fiyatları');
+    this.priceBox.append(this.priceSummary);
+    const priceGrid = this.element('div', '', 'price-grid');
+    this.priceBox.append(priceGrid);
+    this.prices = grades.map(grade => this.input(priceGrid, grade + ' ₺/kg', '', true, '0'));
+    this.tare = this.input(priceGrid, 'Kasa darası kg', '2', true);
+    section.form.insertBefore(this.priceBox, section.fields);
+
+    this.seller = this.input(section.fields, 'Üretici', '', false, 'Adını yazın, listeden seçin');
     this.seller.required = true;
     this.seller.setAttribute('list', 'web-producers');
     this.producers = this.element('datalist');
@@ -208,18 +272,93 @@ export class Operations {
       this.searchTimer = setTimeout(() => this.safe(() => this.searchProducers()), 350);
     });
     this.seller.addEventListener('focus', () => this.safe(() => this.searchProducers()));
-    this.date = this.input(section.fields, 'Alım tarihi (telefonun günü)');
-    this.date.type = 'date';
-    this.date.required = true;
-    this.tare = this.input(section.fields, 'Kasa darası kg', '2', true);
-    this.paid = this.input(section.fields, 'Şimdi ödenen ₺', '0', true);
-    this.prices = grades.map(grade => this.input(section.fields, grade + ' · fiyat ₺', '0', true));
+
     this.weighingBox = this.element('div', '', 'weighings');
     section.form.insertBefore(this.weighingBox, section.submit);
     this.weighings = [];
     this.addWeighing();
-    this.button(section.form, '+ Tartım satırı', () => this.addWeighing());
-    this.button(section.form, 'Düzenlemeyi bırak / yeni alım', () => this.resetPurchase());
+    const rowTools = this.element('div', '', 'row-tools');
+    section.form.insertBefore(rowTools, section.submit);
+    this.button(rowTools, '+ Tartım satırı', () => {
+      const row = this.addWeighing();
+      row.grade.focus();
+    });
+
+    this.preview = this.element('div', '', 'preview');
+    this.previewMain = this.element('strong', '');
+    this.previewNote = this.element('small', '');
+    this.preview.append(this.previewMain, this.previewNote);
+    this.preview.setAttribute('aria-live', 'polite');
+    section.form.insertBefore(this.preview, section.submit);
+
+    const extra = this.element('div', '', 'form-grid compact');
+    section.form.insertBefore(extra, section.submit);
+    this.paid = this.input(extra, 'Şimdi ödenen ₺', '', true, '0');
+    this.date = this.input(extra, 'Alım günü');
+    this.date.type = 'date';
+    this.date.required = true;
+
+    section.submit.className = 'primary send';
+    const after = this.element('div', '', 'after-send');
+    section.form.append(after);
+    this.cancelEdit = this.button(after, 'Düzenlemeyi bırak', () => this.resetPurchase());
+    this.cancelEdit.hidden = true;
+    after.append(this.element('p', 'Enter: sonraki kutu · kilodan sonra Enter: yeni tartım · boş satırda Enter: ödemeye geç · Ctrl+Enter: gönder. Kesin tutarı telefon hesaplar.', 'hint'));
+
+    this.purchaseForm = section.form;
+    section.form.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        section.form.requestSubmit?.();
+      }
+    });
+    for (const input of [...this.prices, this.tare]) {
+      input.addEventListener('input', () => this.updatePreview());
+    }
+    this.paid.addEventListener('keydown', event => this.enter(event, null));
+    this.seller.addEventListener('keydown', event => this.enter(event, () => this.weighings[0].grade));
+    this.updatePreview();
+  }
+
+  /** Enter: bir sonraki kutu. Son kutuda (Şimdi ödenen) form gönderilir. */
+  enter(event, next) {
+    if (event.key !== 'Enter' || event.isComposing || event.ctrlKey || event.metaKey) return;
+    event.preventDefault();
+    const target = next?.();
+    if (target) {
+      target.focus();
+      target.select?.();
+    } else {
+      this.purchaseForm.requestSubmit?.();
+    }
+  }
+
+  updatePreview() {
+    if (!this.previewMain) return;
+    const filled = this.prices.filter(input => guess(input) > 0).length;
+    const parts = this.prices.map((input, index) => {
+      const value = guess(input);
+      return value > 0 ? grades[index].replace(' numara', ' no') + ' ' + amount(value, ' ₺') : null;
+    }).filter(Boolean);
+    const source = this.priceSource === 'telefon' ? ' · telefondan' : '';
+    const empty = this.priceSource === 'eksik' ? 'telefonda bugünün fiyatları girilmedi, buraya yazın' : 'önce fiyatları girin';
+    this.priceSummary.textContent = filled ? 'Günün fiyatları' + source + ' · ' + parts.join(' · ') : 'Günün fiyatları · ' + empty;
+    if (!filled) this.priceBox.open = true;
+    const tare = guess(this.tare, 1);
+    const prices = this.prices.map(input => guess(input));
+    const rows = this.weighings.map(row => ({ elek: Number(row.grade.value), kasa: guess(row.crates, 0), kg: row.kg.value.trim() ? guess(row.kg, 1) : 0 }));
+    if ([tare, ...prices].some(Number.isNaN) || rows.some(row => Number.isNaN(row.kasa) || Number.isNaN(row.kg))) {
+      this.previewMain.textContent = 'Sayıyı kontrol edin';
+      this.previewNote.textContent = 'Türkçe yazın. Örnek: 1.140,5';
+      return;
+    }
+    const result = estimate(tare, prices, rows);
+    this.previewMain.textContent = 'Net ' + amount(result.net, ' kg') + ' · ' + amount(result.total, ' ₺');
+    const missing = rows.filter(row => row.kg > 0 && !(prices[row.elek] > 0)).map(row => grades[row.elek]);
+    const heavy = rows.some(row => row.kg > 0 && row.kasa * tare >= row.kg);
+    this.previewNote.textContent = missing.length ? [...new Set(missing)].join(', ') + ' fiyatı girilmedi' :
+      heavy ? 'Kasa darası brüt kilodan fazla, kontrol edin' : 'Tahmini · kesin hesabı telefon yapar';
+    this.preview.classList.toggle('warn', missing.length > 0 || heavy);
   }
 
   async searchProducers() {
@@ -241,29 +380,65 @@ export class Operations {
     const box = this.element('div', '', 'weighing');
     const grade = this.select(box, 'Elek', grades.map((name, index) => [String(index), name]));
     grade.value = String(value.elek);
-    const crates = this.input(box, 'Kasa adedi', String(value.kasa), true);
+    const crates = this.input(box, 'Kasa', value.kasa ? String(value.kasa) : '', true, '0');
     const kg = this.input(box, 'Brüt kg', localized(value.kg), true);
     kg.required = true;
     const row = { grade, crates, kg, box };
     this.weighings.push(row);
-    this.button(box, 'Satırı çıkar', () => {
+    const remove = this.button(box, '×', () => {
       if (this.weighings.length === 1) throw new Error('En az bir tartım gerekli.');
       this.weighings = this.weighings.filter(item => item !== row);
       box.remove();
-    });
+      this.updatePreview();
+    }, 'quiet remove');
+    remove.setAttribute('aria-label', 'Tartım satırını çıkar');
+    remove.title = 'Satırı çıkar';
+    const following = () => {
+      const index = this.weighings.indexOf(row);
+      return this.weighings[index + 1]?.grade || this.paid;
+    };
+    grade.addEventListener('keydown', event => this.enter(event, () => crates));
+    crates.addEventListener('keydown', event => this.enter(event, () => kg));
+    kg.addEventListener('keydown', event => this.enter(event, () => {
+      const last = this.weighings.at(-1) === row;
+      if (!last) return following();
+      if (!kg.value.trim()) {
+        if (this.weighings.length > 1) {
+          this.weighings = this.weighings.filter(item => item !== row);
+          box.remove();
+          this.updatePreview();
+        }
+        return this.paid;
+      }
+      const next = this.addWeighing({ elek: Math.min(grades.length - 1, Number(grade.value) + 1), kasa: 0, kg: '' });
+      return next.grade;
+    }));
+    for (const input of [crates, kg]) input.addEventListener('input', () => this.updatePreview());
+    grade.addEventListener('change', () => this.updatePreview());
     this.weighingBox.append(box);
+    this.updatePreview();
+    return row;
   }
 
   resetPurchase() {
     this.editing = null;
     this.purchaseCommand = null;
     this.seller.value = '';
-    this.paid.value = '0';
+    this.paid.value = '';
     this.paid.disabled = false;
     this.date.value = this.today || '';
+    this.purchaseTitle.textContent = 'Yeni alım';
+    this.cancelEdit.hidden = true;
     this.weighingBox.replaceChildren();
     this.weighings = [];
     this.addWeighing();
+  }
+
+  closePayment() {
+    if (!this.quickFields) return;
+    this.paymentSection.hidden = true;
+    this.paymentCommand = null;
+    this.payInfo.textContent = '';
   }
 
   async rowAction(type, item) {
@@ -272,8 +447,12 @@ export class Operations {
       if (type === 'pay') {
         this.payId.value = item.id;
         this.payAmount.value = localized(item.kalanTL);
+        this.payInfo.textContent = (item.uretici || 'Alım #' + item.id) + ' · kalan ' + amount(item.kalanTL || 0, ' ₺');
+        this.paymentSection.hidden = false;
         this.paymentSection.open = true;
+        this.paymentSection.scrollIntoView?.({ block: 'nearest' });
         this.payAmount.focus();
+        this.payAmount.select?.();
         return;
       }
       const epoch = this.epoch;
@@ -294,16 +473,41 @@ export class Operations {
       this.weighings = [];
       for (const row of detail.model.tartimlar) this.addWeighing(row);
       this.purchaseSection.open = true;
+      this.purchaseTitle.textContent = 'Alım #' + item.id + ' düzenleniyor';
+      this.cancelEdit.hidden = false;
+      this.updatePreview();
       this.seller.focus();
       this.say('Alım #' + item.id + ' düzenleniyor. Mevcut ödemeler korunur; geçmiş tarih için telefon onayı gerekir.');
     });
   }
 
   buildPayment() {
-    const section = this.form('Üretici ödemesi', () => this.send('odeme', { alimId: this.payId.value.trim(), tutar: decimal(this.payAmount.value) }));
+    const host = this.quickFields || this.writeFields;
+    const section = this.form('Üretici ödemesi', async () => {
+      this.paymentCommand = await this.send('odeme', { alimId: this.payId.value.trim(), tutar: decimal(this.payAmount.value) });
+    }, host);
     this.paymentSection = section.details;
+    this.payInfo = this.element('p', '', 'pay-info');
+    section.form.insertBefore(this.payInfo, section.fields);
     this.payId = this.input(section.fields, 'Alım numarası (satırdaki Öde düğmesi doldurur)');
     this.payAmount = this.input(section.fields, 'Ödeme ₺', '', true);
+    this.payAmount.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && !event.isComposing) {
+        event.preventDefault();
+        section.form.requestSubmit?.();
+      }
+    });
+    if (this.quickFields) {
+      section.details.className = 'card operation quick pay-panel';
+      section.submit.className = 'primary send';
+      section.submit.textContent = 'Ödemeyi telefona gönder';
+      this.payId.readOnly = true;
+      const idBox = this.payId.parentElement ?? this.payId.parent;
+      if (idBox) idBox.hidden = true;
+      this.button(section.form, 'Vazgeç', () => this.closePayment());
+      this.quickFields.insertBefore(section.details, this.purchaseSection);
+      section.details.hidden = true;
+    }
     const bulk = this.form('Toplu ödeme · telefonda onay', () => this.send('toplu_odeme', { uretici: seller.value.trim(), tutar: decimal(total.value) }));
     const seller = this.input(bulk.fields, 'Üretici adı');
     const total = this.input(bulk.fields, 'Toplam ödeme ₺', '', true);
@@ -469,7 +673,12 @@ export class Operations {
     this.online = state.approved && !state.stale;
     this.root.hidden = false;
     this.writeFields.hidden = !state.writable;
-    this.writeFields.disabled = !this.online || !!this.app.commands.size;
+    if (this.quickFields) {
+      this.quickFields.hidden = !state.writable;
+      this.quick.hidden = !state.writable;
+      this.workspace?.classList.toggle('solo', !state.writable);
+    }
+    this.lock(!this.online || !!this.app.commands.size);
     this.permission.textContent = state.writable ? 'Tam kullanım · Kayıtları telefon doğrular ve saklar' : 'Yalnız görüntüleme · Yetki telefondan verilir';
     if (this.online && !this.today && !this.metaLoading) {
       this.metaLoading = true;
@@ -478,6 +687,9 @@ export class Operations {
         if (epoch !== this.epoch) return;
         this.today = data.tarih;
         this.date.value = this.today;
+        this.liveSupported = data.canli === true;
+        this.applyDayPrices(data.gunFiyat);
+        if (this.liveSupported) void this.refreshLive();
       }).catch(() => {}).finally(() => {
         if (epoch === this.epoch) this.metaLoading = false;
       });
@@ -499,7 +711,100 @@ export class Operations {
     this.reportDirty = false;
     this.reportLoading = false;
     this.metaLoading = false;
+    this.liveSupported = false;
+    this.liveLoading = false;
+    this.liveDirty = false;
+    this.priceSource = '';
+    this.renderLive(null);
     this.full = false;
     this.build();
+  }
+
+  /**
+   * Telefondaki günün fiyatlarını kutulara yazar (telefon esastır). Yazılmakta olan kutuya ve
+   * düzenlenen eski alıma dokunmaz. Eski uygulamada bilgi gelmez; elle giriş aynen sürer.
+   */
+  applyDayPrices(info) {
+    if (!info || !this.prices) return;
+    if (info.bugun !== true || !Array.isArray(info.fiyatlar) || info.fiyatlar.length !== grades.length) {
+      this.priceSource = 'eksik';
+      this.updatePreview();
+      return;
+    }
+    this.priceSource = 'telefon';
+    if (this.editing) {
+      this.updatePreview();
+      return;
+    }
+    const focused = this.document.activeElement;
+    info.fiyatlar.forEach((value, index) => {
+      const input = this.prices[index];
+      if (input === focused) return;
+      const number = Number(value);
+      input.value = number > 0 ? localized(String(number)) : '';
+    });
+    const tare = Number(info.dara);
+    if (this.tare !== focused && tare >= 0 && tare <= 20) this.tare.value = localized(String(tare));
+    this.updatePreview();
+  }
+
+  /** Telefon değişti dediğinde fiyatları ve "Şu an tartılıyor" kartını yeniler; üst üste istek göndermez. */
+  async refreshLive() {
+    if (this.liveLoading || !this.online || !this.liveSupported) return;
+    this.liveLoading = true;
+    this.liveDirty = false;
+    const epoch = this.epoch;
+    try {
+      const meta = await this.app.operation('web_meta');
+      if (epoch !== this.epoch) return;
+      this.applyDayPrices(meta.gunFiyat);
+      const live = await this.app.operation('canli_tartim');
+      if (epoch !== this.epoch) return;
+      this.renderLive(live);
+    } catch {
+      if (epoch === this.epoch) this.renderLive(null);
+    } finally {
+      if (epoch === this.epoch) {
+        this.liveLoading = false;
+        if (this.liveDirty) void this.refreshLive();
+      }
+    }
+  }
+
+  /** "Şu an tartılıyor" kartı: yalnız metin düğümleri, HTML yok. */
+  renderLive(live) {
+    const box = this.document.getElementById('live-weighing');
+    if (!box || box === this.root) return;
+    box.replaceChildren();
+    box.hidden = !(live && live.aktif === true);
+    if (box.hidden) return;
+    const head = this.element('div', '', 'live-head');
+    head.append(this.element('span', 'Şu an tartılıyor', 'live-tag'));
+    head.append(this.element('strong', live.uretici || 'Üretici henüz seçilmedi', 'live-seller'));
+    box.append(head);
+    const totals = grades.map(() => ({ kasa: 0, net: 0, count: 0 }));
+    for (const row of Array.isArray(live.tartimlar) ? live.tartimlar : []) {
+      const total = totals[row.elek];
+      if (!total) continue;
+      total.kasa += Number(row.kasa) || 0;
+      total.net += Number(row.netKg) || 0;
+      total.count += 1;
+    }
+    const list = this.element('div', '', 'live-grades');
+    totals.forEach((total, index) => {
+      if (!total.count) return;
+      const line = this.element('div', '', 'live-grade');
+      line.append(this.element('span', grades[index]));
+      line.append(this.element('span', total.kasa + ' kasa'));
+      line.append(this.element('strong', amount(Math.round(total.net * 10) / 10, ' kg')));
+      list.append(line);
+    });
+    box.append(list);
+    const sum = this.element('p', 'Net ' + amount(live.netKg, ' kg') + ' · ' + live.kasa + ' kasa · ' + amount(live.tutarTL, ' ₺'), 'live-sum');
+    box.append(sum);
+    let note = 'Tahmini · telefonda kaydedilince alımlar listesine düşer.';
+    if (live.eksikFiyat) note = 'Bazı eleklerin fiyatı telefonda girilmedi · tutar eksik görünebilir.';
+    if (Number(live.satir) > (live.tartimlar || []).length) note += ' Son ' + live.tartimlar.length + ' tartım gösteriliyor.';
+    box.append(this.element('p', note, 'live-note'));
   }
 }

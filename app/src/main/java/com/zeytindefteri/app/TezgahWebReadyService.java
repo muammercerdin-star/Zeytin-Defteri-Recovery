@@ -316,6 +316,7 @@ public final class TezgahWebReadyService extends Service implements TezgahWebCha
                                 });
                             }
                         });
+                commands.live(TezgahWebLivePrefs.source(TezgahWebReadyService.this, owner));
                 core = new TezgahWebPhone(device.getString("room"), handshake.takeKeys(), new TezgahWebRepository(helper.getWritableDatabase(), owner),
                         this::enqueue, ready -> { }, commands);
                 device.put("lastUsed", System.currentTimeMillis());

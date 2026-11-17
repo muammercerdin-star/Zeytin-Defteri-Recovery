@@ -8,7 +8,7 @@ checks = [
     ("ana ekran: hasat yazısı elek formunu açar", 'new Intent(this, ElekActivity.class).putExtra("garden_id",harvestGarden)' in feed),
     ("hasat formu: elek kayıtları otomatik listelenir", "databaseHelper.getGardenElekRecords(gardenId)" in harvest and "Elek kaydından · otomatik" in harvest),
     ("hasat formu: elek kayıtları burada silinmez", harvest.count("confirmDelete(id, date, kg, cost)") == 1),
-    ("satış formu: elekten satış oluştuğu söylenir, anonim veri izni korunur", "Elek kaydında satış kendiliğinden oluşur" in sale and "anonim piyasa verisine" in sale),
+    ("satış formu: elekten satış oluştuğu söylenir, anonim veri izni korunur", "Elek kaydında satış kendiliğinden oluşur" in sale and "Zeytin Ligi hesabına katılır" in sale),
     ("tarih biçimi", "public static String displayDate" in grade),
 ]
 bad = 0

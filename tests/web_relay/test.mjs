@@ -199,6 +199,24 @@ try {
  // Statik ek denetim: DO log API'si yok, IP/cookie başlığı okunmuyor.
  ok(!/console\s*[.[]|CF-Connecting-IP|X-Forwarded-For|headers\.get\(['"]Cookie/.test(src),'no log/IP/cookie reads');
  for(const k of Object.keys(originalConsole))console[k]=originalConsole[k];
+ // İkinci kapı: alias host'tan gelen tarayıcı, ana host'tan gelen telefonla aynı odada buluşur.
+ {
+  const alias='https://relay2.example.test',web2='https://web2.example.test';
+  const ea=environment({RELAY_ALIASES:JSON.stringify([alias]),ALLOWED_ORIGINS:JSON.stringify([origin,web2])});
+  const made=await worker.fetch(new Request(alias+'/v1/rooms',{method:'POST',headers:{Origin:web2,'Content-Type':'application/json'},body:'{}'}),ea);
+  eq(made.status,201,'alias host creates room');
+  const ra=await made.json();
+  const wb=await worker.fetch(new Request(alias+'/v1/socket?room='+ra.room,{headers:{Upgrade:'websocket',Origin:web2}}),ea);
+  eq(wb.status,101,'browser via alias host');
+  const ph=await worker.fetch(new Request(base+'/v1/socket?room='+ra.room,{headers:{Upgrade:'websocket'}}),ea);
+  eq(ph.status,101,'phone via main host reaches same room');
+  const bad=await worker.fetch(new Request('https://other.example.test/v1/rooms',{method:'POST',headers:{Origin:web2,'Content-Type':'application/json'},body:'{}'}),ea);
+  ok(bad.status>=400,'unlisted host rejected');
+  const broken=environment({RELAY_ALIASES:'not-json'});
+  const r2=await worker.fetch(new Request(alias+'/v1/rooms',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:'{}'}),broken);
+  ok(r2.status>=400,'bad alias config fails closed');
+  ok((await create(broken)).status===201,'main host still works with bad alias config');
+ }
  console.log(`PASS ${n}/${n} relay logic (Node mock; gerçek Workers dağıtımı değil)`);
 } finally {
  Date.now=originalNow;globalThis.Response=OriginalResponse;

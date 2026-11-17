@@ -123,7 +123,8 @@ removed = [l for l in srv_diff.splitlines() if l.startswith('-') and not l.start
 check(not removed, f'sunucu hesap silme kodundan satır çıkarılmış: {removed[:3]}')
 acc = read(APP / 'AccountDeletion.java')
 acc_code = re.sub(r'(?m)^\s*//.*$', '', acc)  # yalnız satır yorumları (URL'deki // kalır)
-order = ['setLeagueProfile("", false', 'setContributionOptIn(false', '/deleteAccount', 'LocalAccountWipe.wipe(',
+# Lig adımı: sıralamadan çıkış ligdeki adı da siler (V4); sunucuda V4 yoksa ad silmeye düşer.
+order = ['setLeagueParticipation(false', 'setContributionOptIn(false', '/deleteAccount', 'LocalAccountWipe.wipe(',
          'clearPreferences(activity, uid)', 'TezgahRescue.wipe(activity, uid)', 'finishSignedOut(activity, "Hesabın']
 pos = [acc_code.find(x) for x in order]
 check(all(p >= 0 for p in pos), f'hesap silme adımı eksik: {[x for x, p in zip(order, pos) if p < 0]}')

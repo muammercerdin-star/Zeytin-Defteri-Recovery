@@ -873,6 +873,9 @@ export function renderRows(document, container, items, action = null) {
   container.replaceChildren();
   for (const item of items) {
     const row = document.createElement('tr');
+    // Kasa görünümü: borcu kalan satır öne çıkar, kapanmış satır sönük durur.
+    const due = Number(item.kalanTL) > 0;
+    row.className = due ? 'due' : 'settled';
     const values = [dateLabel(item.tarih), item.uretici, kg(item.netKg),
       String(item.kasa), money(item.tutarTL), money(item.odenenTL), money(item.kalanTL)];
     for (const value of values) {
@@ -884,10 +887,11 @@ export function renderRows(document, container, items, action = null) {
       const cell = document.createElement('td');
       for (const [label, type] of [['Öde', 'pay'], ['Düzenle', 'edit'], ['Sil', 'delete']]) {
         if (item.zId && type !== 'pay') continue;
+        if (type === 'pay' && !due) continue;
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = label;
-        button.className = 'quiet row-action';
+        button.className = type === 'pay' ? 'primary row-action' : 'quiet row-action';
         button.addEventListener('click', () => action(type, item));
         cell.append(button);
       }

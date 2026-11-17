@@ -1381,6 +1381,8 @@ public final class MarketCloudRepository {
         databaseHelper.setSetting(LEAGUE_CONSENT_PREFIX + uid, String.valueOf(show ? Math.max(1, consent) : 0));
         databaseHelper.setSetting(LEAGUE_NAME_SHOW_PREFIX + uid, show ? "1" : "0");
         databaseHelper.setSetting(LEAGUE_NAME_PREFIX + uid, show && name != null ? name : "");
+        // Adını gösteren sıralamaya da katılmış olur (sunucuda V4 tetikleyicisi aynısını yapar).
+        if (show) databaseHelper.setSetting(LEAGUE_JOIN_PREFIX + uid, "1");
     }
 
     public void loadLeagueProfile(LeagueProfileCallback callback) {
@@ -1463,6 +1465,91 @@ public final class MarketCloudRepository {
                 final String s = saved;
                 final Exception f = failure;
                 postToMain(() -> { if (callback != null) callback.onComplete(s, f == null ? show : !show, f); });
+            });
+        });
+    }
+
+    // ================================================================== LİG KATILIM İZNİ (açık rıza)
+    // Supabase: supabase/ZEYTIN-LIGI-KATILIM-V4.sql. "Piyasaya Anonim Katkı" yalnız toplu bölge
+    // istatistikleri içindir; bölge sıralamasında üretici başına satır görünmesi bu ayrı izne bağlıdır.
+
+    public static final String LEAGUE_JOIN_PREFIX = "league_join_";
+
+    public interface ParticipationCallback { void onComplete(boolean joined, Exception error); }
+
+    /** Bu cihazda son bilinen katılım durumu (varsayılan kapalı). Adını gösteren zaten katılımcıdır. */
+    public boolean leagueJoinedLocally() {
+        if (uid.isEmpty()) return false;
+        if (leagueNameShownLocally()) return true;
+        return "1".equals(databaseHelper.getSetting(LEAGUE_JOIN_PREFIX + uid, "0"));
+    }
+
+    private void rememberLeagueJoin(boolean joined) {
+        if (uid.isEmpty()) return;
+        databaseHelper.setSetting(LEAGUE_JOIN_PREFIX + uid, joined ? "1" : "0");
+        if (!joined) rememberLeagueProfile("", false, 0);
+    }
+
+    public void loadLeagueParticipation(ParticipationCallback callback) {
+        if (!canUseCloud()) {
+            if (callback != null) callback.onComplete(leagueJoinedLocally(), new IllegalStateException("Bulut bağlantısı hazır değil"));
+            return;
+        }
+        withFirebaseToken((token, tokenError) -> {
+            if (tokenError != null || token.isEmpty()) {
+                if (callback != null) callback.onComplete(leagueJoinedLocally(), tokenError);
+                return;
+            }
+            networkExecutor.execute(() -> {
+                boolean joined = leagueJoinedLocally();
+                Exception failure = null;
+                try {
+                    String raw = requestRpcRaw("league_get_participation", new JSONObject(), token);
+                    joined = new JSONObject(raw).optBoolean("participate", false);
+                    if (uid.isEmpty()) joined = false;
+                    else databaseHelper.setSetting(LEAGUE_JOIN_PREFIX + uid, joined ? "1" : "0");
+                } catch (Exception error) {
+                    failure = error;
+                }
+                final boolean j = joined;
+                final Exception f = failure;
+                postToMain(() -> { if (callback != null) callback.onComplete(j, f); });
+            });
+        });
+    }
+
+    /** Sıralamada yer al / ayrıl. Ayrılınca ligdeki ad da sunucudan silinir. */
+    public void setLeagueParticipation(boolean join, ParticipationCallback callback) {
+        if (!canUseCloud()) {
+            if (callback != null) callback.onComplete(!join, new IllegalStateException("İnternet ya da oturum yok"));
+            return;
+        }
+        withFirebaseToken((token, tokenError) -> {
+            if (tokenError != null || token.isEmpty()) {
+                if (callback != null) callback.onComplete(!join, tokenError);
+                return;
+            }
+            networkExecutor.execute(() -> {
+                Exception failure = null;
+                try {
+                    JSONObject body = new JSONObject();
+                    put(body, "p_join", join);
+                    try {
+                        requestRpcRaw("league_set_participation", body, token);
+                    } catch (Exception missing) {
+                        // Sunucuda V4 kurulmamışsa: ayrılırken en azından ad silinsin.
+                        if (!missingFunction(missing) || join) throw missing;
+                        JSONObject name = new JSONObject();
+                        put(name, "p_display_name", JSONObject.NULL);
+                        put(name, "p_show_name", false);
+                        requestRpcRaw("league_set_profile", name, token);
+                    }
+                    rememberLeagueJoin(join);
+                } catch (Exception error) {
+                    failure = error;
+                }
+                final Exception f = failure;
+                postToMain(() -> { if (callback != null) callback.onComplete(f == null ? join : !join, f); });
             });
         });
     }

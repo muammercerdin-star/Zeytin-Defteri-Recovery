@@ -44,6 +44,13 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
     private long lastExpiry;
     private long backupAt = -120000;
 
+    /** Günün fiyatları ve şu an tartılan alım (salt okunur); servis bağlar, yoksa bu bilgiler gönderilmez. */
+    private volatile TezgahWebLive.Source live;
+
+    public void live(TezgahWebLive.Source source) {
+        live = source;
+    }
+
     public interface Host {
         void approval(String id, String message);
         void trace(String message);
@@ -816,9 +823,22 @@ public final class TezgahWebCommands implements TezgahWebPhone.Commands {
     @Override public synchronized JSONObject read(String op, JSONObject args) throws Exception {
         require(!closed && alive.getAsBoolean(), "Telefon oturumu kapandı.");
         switch (op) {
-            case "web_meta":
+            case "web_meta": {
                 fields(args, "");
-                return TezgahWebDto.json("tarih", today(), "yetki", writable() ? "full" : "read", "komutSiniri", MAX_IDS);
+                JSONObject meta = TezgahWebDto.json("tarih", today(), "yetki", writable() ? "full" : "read", "komutSiniri", MAX_IDS);
+                TezgahWebLive.Source source = live;
+                if (source != null) {
+                    meta.put("gunFiyat", TezgahWebLive.prices(source.read(), today()));
+                    meta.put("canli", true);
+                }
+                return meta;
+            }
+            case "canli_tartim": {
+                fields(args, "");
+                TezgahWebLive.Source source = live;
+                if (source == null) return TezgahWebDto.json("aktif", false);
+                return TezgahWebLive.draft(source.read());
+            }
             case "komut_sonucu": {
                 fields(args, "id");
                 String id = text(args, "id", 22, false);

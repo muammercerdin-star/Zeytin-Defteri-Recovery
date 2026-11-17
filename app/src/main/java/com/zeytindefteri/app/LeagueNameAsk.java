@@ -54,6 +54,7 @@ public final class LeagueNameAsk {
                 + "Adınla görünürsen bölgendeki diğer üreticiler sıranı, puanını, en çok çıkan elek numaranı "
                 + "ve ortalama kilogram fiyatını görür.\n\n"
                 + "Kilon ve toplam tutarın kimseye GÖSTERİLMEZ.\n\n"
+                + "Adınla görünmek, Zeytin Ligi sıralamasına katılmayı da kapsar.\n\n"
                 + "Seçim senin; Ayarlar → Ligde Adımla Görüneyim'den istediğin zaman değiştirebilirsin.";
     }
 

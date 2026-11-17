@@ -410,7 +410,8 @@ public final class ZeytinLeagueView extends ScrollView {
         box.addView(label("Anonim katkın açık", 14, text, true));
         TextView copy = label("Elek kayıtlarındaki sınıf, kg, kg fiyatı, tarih ve il/ilçe; adın olmadan bölge "
                 + "istatistiklerine katılır. Bir bölgede en az " + LeagueBoardModel.MIN_PRODUCERS
-                + " üretici olmadan hiçbir rakam yayınlanmaz. İstediğin zaman Ayarlar'dan kapatabilirsin.",
+                + " üretici olmadan hiçbir rakam yayınlanmaz. İstediğin zaman Ayarlar'dan kapatabilirsin. "
+                + "Sıralamada görünmek ayrı bir izindir; sen açmadıkça sıralamada yer almazsın.",
                 12, GreenTheme.color(R.color.zd_text_soft), false);
         copy.setPadding(0, dp(4), 0, dp(6)); box.addView(copy);
         LinearLayout actions = row(); actions.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
@@ -1065,12 +1066,28 @@ public final class ZeytinLeagueView extends ScrollView {
     /** "Ligde adımla görüneyim: Kapalı · Aç" kısayolu (Ayarlar'daki ile aynı pencere). */
     private void nameSettingLink() {
         if (!(getContext() instanceof android.app.Activity)) return;
+        if (leagueCloudRepository != null && !leagueCloudRepository.leagueJoinedLocally()) {
+            joinSettingLink();
+            return;
+        }
         boolean on = leagueCloudRepository != null && leagueCloudRepository.leagueNameShownLocally();
         boolean outdated = leagueCloudRepository != null && leagueCloudRepository.leagueConsentOutdated();
         TextView link = label(outdated ? "Ortalama fiyatın da adınla görünsün mü? · Onayla"
                 : on ? "Ligde adınla görünüyorsun · Değiştir" : "Ligde adınla görünmek ister misin? · Aç", 13, outdated ? gold : green, true);
         link.setMinHeight(dp(44)); link.setGravity(Gravity.CENTER_VERTICAL);
         link.setOnClickListener(v -> LeagueNamePrompt.show((android.app.Activity) getContext(), () -> {
+            previewCache.clear();
+            render();
+        }));
+        body.addView(link);
+    }
+
+    /** "Sıralamada yer almıyorsun · Katıl" kısayolu (Ayarlar'daki ile aynı açık rıza penceresi). */
+    private void joinSettingLink() {
+        TextView link = label("Sıralamada yer almıyorsun · Katıl", 13, green, true);
+        link.setMinHeight(dp(44));
+        link.setGravity(Gravity.CENTER_VERTICAL);
+        link.setOnClickListener(v -> LeagueJoinPrompt.show((android.app.Activity) getContext(), () -> {
             previewCache.clear();
             render();
         }));

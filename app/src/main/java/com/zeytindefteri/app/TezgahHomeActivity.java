@@ -317,8 +317,83 @@ public final class TezgahHomeActivity extends Activity {
      * Bilgisayara ad yazdırılmaz ("Bilgisayar", "Bilgisayar 2"…). Yetki yalnız ilk seferde bir kez sorulur,
      * sonra hatırlanır; "Bağlı bilgisayarlar"dan değiştirilebilir.
      */
+    private static final int NOTIFY_REQUEST = 7321;
+    private Runnable afterNotify;
+
+    /**
+     * Bağlantı açıkken "Bilgisayar bağlantısı açık" bildirimi görünsün diye (Android 13+) bildirim izni bağlanmadan önce
+     * bir kez açıklanıp istenir. Reddedilse de bağlantı çalışır; sonraki seferlerde yalnız kısa bir hatırlatma çıkar.
+     * İzin varsa ya da sorulmuşsa true döner ve akış hemen devam eder.
+     */
+    private boolean webNotifyReady(Runnable then) {
+        if (android.os.Build.VERSION.SDK_INT < 33
+                || checkSelfPermission("android.permission.POST_NOTIFICATIONS") == android.content.pm.PackageManager.PERMISSION_GRANTED) return true;
+        final android.content.SharedPreferences prefs = getSharedPreferences("zd_tezgah", MODE_PRIVATE);
+        final String asked = "web_notify_asked_" + owner;
+        if (prefs.getBoolean(asked, false)) {
+            android.widget.Toast.makeText(this, TezgahWebLink.NOTIFY_OFF_HINT, android.widget.Toast.LENGTH_LONG).show();
+            return true;
+        }
+        prefs.edit().putBoolean(asked, true).apply();
+        afterNotify = then;
+        new AlertDialog.Builder(this).setTitle("Bağlantı bildirimi")
+                .setMessage(TezgahWebLink.NOTIFY_WHY)
+                .setPositiveButton("Devam", (d, w) -> requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, NOTIFY_REQUEST))
+                .setNegativeButton("Şimdi değil", (d, w) -> runAfterNotify())
+                .setOnCancelListener(d -> runAfterNotify())
+                .show();
+        return false;
+    }
+
+    /**
+     * Ekran kilitlenince bazı telefonlar (pil tasarrufu) arka plandaki bağlantıyı uyutur. Bağlanmadan önce bir kez
+     * açıklayıp pil ayar ekranını açar; izin istemez (Play kısıtlı izni kullanılmaz), kullanıcı ayarı kendisi seçer.
+     */
+    private boolean webBatteryReady(Runnable then) {
+        if (android.os.Build.VERSION.SDK_INT < 23) return true;
+        android.os.PowerManager power = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+        if (power == null || power.isIgnoringBatteryOptimizations(getPackageName())) return true;
+        final android.content.SharedPreferences prefs = getSharedPreferences("zd_tezgah", MODE_PRIVATE);
+        final String asked = "web_battery_asked_" + owner;
+        if (prefs.getBoolean(asked, false)) return true;
+        prefs.edit().putBoolean(asked, true).apply();
+        new AlertDialog.Builder(this).setTitle("Ekran kapalıyken de bağlı kalsın")
+                .setMessage(TezgahWebLink.BATTERY_WHY)
+                .setPositiveButton("Ayarı aç", (d, w) -> openBatterySettings())
+                .setNegativeButton("Şimdi değil", (d, w) -> then.run())
+                .setOnCancelListener(d -> then.run())
+                .show();
+        return false;
+    }
+
+    private void openBatterySettings() {
+        Intent settings = new Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+        try {
+            startActivity(settings);
+        } catch (RuntimeException e) {
+            android.widget.Toast.makeText(this, TezgahWebLink.BATTERY_HINT, android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void runAfterNotify() {
+        Runnable r = afterNotify;
+        afterNotify = null;
+        if (r != null && !isFinishing()) r.run();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode != NOTIFY_REQUEST) return;
+        boolean granted = results.length > 0 && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        if (!granted) android.widget.Toast.makeText(this, TezgahWebLink.NOTIFY_OFF_HINT, android.widget.Toast.LENGTH_LONG).show();
+        runAfterNotify();
+    }
+
     private void webPair() {
         if (!TezgahWebClient.configured() || !owner.equals(new SessionManager(this).getUserUid())) return;
+        if (!webNotifyReady(this::webPair)) return;
+        if (!webBatteryReady(this::webPair)) return;
         final android.content.SharedPreferences prefs = getSharedPreferences("zd_tezgah", MODE_PRIVATE);
         final String key = "web_full_" + owner;
         if (!prefs.contains(key)) {
@@ -345,7 +420,7 @@ public final class TezgahHomeActivity extends Activity {
     private void webScanned(String raw, String name, boolean full) {
         if (!owner.equals(new SessionManager(this).getUserUid())) return;
         if (!TezgahWebLink.looksLikePairing(raw)) {
-            android.widget.Toast.makeText(this, "Bu QR bilgisayar bağlantısı için değil. Bilgisayarda zeytin-tezgah.pages.dev sayfasındaki QR'ı okut.",
+            android.widget.Toast.makeText(this, "Bu QR bilgisayar bağlantısı için değil. Bilgisayarda " + TezgahWebLink.WEB_HOST + " sayfasındaki QR'ı okut.",
                     android.widget.Toast.LENGTH_LONG).show();
             return;
         }
