@@ -117,6 +117,16 @@ public final class ZeytinLeagueView extends ScrollView {
         super.onAttachedToWindow(); final int token = ++generation;
         if (demo) { showDemo(); return; }
 
+        // Katılım iznini sunucudan oku: cihazdaki kayıt eski olabilir (yeniden kurulum, başka cihaz,
+        // V4 ilk kurulumda adını gösterenlerin katılımcı sayılması). Değiştiyse ekranı yeniden çiz.
+        if (leagueCloudRepository != null && leagueCloudRepository.canUseCloud()) {
+            final boolean joinedBefore = leagueCloudRepository.leagueJoinedLocally();
+            leagueCloudRepository.loadLeagueParticipation((joined, error) -> {
+                if (error != null || !current(token) || loading) return;
+                if (leagueCloudRepository.leagueJoinedLocally() != joinedBefore) render();
+            });
+        }
+
         // Alt navigasyondan geri gelindiginde ayni View yeniden baglaniyorsa,
         // daha once cizilmis kartlari silip skeleton gostermeyelim. Eski goruntu
         // ekranda sabit kalir; taze veri arkada okunup geldigi anda guncellenir.

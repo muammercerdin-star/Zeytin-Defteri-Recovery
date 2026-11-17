@@ -33,8 +33,17 @@ final class LeagueJoinPrompt {
         return text.toString();
     }
 
+    /** Önce sunucudaki gerçek durumu okur (internet yoksa cihazdakini kullanır), sonra pencereyi açar. */
     static void show(Activity activity, Runnable onChanged) {
         MarketCloudRepository repo = MarketContributionPrompt.repository(activity);
+        repo.loadLeagueParticipation((joined, error) -> {
+            if (activity.isFinishing()) return;
+            if (onChanged != null && error == null) onChanged.run();
+            showDialog(activity, repo, onChanged);
+        });
+    }
+
+    private static void showDialog(Activity activity, MarketCloudRepository repo, Runnable onChanged) {
         boolean on = repo.leagueJoinedLocally();
         String text = message(repo.isContributionOptedIn()) + "\n\nŞu an: " + (on ? "Açık" : "Kapalı");
         new AlertDialog.Builder(activity)
