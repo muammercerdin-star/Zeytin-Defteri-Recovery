@@ -58,7 +58,7 @@ Kişisel verilerin satılmaz. Hizmetin çalışması için yalnızca aşağıdak
 - Yetkili kamu kurum ve kuruluşları: yalnızca kanunen zorunlu olduğu durumlarda.
 
 # 7. Yurt dışına aktarım
-Firebase, Supabase ve Cloudflare altyapısını kullandığımız için kişisel verilerin yurt dışında bulunan sunucularda işlenebilir. Bu aktarımlar KVKK m. 9'da öngörülen usullere uygun olarak yapılır. Aktarımın dayandığı güvence ve sunucu konumlarına ilişkin güncel bilgiye {{EPOSTA}} adresinden ulaşabilirsin.
+Firebase, Supabase ve Cloudflare altyapısını kullandığımız için kişisel verilerin yurt dışında bulunan sunucularda işlenebilir. Yurt dışına aktarım konusunda KVKK m. 9'un gerekliliklerini karşılamak amacıyla, Supabase ve Cloudflare üzerinde işlenen verileri ve ardından Firebase üzerinde tutulan verileri Türkiye'de bulunan sunuculara taşıma çalışması yürütülmektedir. Taşıma tamamlandıkça bu metin güncellenir. Sunucu konumlarına ve aktarımların güncel durumuna ilişkin bilgiye {{EPOSTA}} adresinden ulaşabilirsin.
 
 # 8. KVKK m. 11 kapsamındaki hakların
 Veri sorumlusuna başvurarak:
