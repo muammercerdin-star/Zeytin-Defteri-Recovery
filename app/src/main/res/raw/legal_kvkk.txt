@@ -13,7 +13,7 @@ Tezgâh özelliğine girdiğin üretici ve alıcı bilgileri bakımından, bu bi
 Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlenir:
 - Kimlik ve hesap bilgileri: ad soyad veya görünen ad, e-posta adresi, Firebase tarafından atanan kullanıcı kimliği (UID). Google ile giriş yaparsan Google hesabındaki ad, e-posta ve profil fotoğrafı bağlantısı.
 - Bahçe ve üretim kayıtları: bahçe adı, il/ilçe/mahalle bilgisi, haritadan seçtiğin bahçe konumu (koordinat), ağaç bilgileri, bakım işlemleri, masraf, hasat, elek, salamura, stok ve satış kayıtları, hatırlatmalar.
-- Tezgâh kayıtları (Tezgâh özelliğini kullanırsan): alım yaptığın üreticilerin ve alıcıların adı ve telefonu, tartım, fiyat, tutar, ödeme ve borç bilgileri, akşam hesabı, cari hesap ve kasa kayıtları. Telefonda tutulur; telefonun kaybolmasına karşı yalnızca senin hesabının erişebileceği sıkıştırılmış bir bulut yedeği (Cloud Firestore) alınır. Tezgâh'ı bilgisayara bağlarsan kayıtlar telefonundan bilgisayarındaki tarayıcıya uçtan uca şifreli olarak iletilir ve bilgisayarda saklanmaz.
+- Tezgâh kayıtları (Tezgâh özelliğini kullanırsan): alım yaptığın üreticilerin ve alıcıların adı ve telefonu, tartım, fiyat, tutar, ödeme ve borç bilgileri, akşam hesabı, cari hesap ve kasa kayıtları. Telefonda tutulur; telefonun kaybolmasına karşı yalnızca senin hesabının erişebileceği sıkıştırılmış bir bulut yedeği (Cloud Firestore) alınır.
 - Topluluk (Meydan) içerikleri: paylaştığın gönderi ve yanıt metinleri, görünen adın ve gönderide belirttiğin bölge/bahçe bilgisi.
 - Güvenlik ve topluluk kayıtları: oluşturduğun şikâyetler ve engellediğin kullanıcılar; sana yönelik şikâyet ve moderasyon kayıtları.
 - Cihaz ve bildirim bilgileri: bildirim gönderebilmek için cihazına ait bildirim anahtarı (FCM token) ve oturum kimliği.
@@ -23,6 +23,8 @@ Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlen
 - Bölge sıralamasında yer alma (yalnızca "Zeytin Ligi'nde Yer Al" iznini verirsen, açık rızana dayanarak; varsayılan kapalı): piyasa katkısı olarak gönderilen elek kayıtlarından hesaplanan sıran, puanın, en çok çıkan elek numaran ve ortalama kilogram fiyatın, adın olmadan bölgendeki diğer kullanıcılara gösterilir. Bu izni vermezsen katkıların yalnızca toplu istatistiklerde kullanılır. İzni istediğin zaman geri alabilirsin; geri aldığında sıralamadan çıkarsın ve ligdeki adın silinir.
 - Ligde adla görünme (yalnızca "Ligde Adımla Görüneyim" seçeneğini açarsan, açık rızana dayanarak): belirlediğin görünen ad; bölgendeki ön sıralamada sıran, puanın, en çok çıkan elek numaran ve ortalama kilogram fiyatınla birlikte diğer kullanıcılara gösterilir. Kilogram ve toplam tutar bilgin gösterilmez. Adını açmak, bölge sıralamasında yer alma iznini de kapsar. Rızanı istediğin zaman aynı seçenekle geri alabilirsin; geri aldığında adın silinir.
 - Sesli asistan: mikrofon iznini verirsen konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür. Bu hizmet, cihazına ve ayarlarına bağlı olarak sesi metne dönüştürmek için sağlayıcının (çoğunlukla Google) sunucularına gönderebilir. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.
+- İnternet yardımcısı (yalnızca izin verirsen): sesli asistanın anlamadığı iş cümlesi ve bahçelerinin adları; hesabının doğrulanması için oturum belirteci. Cümle ve cevap kaydedilmez.
+- Bilgisayar bağlantısı (Tezgâh; kullanırsan): Tezgâh verilerin uçtan uca şifreli olarak bağladığın bilgisayara iletilir; aktarım sunucuları içeriği okuyamaz. Bağlantı zamanı ve IP adresi gibi teknik bağlantı bilgileri, kayıtlı bilgisayarlar için cihaz kaydı ve bağlantı anahtarlarının geri çevrilemez özetleri işlenir.
 
 # 3. İşleme amaçları
 - Hesabını oluşturmak, giriş yapmanı sağlamak ve hesabını güvende tutmak,
@@ -31,14 +33,17 @@ Yalnızca kullandığın özelliklere bağlı olarak aşağıdaki veriler işlen
 - Meydan topluluk özelliğini sunmak, yanıt bildirimleri göndermek,
 - Şikâyetleri incelemek, kötüye kullanımı önlemek ve topluluk kurallarını uygulamak,
 - Uygulamanın çökmesine yol açan hataları tespit edip düzeltmek,
+- İzin verdiğinde sesli asistanın anlamadığı cümleleri internet yardımcısıyla yoruma çevirmek,
+- Tezgâh kayıtlarını, bağladığın bilgisayarda güvenli biçimde göstermek ve oradan girilen kayıtları telefonuna iletmek,
 - Anonim bölgesel piyasa istatistikleri ve (satışta paylaşımı işaretlediğinde) Zeytin Ligi sıralamaları oluşturmak,
 - Taleplerine ve başvurularına yanıt vermek, hukuki yükümlülükleri yerine getirmek.
-Kişisel verilerin, hesabın açık olduğu ve sen silmediğin sürece saklanır. Saklama ve silmeye ilişkin ayrıntılar Gizlilik Politikası'nın 10. bölümündedir.
+Kişisel verilerin, hesabın açık olduğu ve sen silmediğin sürece saklanır. Saklama ve silmeye ilişkin ayrıntılar Gizlilik Politikası'nın 12. bölümündedir.
 
 # 4. Hukuki sebepler
-- Hesap, bahçe kayıtları, eşitleme, Tezgâh yedeği ve bilgisayar bağlantısı, sesli asistan, bildirimler ve topluluk özelliği: bir sözleşmenin kurulması veya ifasıyla doğrudan ilgili olması (KVKK m. 5/2-c).
+- Hesap, bahçe kayıtları, eşitleme, Tezgâh yedeği, sesli asistan, bildirimler ve topluluk özelliği: bir sözleşmenin kurulması veya ifasıyla doğrudan ilgili olması (KVKK m. 5/2-c).
 - Güvenlik, çökme raporları, kötüye kullanımın önlenmesi ve moderasyon: temel hak ve özgürlüklerine zarar vermemek kaydıyla veri sorumlusunun meşru menfaati (KVKK m. 5/2-f) ve bir hakkın tesisi, kullanılması veya korunması (KVKK m. 5/2-e).
 - Kanundan doğan talepler ve yükümlülükler: hukuki yükümlülüğün yerine getirilmesi (KVKK m. 5/2-ç).
+- İnternet yardımcısı ve bilgisayar bağlantısı: senin isteğinle açtığın hizmetlerin sunulması, yani bir sözleşmenin ifasıyla doğrudan ilgili olması (KVKK m. 5/2-c). İnternet yardımcısı yalnızca izin verirsen çalışır; bilgisayar bağlantısı yalnızca QR okuttuğunda kurulur. İkisini de istediğin zaman kapatabilirsin.
 - Piyasaya Anonim Katkı: toplu bölge istatistikleri üretmekteki meşru menfaat (KVKK m. 5/2-f). Ayar varsayılan olarak açıktır, ilk kullanımda bildirilir ve istediğin zaman kapatılabilir; kapattığında bu cihazdan gönderilen katkıların geri çekilir. Bu ayar açık rıza değildir ve kapatman diğer özellikleri kullanmanı engellemez.
 - Zeytin Ligi satış sıralaması: yalnızca işaretlediğin satışlar için, talep ettiğin lig özelliğinin sunulması (KVKK m. 5/2-c).
 - Bölge sıralamasında yer alma ve ligde adla görünme: açık rızan (KVKK m. 5/1). Bu izinler isteğe bağlıdır, hiçbir hizmet bunlara bağlanmaz ve istediğin zaman geri alınabilir; geri alma, önceki işlemlerin hukuka uygunluğunu etkilemez.
@@ -50,8 +55,8 @@ Veriler; uygulamadaki formlara girdiğin bilgilerden, Google ile giriş yaptığ
 Kişisel verilerin satılmaz. Hizmetin çalışması için yalnızca aşağıdaki hizmet sağlayıcılarla, belirtilen amaçlarla paylaşılır:
 - Google LLC / Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging, Crashlytics): hesap yönetimi, verilerin saklanması ve eşitlenmesi, bildirim gönderimi, uygulama hatalarının tespiti.
 - Google Android konuşma tanıma hizmeti (cihazındaki sağlayıcı): sesli asistan komutlarının metne dönüştürülmesi; dönüştürme cihazda ya da Google sunucularında yapılabilir.
-- Supabase: anonim piyasa istatistikleri ve moderasyon işlemleri.
-- Cloudflare, Inc.: zeytindefteri.tr sitesinin ve Tezgâh bilgisayar ekranının yayınlanması, telefonun ile bilgisayarın arasındaki bağlantının aktarılması. Tezgâh kayıtları bu aktarımda uçtan uca şifrelidir; Cloudflare içeriği okuyamaz. Yalnızca bağlantı için gereken IP adresi ve oturum bilgisi gibi teknik veriler işlenir.
+- Supabase: anonim piyasa istatistikleri, moderasyon işlemleri; internet yardımcısı isteklerinin ve (operatör engeli olduğunda) şifreli bilgisayar bağlantısının iletilmesi.
+- Cloudflare, Inc.: zeytindefteri.tr sitesinin ve Tezgâh bilgisayar ekranının yayınlanması, internet yardımcısının yapay zekâ modeli (Workers AI) ve telefonun ile bilgisayarın arasındaki şifreli bağlantıyı taşıyan aktarıcı. Tezgâh kayıtları bu aktarımda uçtan uca şifrelidir; Cloudflare içeriği okuyamaz. Yalnızca bağlantı için gereken IP adresi ve oturum bilgisi gibi teknik veriler işlenir.
 - Open-Meteo: bahçe konumuna ait koordinat veya yer adıyla hava durumu ve konum araması; hesap bilgilerin bu hizmete gönderilmez.
 - Türkiye il/ilçe/mahalle veri servisleri: bölge listesi araması; hesap bilgilerin gönderilmez.
 - Diğer kullanıcılar: Meydan'da paylaştığın içerikler ve görünen adın, uygulamayı kullanan diğer üyelere gösterilir.

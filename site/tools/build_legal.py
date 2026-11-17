@@ -224,7 +224,10 @@ def render():
     output['isletmeler.html'] = marketing('isletmeler.template')
     subject, body = method_string('deletionSubject'), method_string('deletionBody')
     mailto = 'mailto:' + config['CONTACT_EMAIL'] + '?subject=' + quote(subject, safe='') + '&body=' + quote(body, safe='')
-    retention = re.search(r'(?m)^# 10\. Saklama ve silme\n(.*?)(?=^# 11\.)', legal['gizlilik.html'], re.S | re.M)[1].rstrip()
+    # Bölüm numarası metinde değişebilir (ör. yeni bölüm eklenince 10 → 12); başlığa göre bulunur.
+    retention_match = re.search(r'(?m)^# (\d+)\. Saklama ve silme\n(.*?)(?=^# \d+\.)', legal['gizlilik.html'], re.S | re.M)
+    retention_no = retention_match[1]
+    retention = retention_match[2].rstrip()
     output['hesap-silme.html'] = page('hesap-silme.html', 'Hesap ve veri silme', 'Zeytin Defteri hesabını uygulamadan silme adımları ve e-posta ile hesap silme talebi.', f'''
 <article class="document"><h1>Hesap ve veri silme</h1><p>Zeytin Defteri hesabın için iki başvuru yolu:</p>
 <h2>Uygulama içinden</h2><ol><li>Zeytin Defteri'nde hesabına giriş yap ve <strong>Ayarlar</strong> ekranını aç.</li><li><strong>Hesabımı Sil</strong> satırına dokun.</li><li><strong>Hesabını sil</strong> penceresindeki açıklamayı oku. Bu işlem geri alınamaz.</li><li>Onay alanına <strong>SİL</strong> yaz ve <strong>Hesabımı sil</strong> düğmesine dokun.</li></ol>
@@ -233,7 +236,7 @@ def render():
 <h2>Uygulamaya erişemiyorsan</h2><p>Hesabında kayıtlı e-posta adresinden <a href="mailto:{email}">{email}</a> adresine yaz. Uygulamadaki <strong>E-posta ile talep et</strong> seçeneğiyle aynı konu ve metni hazırlamak için:</p>
 <p><a class="button" href="{esc(mailto)}">Hesap silme e-postasını hazırla</a></p><p>Bağlantı e-posta uygulamanı açar; mesajı kontrol edip sen gönderirsin. Açılmazsa aşağıdaki konu ve metni kopyalayabilirsin.</p>
 <h3>Konu</h3><p class="mail-subject">{esc(subject)}</p><h3>Mesaj</h3><pre class="mail-body">{esc(body)}</pre>
-<h2>Hangi veriler silinir, hangileri saklanabilir?</h2><p>Aşağıdaki metin, <a href="gizlilik.html#bolum-10">Gizlilik Politikası — 10. Saklama ve silme</a> bölümünden aynen alınmıştır. Sürüm {esc(values['VERSION'])} · {esc(values['DATE'])}</p><div class="retention">{blocks(retention)}</div></article>''')
+<h2>Hangi veriler silinir, hangileri saklanabilir?</h2><p>Aşağıdaki metin, <a href="gizlilik.html#bolum-{retention_no}">Gizlilik Politikası — {retention_no}. Saklama ve silme</a> bölümünden aynen alınmıştır. Sürüm {esc(values['VERSION'])} · {esc(values['DATE'])}</p><div class="retention">{blocks(retention)}</div></article>''')
     output['iletisim.html'] = page('iletisim.html', 'İletişim', 'Zeytin Defteri destek, öneri, hata bildirimi, hesap silme ve kişisel veri başvuruları için iletişim adresi.', f'''<article class="document"><p class="eyebrow">BİZE YAZ</p><h1>İletişim</h1><p>Uygulamayla ilgili soruların, önerilerin ve hata bildirimlerin için yazabilirsin. Hesap silme ve kişisel verilerine ilişkin başvurularını da bu adrese iletebilirsin.</p><p><a class="contact-email" href="mailto:{email}">{email}</a></p><p>Hesap silme başvurusu için <a href="hesap-silme.html">hesap silme adımlarını</a> inceleyebilirsin.</p></article>''')
     output['404.html'] = page('404.html', 'Sayfa bulunamadı', 'Aradığın sayfa bulunamadı. Zeytin Defteri ana sayfasına dönebilirsin.', '<section class="document"><p class="eyebrow">404</p><h1>Bu sayfayı bulamadık.</h1><p>Bağlantı değişmiş olabilir. Ana sayfadan devam edebilirsin.</p><a class="button" href="/index.html">Ana sayfaya dön</a></section>')
     output['robots.txt'] = f'User-agent: *\nAllow: /\nSitemap: {base}/sitemap.xml\n'

@@ -74,7 +74,8 @@ public class SiteLegalOracle {
         query = parse_qs(url.query, keep_blank_values=True)
         assert unquote(url.path) == java('email')
         assert query == {'subject': [java('subject')], 'body': [java('body')]}, 'Silme mailto Java ile farklı'
-        retention = re.search(r'(?ms)^# 10\. Saklama ve silme\n(.*?)(?=^# 11\.)', java(build.RAW / 'legal_privacy.txt'))[1]
+        # Saklama bölümü başlığına göre bulunur (numarası metin büyüdükçe değişebilir).
+        retention = re.search(r'(?ms)^# \d+\. Saklama ve silme\n(.*?)(?=^# \d+\.)', java(build.RAW / 'legal_privacy.txt'))[1]
         assert normal(re.sub(r'(?m)^- ', '', retention)) in normal(''.join(deletion.text))
     docs = {p.name: Document(p.read_text()) for p in SITE.glob('*.html')}
     assert len(docs) == 8
