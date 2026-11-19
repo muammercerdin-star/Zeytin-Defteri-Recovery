@@ -13,7 +13,7 @@ def part(start, end):
     i = c.index(start); return c[i:c.index(end, i + len(start))]
 
 run = part('private void run(', 'private void advisorReply(')
-unknown = run[run.index('if(decision.is(ActionCatalog.OZEL_CEVAP)||!decision.understood())'):run.index('if(cmd.kind==Kind.NAVIGATION)')]
+unknown = run[run.index('if(later==AssistantOutcome.Kind.SPECIAL||'):run.index('if(later==AssistantOutcome.Kind.NAVIGATE)')]
 rb = (ROOT / 'app/src/main/java/com/zeytindefteri/app/RuleBrain.java').read_text(encoding='utf-8')   # İP3: karar beyinde
 q = rb[rb.index('static Decision question('):]
 # A) Yarım anlama: önce sabit cevaplar (doz, silme, selam), sonra öneriler.
