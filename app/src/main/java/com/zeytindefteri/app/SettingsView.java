@@ -97,6 +97,7 @@ final class SettingsView extends ScrollView {
                 leagueNameRow(activity));
         addSection(body, activity, "UYGULAMA",
                 row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant),
+                learnedRow(activity),
                 typingRow(activity),
                 prayerRow(activity),
                 tanecikRow(activity),
@@ -135,6 +136,23 @@ final class SettingsView extends ScrollView {
         footer.setGravity(Gravity.CENTER);
         footer.setPadding(0, dp(activity, 10), 0, 0);
         body.addView(footer);
+    }
+
+    /** Öğrendiklerim (İP6): öğretilen söz sayısı değer olarak görünür (yoksa boş). */
+    private static View learnedRow(Activity activity) {
+        String count = null;
+        try {
+            DatabaseHelper h = new DatabaseHelper(activity);
+            try {
+                int n = LearnedScreen.taught(LearnedTermsDb.store(activity, h.getActiveOwnerUid()).all(), 0,
+                        java.util.TimeZone.getDefault()).size();
+                count = n == 0 ? null : String.valueOf(n);
+            } finally {
+                h.close();
+            }
+        } catch (RuntimeException ignored) { }
+        return row(activity, R.drawable.ic_assistant_nav_archive, LearnedScreen.TITLE,
+                "Asistanın senden öğrendikleri; görebilir, silebilirsin", count, () -> LearnedActivity.open(activity));
     }
 
     /** Sohbette "yazıyor" bilgimi göster: dokununca açılır/kapanır. Kapatan başkalarınınkini yine görür. */

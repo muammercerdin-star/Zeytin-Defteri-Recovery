@@ -355,6 +355,7 @@
         <activity android:name=".RoleActivity" android:exported="false" />
         <activity android:name=".OilActivity" android:exported="false" />
         <activity android:name=".BackupActivity" android:exported="false" />
+        <activity android:name=".LearnedActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".NotificationsActivity" android:exported="false" />
         <activity android:name=".MeydanModerationActivity" android:exported="false" />
         <service android:name=".AlertJobService" android:exported="false"

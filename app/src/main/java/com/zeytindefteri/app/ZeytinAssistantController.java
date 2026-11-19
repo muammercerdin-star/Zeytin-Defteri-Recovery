@@ -698,10 +698,10 @@ public final class ZeytinAssistantController {
         if(d.is(ActionCatalog.ANLAMADIKLARI_SIL)||d.is(ActionCatalog.ANLAMADIKLARI_GOSTER)){missesCommand(d);return;}
         if(d.is(ActionCatalog.KONUSMA_KAYDI_SIL)||d.is(ActionCatalog.KARNE_GOSTER)){scorecardCommand(d);return;}
         if(d.is(ActionCatalog.SOZLER_GOSTER)){
-            String[] shown=LearnedTerms.listText(learned().store().all());
-            postDialog(new OperationVoiceDialog.Reply(shown[0],OperationVoiceDialog.Action.ASK),"Zeytin · öğrendiklerim");
-            answer.setTextSize(14);
-            answer.setText(shown[1]);
+            // İP6: "öğrendiklerini göster / söyle" Öğrendiklerim ekranını açar; kısa özet sesli söylenir.
+            int taught=LearnedScreen.taught(learned().store().all(),0,java.util.TimeZone.getDefault()).size();
+            postDialog(new OperationVoiceDialog.Reply(LearnedScreen.spokenSummary(taught),OperationVoiceDialog.Action.CANCEL),"Zeytin · öğrendiklerim");
+            LearnedActivity.open(activity);
             return;
         }
         if(d.is(ActionCatalog.SOZ_UNUT)){
