@@ -70,6 +70,12 @@ public class AssistantScorecardTest {
         check(!AssistantScorecard.asksShow("Bugün 3 numara 120 kilo"), "elek cümlesi");
         check(!AssistantScorecard.asksShow("kar var mı"), "kar ≠ karne");
         check(!AssistantScorecard.asksShow(null), "boş");
+        // Ses tanıma "karneni"yi "karnını" duyabiliyor (cihaz testi, 19 Kasım 2026)
+        check(AssistantScorecard.asksShow("karnını göster"), "karnını göster");
+        check(AssistantScorecard.asksShow("Karnini aç"), "karnini aç");
+        check(AssistantScorecard.asksClearAll("karnını sil"), "karnını sil");
+        check(!AssistantScorecard.asksShow("karnım ağrıyor"), "karnım ağrıyor ≠ karne");
+        check(!AssistantScorecard.asksShow("karnı doydu"), "karnı doydu ≠ karne");
     }
 
     static void showing() {

@@ -102,6 +102,11 @@ public final class AssistantPersona {
     private String introduction(String raw, String s) {
         int words = s.split(" ").length;
         if (stage != Stage.NONE && (raw.contains("?") || words > 6 || s.matches(".*\\d.*") && stage != Stage.ASK_AGE)) { stage = Stage.NONE; return null; }
+        // Tanışma sorusu beklenirken gelen komut ("karnını göster", "Elek'i aç") ad/hitap sanılmaz, asıl asistana gider.
+        if (stage != Stage.NONE && stage != Stage.ASK_AGE && words > 1 && has(s, COMMAND_WORDS)) {
+            stage = Stage.NONE;
+            return null;
+        }
         if (stage == Stage.ASK_NAME) {
             if (has(s, "soylemem|gerek yok|bosver|istemiyorum|gec")) { stage = Stage.NONE; return "Peki, sorun değil. Ne zaman istersen söylersin."; }
             String n = nameIn(raw);
@@ -124,7 +129,12 @@ public final class AssistantPersona {
         }
         if (stage == Stage.ASK_ADDRESS) {
             stage = Stage.NONE;
-            address = addressIn(s);   // "sadece adımla", "fark etmez" → boş
+            String a = addressIn(s);
+            // Hitap sözü de, "sadece adımla / fark etmez" de yoksa cevap değildir: kayıtlı hitap bozulmaz.
+            if (a.isEmpty() && !has(s, ADDRESS_NONE)) {
+                return null;
+            }
+            address = a;   // "sadece adımla", "fark etmez" → boş
             return "Tamam " + call() + ", bundan sonra böyle diyeceğim. Ne lazım olursa söyle, buradayım.";
         }
 
@@ -603,6 +613,14 @@ public final class AssistantPersona {
     private String suffix() { return call().isEmpty() ? "" : " " + call(); }
 
     private Calendar now() { return clock != null ? clock : Calendar.getInstance(); }
+
+    /** Komut sözleri: tanışma sorusu beklenirken gelse de ad/hitap cevabı sayılmaz ("Satılmış" gibi adlar tek sözdür). */
+    private static final String COMMAND_WORDS = "goster\\p{L}*|ac|acar misin|aciver|oku|kaydet\\p{L}*|yaz|sil|temizle|karne\\p{L}*|karnini|karnin|"
+            + "elek\\p{L}*|tezgah\\p{L}*|piyasa\\p{L}*|hava|fiyat\\p{L}*";
+
+    /** "Nasıl hitap edeyim?" sorusuna hitapsız cevaplar. */
+    private static final String ADDRESS_NONE = "adimla|ismimle|adim\\p{L}*|ismim\\p{L}*|sadece|yalnizca|fark etmez|farketmez|farketmiyor|"
+            + "nasil istersen|sen bilirsin|hicbiri|hic biri|gerek yok|bosver|hitapsiz";
 
     private static final String ADDRESS_WORDS = "amca|amcan|teyze|abi|abey|agabey|abla|hocam|hoca|bey|hanim|usta|reis|dayi|emmi|hala|enistem|yenge";
 

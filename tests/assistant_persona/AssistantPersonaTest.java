@@ -26,6 +26,24 @@ public class AssistantPersonaTest {
         check(r != null && r.contains("Temel"), "fıkra: " + r);
         r = p.handle("adın ne");
         check(r.startsWith("Benim adım Zeytin."), "adın ne: " + r);
+        // Tanışma sorusu beklenirken gelen komut hitabı bozmaz (cihaz testi: "karnını göster" → "Tamam Muammer...")
+        AssistantPersona q0 = new AssistantPersona(new java.util.Random(1));
+        q0.name = "Muammer"; q0.address = "abi"; q0.stage = AssistantPersona.Stage.ASK_ADDRESS;
+        check(q0.handle("karnını göster") == null && q0.call().equals("Muammer abi") && q0.stage == AssistantPersona.Stage.NONE, "hitap beklerken komut: " + q0.call());
+        q0.stage = AssistantPersona.Stage.ASK_ADDRESS;
+        check(q0.handle("Elek'i aç") == null && q0.call().equals("Muammer abi"), "hitap beklerken Elek aç");
+        q0.stage = AssistantPersona.Stage.ASK_ADDRESS;
+        r = q0.handle("sadece adımla");
+        check(q0.call().equals("Muammer") && r != null && r.startsWith("Tamam Muammer"), "sadece adımla hâlâ çalışır: " + r);
+        q0.address = "abi"; q0.stage = AssistantPersona.Stage.ASK_ADDRESS;
+        r = q0.handle("fark etmez");
+        check(q0.call().equals("Muammer") && r != null, "fark etmez hâlâ çalışır");
+        AssistantPersona u0 = new AssistantPersona(new java.util.Random(1));
+        u0.stage = AssistantPersona.Stage.ASK_NAME;
+        check(u0.handle("karnını göster") == null && u0.name.isEmpty(), "ad beklerken komut ad sanılmaz: " + u0.name);
+        u0.stage = AssistantPersona.Stage.ASK_NAME;
+        r = u0.handle("Satılmış");
+        check(u0.name.equals("Satılmış") && r.startsWith("Memnun oldum Satılmış"), "Satılmış adı hâlâ alınır: " + r);
         // kayıt ve soru cümlelerine karışmaz
         check(p.handle("Son sulama ne zaman?") == null, "soru → asıl asistan");
         check(p.handle("Bugün ilaçladım") == null, "kayıt → asıl asistan");

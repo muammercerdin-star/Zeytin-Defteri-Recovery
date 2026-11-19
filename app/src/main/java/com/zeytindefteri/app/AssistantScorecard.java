@@ -149,10 +149,25 @@ final class AssistantScorecard {
     /** "Karneni göster", "karnen nasıl", "karneyi aç". Silme sözü komut sayılmaz. */
     static boolean asksShow(String raw) {
         String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
-        if (!s.matches(".*\\b(karne|karnen|karneni|karneyi|karnemi|karnesi|karnesini)\\b.*")) {
+        if (!mentionsCard(s)) {
             return false;
         }
         return !s.matches(".*\\b(sil\\p{L}*|temizle\\p{L}*|sifirla\\p{L}*)\\b.*");
+    }
+
+    private static final String CARD_WORDS = "karne|karnen|karneni|karneyi|karnemi|karnesi|karnesini";
+
+    /** Ses tanıma "karneni"yi "karnını/karnini" duyabiliyor; bunlar yalnız göster/aç/sil sözüyle karne sayılır ("karnım ağrıyor" değil). */
+    private static final String HEARD_WORDS = "karnini|karnin|karnina|karni|karnimi";
+
+    private static final String CARD_VERBS = "goster\\p{L}*|ac|acar\\p{L}*|oku\\p{L}*|nasil|sil\\p{L}*|temizle\\p{L}*|sifirla\\p{L}*";
+
+    private static boolean mentionsCard(String s) {
+        if (s.matches(".*\\b(" + CARD_WORDS + ")\\b.*")) {
+            return true;
+        }
+        boolean heard = s.matches(".*\\b(" + HEARD_WORDS + ")\\b.*");
+        return heard && s.matches(".*\\b(" + CARD_VERBS + ")\\b.*");
     }
 
     /**
@@ -165,7 +180,7 @@ final class AssistantScorecard {
         if (!clear) {
             return false;
         }
-        boolean card = s.matches(".*\\b(karne|karnen|karneni|karneyi|karnemi|karnesi|karnesini)\\b.*");
+        boolean card = mentionsCard(s);
         boolean log = s.matches(".*\\b(konusma|konusmalar\\p{L}*|cumle|cumleler\\p{L}*)\\b.*")
                 && s.matches(".*\\b(kayd\\p{L}*|kayit\\p{L}*|gecmis\\p{L}*)\\b.*");
         return card || log;
