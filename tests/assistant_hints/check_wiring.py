@@ -18,8 +18,8 @@ rb = (ROOT / 'app/src/main/java/com/zeytindefteri/app/RuleBrain.java').read_text
 q = rb[rb.index('static Decision question('):]
 # A) Yarım anlama: önce sabit cevaplar (doz, silme, selam), sonra öneriler.
 check('ZeytinAssistantText.special(raw)' in q and q.index('special(raw)') < q.index('ZeytinAssistantHints.chatOnly(raw)')
-      and 'decision.payload(String.class)' in unknown and 'ZeytinAssistantHints.hint(raw' in unknown
-      and unknown.index('decision.payload(String.class)') < unknown.index('ZeytinAssistantHints.hint('), 'özel cevaplar önerilerden önce gelmiyor')
+      and 'LearnedBrain.payload(decision,String.class)' in unknown and 'ZeytinAssistantHints.hint(raw' in unknown
+      and unknown.index('LearnedBrain.payload(decision,String.class)') < unknown.index('ZeytinAssistantHints.hint('), 'özel cevaplar önerilerden önce gelmiyor')
 check('data.recordedTopics(gardens)' in unknown, 'kaydı olmayan konu süzülmüyor')
 check('resolution.explicit' in unknown, 'öneriye yalnızca soruda adı geçen bahçe taşınmalı')
 check('recordedTopics(' in d and 'rawQuery' not in d and 'execSQL' not in d, 'kayıtlı konular yeni SQL ile okunuyor')

@@ -13,10 +13,10 @@ save = e[e.index("@Override public long save(Approval approval) {"):]
 save = save[:save.index("saveElekRecord();")]
 checks = [
     ("ses (tanıma sonucu) ve yazı (gönder düğmesi, klavye) aynı kapıya: submit",
-     "else submit(words.get(0));" in c and "send.setOnClickListener(v->submit(input.getText().toString()));" in c
+     "else{heardByVoice=true;submit(words.get(0));}" in c and "send.setOnClickListener(v->submit(input.getText().toString()));" in c
      and "submit(input.getText().toString());return true;" in c),
     ("asistanda tek beyin çağrısı noktası: konuşma aşaması + kayıt aşaması",
-     c.count("rules.conversationStage(") == 1 and c.count("rules.recordStage(") == 1),
+     c.count(".conversationStage(") == 1 and c.count(".recordStage(") == 1 and "learned().conversationStage(" in c and "brain.recordStage(" in c),
     ("asistan çözücüleri doğrudan çağırmaz (karar beyinde)",
      not re.search(r"(ElekVoiceEntry|OperationVoiceEntry|HarvestVoiceEntry)\.parse\(|VoiceRecordDialog\.detect\(|AssistantReceivables\.asks\(|persona\(\)\.handle\(", c)),
     ("internet yardımcısı aynı arayüzden (CloudBrain)", "cloudBrain.decide(new Brain.Input(raw),records)" in c

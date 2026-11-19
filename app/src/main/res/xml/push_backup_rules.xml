@@ -6,4 +6,6 @@
         <exclude domain="sharedpref" path="local_reminder_delivery.xml" />
     <exclude domain="sharedpref" path="zd_assistant_misses.xml" />
     <exclude domain="sharedpref" path="zd_assistant_scorecard.xml" />
+    <!-- Asistanın öğrendiği sözler yalnız bu telefonda kalır (İP4). -->
+    <exclude domain="database" path="zd_learned_terms.db" />
 </full-backup-content>

@@ -26,6 +26,10 @@ public class BrainEquivalenceTest {
         Path root = Paths.get(args.length > 0 ? args[0] : ".");
         List<String> sentences = corpus(root);
         RuleBrain brain = new RuleBrain();
+        // İP4: öğrenilen sözler beyni sözlük boşken kurallarla birebir aynı karar vermeli.
+        LearnedBrain empty = new LearnedBrain(new LearnedTerms.Memory(), brain);
+        int learnedDiffs = 0;
+        int newCommand = 0;
         boolean[][] dialogs = {{true, true}, {false, true}, {true, false}};   // {opDialogNull, recDialogNull}
         long compared = 0;
         int diffs = 0;
@@ -45,6 +49,19 @@ public class BrainEquivalenceTest {
                         BrainContext ctx = BrainContext.of(close, commands, pending, gardens, AssistantPersona.decode("")::handle);
                         Decision got = brain.decide(new Brain.Input(raw), ctx);
                         compared++;
+                        Decision viaLearned = empty.decide(new Brain.Input(raw), BrainContext.of(close, commands, pending, gardens, AssistantPersona.decode("")::handle));
+                        boolean sameLearned = want[0].equals(viaLearned.action) && want[1].equals(viaLearned.fieldsText()) && want[2].equals(viaLearned.variant);
+                        // Tek bilinçli fark: İP4'ün yeni komutu "öğrendiklerini söyle" (sözlük boşken "henüz yok" der).
+                        if (!sameLearned && commands && LearnedTerms.asksList(raw) && viaLearned.is(ActionCatalog.SOZLER_GOSTER)) {
+                            sameLearned = true;
+                            newCommand++;
+                        }
+                        if (!sameLearned) {
+                            learnedDiffs++;
+                            if (learnedDiffs <= 20) {
+                                System.out.println("FARK (boş sözlük) «" + raw + "» eski " + String.join(" ", want) + " · yeni " + viaLearned);
+                            }
+                        }
                         boolean same = want[0].equals(got.action) && want[1].equals(got.fieldsText()) && want[2].equals(got.variant);
                         if (!same) {
                             diffs++;
@@ -58,7 +75,9 @@ public class BrainEquivalenceTest {
             }
         }
         System.out.println(sentences.size() + " cümle (" + bank + " cümle bankası) · " + compared + " karşılaştırma · " + diffs + " fark");
-        if (diffs > 0) {
+        System.out.println("Öğrenilen sözler beyni, boş sözlük: " + compared + " karşılaştırma · " + learnedDiffs + " fark"
+                + " (yeni komut \"öğrendiklerini söyle\": " + newCommand + ")");
+        if (diffs > 0 || learnedDiffs > 0) {
             System.out.println("FAIL birebir aynılık");
             System.exit(1);
         }

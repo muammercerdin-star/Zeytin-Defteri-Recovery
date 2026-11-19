@@ -1,0 +1,31 @@
+# Zeytin Defteri cümle bankası — öğretme senaryoları (İP4). Her senaryo boş sözlükle başlar, adımlar sırayla.
+# Sütunlar: senaryo TAB adim TAB metin TAB beklenen_eylem TAB beklenen_alanlar TAB durum
+# adim: ogret (metin = "söz|seçim", ör. "bakırladık|İlaçlama") · unut (metin = "bakırladığı unut" gibi komut)
+#       vazgec (metin = cümle; o cümle bir daha sorulmaz) · cumle (beklenen karar) · sor (öğretme sorusu açılır mı:
+#       beklenen_eylem = SOR ya da SORMA, alanlar = sorulacak söz ya da -)
+# durum: dogru = böyle olmalı (bozulursa test kalır).
+senaryo	adim	metin	beklenen_eylem	beklenen_alanlar	durum
+bos_sozluk	cumle	bugün bakırladık	ANLASILMADI	-	dogru
+bos_sozluk	sor	bugün bakırladık	SOR	bakırladık	dogru
+ogret_anla	ogret	bakırladık|İlaçlama	-	-	dogru
+ogret_anla	cumle	bugün bakırladık	ISLEM	tur=İlaçlama	dogru
+ogret_anla	cumle	dün Girelli'yi bakırladık 300 lira	ISLEM	tur=İlaçlama;gun=-1;tutar=300	dogru
+ogret_anla	cumle	yarın bakırlayacağız	ISLEM	tur=İlaçlama	dogru
+ogret_anla	cumle	şu an bakırlıyoruz	ISLEM	tur=İlaçlama	dogru
+ogret_anla	cumle	bakır attık	ANLASILMADI	-	dogru
+ogret_anla	cumle	Bugün 3 numara 120 kilo	ELEK	3no=120	dogru
+ogret_anla	sor	bugün bakırladık	SORMA	-	dogru
+ogret_unut	ogret	bakırladık|İlaçlama	-	-	dogru
+ogret_unut	cumle	bugün bakırladık	ISLEM	tur=İlaçlama	dogru
+ogret_unut	unut	bakırladığı unut	SOZ_UNUT	-	dogru
+ogret_unut	cumle	bugün bakırladık	ANLASILMADI	-	dogru
+ogret_unut	sor	bugün bakırladık	SOR	bakırladık	dogru
+ogret_hasat	ogret	silktik|Hasat	-	-	dogru
+ogret_hasat	cumle	bugün Girelli'de silktik	HASAT	-	dogru
+ogret_gubre	ogret	çapaladık|Gübre	-	-	dogru
+ogret_gubre	cumle	dün Kuyu dibini çapaladık 50 kilo	ISLEM	tur=Gübre;gun=-1;miktar=50;birim=kg	dogru
+vazgec	vazgec	bugün bakırladık	-	-	dogru
+vazgec	sor	bugün bakırladık	SORMA	-	dogru
+vazgec	sor	dün bakırladık	SOR	bakırladık	dogru
+genel_fiil	sor	bugün pazara gittim	SORMA	-	dogru
+genel_fiil	sor	bakır attık	SORMA	-	dogru

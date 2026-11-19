@@ -15,14 +15,14 @@ g = open(os.path.join(ROOT, "app", "build.gradle"), encoding="utf-8").read()
 cb = open(os.path.join(A, "CloudBrain.java"), encoding="utf-8").read()   # İP3: yardımcı aynı arayüzde
 i_cloud = c.index("cloudBrain.decide(new Brain.Input(raw),records)")
 checks = [
-    ("kurallar once: elek/islem/hasat yollarindan sonra", c.index("final OperationVoiceEntry op=") < i_cloud and c.index("final ElekVoiceEntry voice=decision.payload(") < i_cloud),
+    ("kurallar once: elek/islem/hasat yollarindan sonra", c.index("final OperationVoiceEntry op=") < i_cloud and c.index("final ElekVoiceEntry voice=LearnedBrain.payload(decision,") < i_cloud),
     ("cevap denetlenir (accept)", "AssistantCloud.accept(response, in.raw, names)" in cb and "new CloudBrain(AssistantCloudClient::ask)" in c),
     ("sonuc okunur, evet beklenir (OperationVoiceDialog)", "opDialog=new OperationVoiceDialog(cloud.entry,gardenNames,cloud.garden)" in c),
     ("ilk seferde izin sorulur", "pendingCloud=raw;postDialog(new OperationVoiceDialog.Reply(AssistantCloud.ASK" in c),
     ("kapaliyken ve internetsiz sorulmaz", "if(!\"off\".equals(mode)&&AssistantCloudClient.online(activity)){" in c),
     ("uygulamada anahtar yok (yalniz Firebase belgesi)", "Bearer \" + token" in cl and not re.search(r"(sk-|api[_-]?key\s*=)", cl, re.I)),
     ("adres derleme ayarindan (repoda degil)", "zdBuildString('ZEYTIN_AI_URL')" in g),
-    ("duzeltmeler modele gitmez (opDialog once)", c.index("if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}") < c.index("rules.conversationStage(")),
+    ("duzeltmeler modele gitmez (opDialog once)", c.index("if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}") < c.index("learned().conversationStage(")),
 ]
 bad = 0
 for n, ok in checks:

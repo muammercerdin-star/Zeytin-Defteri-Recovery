@@ -110,6 +110,9 @@ final class ActionCatalog {
     static final String BULUT_IZIN_EVET = "BULUT_IZIN_EVET";
     static final String BULUT_IZIN_HAYIR = "BULUT_IZIN_HAYIR";
     static final String ANLASILMADI = "ANLASILMADI";
+    static final String SOZLER_GOSTER = "SOZLER_GOSTER";
+    static final String SOZ_UNUT = "SOZ_UNUT";
+    static final String SOZ_OGRET = "SOZ_OGRET";
 
     private static final Map<String, Action> ALL = new LinkedHashMap<>();
 
@@ -156,6 +159,10 @@ final class ActionCatalog {
         add(new Action(BULUT_IZIN_EVET, "İnternet yardımcısına izin", Kind.AYAR, "", Level.IZINLE_KENDISI, true, ""));
         add(new Action(BULUT_IZIN_HAYIR, "İnternet yardımcısına izin yok", Kind.AYAR, "", Level.IZINLE_KENDISI, true, ""));
         add(new Action(ANLASILMADI, "Anlaşılmadı", Kind.SOHBET, "", Level.ONER, true, ""));
+        // Öğrenilen sözler (İP4): yalnız bu telefondaki kişisel sözlük; öğretme çiftçinin düğmeye basmasıyla olur.
+        add(new Action(SOZLER_GOSTER, "Öğrendiklerimi söyle", Kind.AYAR, "", Level.IZINLE_KENDISI, true, ""));
+        add(new Action(SOZ_UNUT, "Öğrenilen sözü unut", Kind.AYAR, "Hangi sözü unutayım?", Level.IZINLE_KENDISI, true, "", "soz"));
+        add(new Action(SOZ_OGRET, "Söz öğret", Kind.AYAR, "Bu ne işi?", Level.FORMU_DOLDUR, false, "", "soz", "anlam"));
     }
 
     private ActionCatalog() {

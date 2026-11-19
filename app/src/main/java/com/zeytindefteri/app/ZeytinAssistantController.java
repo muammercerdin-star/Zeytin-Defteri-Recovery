@@ -134,6 +134,17 @@ public final class ZeytinAssistantController {
     private final RuleBrain rules=new RuleBrain();
     /** İnternet yardımcısı aynı arayüzde (yalnız kuralların anlamadığı ya da soru sandığı iş cümlesinde, izinle). */
     private final CloudBrain cloudBrain=new CloudBrain(AssistantCloudClient::ask);
+    /** Öğrenilen sözler beyni (İP4): kuralların önünde, hesabın telefondaki sözlüğüyle. */
+    private LearnedBrain learned;
+    private String learnedOwner="";
+    /** Öğretme sorusu bekliyor: {cümle, söz, kaynak}; null = beklemiyor. */
+    private String[] pendingTeach;
+    /** Son cümle mikrofondan mı geldi (öğrenilen sözün kaynağı: ses/yazı). */
+    private boolean heardByVoice;
+    /** Öğretilen işten sonra: işlem formu sorusuz, dolu açılsın (bir kerelik). */
+    private boolean teachOpenForm;
+    /** İnternet yardımcısının çözdüğü cümle: çiftçi "evet"le kaydederse sözü öğrenilir (bulut-onaylı). */
+    private String opCloudRaw;
     private int answersThisPanel;
 
     private android.content.SharedPreferences personaPrefs(){return activity.getSharedPreferences("zd_assistant_persona",Context.MODE_PRIVATE);}
@@ -599,7 +610,7 @@ public final class ZeytinAssistantController {
                     if(!valid())return;log("final result received");
                     ArrayList<String> words=results==null?null:results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                     if(words==null||words.isEmpty()||words.get(0)==null||words.get(0).trim().isEmpty()){stopRecognizer();problem(Fault.NO_MATCH);}
-                    else submit(words.get(0));
+                    else{heardByVoice=true;submit(words.get(0));}
                 }
                 public void onPartialResults(Bundle b){
                     if(!valid() || conversation.state()!=State.LISTENING || b==null)return;
@@ -649,17 +660,32 @@ public final class ZeytinAssistantController {
         typing=false;hideKeyboard();input.setText("");
         quietMisses=0;
         lastQuestion=raw.trim();lastRaw=raw;question.setText(lastQuestion);heard.setText("");
+        final boolean voice=heardByVoice;
+        heardByVoice=false;
         if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
+        if(pendingTeach!=null&&answerTeach(raw))return;
         boolean commands=recDialog==null;
         final String asked=pendingCloud;
         java.util.function.Function<String,String> chat=null;
         if(commands)chat=persona()::handle;
         BrainContext context=BrainContext.assistant(opDialog==null&&recDialog==null,commands,asked!=null,chat);
-        Decision talk=rules.conversationStage(new Brain.Input(raw),context);
+        Decision talk=learned().conversationStage(new Brain.Input(raw),context);
         if(commands&&pastCloudStep(talk))pendingCloud=null;   // izin sorusu yalnız bir cevap bekler
         if(talk!=null){converse(talk,raw,asked);return;}
         if(recDialog!=null&&!recDialog.done()){answerRecord(raw);return;}
+        lastSource=voice?LearnedTerms.SOURCE_VOICE:LearnedTerms.SOURCE_TEXT;
         run(raw,ZeytinAssistantCommand.parse(raw),null);
+    }
+    /** Cümlenin geldiği yol (öğretilen sözün kaynağı). */
+    private String lastSource=LearnedTerms.SOURCE_TEXT;
+    /** Hesabın sözlüğüyle öğrenilen sözler beyni (hesap değişirse yeniden). */
+    private LearnedBrain learned(){
+        String owner=host.owner();
+        if(learned==null||!owner.equals(learnedOwner)){
+            learned=new LearnedBrain(LearnedTermsDb.store(activity,owner),rules);
+            learnedOwner=owner;
+        }
+        return learned;
     }
     /** Konuşma aşamasının kararını yürütür (kapanış, anlamadıklarım, karne, internet yardımcısı, sohbet). */
     private void converse(Decision d,String raw,String asked){
@@ -671,6 +697,17 @@ public final class ZeytinAssistantController {
         }
         if(d.is(ActionCatalog.ANLAMADIKLARI_SIL)||d.is(ActionCatalog.ANLAMADIKLARI_GOSTER)){missesCommand(d);return;}
         if(d.is(ActionCatalog.KONUSMA_KAYDI_SIL)||d.is(ActionCatalog.KARNE_GOSTER)){scorecardCommand(d);return;}
+        if(d.is(ActionCatalog.SOZLER_GOSTER)){
+            String[] shown=LearnedTerms.listText(learned().store().all());
+            postDialog(new OperationVoiceDialog.Reply(shown[0],OperationVoiceDialog.Action.ASK),"Zeytin · öğrendiklerim");
+            answer.setTextSize(14);
+            answer.setText(shown[1]);
+            return;
+        }
+        if(d.is(ActionCatalog.SOZ_UNUT)){
+            forget(d.payload(String.class));
+            return;
+        }
         if(d.is(ActionCatalog.SOHBET)){
             String chat=d.payload(String.class);
             AssistantMeter.understood(activity,host.owner(),raw,d.action);
@@ -693,6 +730,9 @@ public final class ZeytinAssistantController {
         final int token=conversation.nextTurn();final String owner=host.owner();final int season=host.season();final long active=host.activeGarden();
         final boolean again=meterAgain;
         meterAgain=false;
+        final boolean openForm=teachOpenForm;
+        teachOpenForm=false;
+        final LearnedBrain brain=learned();
         log("intent="+cmd.kind);
         worker.execute(()->{
             meterTurn=token;
@@ -707,7 +747,7 @@ public final class ZeytinAssistantController {
                 final List<String> gardenNames=new java.util.ArrayList<>();
                 for(Garden g:gardens)gardenNames.add(g.name);
                 final BrainContext records=BrainContext.recordsOnly(gardenNames);
-                final Decision decision=pick!=null?RuleBrain.question(raw,cmd):rules.recordStage(new Brain.Input(raw),records,cmd);
+                final Decision decision=pick!=null?RuleBrain.question(raw,cmd):brain.recordStage(new Brain.Input(raw),records,cmd);
                 // "Bugün 3 numara 120 kilo (sattım)": cevap yerine elek formu dolu açılır; kayıt kullanıcının onayıyla.
                 // "Girelli'den 300 kilo topladık": hasat (elekten önce: boy söylense de "topladık" hasattır).
                 if(decision.is(ActionCatalog.HASAT)&&"soru".equals(decision.variant)){
@@ -715,7 +755,7 @@ public final class ZeytinAssistantController {
                     startRecord(VoiceRecordDialog.Kind.HARVEST,raw,gardens,resolution,token,owner,season,active);
                     return;
                 }
-                final HarvestVoiceEntry harvest=decision.payload(HarvestVoiceEntry.class);
+                final HarvestVoiceEntry harvest=LearnedBrain.payload(decision,HarvestVoiceEntry.class);
                 if(harvest!=null){
                     meter(token,raw,owner,decision.action);
                     final long hid=resolution.garden==null?0:resolution.garden.id;
@@ -730,7 +770,7 @@ public final class ZeytinAssistantController {
                     post(token,owner,season,active,cmd,true,"","Alıcılar · açık alacaklar",AssistantReceivables.answer(raw,AssistantReceivablesData.load(activity,owner,season)));
                     return;
                 }
-                final ElekVoiceEntry voice=decision.payload(ElekVoiceEntry.class);
+                final ElekVoiceEntry voice=LearnedBrain.payload(decision,ElekVoiceEntry.class);
                 if(voice!=null){
                     meter(token,raw,owner,decision.action);
                     final long gid=resolution.garden==null?0:resolution.garden.id;
@@ -745,30 +785,34 @@ public final class ZeytinAssistantController {
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Elek ekranını açıyorum…");haptic();dialog.dismiss();host.openElekVoice(eg);}});
                     return;
                 }
-                final VoiceRecordDialog.Kind recKind=decision.payload(VoiceRecordDialog.Kind.class);
+                final VoiceRecordDialog.Kind recKind=LearnedBrain.payload(decision,VoiceRecordDialog.Kind.class);
                 if(recKind!=null){
                     meter(token,raw,owner,decision.action);
                     startRecord(recKind,raw,gardens,resolution,token,owner,season,active);
                     return;
                 }
                 // "Bugün Girelli'yi ilaçladım", "Mazot aldım 500 lira": bahçe varsa eksikler sorulur, yoksa işlem formu dolu açılır.
-                final OperationVoiceEntry op=decision.payload(OperationVoiceEntry.class);
+                final OperationVoiceEntry op=LearnedBrain.payload(decision,OperationVoiceEntry.class);
                 if(op!=null)meter(token,raw,owner,decision.action);
-                if(op!=null && "soru".equals(decision.variant)){
+                final LearnedTerms.Term taught=LearnedBrain.term(decision);
+                final String told=taught!=null&&taught.uses<LearnedTerms.TELL_USES?LearnedTerms.told(taught)+" ":"";
+                if(op!=null && "soru".equals(decision.variant) && !openForm){
                     // Karşısında insan varmış gibi: eksikleri tek tek sorar ("Hangi bahçeyi?", "Ne attın?"), "evet"le kaydeder.
                     final List<String> names=new java.util.ArrayList<>();for(Garden g:gardens)names.add(g.name);
                     final int gi=resolution.explicit&&resolution.garden!=null?gardens.indexOf(resolution.garden):-1;
                     final List<Garden> owned=gardens;
                     main.post(()->{if(current(token,owner,season,active)){
-                        opDialog=new OperationVoiceDialog(op,names,gi);opGardens=owned;
-                        postDialog(opDialog.start(),"Bahçe işi · sesle kayıt");}});
+                        opDialog=new OperationVoiceDialog(op,names,gi);opGardens=owned;opCloudRaw=null;
+                        OperationVoiceDialog.Reply first=opDialog.start();
+                        postDialog(new OperationVoiceDialog.Reply(told+first.speech,first.action),"Bahçe işi · sesle kayıt");
+                        if(taught!=null&&!told.isEmpty())addForgetButton(taught);}});
                     return;
                 }
                 if(op!=null){
                     final long gid=resolution.garden==null?0:resolution.garden.id;
                     final String where=resolution.garden==null?"":resolution.garden.name+", ";
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"İşlem formunu dolduruyorum…");haptic();
-                        Toast.makeText(activity,"İşlem formu açılıyor: "+where+op.summary()+". Kontrol edip Kaydet'e bas.",Toast.LENGTH_LONG).show();dialog.dismiss();host.openOperationEntry(gid,op);}});
+                        Toast.makeText(activity,told+"İşlem formu açılıyor: "+where+op.summary()+". Kontrol edip Kaydet'e bas.",Toast.LENGTH_LONG).show();dialog.dismiss();host.openOperationEntry(gid,op);}});
                     return;
                 }
                 // Kuralların anlamadığı iş cümlesi: izin varsa internetteki yardımcıya (Gemma 4) sorulur. Cevap cümleyle
@@ -789,7 +833,7 @@ public final class ZeytinAssistantController {
                         if(cloud!=null){
                             final List<Garden> owned=gardens;
                             main.post(()->{if(current(token,owner,season,active)){
-                                opDialog=new OperationVoiceDialog(cloud.entry,gardenNames,cloud.garden);opGardens=owned;
+                                opDialog=new OperationVoiceDialog(cloud.entry,gardenNames,cloud.garden);opGardens=owned;opCloudRaw=raw;
                                 postDialog(opDialog.start(),"Bahçe işi · internet yardımcısı");}});
                             return;
                         }
@@ -801,9 +845,17 @@ public final class ZeytinAssistantController {
                 }
                 if(decision.is(ActionCatalog.OZEL_CEVAP)||!decision.understood()){
                     // Selam, teşekkür, kayıt silme, ilaç dozu: sabit cevap önce (dozda ilaçlama sorusu önerilmez).
-                    String special=decision.payload(String.class);
+                    String special=LearnedBrain.payload(decision,String.class);
                     if(special!=null)meter(token,raw,owner,decision.action);
                     if(special!=null){post(token,owner,season,active,cmd,false,"",special);return;}
+                    // Tanınmayan iş fiili ("bakırladık"): tek soru, büyük düğmeler; öğretilen söz hep anlaşılır (İP4).
+                    final String teach=pick==null?LearnedTerms.teachable(raw,brain.store()):null;
+                    if(teach!=null){
+                        rememberMiss(raw,owner);
+                        final String source=lastSource;
+                        main.post(()->{if(current(token,owner,season,active))askTeach(raw,teach,source);});
+                        return;
+                    }
                     // Kalıba uymadı: sorudaki konu kelimelerinden yakın sorular ya da konu kartları.
                     Set<ZeytinAssistantHints.Topic> recorded=data.recordedTopics(gardens);
                     String named=resolution.explicit && resolution.garden!=null?resolution.garden.name:"";
@@ -1147,7 +1199,8 @@ public final class ZeytinAssistantController {
                 String date=new java.text.SimpleDateFormat("dd.MM.yyyy",new Locale("tr","TR")).format(c.getTime());
                 Approval approval=Approval.operationConfirmed(d);
                 long id=host.saveOperation(approval,gid,OperationKinds.TYPES[d.entry.type],date,d.quantityForSave(),d.unitForSave(),d.entry.cost,d.noteForSave());
-                opDialog=null;
+                if(id>0&&opCloudRaw!=null)learnFromCloud(opCloudRaw,d.entry);
+                opDialog=null;opCloudRaw=null;
                 postDialog(new OperationVoiceDialog.Reply(id>0?"Kaydettim. "+persona().thanks():"Kaydedemedim. Formu açıyorum, oradan kaydedersin.",OperationVoiceDialog.Action.SAVE),"Bahçe işi · kaydedildi");
                 if(id<=0){final long g=gid;main.postDelayed(()->{if(visible())dialog.dismiss();host.openOperationEntry(g,d.entry);},1500);}
                 break;
@@ -1160,6 +1213,95 @@ public final class ZeytinAssistantController {
             }
             case CANCEL: opDialog=null; postDialog(r,"Bahçe işi"); break;
             default: postDialog(r,"Bahçe işi · sesle kayıt");
+        }
+    }
+
+    // ============================================================ ÖĞRENİLEN SÖZLER (İP4)
+
+    /** "Bakırladık ne işi?": tek soru, okunur, büyük düğmeler; sesle de cevaplanabilir. */
+    private void askTeach(String raw,String word,String source){
+        pendingTeach=new String[]{raw,word,source};
+        postDialog(new OperationVoiceDialog.Reply(LearnedTerms.capital(word)+" ne işi?",OperationVoiceDialog.Action.ASK),"Zeytin · yeni söz");
+        answer.setTextSize(24);
+        List<String> labels=new java.util.ArrayList<>();
+        for(LearnedTerms.Choice c:LearnedTerms.CHOICES)labels.add(c.label);
+        labels.add("Başka");
+        labels.add("Vazgeç");
+        for(int i=0;i<labels.size();i+=2){
+            LinearLayout line=row();
+            LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,dp(64),1);
+            left.rightMargin=dp(10);
+            line.addView(teachButton(labels.get(i)),left);
+            if(i+1<labels.size())line.addView(teachButton(labels.get(i+1)),new LinearLayout.LayoutParams(0,dp(64),1));
+            else line.addView(new View(activity),new LinearLayout.LayoutParams(0,dp(64),1));
+            hintBox.addView(line,margins(-1,-2,dp(10),0));
+        }
+    }
+    private View teachButton(String label){
+        boolean quiet="Vazgeç".equals(label)||"Başka".equals(label);
+        TextView b=label(label,20,quiet?soft:text,true);
+        b.setGravity(Gravity.CENTER);
+        b.setBackground(round(quiet?surface:greenSoft,quiet?border:green,16));
+        b.setContentDescription(label);
+        b.setOnClickListener(v->{stopTts();answerTeach(label);});
+        return b;
+    }
+    /** Öğretme sorusunun cevabı (düğme ya da ses). Cevap değilse false: cümle normal işlenir. */
+    private boolean answerTeach(String answerText){
+        String[] p=pendingTeach;
+        pendingTeach=null;
+        if(p==null)return false;
+        String a=TurkishText.normalize(answerText);
+        LearnedTerms.Choice c=LearnedTerms.choiceFor(answerText);
+        if(c!=null){
+            learned().store().put(LearnedTerms.teach(p[1],c,p[2],System.currentTimeMillis()));
+            lastRaw=p[0];
+            meterAgain=true;   // aynı cümle: karnede ikinci kez sayılmaz
+            if(ActionCatalog.ISLEM.equals(c.action))teachOpenForm=true;
+            run(p[0],ZeytinAssistantCommand.parse(p[0]),null);
+            return true;
+        }
+        if(a.matches("(vazgec\\p{L}*|bosver|iptal|hicbiri|gerek yok|sorma)( .*)?")){
+            learned().store().decline(LearnedTerms.sentenceKey(p[0]));
+            postDialog(new OperationVoiceDialog.Reply("Tamam, bunu bir daha sormayacağım.",OperationVoiceDialog.Action.CANCEL),"Zeytin · yeni söz");
+            return true;
+        }
+        if(a.matches("baska( .*)?|hicbiri degil")){
+            postDialog(new OperationVoiceDialog.Reply("Tamam, öğrenmedim. Bu işi elle girmek için bahçenin işlem formunu kullanabilirsin.",OperationVoiceDialog.Action.CANCEL),"Zeytin · yeni söz");
+            return true;
+        }
+        return false;
+    }
+    /** Öğrenilen sözle başlayan konuşmada "Unut" düğmesi. */
+    private void addForgetButton(LearnedTerms.Term t){
+        TextView b=label("Unut: “"+t.word+"”",16,soft,true);
+        b.setGravity(Gravity.CENTER);
+        b.setBackground(round(surface,border,16));
+        b.setContentDescription(t.word+" sözünü unut");
+        b.setOnClickListener(v->{stopTts();opDialog=null;opCloudRaw=null;forget(t.word);});
+        hintBox.addView(b,margins(-1,dp(52),dp(10),0));
+    }
+    /** Sözü unutur ("bakırladığı unut" ya da "Unut" düğmesi). */
+    private void forget(String word){
+        String root=LearnedTerms.verbRoot(word==null?"":word);
+        LearnedTerms.Term t=root.isEmpty()?null:learned().store().get(root);
+        if(t==null){
+            postDialog(new OperationVoiceDialog.Reply("Öyle bir söz öğrenmemiştim.",OperationVoiceDialog.Action.ASK),"Zeytin · öğrendiklerim");
+            return;
+        }
+        learned().store().remove(t.term);
+        postDialog(new OperationVoiceDialog.Reply("Tamam, “"+t.word+"” sözünü unuttum.",OperationVoiceDialog.Action.CANCEL),"Zeytin · öğrendiklerim");
+    }
+    /** İnternet yardımcısının çözdüğü ve çiftçinin "evet"le kaydettiği iş: söz yerel sözlüğe (bulut-onaylı). */
+    private void learnFromCloud(String raw,OperationVoiceEntry entry){
+        String word=LearnedTerms.candidate(raw);
+        if(word==null)return;
+        String type=OperationKinds.TYPES[entry.type];
+        for(LearnedTerms.Choice c:LearnedTerms.CHOICES){
+            if(!c.value.equals(type))continue;
+            LearnedTerms.Store store=learned().store();
+            if(store.get(LearnedTerms.verbRoot(word))==null)store.put(LearnedTerms.teach(word,c,LearnedTerms.SOURCE_CLOUD,System.currentTimeMillis()));
+            return;
         }
     }
 

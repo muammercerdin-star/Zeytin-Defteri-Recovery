@@ -181,6 +181,7 @@ public final class AccountDeletion {
                             db.close();
                         }
                         clearPreferences(activity, uid);
+                        LearnedTermsDb.clear(activity, uid);   // asistanın öğrendiği sözler (ayrı dosya)
                         TezgahRescue.wipe(activity, uid);
                         progress.dismiss();
                         finishSignedOut(activity, "Hesabın ve verilerin silindi.");

@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Cümle bankası sınayıcısı (İP1; İP3'ten beri uygulamanın kendi beynini sınar). Her cümle RuleBrain'e, bahçesi olan
+ * Cümle bankası sınayıcısı (İP1; İP3'ten beri uygulamanın kendi beynini sınar). Her cümle asistanın beynine
+ * (İP4: öğrenilen sözler → RuleBrain; sözlük boş), bahçesi olan
  * ve internet yardımcısı kapalı bir kullanıcının asistanına yeni söylenmiş gibi verilir (taze sohbet durumu);
  * karar cumleler.tsv'deki beklenenle karşılaştırılır. Test tarafında ayrı bir karar zinciri yoktur.
  * ELEK alanlarında kilo başı fiyat "<boy>_fiyat" (TL/kg) olarak yazılır (İP2).
@@ -24,7 +25,7 @@ import java.util.Set;
 public final class SentenceBankRunner {
 
     static final String MISS = ActionCatalog.ANLASILMADI;
-    private static final RuleBrain BRAIN = new RuleBrain();
+    private static final RuleBrain RULES = new RuleBrain();
 
     private SentenceBankRunner() {
     }
@@ -44,9 +45,15 @@ public final class SentenceBankRunner {
         }
     }
 
+    /** Sözlük boşken (yeni kurulmuş telefon): öğrenilen sözler beyni kurallarla birebir aynı karar verir. */
     static Outcome route(String raw) {
+        return route(raw, new LearnedTerms.Memory());
+    }
+
+    /** Verilen sözlükle: asistanın beyni (öğrenilen sözler → kurallar). */
+    static Outcome route(String raw, LearnedTerms.Store store) {
         BrainContext context = BrainContext.full(true, AssistantPersona.decode("")::handle);
-        return new Outcome(BRAIN.decide(new Brain.Input(raw), context));
+        return new Outcome(new LearnedBrain(store, RULES).decide(new Brain.Input(raw), context));
     }
 
     // ============================================================ BANKA

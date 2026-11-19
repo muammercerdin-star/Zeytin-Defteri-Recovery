@@ -5,9 +5,10 @@
 # binlerce hata çıkar; bunlar her iki tarafta aynıdır. Aynı derleme, verilen başlangıç commit'inin kaynağıyla da
 # yapılır ve hata listeleri karşılaştırılır. Hata kimliği: dosya + mesaj + sembol + konum + kaynak satırı
 # (satır NUMARASI hariç). Başlangıçta olmayıp şimdi çıkan her hata GERÇEK hatadır (ör. İP2'deki priceChanged).
-# Tek ayrım: yeni satırda çıkan hata, başlangıçta aynı mesaj + sembol + konumla zaten varsa (ör. yeni kodda
-# getIntent() çağrısı: "method getIntent() / class ElekActivity" Android olmadığı için hep bulunamaz) bu
-# "Android eksikliği" sayılır, ayrıca listelenir ama sonucu bozmaz.
+# Tek ayrım: yeni satırda çıkan hata, başlangıçta aynı mesaj + aynı bulunamayan sembolle zaten varsa (ör. yeni
+# kodda getIntent() ya da yeni bir sınıfta Cursor/SQLiteDatabase: Android olmadığı için hep bulunamaz) bu
+# "Android eksikliği" sayılır, ayrıca listelenir ama sonucu bozmaz. Başlangıçta hiç görülmemiş sembol
+# (ör. yanlış yazılmış bir değişken) gerçek hatadır.
 #
 # Kullanım: bash tools/compile_diff.sh <başlangıç-commit>   (ör. dalın açıldığı commit)
 # Çıkış: 0 = yeni hata yok, 1 = yeni hata var (listelenir), 2 = kullanım/ortam hatası.
@@ -78,8 +79,13 @@ now, shown = errors(sys.argv[2])
 diff = now - base
 gone = base - now
 # Aynı mesaj + sembol + konum başlangıçta varsa: Android'in eksikliği (yeni satırda aynı bulunamayan sembol).
-known = {(k[1], k[3]) for k in base}
-android = collections.Counter({k: n for k, n in diff.items() if (k[1], k[3]) in known})
+def sym(k):
+    # mesaj + bulunamayan sembol (konum hariç): yeni bir sınıfta da aynı Android sembolü bulunamaz
+    return (k[1], tuple(e for e in k[3] if e.startswith("symbol")))
+
+
+known = {sym(k) for k in base}
+android = collections.Counter({k: n for k, n in diff.items() if sym(k) in known})
 real = diff - android
 print(f"Başlangıç: {sum(base.values())} hata · şimdi: {sum(now.values())} hata (Android sınıfları olmadan)")
 print(f"Kaybolan (düzelen ya da taşınan): {sum(gone.values())}")
