@@ -64,8 +64,13 @@ Her akıllı özellik şu döngüye uyar: **topla → iyileştir → ölç → g
 
 # Yayın günü (Play'e yeni sürüm çıkarken unutulmayacaklar)
 
-- Yasal metin sürümü değiştiyse site aynı gün güncellenir: hazır dal `work/site-2.4` (2.4, İP5 metniyle aynı)
-  `work/site`'a birleştirilir; Cloudflare canlıya alır. Uygulama çıkmadan önce birleştirilmez. Metin yeniden
-  değişirse dal yeniden üretilir: raw metinler + LegalDocuments kopyalanır, `python3 -B site/tools/build_legal.py`,
-  `python3 -B tests/site/check_site.py`.
+- Yasal metin sürümü değiştiyse site aynı gün güncellenir; uygulama çıkmadan önce `work/site`'a birleştirilmez.
+  Metin değişirse site dalı yeniden üretilir: raw metinler + LegalDocuments kopyalanır,
+  `python3 -B site/tools/build_legal.py`, `python3 -B tests/site/check_site.py`.
+- Sürüm sırası (yasal metin sürümü yayın sırasını izler):
+  - **Ocak sürümü (1.6.0):** `release/1.6.0` dalı **work/ip6-ogrendiklerim**'den açılır (İP1–İP4 + İP6).
+    İP5 ve İP7 bu sürüme GİRMEZ; release dalı work/ip5-* ya da work/ip7-* dallarından açılmaz.
+    Yasal metin 2.4 (İP6 metni), site dalı `work/site-2.4`.
+  - **Sonraki sürüm (İP5 + İP7):** yasal metin **2.5**. İP6'nın 2.4 metnindeki değişiklikler (Öğrendiklerim ekranı,
+    Sil / Hepsini unut) bu metne de birleştirilir; site dalı `work/site-2.5` o zaman üretilir.
 - Sitede "Sürüm" yazısı uygulamadaki LegalDocuments.VERSION ile aynı olmalı.

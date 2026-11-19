@@ -300,11 +300,29 @@ final class ActionRunner {
 
     private void undo() {
         boolean ok = flow.undo(writer());
+        syncDeletions();
         AssistantMeter.multiStep(activity, form.owner(), AssistantScorecard.MULTI_UNDONE);
         android.widget.Toast.makeText(activity, ok ? "Geri alındı: hiçbiri kalmadı." : "Bir kısmı geri alınamadı; Satışlar'dan kontrol et.",
                 android.widget.Toast.LENGTH_LONG).show();
         release();
         form.close(false);
+    }
+
+    /**
+     * Geri alınan satışın silinmesi buluta hemen gitsin (Satışlar ekranındaki silmeyle aynı); internet yoksa
+     * silme kaydı telefonda kalır, sonraki eşitlemede gider.
+     */
+    private void syncDeletions() {
+        try {
+            com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            if (user == null) {
+                return;
+            }
+            DatabaseHelper db = new DatabaseHelper(activity.getApplicationContext());
+            new PrivateCloudSyncManager(db).sync(user.getUid(), null);
+        } catch (RuntimeException ignored) {
+            // eşitleme olmadı: silme kaydı sonraki eşitlemede gider
+        }
     }
 
     private void finishSaved() {
