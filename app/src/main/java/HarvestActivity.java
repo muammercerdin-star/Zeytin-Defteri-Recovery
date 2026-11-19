@@ -48,6 +48,9 @@ public class HarvestActivity extends Activity {
     private final TextView[] valueViews = new TextView[GradeFormModel.CODES.length];
 
     private final Calendar selectedDate = Calendar.getInstance();
+    /** Karne (İP1): ekranın açıldığı an ve sesle doldurulan alanlar; yalnız sayı, yalnız bu telefonda. */
+    private long meterOpenedAt;
+    private final AssistantScorecard.FormFill voiceFill = new AssistantScorecard.FormFill();
     /** Asistandan ("Girelli'den 300 kilo topladık"): boy boy kilo, toplam, tarih kaydırması. Form dolu açılır, kaydetmez. */
     public static final String EXTRA_VOICE_KG = "voice_kg", EXTRA_VOICE_TOTAL = "voice_total", EXTRA_VOICE_DAY_OFFSET = "voice_day_offset",
             EXTRA_VOICE_LABOR = "voice_labor", EXTRA_VOICE_TRANSPORT = "voice_transport";
@@ -63,6 +66,7 @@ public class HarvestActivity extends Activity {
         getWindow().setStatusBarColor(GreenTheme.color(R.color.zd_bg));
         getWindow().setNavigationBarColor(GreenTheme.color(R.color.zd_bg));
         setContentView(R.layout.activity_harvest);
+        meterOpenedAt = android.os.SystemClock.elapsedRealtime();
 
         databaseHelper = new DatabaseHelper(this);
         findViews();
@@ -94,6 +98,7 @@ public class HarvestActivity extends Activity {
         double[] kg = getIntent().getDoubleArrayExtra(EXTRA_VOICE_KG);
         double total = getIntent().getDoubleExtra(EXTRA_VOICE_TOTAL, 0);
         double labor = getIntent().getDoubleExtra(EXTRA_VOICE_LABOR, 0), transport = getIntent().getDoubleExtra(EXTRA_VOICE_TRANSPORT, 0);
+        rememberVoiceFill(kg, labor, transport);
         if (labor > 0) etLaborCost.setText(GradeFormModel.number(labor));
         if (transport > 0) etTransportCost.setText(GradeFormModel.number(transport));
         boolean graded = false;
@@ -439,12 +444,36 @@ public class HarvestActivity extends Activity {
 
         if (success) {
             Toast.makeText(this, "Hasat kaydedildi", Toast.LENGTH_SHORT).show();
+            meterSaved(kilograms, laborCost, transportCost);
             syncHarvestCloud(savedHarvestId);
             setResult(RESULT_OK);
             finish();
         } else {
             Toast.makeText(this, "Hasat kaydedilemedi", Toast.LENGTH_LONG).show();
         }
+    }
+
+    /** Sesle yazılan boy kiloları ve masraflar karşılaştırma için saklanır. */
+    private void rememberVoiceFill(double[] kg, double labor, double transport) {
+        voiceFill.clear();
+        if (kg != null) {
+            for (int i = 0; i < kg.length && i < kgFields.length; i++) {
+                voiceFill.put(ElekVoiceEntry.LABELS[i], kg[i]);
+            }
+        }
+        voiceFill.put("işçilik", labor);
+        voiceFill.put("nakliye", transport);
+    }
+
+    /** Kayıt süresi ve Kaydet'ten önce değiştirilen sesli alanlar karneye yazılır. */
+    private void meterSaved(double[] kilograms, double labor, double transport) {
+        java.util.Map<String, Double> saved = new java.util.HashMap<>();
+        for (int i = 0; i < kilograms.length && i < ElekVoiceEntry.LABELS.length; i++) {
+            saved.put(ElekVoiceEntry.LABELS[i], kilograms[i]);
+        }
+        saved.put("işçilik", labor);
+        saved.put("nakliye", transport);
+        AssistantMeter.saved(this, databaseHelper.getActiveOwnerUid(), "Hasat formu", meterOpenedAt, voiceFill, saved);
     }
 
     private void syncHarvestCloud(long harvestId) {

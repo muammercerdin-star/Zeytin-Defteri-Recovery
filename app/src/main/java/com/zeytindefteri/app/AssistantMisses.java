@@ -57,6 +57,108 @@ final class AssistantMisses {
         return encode(items);
     }
 
+    // ============================================================ CÜMLE KAYDI (İP1)
+    // Cümle bankasının telefondaki tohumu. Yalnız bu telefonda tutulur, hiçbir yere gönderilmez.
+    // Yukarıdaki "anlamadıklarım" listesi aynen kalır; bu kayıt onun yanında ayrı bir anahtarla saklanır.
+    // Satır biçimi: "gün \t tür \t cümle \t ayrıntı"; en yenisi başta, en fazla LOG_MAX satır.
+
+    static final int LOG_MAX = 300;
+    /** Asistanın bir eyleme çevirdiği cümle; ayrıntı = eylem ("ELEK", "ISLEM", "SORU_SPRAY"...). */
+    static final String UNDERSTOOD = "anlasilan";
+    /** Asistanın anlamadığı cümle; ayrıntı boş. */
+    static final String MISSED = "anlasilmayan";
+    /** Sesle doldurulan formda kullanıcının Kaydet'ten önce değiştirdiği alanlar; cümle = form adı. */
+    static final String CORRECTED = "duzeltme";
+
+    /** Kayıt satırı: {gün, tür, cümle, ayrıntı}. */
+    static List<String[]> decodeLog(String stored) {
+        List<String[]> out = new ArrayList<>();
+        if (stored == null || stored.isEmpty()) {
+            return out;
+        }
+        for (String line : stored.split("\n")) {
+            String[] c = line.split("\t", -1);
+            if (c.length != 4 || c[0].isEmpty() || c[2].isEmpty()) {
+                continue;
+            }
+            out.add(c);
+        }
+        return out;
+    }
+
+    static String encodeLog(List<String[]> items) {
+        StringBuilder b = new StringBuilder();
+        for (String[] it : items) {
+            if (b.length() > 0) {
+                b.append('\n');
+            }
+            b.append(it[0]).append('\t').append(it[1]).append('\t').append(it[2]).append('\t').append(it[3]);
+        }
+        return b.toString();
+    }
+
+    /**
+     * Kayda ekler. Anlaşılan ve anlaşılmayan cümle tekrar etmez, başa taşınır (son eylemiyle);
+     * düzeltme her seferinde yeni satırdır. Komut cümleleri ve çok uzun metin girmez. En fazla LOG_MAX.
+     */
+    static String log(String stored, String kind, String raw, String detail, String day) {
+        String keep = stored == null ? "" : stored;
+        String text = clean(raw);
+        if (text.isEmpty() || text.length() > 300) {
+            return keep;
+        }
+        if (!UNDERSTOOD.equals(kind) && !MISSED.equals(kind) && !CORRECTED.equals(kind)) {
+            return keep;
+        }
+        if (asksShow(text) || asksClear(text)) {
+            return keep;
+        }
+        List<String[]> items = decodeLog(keep);
+        if (!CORRECTED.equals(kind)) {
+            String key = ElekVoiceEntry.normalize(text);
+            for (int i = items.size() - 1; i >= 0; i--) {
+                boolean sameKind = items.get(i)[1].equals(kind);
+                if (sameKind && ElekVoiceEntry.normalize(items.get(i)[2]).equals(key)) {
+                    items.remove(i);
+                }
+            }
+        }
+        items.add(0, new String[]{clean(day), kind, text, clean(detail)});
+        while (items.size() > LOG_MAX) {
+            items.remove(items.size() - 1);
+        }
+        return encodeLog(items);
+    }
+
+    /** "Anlamadıklarını sil": kayıttaki anlaşılmayan cümleler de silinir; anlaşılan ve düzeltme satırları kalır. */
+    static String clearMissedFromLog(String stored) {
+        List<String[]> items = decodeLog(stored);
+        for (int i = items.size() - 1; i >= 0; i--) {
+            if (MISSED.equals(items.get(i)[1])) {
+                items.remove(i);
+            }
+        }
+        return encodeLog(items);
+    }
+
+    /** Kayıttaki satır sayısı, türüne göre. */
+    static int countLog(String stored, String kind) {
+        int n = 0;
+        for (String[] it : decodeLog(stored)) {
+            if (it[1].equals(kind)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private static String clean(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        return raw.replace('\n', ' ').replace('\t', ' ').trim();
+    }
+
     /** {okunacak kısa söz, ekranda gösterilecek liste}. */
     static String[] show(String stored) {
         List<String[]> items = decode(stored);

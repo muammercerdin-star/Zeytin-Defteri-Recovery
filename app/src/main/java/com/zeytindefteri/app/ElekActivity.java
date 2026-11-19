@@ -308,6 +308,7 @@ public class ElekActivity extends Activity {
         super.onCreate(
                 savedInstanceState
         );
+        meterOpenedAt = android.os.SystemClock.elapsedRealtime();
 
 
         if (getActionBar() != null) {
@@ -395,6 +396,9 @@ public class ElekActivity extends Activity {
     // ============================================================ SESLİ ELEK (konuşma penceresi)
     private ElekVoiceSession voice;
     private long voiceSavedId = -1;
+    /** Karne (İP1): ekranın açıldığı (ya da önceki kaydın yapıldığı) an ve sesle yazılan kilolar; yalnız sayı. */
+    private long meterOpenedAt;
+    private final AssistantScorecard.FormFill voiceFill = new AssistantScorecard.FormFill();
 
     private ElekVoiceSession voiceSession() {
         if (voice == null) voice = new ElekVoiceSession(this, new ElekVoiceSession.Host() {
@@ -419,6 +423,7 @@ public class ElekActivity extends Activity {
                     if (kg[i] == null) continue;
                     String v = values[i] > 0 ? TezgahQr.field(values[i]) : "";
                     if (!v.equals(kg[i].getText().toString())) { kg[i].setText(v); flashVoiceField(kg[i]); }
+                    voiceFill.put(ElekVoiceEntry.LABELS[i], values[i]);
                 }
                 if (sold != null) saleOnSave = sold;
                 if (saleOnSave && etSaleBuyer != null && buyer != null && !buyer.trim().isEmpty()) etSaleBuyer.setText(buyer.trim());
@@ -437,6 +442,17 @@ public class ElekActivity extends Activity {
             }
         }, (android.view.ViewGroup) findViewById(R.id.btnElekVoice));
         return voice;
+    }
+
+    /** Kayıt süresi ve Kaydet'ten önce değiştirilen sesli kilolar karneye yazılır; sonraki kayıt için sayaç baştan. */
+    private void meterSaved(double[] kilograms) {
+        java.util.Map<String, Double> saved = new java.util.HashMap<>();
+        for (int i = 0; i < kilograms.length && i < ElekVoiceEntry.LABELS.length; i++) {
+            saved.put(ElekVoiceEntry.LABELS[i], kilograms[i]);
+        }
+        AssistantMeter.saved(this, databaseHelper.getActiveOwnerUid(), "Elek formu", meterOpenedAt, voiceFill, saved);
+        voiceFill.clear();
+        meterOpenedAt = android.os.SystemClock.elapsedRealtime();
     }
 
     /** Sesle yazılan kilo alanı bir an yeşil çerçeveyle parlar ve görünür alana kayar. */
@@ -480,6 +496,7 @@ public class ElekActivity extends Activity {
         for (int i = 0; i < kg.length && i < kgValues.length; i++) {
             if (kg[i] == null || kgValues[i] <= 0) continue;
             kg[i].setText(TezgahQr.field(kgValues[i]));
+            voiceFill.put(ElekVoiceEntry.LABELS[i], kgValues[i]);
             total += kgValues[i];
             if (said.length() > 0) said.append(" · ");
             said.append(ElekVoiceEntry.LABELS[i]).append(' ').append(TezgahModel.kg(kgValues[i]));
@@ -2610,6 +2627,7 @@ public class ElekActivity extends Activity {
 
         if (result != -1) {
             voiceSavedId = result;
+            meterSaved(new double[]{kgDouble, kg1, kg2, kg3, kg4, kgOil});
             long saleId = -1;
             if (wantSale) {
                 saleId = new ElekSaleBridge(databaseHelper).createSale(result, pay, partial, buyer);

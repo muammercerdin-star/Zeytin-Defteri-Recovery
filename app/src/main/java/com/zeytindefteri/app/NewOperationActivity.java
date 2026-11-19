@@ -51,6 +51,9 @@ public class NewOperationActivity extends Activity {
     private final Calendar selectedDate = Calendar.getInstance();
     private final Locale TR = new Locale("tr", "TR");
     private int selectedType = 0;
+    /** Karne (İP1): ekranın açıldığı an ve sesle doldurulan alanlar; yalnız sayı, yalnız bu telefonda. */
+    private long meterOpenedAt;
+    private final AssistantScorecard.FormFill voiceFill = new AssistantScorecard.FormFill();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +62,7 @@ public class NewOperationActivity extends Activity {
         getWindow().setStatusBarColor(GreenTheme.color(R.color.zd_bg));
         getWindow().setNavigationBarColor(GreenTheme.color(R.color.zd_bg));
         setContentView(R.layout.activity_new_operation);
+        meterOpenedAt = android.os.SystemClock.elapsedRealtime();
 
         databaseHelper = new DatabaseHelper(this);
         operationCloudRepository = new OperationCloudRepository(databaseHelper);
@@ -104,6 +108,7 @@ public class NewOperationActivity extends Activity {
             else etNote.setText(ElekVoiceDialog.num(q) + " " + (u == null ? "" : u));
         }
         if (cost > 0) etCost.setText(TezgahQr.field(cost));
+        rememberVoiceFill(offset, q, cost);
         Toast.makeText(this, "Sesle dolduruldu · kontrol edip Kaydet'e bas", Toast.LENGTH_LONG).show();
     }
 
@@ -304,12 +309,40 @@ public class NewOperationActivity extends Activity {
         long result = databaseHelper.addOperation(gardenId, type, date, quantity, unit, cost, note);
         if (result != -1) {
             syncSavedOperationToCloud(result);
+            meterSaved(quantity, cost);
             Toast.makeText(this, "İşlem kaydedildi", Toast.LENGTH_SHORT).show();
             setResult(RESULT_OK);
             finish();
         } else {
             Toast.makeText(this, "İşlem kaydedilemedi", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /** Sesle yazılan alanlar karşılaştırma için saklanır (tür, tarih yalnız söylendiyse, miktar, tutar). */
+    private void rememberVoiceFill(int offset, double quantity, double cost) {
+        voiceFill.clear();
+        voiceFill.put("tür", selectedType + 1);
+        if (offset != 0) {
+            voiceFill.put("tarih", dayNumber());
+        }
+        if (quantity > 0 && etQuantity.getText().length() > 0) {
+            voiceFill.put("miktar", quantity);
+        }
+        voiceFill.put("tutar", cost);
+    }
+
+    /** Kayıt süresi ve Kaydet'ten önce değiştirilen sesli alanlar karneye yazılır. */
+    private void meterSaved(double quantity, double cost) {
+        java.util.Map<String, Double> saved = new java.util.HashMap<>();
+        saved.put("tür", (double) (selectedType + 1));
+        saved.put("tarih", dayNumber());
+        saved.put("miktar", quantity);
+        saved.put("tutar", cost);
+        AssistantMeter.saved(this, databaseHelper.getActiveOwnerUid(), "İşlem formu", meterOpenedAt, voiceFill, saved);
+    }
+
+    private double dayNumber() {
+        return selectedDate.get(Calendar.YEAR) * 1000 + selectedDate.get(Calendar.DAY_OF_YEAR);
     }
 
     private void syncSavedOperationToCloud(long operationId) {
