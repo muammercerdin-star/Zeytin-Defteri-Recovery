@@ -44,6 +44,8 @@ Her akıllı özellik şu döngüye uyar: **topla → iyileştir → ölç → g
   (hatırlatma gibi) kendiliğinden yapıp haber verme.
 - **Kayıt, satış, ödeme ve silme her zaman çiftçinin onayını ister**, model ne kadar emin olursa olsun.
   Her kendiliğinden işin "Geri al" yolu vardır.
+  Not: Bu kural çiftçinin kayıtları (bahçe, elek, satış, işlem, hasat, alıcı) içindir; asistanın telefondaki
+  kendi notları (anlamadıklarım, konuşma kaydı, karne) çiftçinin açık komutuyla onaysız silinebilir.
 - Her önerinin yanında nedeni yazar ve tek dokunuşla "Bu yanlış" denebilir; düzeltme öğrenilir.
 - Emin değilse susar. Sürekli reddedilen öneri türü kendiliğinden bırakılır. Ürkütücü kişisel gözlem
   söylenmez. Gece (22:00–05:00) konuşmaz ve bildirim göndermez.

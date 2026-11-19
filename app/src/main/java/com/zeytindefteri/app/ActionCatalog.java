@@ -35,7 +35,8 @@ final class ActionCatalog {
         SILME(true),
         /** Kayıtlardan cevap verir, ekran açar; hiçbir şey yazmaz. */
         OKUMA(false),
-        /** Asistanın kendi ayarı ya da yalnız bu telefondaki kendi notları (anlamadıklarım, karne). */
+        /** Asistanın kendi ayarı ya da yalnız bu telefondaki kendi notları (anlamadıklarım, konuşma kaydı, karne):
+         *  çiftçinin açık komutuyla onaysız silinebilir (AGENTS.md, onay kuralının notu). */
         AYAR(false),
         /** Sohbet, hazır cevap, kapanış. */
         SOHBET(false),
