@@ -10,3 +10,4 @@ source "$ROOT/tests/sentence_bank/brain_build.sh"
 brain_build "$T" "$A/HabitModel.java" "$A/GradeFormModel.java" \
   "$DIR/HabitModelTest.java"
 java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp "$BRAIN_CP" com.zeytindefteri.app.HabitModelTest
+python3 "$DIR/check_wiring.py"

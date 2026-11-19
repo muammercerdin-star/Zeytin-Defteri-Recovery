@@ -7462,10 +7462,18 @@ public class ProducerFeedActivity extends Activity {
         vlp.topMargin = dp(14);
         box.addView(voice, vlp);
 
+        // İP5: Satış satırının yalnız alt yazısı, yalnız YÜKSEK güvende ("Ali Usta'ya satış · 3 No · 68 TL hazır");
+        // yeri ve dokununca açılan ekran aynı. Orta güvende ya da veri yoksa bugünkü yazı.
+        String saleLine = null;
+        try {
+            saleLine = HabitRecords.load(this).saleLine();
+        } catch (RuntimeException ignored) {
+            saleLine = null;
+        }
         Object[][] items = {
                 {R.drawable.ic_op_elek, "Elek kaydı", "Kilo, fiyat, satış", ElekActivity.class},
                 {R.drawable.ic_op_basket, "Hasat kaydı", "Toplanan kilo", HarvestActivity.class},
-                {R.drawable.ic_op_tag, "Satış", "Fiyat teklifi, alıcı", SaleActivity.class},
+                {R.drawable.ic_op_tag, "Satış", saleLine == null ? "Fiyat teklifi, alıcı" : saleLine, SaleActivity.class},
                 {R.drawable.ic_op_flask, "İşlem", "İlaçlama, gübre, sulama", NewOperationActivity.class},
                 {R.drawable.ic_op_tree, "Bahçe ekle", "Yeni bahçe", AddGardenActivity.class},
                 {R.drawable.ic_op_drop, "Salamura", "Kavanoz, tuz, tarih", BrineActivity.class},
@@ -7497,6 +7505,11 @@ public class ProducerFeedActivity extends Activity {
             TextView sub = text((String) items[i][2], 12, MUTED, false);
             sub.setSingleLine(true);
             sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            if (target == SaleActivity.class && saleLine != null) {
+                // Hazır satış yazısı iki satıra sığar (kutunun yeri değişmez).
+                sub.setSingleLine(false);
+                sub.setMaxLines(2);
+            }
             tile.addView(sub);
             tile.setContentDescription(items[i][1] + ": " + items[i][2]);
             tile.setOnClickListener(v -> { sheet.dismiss(); startActivity(new Intent(this, target)); });

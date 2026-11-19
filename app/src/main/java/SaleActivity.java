@@ -64,6 +64,9 @@ public class SaleActivity extends Activity {
     private boolean realSale = true;
     private GradeFormModel.Payment payment = GradeFormModel.Payment.NONE;
     private boolean saving;
+    /** Sezilen alışkanlıklar (İP5): kayıtlardan her açılışta yeniden hesaplanır; yoksa form bugünkü gibi. */
+    private HabitModel habits;
+    private HabitForm habitForm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +97,58 @@ public class SaleActivity extends Activity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         btnSaveSale.setOnClickListener(v -> saveSale());
         updateSaleKindUi();
+        if (savedInstanceState == null) {
+            applyHabits(getIntent() == null ? -1L : getIntent().getLongExtra("garden_id", -1L));
+        }
+    }
+
+    /**
+     * Sezilen bilgiyle ön doldurma (İP5): yüksek güvende alan dolar ve altında gerekçe + "Bu yanlış";
+     * orta güvende yalnız öneri çipi. Bahçe yalnız ekran bahçesiz açıldıysa; dolu alana dokunulmaz.
+     */
+    private void applyHabits(long requestedGardenId) {
+        if (!realSale) {
+            return;
+        }
+        android.widget.ScrollView scroll = findViewById(R.id.saleScroll);
+        if (scroll == null || scroll.getChildCount() == 0) {
+            return;
+        }
+        String owner = databaseHelper.getActiveOwnerUid();
+        habits = HabitRecords.load(this);
+        habitForm = new HabitForm(this, (android.view.ViewGroup) scroll.getChildAt(0), owner, HabitDb.store(this, owner));
+        if (requestedGardenId == -1L && gardens.size() > 1) {
+            HabitModel.Habit garden = habits.saleGarden();
+            int position = -1;
+            for (int i = 0; garden != null && i < gardens.size(); i++) {
+                if (gardens.get(i).name.equals(garden.value)) {
+                    position = i;
+                }
+            }
+            habitForm.spinner(spinnerGarden, position, garden);
+        }
+        HabitModel.Habit buyer = habits.buyer();
+        if (buyer != null) {
+            habitForm.text(etBuyerName, buyer, buyer.value, () -> applyPriceHabits(""));
+        }
+        applyPriceHabits(text(etBuyerName));
+    }
+
+    /** Bu alıcıya son kilo fiyatları (sınıf sınıf); alıcı değişince öncekiler kalkar. */
+    private void applyPriceHabits(String buyer) {
+        if (habits == null || habitForm == null) {
+            return;
+        }
+        habitForm.clear(HabitCorrections.PRICE + ":");
+        if (buyer == null || buyer.trim().isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < GradeFormModel.CODES.length; i++) {
+            HabitModel.Habit price = habits.price(buyer, GradeFormModel.CODES[i]);
+            if (price != null) {
+                habitForm.text(priceFields[i], price, TezgahQr.field(price.number));
+            }
+        }
     }
 
     @Override
@@ -118,6 +173,7 @@ public class SaleActivity extends Activity {
         etBuyerName.setOnClickListener(v -> BuyerPicker.show(this, databaseHelper, text(etBuyerName), "Alıcı belirtme", name -> {
             etBuyerName.setText(name);
             etBuyerName.setError(null);
+            applyPriceHabits(name);
             if (!name.isEmpty() && text(etBuyerPhone).isEmpty()) {
                 try {
                     android.database.sqlite.SQLiteDatabase bdb = databaseHelper.getReadableDatabase();
@@ -434,6 +490,9 @@ public class SaleActivity extends Activity {
         }
 
         syncSavedSale(saleId);
+        if (habitForm != null) {
+            habitForm.saved();
+        }
         Toast.makeText(this, (realSale ? "Satış" : "Fiyat teklifi") + " kaydedildi", Toast.LENGTH_SHORT).show();
         Intent result = new Intent();
         result.putExtra("sale_id", saleId);

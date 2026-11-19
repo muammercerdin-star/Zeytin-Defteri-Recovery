@@ -8,11 +8,13 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -56,6 +58,9 @@ public class NewOperationActivity extends Activity {
     /** Karne (İP1): ekranın açıldığı an ve sesle doldurulan alanlar; yalnız sayı, yalnız bu telefonda. */
     private long meterOpenedAt;
     private final AssistantScorecard.FormFill voiceFill = new AssistantScorecard.FormFill();
+    /** Sezilen alışkanlıklar (İP5): kayıtlardan her açılışta yeniden hesaplanır; yoksa form bugünkü gibi. */
+    private HabitModel habits;
+    private HabitForm habitForm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +89,61 @@ public class NewOperationActivity extends Activity {
         updateDateText();
         selectType(selectedType, unitIndex);
         if (savedInstanceState == null) applyVoice();
+        if (savedInstanceState == null) applyHabits();
+    }
+
+    /**
+     * Sezilen bilgiyle ön doldurma (İP5), sesle doldurulandan SONRA: söylenen ve öğretilen değer üstündür (dolu
+     * alana dokunulmaz). Bahçe yalnız ekran bahçesiz açıldıysa. Tür seçimi hiçbir zaman sezilmez.
+     */
+    private void applyHabits() {
+        ScrollView scroll = findViewById(R.id.operationScroll);
+        if (scroll == null || scroll.getChildCount() == 0) {
+            return;
+        }
+        String owner = databaseHelper.getActiveOwnerUid();
+        habits = HabitRecords.load(this);
+        habitForm = new HabitForm(this, (ViewGroup) scroll.getChildAt(0), owner, HabitDb.store(this, owner));
+        if (getIntent().getLongExtra("garden_id", -1) == -1 && gardenNames.size() > 1) {
+            HabitModel.Habit garden = habits.operationGarden();
+            int position = garden == null ? -1 : gardenNames.indexOf(garden.value);
+            habitForm.spinner(spinnerGarden, position, garden);
+        }
+        applyTypeHabits();
+    }
+
+    /** Seçili işe göre: ilaç / gübre adı (not), miktar ve birim; İşçilikte "kişi" sayısı. Tür değişince yenilenir. */
+    private void applyTypeHabits() {
+        if (habits == null || habitForm == null) {
+            return;
+        }
+        habitForm.clear(HabitCorrections.PRODUCT + ":");
+        habitForm.clear(HabitCorrections.AMOUNT + ":");
+        habitForm.clear(HabitCorrections.WORKERS);
+        String type = OperationKinds.TYPES[selectedType];
+        String work = type;
+        if ("Diğer".equals(type)) {
+            work = LearnedTerms.workKey(type, etNote.getText().toString());
+        }
+        if (work.isEmpty()) {
+            return;
+        }
+        HabitModel.Habit product = habits.product(work);
+        if (product != null) {
+            habitForm.text(etNote, product, product.value);
+        }
+        HabitModel.Habit amount = habits.amount(work);
+        String[] units = OperationKinds.form(type).units;
+        int unitIndex = -1;
+        for (int i = 0; amount != null && i < units.length; i++) {
+            if (units[i].equalsIgnoreCase(amount.unit)) {
+                unitIndex = i;
+            }
+        }
+        if (unitIndex >= 0) {
+            final int u = unitIndex;
+            habitForm.text(etQuantity, amount, TezgahQr.field(amount.number), null, () -> spinnerUnit.setSelection(u));
+        }
     }
 
     /** Söylenen birim türün birimlerindeyse onun sırası (ör. sulamada "saat" → 0); değilse 0. */
@@ -225,7 +285,10 @@ public class NewOperationActivity extends Activity {
         name.setPadding(0, dp(6), 0, 0);
         tile.addView(name);
         tile.setContentDescription(type);
-        tile.setOnClickListener(v -> selectType(index, 0));
+        tile.setOnClickListener(v -> {
+            selectType(index, 0);
+            applyTypeHabits();
+        });
         return tile;
     }
 
@@ -316,6 +379,9 @@ public class NewOperationActivity extends Activity {
         long result = databaseHelper.addOperation(gardenId, type, date, quantity, unit, cost, note);
         if (result != -1) {
             syncSavedOperationToCloud(result);
+            if (habitForm != null) {
+                habitForm.saved();
+            }
             meterSaved(quantity, cost);
             Toast.makeText(this, "İşlem kaydedildi", Toast.LENGTH_SHORT).show();
             setResult(RESULT_OK);

@@ -8,4 +8,6 @@
     <exclude domain="sharedpref" path="zd_assistant_scorecard.xml" />
     <!-- Asistanın öğrendiği sözler yalnız bu telefonda kalır (İP4). -->
     <exclude domain="database" path="zd_learned_terms.db" />
+    <!-- "Bu yanlış" düzeltmeleri ve kapanan öneri türleri yalnız bu telefonda (İP5). -->
+    <exclude domain="database" path="zd_habits.db" />
 </full-backup-content>
