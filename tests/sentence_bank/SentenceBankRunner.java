@@ -8,21 +8,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 /**
- * Cümle bankası sınayıcısı (İP1). Her cümleyi uygulamanın GERÇEK çözücülerinden, asistanın bugünkü sırasıyla
- * geçirir ve sonucu cumleler.tsv'deki beklenenle karşılaştırır. Uygulama koduna dokunmaz; yalnız ölçer.
- *
- * Sıra ZeytinAssistantController.submit() ve run() ile aynıdır (bahçesi olan kullanıcı, internet yardımcısı kapalı):
- * kapanış sözü → anlamadıklarım komutu → sohbet (AssistantPersona) → hasat kaydı → alacak sorusu → elek →
- * "elek gir" komutu → salamura/bahçe/gönderi kaydı → işlem → ZeytinAssistantCommand (soru, ekran açma, özel cevap).
- * Controller'da bu sıra değişirse burası da değişmelidir (İP3'te tek kapıya taşınacak).
- *
+ * Cümle bankası sınayıcısı (İP1; İP3'ten beri uygulamanın kendi beynini sınar). Her cümle RuleBrain'e, bahçesi olan
+ * ve internet yardımcısı kapalı bir kullanıcının asistanına yeni söylenmiş gibi verilir (taze sohbet durumu);
+ * karar cumleler.tsv'deki beklenenle karşılaştırılır. Test tarafında ayrı bir karar zinciri yoktur.
  * ELEK alanlarında kilo başı fiyat "<boy>_fiyat" (TL/kg) olarak yazılır (İP2).
  *
  * Kullanım:
@@ -31,7 +23,8 @@ import java.util.Set;
  */
 public final class SentenceBankRunner {
 
-    static final String MISS = "ANLASILMADI";
+    static final String MISS = ActionCatalog.ANLASILMADI;
+    private static final RuleBrain BRAIN = new RuleBrain();
 
     private SentenceBankRunner() {
     }
@@ -41,9 +34,9 @@ public final class SentenceBankRunner {
         final String action;
         final String fields;
 
-        Outcome(String action, Map<String, String> fields) {
-            this.action = action;
-            this.fields = join(fields);
+        Outcome(Decision d) {
+            this.action = d.action;
+            this.fields = d.fieldsText();
         }
 
         boolean understood() {
@@ -52,154 +45,8 @@ public final class SentenceBankRunner {
     }
 
     static Outcome route(String raw) {
-        Map<String, String> f = new LinkedHashMap<>();
-        String n = TurkishText.normalize(raw);
-        if (n.matches(CLOSE)) {
-            return new Outcome("KAPAT", f);
-        }
-        if (AssistantMisses.asksClear(raw)) {
-            return new Outcome("ANLAMADIKLARI_SIL", f);
-        }
-        if (AssistantMisses.asksShow(raw)) {
-            return new Outcome("ANLAMADIKLARI_GOSTER", f);
-        }
-        if (AssistantScorecard.asksShow(raw)) {
-            return new Outcome("KARNE_GOSTER", f);
-        }
-        AssistantPersona persona = AssistantPersona.decode("");
-        if (persona.handle(raw) != null) {
-            return new Outcome("SOHBET", f);
-        }
-        VoiceRecordDialog.Kind record = VoiceRecordDialog.detect(raw);
-        if (record == VoiceRecordDialog.Kind.HARVEST) {
-            harvestFields(raw, f);
-            return new Outcome("HASAT", f);
-        }
-        if (AssistantReceivables.asks(raw)) {
-            return new Outcome("ALACAK_SORU", f);
-        }
-        ElekVoiceEntry elek = ElekVoiceEntry.parse(raw);
-        if (elek != null) {
-            elekFields(elek, f);
-            return new Outcome("ELEK", f);
-        }
-        if (opensElek(n)) {
-            return new Outcome("ELEK_AC", f);
-        }
-        if (record != null) {
-            return new Outcome("KAYIT_" + record.name(), f);
-        }
-        OperationVoiceEntry op = OperationVoiceEntry.parse(raw);
-        if (op != null) {
-            operationFields(op, f);
-            return new Outcome("ISLEM", f);
-        }
-        return command(raw, f);
-    }
-
-    /** ZeytinAssistantController.submit() içindeki kapanış sözü. */
-    private static final String CLOSE = "(tesekkur\\p{L}*|sag ol\\p{L}*|sagol\\p{L}*|tamam bu kadar|bu kadar|yeter|kapat"
-            + "|gorusuruz|hosca kal|eyvallah)( .*)?";
-
-    /** ZeytinAssistantController.run() içindeki "elek gireceğim" kuralı. */
-    private static boolean opensElek(String n) {
-        if (!n.matches(".*\\belek\\b.*")) {
-            return false;
-        }
-        boolean verb = n.matches(".*\\b(gir\\p{L}*|kaydet\\p{L}*|kaydi|ekle\\p{L}*|yaz\\p{L}*|yapacag\\p{L}*|baslat|basla\\p{L}*)\\b.*");
-        boolean question = n.matches(".*(^|\\s)(kac|ne|mi|mu|hangi|nasil|son)(\\s|$).*");
-        return verb && !question;
-    }
-
-    private static Outcome command(String raw, Map<String, String> f) {
-        ZeytinAssistantCommand cmd = ZeytinAssistantCommand.parse(raw);
-        if (cmd.kind == ZeytinAssistantCommand.Kind.UNKNOWN) {
-            if (ZeytinAssistantText.special(raw) != null) {
-                return new Outcome("OZEL_CEVAP", f);
-            }
-            return new Outcome(MISS, f);
-        }
-        if (cmd.kind == ZeytinAssistantCommand.Kind.NAVIGATION) {
-            f.put("ekran", cmd.target);
-            return new Outcome("EKRAN_AC", f);
-        }
-        if (!cmd.grade.isEmpty()) {
-            f.put("boy", cmd.grade);
-        }
-        if (!cmd.opType.isEmpty()) {
-            f.put("islem", cmd.opType);
-        }
-        return new Outcome("SORU_" + cmd.kind.name(), f);
-    }
-
-    private static final String[] GRADE_KEYS = {"double", "1no", "2no", "3no", "4no", "yaglik"};
-
-    private static void elekFields(ElekVoiceEntry e, Map<String, String> f) {
-        for (int i = 0; i < e.kg.length; i++) {
-            if (e.kg[i] > 0) {
-                f.put(GRADE_KEYS[i], num(e.kg[i]));
-            }
-            if (e.price[i] > 0) {
-                f.put(GRADE_KEYS[i] + "_fiyat", num(e.price[i]));
-            }
-        }
-        if (e.sold != null) {
-            f.put("satis", e.sold ? "evet" : "hayir");
-        }
-        if (!e.buyer.isEmpty()) {
-            f.put("alici", e.buyer);
-        }
-    }
-
-    private static void harvestFields(String raw, Map<String, String> f) {
-        HarvestVoiceEntry h = HarvestVoiceEntry.parse(raw);
-        if (h == null) {
-            return;
-        }
-        for (int i = 0; i < h.kg.length; i++) {
-            if (h.kg[i] > 0) {
-                f.put(GRADE_KEYS[i], num(h.kg[i]));
-            }
-        }
-        f.put("toplam", num(h.total));
-        if (h.dayOffset != 0) {
-            f.put("gun", String.valueOf(h.dayOffset));
-        }
-    }
-
-    private static void operationFields(OperationVoiceEntry e, Map<String, String> f) {
-        f.put("tur", OperationKinds.TYPES[e.type]);
-        if (e.dayOffset != 0) {
-            f.put("gun", String.valueOf(e.dayOffset));
-        }
-        if (e.quantity > 0) {
-            f.put("miktar", num(e.quantity));
-            f.put("birim", e.unit);
-        }
-        if (e.cost > 0) {
-            f.put("tutar", num(e.cost));
-        }
-    }
-
-    static String num(double v) {
-        if (v == Math.floor(v)) {
-            return String.valueOf((long) v);
-        }
-        return String.valueOf(v);
-    }
-
-    static String join(Map<String, String> f) {
-        if (f.isEmpty()) {
-            return "-";
-        }
-        StringBuilder b = new StringBuilder();
-        for (Map.Entry<String, String> e : f.entrySet()) {
-            if (b.length() > 0) {
-                b.append(';');
-            }
-            b.append(e.getKey()).append('=').append(e.getValue());
-        }
-        return b.toString();
+        BrainContext context = BrainContext.full(true, AssistantPersona.decode(""));
+        return new Outcome(BRAIN.decide(new Brain.Input(raw), context));
     }
 
     // ============================================================ BANKA
@@ -332,9 +179,5 @@ public final class SentenceBankRunner {
             Outcome o = route(line);
             System.out.println(line + "\t" + o.action + "\t" + o.fields);
         }
-    }
-
-    static String lower(String s) {
-        return s.toLowerCase(new Locale("tr", "TR"));
     }
 }
