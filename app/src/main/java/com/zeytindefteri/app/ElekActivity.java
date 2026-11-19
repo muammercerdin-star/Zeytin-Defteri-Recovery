@@ -3543,8 +3543,10 @@ public class ElekActivity extends Activity {
      * Yalnız bu kayıt için gelen sınıf fiyatları (defter, sesle "2 kilo 220 lira"): sıfır/boş olan sınıf kendi
      * fiyatında kalır. Kaydedince kendi fiyat ayarların geri gelir (QR fişindeki gibi).
      */
-    private void applyRecordPrices(double[] prices) {
-        if (prices == null) return;
+    private boolean applyRecordPrices(double[] prices) {
+        if (prices == null) {
+            return false;
+        }
         boolean priceChanged = false;
         double[] current = {priceDouble, price1, price2, price3, price4, priceOil};
         for (int i = 0; i < current.length && i < prices.length; i++) {
@@ -3563,12 +3565,13 @@ public class ElekActivity extends Activity {
             qrPricesActive = true; // yalnız bu kayıt için; kaydedince kendi fiyatların geri gelir
             updatePriceLabels();
         }
+        return priceChanged;
     }
 
     /** Defterden okunup kontrol ekranında onaylanan kilolar ve (varsa) o kaydın fiyatları. */
     private void applyNotebook(double[] kgValues, double[] prices) {
         setMixedMode(false);
-        applyRecordPrices(prices);
+        boolean priceChanged = applyRecordPrices(prices);
         EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
         double total = 0;
         for (int i = 0; i < kg.length && i < kgValues.length; i++) {
