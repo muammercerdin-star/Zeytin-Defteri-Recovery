@@ -25,6 +25,7 @@ J
     "$A/AssistantMisses.java" "$A/AssistantScorecard.java" "$A/HabitCorrections.java" "$A/HabitRules.java" "$A/AssistantCloud.java" \
     "$A/ActionCatalog.java" "$A/Decision.java" "$A/Brain.java" "$A/BrainContext.java" "$A/RuleBrain.java" \
     "$A/ElekRules.java" "$A/CloudBrain.java" "$A/LearnedTerms.java" "$A/LearnedBrain.java" \
+    "$A/ActionPlan.java" "$A/ElekSaleModel.java" "$A/HabitModel.java" "$A/GradeFormModel.java" \
     "$out/src/ZeytinAssistantData.java" "$@" 2>&1 | grep -v "^Note:"
   BRAIN_CP="$out/classes:$JSON_JAR"
 }

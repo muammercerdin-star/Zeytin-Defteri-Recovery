@@ -119,6 +119,11 @@ final class AssistantMeter {
         }
     }
 
+    /** Çok adımlı iş olayı (İP7): başladı / onaylandı / geri alındı. Yalnız sayı. */
+    static void multiStep(Context context, String owner, String key) {
+        count(context, owner, key, 1);
+    }
+
     /** Öneri olayı (İP5): gösterildi / kabul / "Bu yanlış", türüne göre. Yalnız sayı. */
     static void suggestion(Context context, String owner, String event, String category) {
         String key = AssistantScorecard.suggestionKey(event, category);

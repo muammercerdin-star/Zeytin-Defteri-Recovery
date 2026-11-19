@@ -280,3 +280,14 @@ kalem aşısı yaptık	ISLEM	tur=Diğer;not=Aşılama	dogru	ip5_yeni_isler
 dün 30 ağaca aşı yaptık	ISLEM	tur=Diğer;not=Aşılama;gun=-1;miktar=30;birim=ağaç	dogru	ip5_yeni_isler
 kultivatör çektik	ISLEM	tur=Toprak İşleme	dogru	ip5_yeni_isler
 bugün işçi çalıştı	ISLEM	tur=İşçilik	dogru	ip5_yeni_isler
+Ali Usta'ya 300 kilo sattım, parasını haftaya verecek	SATIS	alici=Ali Usta;kilo=300;odeme=alinmadi;vade=haftaya;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
+Hasan Abi'ye 3 numaradan 250 kilo sattık, kilosu 70 liradan, parasını cuma verecek	ELEK	3no=250;3no_fiyat=70;satis=evet;alici=Hasan Abi	dogru	ip7_elek_kalir
+Kemal'e 1 numara 120 kilo sattım parası sonra	ELEK	1no=120;satis=evet;alici=Kemal	dogru	ip7_elek_kalir
+Ayşe Hanım'a double 80 kilo sattım, parasını ayın 15'inde verecek	ELEK	double=80;satis=evet;alici=Ayşe Hanım	dogru	ip7_elek_kalir
+Kooperatif'e 500 kilo yağlık sattık, ödemesini 10 gün sonra yapacak	ELEK	yaglik=500;satis=evet;alici=Kooperatif	dogru	ip7_elek_kalir
+Mustafa'ya 200 kilo veresiye sattım	SATIS	alici=Mustafa;kilo=200;odeme=alinmadi;adimlar=SATIS,ALACAK	dogru	ip7_cok_adim
+Ali Usta'ya 300 kilo sattım, parasını yarın getirecek	SATIS	alici=Ali Usta;kilo=300;odeme=alinmadi;vade=yarin;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
+Ayşe Hanım'a 80 kilo sattım, parasını ayın 15'inde verecek	SATIS	alici=Ayşe Hanım;kilo=80;odeme=alinmadi;vade=ayin 15;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
+Kooperatif'e 500 kilo sattık, ödemesini 10 gün sonra yapacak	SATIS	alici=Kooperatif;kilo=500;odeme=alinmadi;vade=10 gun sonra;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
+Hasan Abi'ye 250 kilo sattık, kilosu 70 lira, parasını cuma verecek	SATIS	alici=Hasan Abi;kilo=250;fiyat=70;odeme=alinmadi;vade=cuma;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
+Ali Usta'ya 300 kilo sattım, parasını peşin aldım	SORU_SOLD	-	dogru	ip7_tek_eylem

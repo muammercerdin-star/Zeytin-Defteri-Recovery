@@ -25,7 +25,11 @@ final class AssistantScorecard {
     /** Ekran açık unutulmuşsa (30 dakikadan uzun) süre sayılmaz. */
     static final long SPAN_LIMIT_MS = 30L * 60L * 1000L;
 
-    private static final String[] COUNTERS = {UNDERSTOOD, MISSED, FILLED, CORRECTED};
+    /** Çok adımlı iş (İP7): başlayan, onaylanan, geri alınan akış sayısı. */
+    static final String MULTI_STARTED = "cok_adim";
+    static final String MULTI_CONFIRMED = "cok_adim_onay";
+    static final String MULTI_UNDONE = "cok_adim_geri";
+    private static final String[] COUNTERS = {UNDERSTOOD, MISSED, FILLED, CORRECTED, MULTI_STARTED, MULTI_CONFIRMED, MULTI_UNDONE};
 
     /** Öneri sayaçları (İP5), türüne göre: "oneri_gosterilen.alici", "oneri_kabul.fiyat", "oneri_yanlis.urun". */
     static final String SHOWN = "oneri_gosterilen";
@@ -211,7 +215,7 @@ final class AssistantScorecard {
         long fixed = get(stored, CORRECTED);
         int saves = spans(stored).size();
         String suggestions = suggestions(stored);
-        if (ok + miss == 0 && filled == 0 && saves == 0 && suggestions.isEmpty()) {
+        if (ok + miss == 0 && filled == 0 && saves == 0 && suggestions.isEmpty() && multiSteps(stored).isEmpty()) {
             String empty = "Karnem henüz boş. Benimle konuştukça ve kayıt girdikçe dolacak.";
             return new String[]{empty, empty};
         }
@@ -226,12 +230,25 @@ final class AssistantScorecard {
             b.append("\n• Kayıt süresi: henüz kayıt yok");
         }
         b.append(suggestions);
+        b.append(multiSteps(stored));
         b.append("\n\nYalnız sayılar tutulur, cümlelerin karneye girmez. Bu bilgiler yalnız bu telefonda.");
         String speech = "Karnemi ekrana yazdım.";
         if (ok + miss > 0) {
             speech = "Karnemi ekrana yazdım. " + (ok + miss) + " cümlenin " + ok + " tanesini anladım.";
         }
         return new String[]{speech, b.toString()};
+    }
+
+    /** "• Çok adımlı iş: 4 başladı, 3 onaylandı (%75), 1 geri alındı"; hiç yoksa "". */
+    static String multiSteps(String stored) {
+        long started = get(stored, MULTI_STARTED);
+        if (started == 0) {
+            return "";
+        }
+        long confirmed = get(stored, MULTI_CONFIRMED);
+        long undone = get(stored, MULTI_UNDONE);
+        return "\n• Çok adımlı iş: " + started + " başladı, " + confirmed + " onaylandı" + percent(confirmed, started) + ", "
+                + undone + " geri alındı";
     }
 
     /** Öneri satırları (yalnız gösterilmiş türler): "• Öneri · alıcı: 6 gösterildi, 4 kabul, 1 «Bu yanlış»". */

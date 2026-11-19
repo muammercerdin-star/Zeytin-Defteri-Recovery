@@ -137,6 +137,12 @@ final class RuleBrain implements Brain {
             String variant = c.hasGardens ? "soru" : "form";
             return found(ActionCatalog.ISLEM, operationFields(op), variant, "Bahçe işi sözü: " + OperationKinds.TYPES[op.type], op);
         }
+        // İP7: hiçbir kayıt yolu tutmadıysa çok adımlı satış ("…sattım, parasını haftaya verecek"): satış + alacak +
+        // ödeme hatırlatması. Yalnız buraya düşen cümleler değişir; tek eylemli kayıt cümleleri olduğu gibi kalır.
+        ActionPlan plan = ActionPlan.parse(raw);
+        if (plan != null) {
+            return found(ActionCatalog.SATIS, plan.fields(), ActionPlan.VARIANT, "Satış ve sonra ödeme sözü: çok adımlı", plan);
+        }
         return question(raw, cmd);
     }
 

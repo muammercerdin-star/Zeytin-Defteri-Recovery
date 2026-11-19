@@ -83,7 +83,10 @@ public class ActionCatalogTest {
                 }
             }
         }
-        for (String never : new String[]{ActionCatalog.SATIS, ActionCatalog.TAHSILAT, ActionCatalog.HATIRLATMA, ActionCatalog.TEZGAH_TARTI}) {
+        // İP7: satış yalnız çok adımlı cümlede üretilir (formu doldurur, onaysız yazmaz); öbürleri hâlâ üretilmez.
+        check(produced.contains(ActionCatalog.SATIS) && ActionCatalog.get(ActionCatalog.SATIS).produced, "İP7: satış üretilir");
+        check(ActionCatalog.alwaysConfirm(ActionCatalog.SATIS), "İP7: üretilen satış da hep onaylı");
+        for (String never : new String[]{ActionCatalog.TAHSILAT, ActionCatalog.HATIRLATMA, ActionCatalog.TEZGAH_TARTI}) {
             check(!produced.contains(never), "henüz üretilmez: " + never);
             check(!ActionCatalog.get(never).produced, "katalogda üretilmez işaretli: " + never);
         }

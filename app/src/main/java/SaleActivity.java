@@ -67,6 +67,13 @@ public class SaleActivity extends Activity {
     /** Sezilen alışkanlıklar (İP5): kayıtlardan her açılışta yeniden hesaplanır; yoksa form bugünkü gibi. */
     private HabitModel habits;
     private HabitForm habitForm;
+    /** Çok adımlı satış cümlesi (İP7): asistandan gelir; varsa form görünür doldurulur, tek onayla yazılır. */
+    public static final String EXTRA_PLAN = "action_plan";
+    private ActionRunner runner;
+    private boolean runnerSaving;
+    private boolean runnerFailed;
+    private long runnerSaleId;
+    private long runnerNewBuyer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,7 +104,11 @@ public class SaleActivity extends Activity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         btnSaveSale.setOnClickListener(v -> saveSale());
         updateSaleKindUi();
-        if (savedInstanceState == null) {
+        String planText = getIntent() == null ? null : getIntent().getStringExtra(EXTRA_PLAN);
+        ActionPlan plan = savedInstanceState == null && planText != null ? ActionPlan.parse(planText) : null;
+        if (plan != null && realSale) {
+            startRunner(plan);
+        } else if (savedInstanceState == null) {
             applyHabits(getIntent() == null ? -1L : getIntent().getLongExtra("garden_id", -1L));
         }
     }
@@ -132,6 +143,131 @@ public class SaleActivity extends Activity {
             habitForm.text(etBuyerName, buyer, buyer.value, () -> applyPriceHabits(""));
         }
         applyPriceHabits(text(etBuyerName));
+    }
+
+    /**
+     * Görünür uygulayıcı (İP7): Tanecik formu doldurur, sonunda "Kaydedeyim mi?". Fiyat ve sınıf cümlede yoksa
+     * yalnız YÜKSEK güvenli alışkanlıktan; yoksa sorulur. Onaydan önce hiçbir şey yazılmaz.
+     */
+    private void startRunner(ActionPlan plan) {
+        habits = HabitRecords.load(this);
+        String grade = plan.grade;
+        if (grade.isEmpty() && !plan.buyer.isEmpty()) {
+            HabitModel.Habit g = habits.grade(plan.buyer);
+            grade = g != null && g.level == HabitModel.Level.HIGH ? g.value : "";
+        }
+        double price = 0;
+        if (plan.price <= 0 && !plan.buyer.isEmpty() && !grade.isEmpty()) {
+            HabitModel.Habit p = habits.price(plan.buyer, grade);
+            price = p != null && p.level == HabitModel.Level.HIGH ? p.number : 0;
+        }
+        runner = new ActionRunner(this, runnerForm(), plan);
+        final String habitGrade = grade;
+        final double habitPrice = price;
+        View scroll = findViewById(R.id.saleScroll);
+        scroll.post(() -> runner.start(habitPrice, habitGrade));
+    }
+
+    private ActionRunner.Form runnerForm() {
+        return new ActionRunner.Form() {
+            @Override
+            public long saveForRunner() {
+                runnerSaleId = 0;
+                runnerNewBuyer = 0;
+                runnerFailed = false;
+                runnerSaving = true;
+                saveSale();
+                runnerSaving = false;
+                if (runnerSaleId > 0) {
+                    return runnerSaleId;
+                }
+                return runnerFailed ? -1 : 0;
+            }
+
+            @Override
+            public long newBuyerId() {
+                return runnerNewBuyer;
+            }
+
+            @Override
+            public long gardenId() {
+                int position = spinnerGarden.getSelectedItemPosition();
+                return position >= 0 && position < gardens.size() ? gardens.get(position).id : 0;
+            }
+
+            @Override
+            public double netTotal() {
+                double gross = 0;
+                for (int i = 0; i < GradeFormModel.CODES.length; i++) {
+                    gross += number(kgFields[i]) * number(priceFields[i]);
+                }
+                return Math.max(0, gross - number(etTransportCost) - number(etDeductions));
+            }
+
+            @Override
+            public String buyerName() {
+                return text(etBuyerName);
+            }
+
+            @Override
+            public double kilos() {
+                double total = 0;
+                for (EditText field : kgFields) {
+                    total += number(field);
+                }
+                return total;
+            }
+
+            @Override
+            public String gradeLabel() {
+                int only = onlyGrade();
+                return only < 0 ? "" : GradeFormModel.LABELS[only];
+            }
+
+            @Override
+            public double price() {
+                int only = onlyGrade();
+                return only < 0 ? 0 : number(priceFields[only]);
+            }
+
+            @Override
+            public void deleteBuyerIfUnused(long buyerId) {
+                databaseHelper.deleteBuyerIfUnused(buyerId);
+            }
+
+            @Override
+            public String owner() {
+                return databaseHelper.getActiveOwnerUid();
+            }
+
+            @Override
+            public void close(boolean saved) {
+                closeRunner(saved);
+            }
+        };
+    }
+
+    /** Çok adımlı akış bitti: kaydedildiyse sonuç bildirilir, ekran kapanır. */
+    private void closeRunner(boolean saved) {
+        if (saved) {
+            setResult(RESULT_OK);
+        }
+        finish();
+    }
+
+    /** Kilosu yazılı tek sınıf (özet için); hiç ya da birden çoksa -1. */
+    private int onlyGrade() {
+        int found = -1;
+        for (int i = 0; i < kgFields.length; i++) {
+            if (number(kgFields[i]) <= 0) {
+                continue;
+            }
+            if (found >= 0) {
+                return -1;
+            }
+            found = i;
+        }
+        return found;
     }
 
     /** Bu alıcıya son kilo fiyatları (sınıf sınıf); alıcı değişince öncekiler kalkar. */
@@ -476,6 +612,9 @@ public class SaleActivity extends Activity {
                     "Satış formundan oluşturuldu");
             if (createdBuyer <= 0) { failSave("Alıcı kaydı oluşturulamadı."); return; }
             buyerId = createdBuyer;
+            if (runnerSaving && !buyerExisted) {
+                runnerNewBuyer = createdBuyer;   // Geri al bu alıcıyı da (kullanılmıyorsa) siler
+            }
         }
 
         long saleId = saleRepository.addSaleWithGrades(
@@ -492,6 +631,21 @@ public class SaleActivity extends Activity {
         syncSavedSale(saleId);
         if (habitForm != null) {
             habitForm.saved();
+        }
+        if (runnerSaving) {
+            // Çok adımlı akış: hatırlatma ve Geri al ActionRunner'da; ekran onun "Tamam"ıyla kapanır.
+            runnerSaleId = saleId;
+            saving = false;
+            return;
+        }
+        if (realSale && payment != GradeFormModel.Payment.FULL && !dueDate.isEmpty() && ActionRunner.autoReminder(this)) {
+            // İzin basamağı (İP7): çiftçi "hep yap" dediyse ödeme günü hatırlatması sormadan kurulur ve haber verilir.
+            String iso = dueDate.substring(6, 10) + "-" + dueDate.substring(3, 5) + "-" + dueDate.substring(0, 2);
+            long reminder = PaymentReminders.addForSale(this, databaseHelper.getActiveOwnerUid(), saleId,
+                    gardens.get(gardenPosition).id, text(etBuyerName), Math.max(0, net - received), iso);
+            if (reminder > 0) {
+                Toast.makeText(this, HarmlessPermission.told(ActionPlan.dayText(iso)), Toast.LENGTH_LONG).show();
+            }
         }
         Toast.makeText(this, (realSale ? "Satış" : "Fiyat teklifi") + " kaydedildi", Toast.LENGTH_SHORT).show();
         Intent result = new Intent();
@@ -512,6 +666,9 @@ public class SaleActivity extends Activity {
     }
 
     private void failSave(String message) {
+        if (runnerSaving) {
+            runnerFailed = true;
+        }
         saving = false;
         btnSaveSale.setEnabled(true);
         btnSaveSale.setText(realSale ? "Satışı Kaydet" : "Teklifi Kaydet");
@@ -570,6 +727,10 @@ public class SaleActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (runner != null) {
+            // Geri tuşu ya da ekran kapanması: yarım kalan akış hiçbir şey yazmaz (yazma yalnız onayla).
+            runner.abandon();
+        }
         super.onDestroy();
         if (databaseHelper != null) databaseHelper.close();
     }

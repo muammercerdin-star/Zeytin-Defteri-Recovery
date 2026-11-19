@@ -98,6 +98,8 @@ final class SettingsView extends ScrollView {
         addSection(body, activity, "UYGULAMA",
                 row(activity, R.drawable.ic_assistant_nav_archive, "Sesli Asistan", "Asistanınız her an yanınızda", null, assistant),
                 learnedRow(activity),
+                fastFillRow(activity),
+                autoReminderRow(activity),
                 typingRow(activity),
                 prayerRow(activity),
                 tanecikRow(activity),
@@ -136,6 +138,36 @@ final class SettingsView extends ScrollView {
         footer.setGravity(Gravity.CENTER);
         footer.setPadding(0, dp(activity, 10), 0, 0);
         body.addView(footer);
+    }
+
+    /** Hızlı doldurma (İP7): asistan formu animasyonsuz doldurur; onay ve Geri al aynı kalır. */
+    private static View fastFillRow(Activity activity) {
+        final TextView[] value = new TextView[1];
+        View row = row(activity, R.drawable.ic_settings_shield, "Hızlı doldurma",
+                "Asistan formu uçmadan, hemen doldursun; onay ve Geri al aynı kalır",
+                ActionRunner.fast(activity) ? "Açık" : "Kapalı",
+                () -> {
+                    boolean on = !ActionRunner.fast(activity);
+                    ActionRunner.setFast(activity, on);
+                    if (value[0] != null) value[0].setText(on ? "Açık" : "Kapalı");
+                });
+        value[0] = (TextView) ((LinearLayout) row).getChildAt(2);
+        return row;
+    }
+
+    /** İzin basamağı (İP7): ödeme günü hatırlatmasını sormadan kur. Çiftçi "hep yap" dediyse açık; buradan kapatılır. */
+    private static View autoReminderRow(Activity activity) {
+        final TextView[] value = new TextView[1];
+        View row = row(activity, R.drawable.ic_bell_line, "Ödeme günü hatırlatması",
+                "Veresiye satışta ödeme günü varsa hatırlatmayı sormadan kur ve haber ver",
+                ActionRunner.autoReminder(activity) ? "Açık" : "Kapalı",
+                () -> {
+                    boolean on = !ActionRunner.autoReminder(activity);
+                    ActionRunner.setAutoReminder(activity, on);
+                    if (value[0] != null) value[0].setText(on ? "Açık" : "Kapalı");
+                });
+        value[0] = (TextView) ((LinearLayout) row).getChildAt(2);
+        return row;
     }
 
     /** Öğrendiklerim (İP6): öğretilen söz sayısı değer olarak görünür (yoksa boş). */

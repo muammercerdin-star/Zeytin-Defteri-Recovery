@@ -28,6 +28,8 @@ final class AssistantOutcome {
         OPERATION_QUESTIONS,
         /** Bahçe işi: işlem formu dolu açılır. */
         OPERATION_FORM,
+        /** Çok adımlı iş (İP7): satış + alacak + ödeme hatırlatması; form görünür dolar, tek onayla yazılır. */
+        MULTI_STEP,
         /** Kayıt yolu yok: internet yardımcısı denenir, sonra rest(). */
         LATER,
         /** Selam, teşekkür, ilaç dozu gibi hazır cevap. */
@@ -72,6 +74,9 @@ final class AssistantOutcome {
         }
         if (op != null) {
             return Kind.OPERATION_FORM;
+        }
+        if (LearnedBrain.payload(d, ActionPlan.class) != null) {
+            return Kind.MULTI_STEP;
         }
         return Kind.LATER;
     }

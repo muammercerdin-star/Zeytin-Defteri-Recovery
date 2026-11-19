@@ -120,8 +120,9 @@ final class ActionCatalog {
         // İlk eylemler (iş emri): ElekGir, Satış, Tahsilat, İşlem, Hasat, Hatırlatma
         add(new Action(ELEK, "Elek gir", Kind.KAYIT, "Hangi elek, kaç kilo?", Level.FORMU_DOLDUR, true, "",
                 "double", "1no", "2no", "3no", "4no", "yaglik", "fiyat", "satis", "alici", "bahce"));
-        add(new Action(SATIS, "Satış", Kind.SATIS, "Kime, kaç kilo, kaç liradan sattın?", Level.FORMU_DOLDUR, false, "",
-                "alici", "kilo", "fiyat", "tutar"));
+        // İP7: yalnız çok adımlı satış cümlesinde üretilir (satış + alacak + ödeme hatırlatması), formu doldurur.
+        add(new Action(SATIS, "Satış", Kind.SATIS, "Kime, kaç kilo, kaç liradan sattın?", Level.FORMU_DOLDUR, true, "",
+                "alici", "kilo", "fiyat", "tutar", "sinif", "odeme", "vade", "adimlar"));
         add(new Action(TAHSILAT, "Tahsilat", Kind.ODEME, "Kimden, ne kadar aldın?", Level.FORMU_DOLDUR, false, "",
                 "alici", "tutar", "tarih"));
         add(new Action(ISLEM, "Bahçe işi", Kind.KAYIT, "Hangi bahçede ne yaptın?", Level.FORMU_DOLDUR, true, "",

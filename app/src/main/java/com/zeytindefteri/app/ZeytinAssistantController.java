@@ -817,6 +817,14 @@ public final class ZeytinAssistantController {
                         Toast.makeText(activity,told+"İşlem formu açılıyor: "+where+op.summary()+". Kontrol edip Kaydet'e bas.",Toast.LENGTH_LONG).show();dialog.dismiss();host.openOperationEntry(gid,op);}});
                     return;
                 }
+                // İP7: çok adımlı satış ("…sattım, parasını haftaya verecek"): satış formu açılır, Tanecik görünür doldurur,
+                // sonunda tek "Kaydedeyim mi?". Onaydan önce hiçbir şey yazılmaz; hepsi tek "Geri al" ile geri alınır.
+                if(path==AssistantOutcome.Kind.MULTI_STEP){
+                    main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Satışı hazırlıyorum…");haptic();
+                        Toast.makeText(activity,"Satışı birlikte dolduruyoruz; sonunda sana soracağım.",Toast.LENGTH_LONG).show();dialog.dismiss();
+                        activity.startActivity(new android.content.Intent(activity,SaleActivity.class).putExtra(SaleActivity.EXTRA_PLAN,raw));}});
+                    return;
+                }
                 // Kuralların anlamadığı iş cümlesi: izin varsa internetteki yardımcıya (Gemma 4) sorulur. Cevap cümleyle
                 // karşılaştırılarak denetlenir (AssistantCloud.accept), okunur, "evet" denmeden kaydedilmez.
                 // Soru kalıbı değil, geçmiş zamanlı bir iş cümlesiyse ("ağaçların altını temizledik, 2 amele tuttuk") kayıt sorusu

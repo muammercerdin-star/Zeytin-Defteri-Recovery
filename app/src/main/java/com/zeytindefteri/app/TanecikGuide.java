@@ -23,6 +23,11 @@ import java.util.List;
  * Tanecik başka bir ekranda (ör. Elek kaydı) gösterim yapar: pervanesiyle alandan alana uçar, eliyle gösterir,
  * gerekirse örnek değeri yazar ve büyük altyazıyla anlatır. Kaydet'e BASMAZ; yazdığını sonunda siler, ekranı kapatır
  * (ana sayfadaki tur kaldığı yerden sürer). Ekranın üstünde ince bir katmandır; dokunuşları engellemez.
+ *
+ * Doldurma kipi (İP7, ActionRunner): aynı uçma ve harf harf yazma; ama yazdığını SİLMEZ, ekranı KAPATMAZ, Kaydet'e
+ * yine BASMAZ; bitince onDone. Adım türü "@tap" ise hedefi dokunmak için doldurucuya verir (tapper; turda yok, Tanecik
+ * kendisi hiçbir düğmeye basmaz). Hızlı modda uçmaz,
+ * anında yazar ve alan alan konuşmaz. Gece (22:00–05:00) Tanecik konuşmaz.
  */
 final class TanecikGuide {
     static final String EXTRA = "tanecik_tour";
@@ -41,10 +46,30 @@ final class TanecikGuide {
     private final int w, h;
     private boolean flying, done;
     private int prop;
+    /** Doldurma kipi: bitince çağrılır (null = tur kipi). */
+    private final Runnable onDone;
+    /** Doldurma kipi: çiftçi "Durdur" dedi. */
+    private final Runnable onStop;
+    private final boolean fast;
+    private final boolean quiet;
+    /** Doldurma kipi: "@tap" adımında hedefi kime vereceği (izinli düğmeler orada seçilir); turda null. */
+    private final java.util.function.Consumer<View> tapper;
 
     TanecikGuide(Activity activity, List<TanecikTour.GuideStep> steps) {
+        this(activity, steps, false, null, null, null);
+    }
+
+    /** Doldurma kipi (onDone dolu) ya da tur kipi (onDone null). fast: animasyonsuz, alan alan konuşmadan. */
+    TanecikGuide(Activity activity, List<TanecikTour.GuideStep> steps, boolean fast, Runnable onDone, Runnable onStop,
+                 java.util.function.Consumer<View> tapper) {
         this.activity = activity;
+        this.tapper = tapper;
         this.steps = steps;
+        this.fast = fast;
+        this.onDone = onDone;
+        this.onStop = onStop;
+        int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+        this.quiet = onDone != null && TanecikLines.sleeping(hour);
         w = dp(64);
         h = Math.round(w * 270f / 240f);
         layer = new FrameLayout(activity);
@@ -60,7 +85,7 @@ final class TanecikGuide {
         voice = new TanecikVoice(activity, layer).fast();
 
         TextView stop = new TextView(activity);
-        stop.setText("✕ Turu bitir");
+        stop.setText(onDone == null ? "✕ Turu bitir" : "✕ Durdur");
         stop.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         stop.setTypeface(Typeface.DEFAULT_BOLD);
         stop.setTextColor(0xFF24341A);
@@ -69,11 +94,32 @@ final class TanecikGuide {
         bg.setColor(0xE6EEF3E8);
         bg.setCornerRadius(dp(20));
         stop.setBackground(bg);
-        stop.setOnClickListener(v -> { TanecikTour.cancelRequested = true; finish(); });
+        stop.setOnClickListener(v -> stopPressed());
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.END);
         lp.bottomMargin = dp(18);
         lp.rightMargin = dp(14);
         layer.addView(stop, lp);
+    }
+
+    private void stopPressed() {
+        if (onDone == null) {
+            TanecikTour.cancelRequested = true;
+            finish();
+            return;
+        }
+        done = true;
+        handler.removeCallbacksAndMessages(null);
+        voice.stop();
+        removeLayer();
+        if (onStop != null) {
+            onStop.run();
+        }
+    }
+
+    private void removeLayer() {
+        if (layer.getParent() instanceof ViewGroup) {
+            ((ViewGroup) layer.getParent()).removeView(layer);
+        }
     }
 
     void start() {
@@ -98,6 +144,10 @@ final class TanecikGuide {
         TanecikTour.GuideStep st = steps.get(i);
         View v = target(st.view);
         if (v == null || !v.isShown()) { step(i + 1); return; }
+        if (fast) {
+            fastStep(v, st, i);
+            return;
+        }
         ScrollView sv = scrollerOf(v);
         if (sv != null) {
             int top = offsetIn(v, sv);
@@ -111,9 +161,31 @@ final class TanecikGuide {
         body.setImageResource(R.drawable.tanecik_gosteriyor);
         v.animate().scaleX(1.06f).scaleY(1.06f).setDuration(160)
                 .withEndAction(() -> v.animate().scaleX(1f).scaleY(1f).setDuration(160).start()).start();
-        Runnable say = () -> voice.say(st.text, () -> handler.postDelayed(() -> step(i + 1), 120));
+        Runnable next = () -> handler.postDelayed(() -> step(i + 1), 120);
+        Runnable say = quiet ? next : () -> voice.say(st.text, next);
+        if ("@tap".equals(st.type)) {
+            tap(v);
+            say.run();
+            return;
+        }
         if (!st.type.isEmpty() && v instanceof EditText) type((EditText) v, st.type, 0, say);
         else say.run();
+    }
+
+    private void tap(View v) {
+        if (tapper != null) {
+            tapper.accept(v);
+        }
+    }
+
+    /** Hızlı mod: uçmadan, anında yazar ya da dokunur; alan alan konuşmaz. */
+    private void fastStep(View v, TanecikTour.GuideStep st, int i) {
+        if ("@tap".equals(st.type)) {
+            tap(v);
+        } else if (!st.type.isEmpty() && v instanceof EditText) {
+            ((EditText) v).setText(st.type);
+        }
+        handler.post(() -> step(i + 1));
     }
 
     /** Hedef: "tur:" ile başlıyorsa etiket (programla kurulan ekranlar, ör. Tezgâh), değilse görünüm adı (R.id). */
@@ -163,6 +235,14 @@ final class TanecikGuide {
 
     private void finish() {
         if (done) return;
+        if (onDone != null) {
+            // Doldurma kipi: yazılanlar formda kalır, ekran açık kalır (kaydetmek çiftçinin onayıyla).
+            done = true;
+            handler.removeCallbacksAndMessages(null);
+            removeLayer();
+            onDone.run();
+            return;
+        }
         done = true;
         handler.removeCallbacksAndMessages(null);
         voice.stop();

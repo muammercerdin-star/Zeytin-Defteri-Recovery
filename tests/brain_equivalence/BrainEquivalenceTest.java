@@ -31,6 +31,7 @@ public class BrainEquivalenceTest {
         int learnedDiffs = 0;
         int newCommand = 0;
         int noteAdded = 0;
+        int planned = 0;
         boolean[][] dialogs = {{true, true}, {false, true}, {true, false}};   // {opDialogNull, recDialogNull}
         long compared = 0;
         int diffs = 0;
@@ -61,6 +62,9 @@ public class BrainEquivalenceTest {
                         if (!sameLearned && onlyNote(want, viaLearned)) {
                             sameLearned = true;
                         }
+                        if (!sameLearned && newPlan(want, viaLearned)) {
+                            sameLearned = true;
+                        }
                         if (!sameLearned) {
                             learnedDiffs++;
                             if (learnedDiffs <= 20) {
@@ -71,6 +75,10 @@ public class BrainEquivalenceTest {
                         if (!same && onlyNote(want, got)) {
                             same = true;
                             noteAdded++;
+                        }
+                        if (!same && newPlan(want, got)) {
+                            same = true;
+                            planned++;
                         }
                         if (!same) {
                             diffs++;
@@ -86,6 +94,8 @@ public class BrainEquivalenceTest {
         System.out.println(sentences.size() + " cümle (" + bank + " cümle bankası) · " + compared + " karşılaştırma · " + diffs + " fark");
         System.out.println("Öğrenilen sözler beyni, boş sözlük: " + compared + " karşılaştırma · " + learnedDiffs + " fark"
                 + " (yeni komut \"öğrendiklerini söyle\": " + newCommand + ")");
+        System.out.println("İP7 bilinçli fark: kayıt yolu tutmayan satış + sonra ödeme cümlesi çok adımlı satış oldu: " + planned
+                + " karşılaştırma");
         System.out.println("İP5 bilinçli fark: Diğer işine not alanı eklendi (\"ot biçtik\" → not=Ot biçme): " + noteAdded + " karşılaştırma");
         if (diffs > 0 || learnedDiffs > 0) {
             System.out.println("FAIL birebir aynılık");
@@ -102,6 +112,17 @@ public class BrainEquivalenceTest {
         }
         String without = got.fieldsText().replace(";not=" + note, "");
         return want[0].equals(got.action) && want[1].equals(without) && want[2].equals(got.variant);
+    }
+
+    /**
+     * İP7: eskiden kayıt değildi (soru ya da anlaşılmadı) ve şimdi çok adımlı satış. Eskiden kayda giden bir cümle
+     * (elek, işlem, hasat...) asla buraya dönmez: o fark sayılır.
+     */
+    static boolean newPlan(String[] want, Decision got) {
+        boolean wasRecord = want[0].equals(ActionCatalog.ELEK) || want[0].equals(ActionCatalog.ISLEM)
+                || want[0].equals(ActionCatalog.HASAT) || want[0].startsWith("KAYIT_") || want[0].equals(ActionCatalog.ELEK_AC)
+                || want[0].equals(ActionCatalog.ALACAK_SORU);
+        return !wasRecord && got.is(ActionCatalog.SATIS) && ActionPlan.VARIANT.equals(got.variant);
     }
 
     static int bankSize(Path root) throws IOException {

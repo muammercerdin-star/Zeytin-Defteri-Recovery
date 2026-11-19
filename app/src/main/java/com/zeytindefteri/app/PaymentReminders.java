@@ -44,6 +44,62 @@ public final class PaymentReminders {
                 (saved, scheduled) -> { });
     }
 
+    /**
+     * Çok adımlı satışın ödeme günü hatırlatması (İP7): onay anında, eşzamanlı yazılır ki "Geri al" numarasını bilsin.
+     * Söz verilen gün 09:00; geçmiş ya da geçersizse -1. Notun sonundaki "[sale:ID]" para alınınca kapatmayı sağlar.
+     */
+    static long addForSale(Context context, String owner, long saleId, long gardenId, String buyer, double amount, String dueIso) {
+        if (!SalePayStatus.valid(dueIso)) {
+            return -1;
+        }
+        Calendar c = Calendar.getInstance();
+        c.set(Integer.parseInt(dueIso.substring(0, 4)), Integer.parseInt(dueIso.substring(5, 7)) - 1,
+                Integer.parseInt(dueIso.substring(8, 10)), 9, 0, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        long at = c.getTimeInMillis();
+        if (at <= System.currentTimeMillis()) {
+            return -1;
+        }
+        String who = buyer == null || buyer.trim().isEmpty() ? "Alıcı" : buyer.trim();
+        String title = "Ödeme günü · " + who;
+        String note = ActionPlan.ablative(who) + " " + ElekSaleModel.tl(amount) + " alınacak (satış). " + tag(saleId);
+        Integer garden = gardenId > 0 ? (int) gardenId : null;
+        Context app = context.getApplicationContext();
+        synchronized (LocalReminderScheduler.LOCK) {
+            try (DatabaseHelper db = new DatabaseHelper(app)) {
+                if (!(owner == null ? "" : owner).equals(db.getActiveOwnerUid())) {
+                    return -1;
+                }
+                ReminderRepository repo = new ReminderRepository(db);
+                long id = repo.addReminder(garden, title, TYPE, at, "NONE", note);
+                if (id > 0) {
+                    LocalReminderScheduler s = new LocalReminderScheduler(app);
+                    s.resetDelivery(id);
+                    s.schedule(repo, id);
+                }
+                return id;
+            } catch (RuntimeException e) {
+                return -1;
+            }
+        }
+    }
+
+    /** "Geri al": hatırlatmayı siler, alarmını iptal eder. */
+    static boolean remove(Context context, long reminderId) {
+        if (reminderId <= 0) {
+            return false;
+        }
+        Context app = context.getApplicationContext();
+        synchronized (LocalReminderScheduler.LOCK) {
+            try (DatabaseHelper db = new DatabaseHelper(app)) {
+                new LocalReminderScheduler(app).cancel(reminderId);
+                return new ReminderRepository(db).deleteReminder(reminderId);
+            } catch (RuntimeException e) {
+                return false;
+            }
+        }
+    }
+
     private static long openReminder(DatabaseHelper helper, String owner, long saleId) {
         try {
             Cursor c = helper.getReadableDatabase().rawQuery("SELECT id FROM reminders WHERE COALESCE(owner_uid,'')=? "
