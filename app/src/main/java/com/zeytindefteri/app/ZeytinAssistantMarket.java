@@ -53,7 +53,7 @@ final class ZeytinAssistantMarket {
         String s = " " + (normalized == null ? "" : normalized) + " ";
         String best = "", bestName = "";
         for (Map.Entry<String, String> e : regions.entrySet()) {
-            String name = ZeytinAssistantCommand.normalize(MeydanMarketStrip.shortRegion(e.getValue()));
+            String name = TurkishText.normalize(MeydanMarketStrip.shortRegion(e.getValue()));
             if (name.length() < 3) continue;
             if (s.matches(".* " + java.util.regex.Pattern.quote(name) + "[a-z]* .*") && name.length() > bestName.length()) {
                 best = e.getKey(); bestName = name;

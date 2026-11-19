@@ -30,7 +30,7 @@ public final class ElekVoiceBuyer {
         StringBuilder b = new StringBuilder();
         for (String w : t.split("\\s+")) {
             if (w.isEmpty()) continue;
-            String k = ElekVoiceEntry.normalize(w);
+            String k = TurkishText.normalize(w);
             boolean filler = false;
             for (String f : FILLER) if (f.equals(k)) { filler = true; break; }
             if (filler) continue;
@@ -67,17 +67,17 @@ public final class ElekVoiceBuyer {
     }
 
     private static Match find(String name, List<String> buyers) {
-        String key = ElekVoiceEntry.normalize(name);
+        String key = TurkishText.normalize(name);
         List<String> hits = new ArrayList<>();
         if (buyers != null) {
             for (String b : buyers) {
                 if (b == null || b.trim().isEmpty()) continue;
-                if (ElekVoiceEntry.normalize(b).equals(key)) return new Match(Kind.EXISTING, b.trim(), single(b.trim()));
+                if (TurkishText.normalize(b).equals(key)) return new Match(Kind.EXISTING, b.trim(), single(b.trim()));
             }
             String[] said = key.split(" ");
             for (String b : buyers) {
                 if (b == null || b.trim().isEmpty()) continue;
-                String[] have = ElekVoiceEntry.normalize(b).split(" ");
+                String[] have = TurkishText.normalize(b).split(" ");
                 boolean all = true;
                 for (String s : said) {
                     boolean found = false;

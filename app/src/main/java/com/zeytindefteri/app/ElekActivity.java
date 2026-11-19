@@ -371,8 +371,10 @@ public class ElekActivity extends Activity {
             final double[] voiceKg = getIntent().getDoubleArrayExtra(EXTRA_VOICE_KG);
             final int voiceSold = getIntent().getIntExtra(EXTRA_VOICE_SOLD, -1);
             final String voiceBuyer = getIntent().getStringExtra(EXTRA_VOICE_BUYER);
+            final double[] voicePrice = getIntent().getDoubleArrayExtra(EXTRA_VOICE_PRICE);
             getIntent().removeExtra(EXTRA_VOICE_KG);
             getWindow().getDecorView().post(() -> {
+                applyRecordPrices(voicePrice);
                 applyVoiceEntry(voiceKg, voiceSold, voiceBuyer);
                 // Sohbet sürsün: asistan elek ekranında konuşmaya devam eder ("Başka numara var mı?"), "evet"le kaydeder.
                 if (selectedGardenId > 0) voiceSession().start("Yazdım. Başka numara var mı? Bitince bitti de.");
@@ -416,8 +418,9 @@ public class ElekActivity extends Activity {
                 } catch (RuntimeException ignored) { }
                 return names;
             }
-            @Override public void fill(double[] values, Boolean sold, String buyer) {
+            @Override public void fill(double[] values, double[] prices, Boolean sold, String buyer) {
                 setMixedMode(false);
+                applyRecordPrices(prices);
                 EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
                 for (int i = 0; i < kg.length && i < values.length; i++) {
                     if (kg[i] == null) continue;
@@ -485,6 +488,8 @@ public class ElekActivity extends Activity {
     static final String EXTRA_VOICE_KG = "voice_kg";
     static final String EXTRA_VOICE_SOLD = "voice_sold";
     static final String EXTRA_VOICE_BUYER = "voice_buyer";
+    /** Sesle söylenen kilo başı fiyatlar (TL/kg, sınıf sırasıyla; 0 = söylenmedi). */
+    static final String EXTRA_VOICE_PRICE = "voice_price";
 
     /** Sesle söylenen kiloları forma koyar; satış ve alıcı söylendiyse onları da. Kaydetmez. */
     private void applyVoiceEntry(double[] kgValues, int sold, String buyer) {
@@ -3534,9 +3539,12 @@ public class ElekActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    /** Defterden okunup kontrol ekranında onaylanan kilolar ve (varsa) o kaydın fiyatları. */
-    private void applyNotebook(double[] kgValues, double[] prices) {
-        setMixedMode(false);
+    /**
+     * Yalnız bu kayıt için gelen sınıf fiyatları (defter, sesle "2 kilo 220 lira"): sıfır/boş olan sınıf kendi
+     * fiyatında kalır. Kaydedince kendi fiyat ayarların geri gelir (QR fişindeki gibi).
+     */
+    private void applyRecordPrices(double[] prices) {
+        if (prices == null) return;
         boolean priceChanged = false;
         double[] current = {priceDouble, price1, price2, price3, price4, priceOil};
         for (int i = 0; i < current.length && i < prices.length; i++) {
@@ -3555,6 +3563,12 @@ public class ElekActivity extends Activity {
             qrPricesActive = true; // yalnız bu kayıt için; kaydedince kendi fiyatların geri gelir
             updatePriceLabels();
         }
+    }
+
+    /** Defterden okunup kontrol ekranında onaylanan kilolar ve (varsa) o kaydın fiyatları. */
+    private void applyNotebook(double[] kgValues, double[] prices) {
+        setMixedMode(false);
+        applyRecordPrices(prices);
         EditText[] kg = {etKgDouble, etKg1, etKg2, etKg3, etKg4, etKgOil};
         double total = 0;
         for (int i = 0; i < kg.length && i < kgValues.length; i++) {

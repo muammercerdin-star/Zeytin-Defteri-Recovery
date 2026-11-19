@@ -39,7 +39,7 @@ public final class OperationVoiceEntry {
     /** Kayıt cümlesi değilse null. */
     public static OperationVoiceEntry parse(String raw) {
         if (raw == null || raw.contains("?")) return null;
-        String s = ElekVoiceEntry.normalize(raw);
+        String s = TurkishText.normalize(raw);
         if (s.isEmpty() || QUESTION.matcher(s).find()) return null;
         int type = typeOf(s);
         if (type < 0) return null;
@@ -58,16 +58,16 @@ public final class OperationVoiceEntry {
      */
     public static OperationVoiceEntry parseAnswer(String raw) {
         OperationVoiceEntry e = new OperationVoiceEntry();
-        String[] t = ElekVoiceEntry.normalize(raw == null ? "" : raw).split(" ");
+        String[] t = TurkishText.normalize(raw == null ? "" : raw).split(" ");
         amounts(t, e);
         if (e.quantity <= 0) {
             for (int i = 0; i < t.length; i++) {
                 int[] end = new int[1];
-                double v = ElekVoiceEntry.number(t, i, end);
+                double v = TurkishText.number(t, i, end);
                 if (Double.isNaN(v) || v <= 0) continue;
                 if (e.cost > 0 && Math.abs(v - e.cost) < 0.001) { i = Math.max(i, end[0] - 1); continue; }   // "500 verdik" tutar oldu
                 String next = end[0] < t.length ? t[end[0]] : "";
-                if (!unit(next).equals("lira")) { e.quantity = v; e.unit = unit(next); break; }
+                if (!TurkishText.unit(next).equals("lira")) { e.quantity = v; e.unit = TurkishText.unit(next); break; }
                 i = Math.max(i, end[0] - 1);
             }
         }
@@ -95,10 +95,10 @@ public final class OperationVoiceEntry {
         double perHead = 0;
         for (int i = 0; i < t.length; i++) {
             int[] end = new int[1];
-            double v = ElekVoiceEntry.number(t, i, end);
+            double v = TurkishText.number(t, i, end);
             if (Double.isNaN(v) || v <= 0) continue;
             String next = end[0] < t.length ? t[end[0]] : "";
-            String u = unit(next);
+            String u = TurkishText.unit(next);
             // "yevmiye kişi başı 1200", "adam başına 1000 lira": işçi sayısıyla çarpılır
             if (i >= 1 && t[i - 1].matches("basi|basina|basindan") && i >= 2 && t[i - 2].matches("kisi|adam|isci|nefer")) { perHead = v; i = Math.max(i, end[0] - 1); continue; }
             if (u.equals("lira")) { if (e.cost <= 0) e.cost = v; }
@@ -120,26 +120,6 @@ public final class OperationVoiceEntry {
             if (t[k].matches(COST_NOUN)) return true;
         }
         return false;
-    }
-
-    static String unit(String w) {
-        if (w.matches("(lira\\p{L}*|tl|tlye|tllik)")) return "lira";
-        if (w.matches("saat\\p{L}*")) return "saat";
-        if (w.matches("(kilo\\p{L}*|kg)")) return "kg";
-        if (w.matches("(gram\\p{L}*|gr|g)")) return "g";
-        if (w.matches("(litre\\p{L}*|lt|l)")) return "L";
-        if (w.matches("(ml|mililitre\\p{L}*|militre\\p{L}*|cc)")) return "ml";
-        if (w.matches("(ton\\p{L}*)")) return "ton";
-        if (w.matches("(km|kilometre\\p{L}*)")) return "km";
-        if (w.matches("(sefer\\p{L}*)")) return "sefer";
-        if (w.matches("(gun\\p{L}*)")) return "gün";
-        if (w.matches("(kisi\\p{L}*|isci\\p{L}*)")) return "kişi";
-        if (w.matches("(agac\\p{L}*)")) return "ağaç";
-        if (w.matches("(dekar\\p{L}*|donum\\p{L}*)")) return "dekar";
-        if (w.matches("(adet\\p{L}*|tane\\p{L}*|tuzak\\p{L}*)")) return "adet";
-        if (w.matches("(ton\\p{L}*)")) return "ton";
-        if (w.matches("(metrekup\\p{L}*|kup)")) return "m³";
-        return "";
     }
 
     /** Okuma: "ilaçlama, bugün, 500 ml, 300 lira". */

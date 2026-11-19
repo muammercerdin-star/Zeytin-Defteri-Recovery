@@ -11,7 +11,7 @@ cat > "$D/src/com/zeytindefteri/app/ZeytinAssistantData.java" <<'J'
 package com.zeytindefteri.app;
 public final class ZeytinAssistantData { public static Long date(String v){ try{return java.time.LocalDate.parse(v).toEpochDay();}catch(Exception e){return null;} } }
 J
-javac -nowarn -encoding UTF-8 -d "$D/out" $P/ZeytinAssistantHints.java $P/ZeytinAssistantText.java $P/ZeytinAssistantCommand.java \
+javac -nowarn -encoding UTF-8 -d "$D/out" $P/ZeytinAssistantHints.java $P/ZeytinAssistantText.java $P/TurkishText.java $P/ZeytinAssistantCommand.java \
   $P/ZeytinAssistantPeriod.java "$D/src/com/zeytindefteri/app/ZeytinAssistantData.java" tests/assistant_hints/HintsTest.java
 java -Dstdout.encoding=UTF-8 -cp "$D/out" com.zeytindefteri.app.HintsTest
 if [ -f tests/assistant_hints/check_wiring.py ]; then python3 tests/assistant_hints/check_wiring.py; fi

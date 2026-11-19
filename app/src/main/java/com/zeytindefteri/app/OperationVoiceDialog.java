@@ -56,7 +56,7 @@ public final class OperationVoiceDialog {
     }
 
     public Reply handle(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (s.isEmpty()) return ask("Duyamadım. " + question(step));
         if (has(s, "vazgec|vazgectim|iptal|bosver kaydetme|kaydetme")) { step = Step.DONE; return new Reply("Tamam, kaydetmedim.", Action.CANCEL); }
         if (has(s, "formu ac|form ac|elle yazarim|elle girerim")) { step = Step.DONE; return new Reply("Tamam, formu açıyorum.", Action.OPEN_FORM); }
@@ -141,7 +141,7 @@ public final class OperationVoiceDialog {
      */
     Reply correct(String raw, String s) {
         if (!has(s, FIX) && !has(s, "tutar\\p{L}*|masraf\\p{L}*|miktar\\p{L}*|sure\\p{L}*")) return null;
-        String after = ElekVoiceEntry.normalize(afterNot(raw));
+        String after = TurkishText.normalize(afterNot(raw));
         String before = s.contains(" degil") || s.startsWith("degil") ? s.substring(0, Math.max(0, s.indexOf("degil"))).trim() : "";
         boolean changed = false;
 
@@ -208,7 +208,7 @@ public final class OperationVoiceDialog {
     /** Soru sırasında söylenen cümle önceki bir bilgiyi mi düzeltiyor (cevap değil)? Gün, bahçe ya da birimli miktar. */
     private boolean inlineFix(String raw, String s) {
         if (!has(s, "degil|olacak|olmali|yanlis|aslinda")) return false;
-        String after = ElekVoiceEntry.normalize(afterNot(raw));
+        String after = TurkishText.normalize(afterNot(raw));
         if (dayIn(after) != 99 && dayIn(after) != entry.dayOffset) return true;
         String ua = unitIn(after), ub = unitIn(s);
         boolean qtyUnit = (!ua.isEmpty() && !ua.equals("lira")) || (!ub.isEmpty() && !ub.equals("lira"));
@@ -237,7 +237,7 @@ public final class OperationVoiceDialog {
         String[] t = s.split(" ");
         for (int i = 0; i < t.length; i++) {
             int[] end = new int[1];
-            double v = ElekVoiceEntry.number(t, i, end);
+            double v = TurkishText.number(t, i, end);
             if (!Double.isNaN(v) && v > 0) return v;
         }
         return -1;
@@ -248,8 +248,8 @@ public final class OperationVoiceDialog {
         String[] t = s.split(" ");
         for (int i = 0; i < t.length; i++) {
             int[] end = new int[1];
-            double v = ElekVoiceEntry.number(t, i, end);
-            if (!Double.isNaN(v) && v > 0) return end[0] < t.length ? OperationVoiceEntry.unit(t[end[0]]) : "";
+            double v = TurkishText.number(t, i, end);
+            if (!Double.isNaN(v) && v > 0) return end[0] < t.length ? TurkishText.unit(t[end[0]]) : "";
         }
         return "";
     }
@@ -364,7 +364,7 @@ public final class OperationVoiceDialog {
         }
         // "birinci / ikinci"
         String[] order = {"birinci|ilk", "ikinci", "ucuncu", "dorduncu"};
-        String s = ElekVoiceEntry.normalize(raw);
+        String s = TurkishText.normalize(raw);
         for (int i = 0; i < order.length && i < gardens.size(); i++) if (has(s, order[i])) return i;
         return -1;
     }
@@ -381,8 +381,9 @@ public final class OperationVoiceDialog {
         StringBuilder b = new StringBuilder();
         for (String w : raw.split("[\\s,.]+")) {
             if (w.isEmpty()) continue;
-            String k = ElekVoiceEntry.normalize(w);
-            if (k.isEmpty() || k.matches("\\d+([.,]\\d+)?") || !OperationVoiceEntry.unit(k).isEmpty()) continue;
+            // Kesme işaretinden sonraki ek sayılmaz ("TL'si" → "tl"): kelimenin kökü değerlendirilir.
+            String k = TurkishText.normalize(w.split("['’`]", -1)[0]);
+            if (k.isEmpty() || k.matches("\\d+([.,]\\d+)?") || !TurkishText.unit(k).isEmpty()) continue;
             if (k.matches("(attim|attik|verdim|verdik|kullandim|kullandik|sikdim|siktim|attim|actim|serptim|serptik|koydum|"
                     + "ilac|ilaci|ilacini|gubre|gubreyi|gubresi|adi|onu|bunu|ondan|bir|iki|uc|dort|bes|alti|yedi|sekiz|dokuz|on|yirmi|otuz|kirk|elli|"
                     + "altmis|yetmis|seksen|doksan|yuz|bin|bucuk|tane|kadar|biraz|ve|ile)")) continue;

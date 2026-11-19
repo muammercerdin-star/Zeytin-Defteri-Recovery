@@ -109,7 +109,7 @@ public final class TezgahVoiceDialog {
 
     public static Said parse(String raw) {
         Said out = new Said();
-        String[] t = ElekVoiceEntry.normalize(raw == null ? "" : raw).split(" ");
+        String[] t = TurkishText.normalize(raw == null ? "" : raw).split(" ");
         for (int i = 0; i < t.length; i++) {
             String w = t[i];
             if (w.isEmpty()) continue;
@@ -120,7 +120,7 @@ public final class TezgahVoiceDialog {
             if (w.equals("kasasiz") || w.equals("dokme")) { out.kasa = 0; continue; }
             if (w.equals("net") || w.equals("neti")) { out.net = true; continue; }
             int[] end = new int[1];
-            double v = ElekVoiceEntry.number(t, i, end);
+            double v = TurkishText.number(t, i, end);
             if (Double.isNaN(v)) continue;
             String next = end[0] < t.length ? t[end[0]] : "";
             String after = end[0] + 1 < t.length ? t[end[0] + 1] : "";
@@ -143,7 +143,7 @@ public final class TezgahVoiceDialog {
     // ------------------------------------------------------------ konuşma
 
     public Reply handle(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (s.isEmpty()) return ask("Duyamadım. " + prompt());
         // "2 numarayı iptal et" asistanı kapatmaz (numara silinir); düzeltme sorusunda "vazgeç" yalnız düzeltmeyi bırakır.
         if (has(s, "vazgec|vazgectim|kapat|iptal") && parse(raw).grade < 0 && phase != Phase.FIX && phase != Phase.ADD_OR_FIX) {

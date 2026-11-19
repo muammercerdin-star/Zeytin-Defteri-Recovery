@@ -1,6 +1,5 @@
 package com.zeytindefteri.app;
 
-import java.text.Normalizer;
 import java.util.*;
 
 /** Deterministic Turkish V1 grammar, shared by voice and typed input. No LLM. */
@@ -37,15 +36,9 @@ public final class ZeytinAssistantCommand {
         String next=key==null||key.trim().isEmpty()?base:(key.trim()+" "+base).trim();
         return new ZeytinAssistantCommand(kind,next,target,grade,opType);
     }
-    public static String normalize(String s) {
-        if (s==null) return "";
-        s=s.toLowerCase(new Locale("tr","TR")).replace('ı','i');
-        return Normalizer.normalize(s,Normalizer.Form.NFD).replaceAll("\\p{M}+", "")
-                .replaceAll("[^a-z0-9 ]", " ").replaceAll("\\s+", " ").trim();
-    }
     private static boolean has(String s,String... words) { for(String w:words) if(s.contains(w))return true; return false; }
     public static ZeytinAssistantCommand parse(String raw) {
-        String s=language(normalize(raw)), target="", grade="";
+        String s=language(TurkishText.normalize(raw)), target="", grade="";
         if (s.contains("yaglik")) grade="YAGLIK";
         else if(has(s,"double","duble"))grade="DOUBLE";
         else {
@@ -144,12 +137,12 @@ public final class ZeytinAssistantCommand {
         public boolean explicit;
     }
     public static Resolution resolve(String raw,List<Garden> gardens,long active, boolean market) {
-        Resolution out=new Resolution(); String query=normalize(raw);
+        Resolution out=new Resolution(); String query=TurkishText.normalize(raw);
         List<Garden> matches=new ArrayList<>();
         int bestLength=0;
         for(Garden garden:gardens) {
-            String core=normalize(garden.name).replaceAll("\\b(zeytinligi|zeytinlik|bahcesi|bahce|zeytinlikleri)\\b", "").trim();
-            if(core.isEmpty())core=normalize(garden.name);
+            String core=TurkishText.normalize(garden.name).replaceAll("\\b(zeytinligi|zeytinlik|bahcesi|bahce|zeytinlikleri)\\b", "").trim();
+            if(core.isEmpty())core=TurkishText.normalize(garden.name);
             // Exact core phrase plus common Turkish suffixes. No fuzzy cross-garden guessing.
             String expression=".*\\b"+java.util.regex.Pattern.quote(core)+"(nin|in|yi|i|de|da|den|dan|nde|nda|nden|ndan)?\\b.*";
             if(query.matches(expression)) {
@@ -159,7 +152,7 @@ public final class ZeytinAssistantCommand {
         }
         if(matches.isEmpty()) {
             for(Garden garden:gardens) {
-                String first=normalize(garden.name).split(" ")[0];
+                String first=TurkishText.normalize(garden.name).split(" ")[0];
                 if(first.length()>3 && query.matches(".*\\b"+java.util.regex.Pattern.quote(first)+"(nin|yi|de|den)?\\b.*"))matches.add(garden);
             }
         }

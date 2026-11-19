@@ -57,7 +57,7 @@ public final class ElekVoiceDialog {
     }
 
     public Reply handle(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (s.isEmpty()) return new Reply("Duyamadım. Kilolarını söyleyebilirsin.", Action.NONE, true);
 
         if (has(s, "vazgec", "iptal", "kapat", "bosver", "cikis")) {
@@ -85,7 +85,7 @@ public final class ElekVoiceDialog {
         }
         if (has(s, "geri al", "geri")) {
             if (undo.isEmpty()) return new Reply("Geri alınacak bir şey yok.", Action.NONE, true);
-            double[] prev = undo.pop(); System.arraycopy(prev, 0, kg, 0, 6);
+            restore(undo.pop());
             return new Reply("Son söylediğini geri aldım. " + listLine(), Action.FILL, true);
         }
         if (has(s, "oku", "ne yazdin", "neler yazdin", "tekrarla", "ozet")) {
@@ -94,7 +94,7 @@ public final class ElekVoiceDialog {
         // "3 numarayı sil / sıfırla"
         if (has(s, "sil", "sifirla", "kaldir")) {
             boolean[] g = ElekVoiceEntry.gradesIn(raw); boolean any = false;
-            double[] before = kg.clone();
+            double[] before = snapshot();
             for (int i = 0; i < 6; i++) if (g[i] && kg[i] > 0) { kg[i] = 0; any = true; }
             if (any) { undo.push(before); return new Reply("Sildim. " + listLine(), Action.FILL, true); }
             return new Reply("Hangi sınıfı sileyim? Örneğin: 3 numarayı sil.", Action.NONE, true);
@@ -165,13 +165,18 @@ public final class ElekVoiceDialog {
 
     /** Söylenen sınıfların yeni değeri eskisinin yerine geçer. Dönen metin: "3 numara 120" (sesli okumada sade). */
     private String apply(ElekVoiceEntry e, String raw) {
-        undo.push(kg.clone());
+        undo.push(snapshot());
         StringBuilder b = new StringBuilder();
         for (int i = 0; i < 6; i++) {
             if (e.kg[i] <= 0) continue;
             kg[i] = e.kg[i];
             if (b.length() > 0) b.append(", ");
             b.append(SPOKEN[i]).append(' ').append(num(e.kg[i]));
+            // "double 2 kilo 220 lira": kilo başı fiyat bu kayıt için forma gider.
+            if (e.price[i] > 0) {
+                prices[i] = e.price[i];
+                b.append(", kilosu ").append(num(e.price[i])).append(" lira");
+            }
         }
         if (e.sold != null) sold = e.sold;
         if (!e.buyer.isEmpty()) { setBuyer(e.buyer); sold = true; }
@@ -224,6 +229,26 @@ public final class ElekVoiceDialog {
     }
 
     public boolean isSold() { return sold != null ? sold : soldByDefault; }
+
+    /** Sınıf fiyatları (TL/kg): formdan gelen, sesle söylenenle güncellenmiş. */
+    public double[] prices() {
+        return prices.clone();
+    }
+
+    /** Geri al için kilo ve fiyatın birlikte kopyası (ilk 6 kilo, sonraki 6 fiyat). */
+    private double[] snapshot() {
+        double[] out = new double[12];
+        System.arraycopy(kg, 0, out, 0, 6);
+        System.arraycopy(prices, 0, out, 6, 6);
+        return out;
+    }
+
+    private void restore(double[] prev) {
+        System.arraycopy(prev, 0, kg, 0, 6);
+        if (prev.length >= 12) {
+            System.arraycopy(prev, 6, prices, 0, 6);
+        }
+    }
 
     public double total() { double t = 0; for (double v : kg) t += v; return t; }
 

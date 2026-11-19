@@ -99,7 +99,7 @@ public final class ZeytinAssistantText {
      * Panel bunları yakın soru önerilerinden önce kullanır: "kaç gram ilaç" sorusuna ilaçlama sorusu önerilmez.
      */
     public static String special(String raw) {
-        String s = ZeytinAssistantCommand.normalize(raw);
+        String s = TurkishText.normalize(raw);
         if (s.matches("(merhaba|selam|selamlar|selamun aleykum|gunaydin|iyi gunler|iyi aksamlar|hey|alo)( .*)?"))
             return "Merhaba! Kayıtların, hava ve piyasa hakkında sorabilirsin. Örneğin “Son sulama ne zaman?”";
         if (s.matches(".*\\b(tesekkur\\w*|sagol\\w*|eyvallah|eline saglik)\\b.*"))
@@ -130,11 +130,11 @@ public final class ZeytinAssistantText {
 
     /** Cevaptan sonra önerilen en fazla üç soru; sorulan soruyu tekrar önermez. Sıra sabittir. */
     public static List<String> followUps(ZeytinAssistantCommand.Kind kind, String asked) {
-        String askedKey = ZeytinAssistantCommand.normalize(asked);
+        String askedKey = TurkishText.normalize(asked);
         List<String> out = new ArrayList<>();
         for (String q : FOLLOW_UPS) {
             if (out.size() == 3) break;
-            String key = ZeytinAssistantCommand.normalize(q);
+            String key = TurkishText.normalize(q);
             if (key.equals(askedKey)) continue;
             ZeytinAssistantCommand.Kind qk = ZeytinAssistantCommand.parse(q).kind;
             if (qk == kind && kind != ZeytinAssistantCommand.Kind.UNKNOWN) continue; // aynı konuyu tekrar önermez

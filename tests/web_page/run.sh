@@ -20,7 +20,7 @@ for name in ['test.mjs', 'flow.mjs', 'operations.mjs']:
     shutil.copy2('tests/web_page/' + name, root / 'tests/web_page' / name)
 stubs = list(Path('tests/buyers/stubs').rglob('*.java'))
 subprocess.run(['java', '-m', 'jdk.compiler/com.sun.tools.javac.Main', '-encoding', 'UTF-8', '-d', out, *map(str, stubs)], check=True)
-names = ['TezgahModel', 'TezgahSearch', 'TezgahWizardFlow', 'TezgahCrates', 'TezgahPurchases', 'TezgahPayments', 'TezgahClosing', 'TezgahZ', 'TezgahWebCrypto', 'TezgahWebProtocol', 'TezgahWebChanges', 'TezgahWebDto', 'TezgahWebRepository', 'TezgahWebPhone']
+names = ['TezgahModel', 'TurkishText', 'TezgahSearch', 'TezgahWizardFlow', 'TezgahCrates', 'TezgahPurchases', 'TezgahPayments', 'TezgahClosing', 'TezgahZ', 'TezgahWebCrypto', 'TezgahWebProtocol', 'TezgahWebChanges', 'TezgahWebDto', 'TezgahWebRepository', 'TezgahWebPhone']
 src = [f'app/src/main/java/com/zeytindefteri/app/{name}.java' for name in names]
 src.append('tests/web_phone/PhoneBridge.java')
 subprocess.run(['java', '-m', 'jdk.compiler/com.sun.tools.javac.Main', '--release', '8', '-encoding', 'UTF-8', '-cp', out + ':' + jar, '-d', out, *src], check=True)

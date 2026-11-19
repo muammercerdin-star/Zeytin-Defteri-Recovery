@@ -3,7 +3,6 @@ package com.zeytindefteri.app;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -59,23 +58,8 @@ public final class TezgahSearch {
     /** Türkçe harfleri ve büyük/küçük farkını kaldırır. */
     public static String fold(String v) {
         if (v == null) return "";
-        String t = v.trim().toLowerCase(new Locale("tr", "TR"));
-        StringBuilder b = new StringBuilder(t.length());
-        for (int i = 0; i < t.length(); i++) {
-            char c = t.charAt(i);
-            switch (c) {
-                case 'ı': case 'î': c = 'i'; break;
-                case 'ş': c = 's'; break;
-                case 'ğ': c = 'g'; break;
-                case 'ü': case 'û': c = 'u'; break;
-                case 'ö': c = 'o'; break;
-                case 'ç': c = 'c'; break;
-                case 'â': c = 'a'; break;
-                default: break;
-            }
-            b.append(c);
-        }
-        return b.toString().replaceAll("\\s+", " ");
+        String t = TurkishText.fold(v.trim());
+        return t.replaceAll("\\s+", " ");
     }
 
     static String digits(String v) {

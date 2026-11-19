@@ -16,13 +16,13 @@ final class AssistantMisses {
 
     /** Göster komutu: "anlamadığın cümleleri göster", "neleri anlamadın". */
     static boolean asksShow(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         return !asksClear(raw) && s.matches(".*\\b(anlamadig\\p{L}*|anlamadiklar\\p{L}*|neleri anlamadin|ne anlamadin)\\b.*");
     }
 
     /** Temizle komutu: "anlamadıklarını sil", "anlamadığın cümleleri temizle". */
     static boolean asksClear(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         return s.matches(".*\\b(anlamadig\\p{L}*|anlamadiklar\\p{L}*)\\b.*") && s.matches(".*\\b(sil\\p{L}*|temizle\\p{L}*|bosalt\\p{L}*|unut)\\b.*");
     }
 
@@ -49,9 +49,9 @@ final class AssistantMisses {
         String text = raw == null ? "" : raw.replace('\n', ' ').replace('\t', ' ').trim();
         if (text.isEmpty() || text.length() > 300) return stored == null ? "" : stored;
         if (asksShow(text) || asksClear(text)) return stored == null ? "" : stored;
-        String key = ElekVoiceEntry.normalize(text);
+        String key = TurkishText.normalize(text);
         List<String[]> items = decode(stored);
-        for (int i = items.size() - 1; i >= 0; i--) if (ElekVoiceEntry.normalize(items.get(i)[1]).equals(key)) items.remove(i);
+        for (int i = items.size() - 1; i >= 0; i--) if (TurkishText.normalize(items.get(i)[1]).equals(key)) items.remove(i);
         items.add(0, new String[]{day, text});
         while (items.size() > MAX) items.remove(items.size() - 1);
         return encode(items);
@@ -115,10 +115,10 @@ final class AssistantMisses {
         }
         List<String[]> items = decodeLog(keep);
         if (!CORRECTED.equals(kind)) {
-            String key = ElekVoiceEntry.normalize(text);
+            String key = TurkishText.normalize(text);
             for (int i = items.size() - 1; i >= 0; i--) {
                 boolean sameKind = items.get(i)[1].equals(kind);
-                if (sameKind && ElekVoiceEntry.normalize(items.get(i)[2]).equals(key)) {
+                if (sameKind && TurkishText.normalize(items.get(i)[2]).equals(key)) {
                     items.remove(i);
                 }
             }

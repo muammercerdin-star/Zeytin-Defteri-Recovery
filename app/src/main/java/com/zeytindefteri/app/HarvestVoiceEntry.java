@@ -14,7 +14,7 @@ public final class HarvestVoiceEntry {
 
     public static HarvestVoiceEntry parse(String raw) {
         if (raw == null || raw.contains("?")) return null;
-        String s = ElekVoiceEntry.normalize(raw);
+        String s = TurkishText.normalize(raw);
         if (!s.matches(".*\\b(topla\\p{L}*|hasat\\p{L}*|cirp\\p{L}*|silkele\\p{L}*|devsir\\p{L}*)\\b.*")) return null;
         if (s.matches(".*(^|\\s)(kac|ne|nedir|nasil|hangi|hangisi|mi|mu|zaman)(\\s|$).*")) return null;
         if (s.matches(".*\\b(sattim|sattik|satildi|verdim)\\b.*")) return null;   // satış: elek/satış formu
@@ -29,11 +29,12 @@ public final class HarvestVoiceEntry {
         String[] t = s.split(" ");
         for (int i = 0; i < t.length; i++) {
             int[] end = new int[1];
-            double v = ElekVoiceEntry.number(t, i, end);
+            double v = TurkishText.number(t, i, end);
             if (Double.isNaN(v) || v <= 0) continue;
             String next = end[0] < t.length ? t[end[0]] : "";
-            if (next.matches("(kilo\\p{L}*|kg)")) { h.total = v; break; }
-            if (next.matches("ton\\p{L}*")) { h.total = v * 1000; break; }
+            String unit = TurkishText.unit(next);
+            if (unit.equals(TurkishText.KILO)) { h.total = v; break; }
+            if (unit.equals("ton")) { h.total = v * 1000; break; }
             i = Math.max(i, end[0] - 1);
         }
         return h.total > 0 ? h : null;

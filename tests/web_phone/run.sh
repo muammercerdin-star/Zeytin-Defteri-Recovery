@@ -9,7 +9,7 @@ import subprocess,sys
 out,jar=sys.argv[1:]
 stubs=list(Path('tests/buyers/stubs').rglob('*.java'))
 subprocess.run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','-encoding','UTF-8','-d',out,*map(str,stubs)],check=True)
-names=['TezgahModel','TezgahSearch','TezgahWizardFlow','TezgahCrates','TezgahPurchases','TezgahPayments','TezgahClosing','TezgahZ','TezgahWebCrypto','TezgahWebProtocol','TezgahWebChanges','TezgahWebDto','TezgahWebRepository','TezgahWebPhone']
+names=['TezgahModel','TurkishText','TezgahSearch','TezgahWizardFlow','TezgahCrates','TezgahPurchases','TezgahPayments','TezgahClosing','TezgahZ','TezgahWebCrypto','TezgahWebProtocol','TezgahWebChanges','TezgahWebDto','TezgahWebRepository','TezgahWebPhone']
 src=[f'app/src/main/java/com/zeytindefteri/app/{x}.java' for x in names]+['tests/web_phone/PhoneTest.java','tests/web_phone/PhoneBridge.java']
 subprocess.run(['java','-m','jdk.compiler/com.sun.tools.javac.Main','--release','8','-encoding','UTF-8','-cp',out+':'+jar,'-d',out,*src],check=True)
 PY

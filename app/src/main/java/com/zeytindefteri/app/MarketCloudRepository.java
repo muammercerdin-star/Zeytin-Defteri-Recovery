@@ -20,7 +20,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -1866,11 +1865,7 @@ public final class MarketCloudRepository {
     }
 
     private static String foldRegionPart(String value) {
-        String text = safe(value)
-                .toLowerCase(new Locale("tr", "TR"))
-                .replace('ı', 'i');
-        text = Normalizer.normalize(text, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "");
+        String text = TurkishText.fold(safe(value));
         text = text.replaceAll("[^a-z0-9]+", "_")
                 .replaceAll("^_+|_+$", "");
         return text;

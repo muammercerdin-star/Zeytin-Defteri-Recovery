@@ -14,7 +14,7 @@ cp tests/web_e2e/e2e.mjs "$D/e2e.mjs"
 cp supabase/functions/tezgah-relay/index.ts "$D/bridge.ts"
 java -m jdk.compiler/com.sun.tools.javac.Main -encoding UTF-8 -d "$D/cls" $(find tests/buyers/stubs -name '*.java')
 SRC=""
-for n in TezgahModel TezgahSearch TezgahWizardFlow TezgahCrates TezgahPurchases TezgahPayments TezgahClosing TezgahZ TezgahWebCrypto TezgahWebProtocol TezgahWebChanges TezgahWebDto TezgahWebRepository TezgahWebPhone; do
+for n in TezgahModel TurkishText TezgahSearch TezgahWizardFlow TezgahCrates TezgahPurchases TezgahPayments TezgahClosing TezgahZ TezgahWebCrypto TezgahWebProtocol TezgahWebChanges TezgahWebDto TezgahWebRepository TezgahWebPhone; do
   SRC="$SRC app/src/main/java/com/zeytindefteri/app/$n.java"
 done
 java -m jdk.compiler/com.sun.tools.javac.Main --release 8 -nowarn -encoding UTF-8 -cp "$D/cls:$JSON_JAR" -d "$D/cls" $SRC tests/web_e2e/E2EPhone.java

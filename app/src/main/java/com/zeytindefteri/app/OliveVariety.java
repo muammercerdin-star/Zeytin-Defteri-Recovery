@@ -1,10 +1,8 @@
 package com.zeytindefteri.app;
 
-import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Zeytin cinsleri (saf, Android'siz). Bahçe formunda listeden seçilir; eski serbest yazılar eş anlamlılarla
@@ -46,8 +44,7 @@ public final class OliveVariety {
     /** Sade anahtar: küçük harf, ı/ş/ğ/ü/ö/ç sadeleşir, harf-rakam dışı atılır. */
     static String key(String raw) {
         if (raw == null) return "";
-        String s = raw.trim().toLowerCase(new Locale("tr", "TR")).replace('ı', 'i');
-        s = Normalizer.normalize(s, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        String s = TurkishText.fold(raw.trim());
         return s.replaceAll("[^a-z0-9]", "");
     }
 

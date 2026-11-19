@@ -2,7 +2,7 @@
 set -e
 DIR=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$DIR/../.." && pwd); A="$ROOT/app/src/main/java/com/zeytindefteri/app"
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
-javac -encoding UTF-8 -nowarn -d "$T" "$A/ElekVoiceEntry.java" "$A/AssistantMisses.java" "$DIR/AssistantMissesTest.java" "$DIR/AssistantLogTest.java" 2>&1 | grep -v "^Note:" || true
+javac -encoding UTF-8 -nowarn -d "$T" "$A/TurkishText.java" "$A/ElekVoiceEntry.java" "$A/AssistantMisses.java" "$DIR/AssistantMissesTest.java" "$DIR/AssistantLogTest.java" 2>&1 | grep -v "^Note:" || true
 java -Dfile.encoding=UTF-8 -cp "$T" com.zeytindefteri.app.AssistantMissesTest
 java -Dfile.encoding=UTF-8 -cp "$T" com.zeytindefteri.app.AssistantLogTest
 python3 - "$A/ZeytinAssistantController.java" <<'P'

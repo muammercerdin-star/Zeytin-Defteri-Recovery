@@ -7259,6 +7259,7 @@ public class ProducerFeedActivity extends Activity {
                                     intent.putExtra(ElekActivity.EXTRA_VOICE_KG, entry.kg);
                                     intent.putExtra(ElekActivity.EXTRA_VOICE_SOLD, entry.sold == null ? -1 : (entry.sold ? 1 : 0));
                                     intent.putExtra(ElekActivity.EXTRA_VOICE_BUYER, entry.buyer);
+                                    intent.putExtra(ElekActivity.EXTRA_VOICE_PRICE, entry.price);
                                     startActivity(intent);
                                 }
 

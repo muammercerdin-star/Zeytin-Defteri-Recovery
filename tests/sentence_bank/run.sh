@@ -15,7 +15,7 @@ package com.zeytindefteri.app;
 public final class ZeytinAssistantData { public static Long date(String v){ try{return java.time.LocalDate.parse(v).toEpochDay();}catch(Exception e){return null;} } }
 J
 javac -encoding UTF-8 -nowarn -d "$T/out" \
-  "$A/ElekVoiceEntry.java" "$A/ElekVoiceDialog.java" "$A/ElekVoiceBuyer.java" \
+  "$A/TurkishText.java" "$A/ElekVoiceEntry.java" "$A/ElekVoiceDialog.java" "$A/ElekVoiceBuyer.java" \
   "$A/OperationVoiceEntry.java" "$A/OperationKinds.java" "$A/HarvestVoiceEntry.java" "$A/VoiceRecordDialog.java" \
   "$A/ZeytinAssistantCommand.java" "$A/ZeytinAssistantPeriod.java" "$A/ZeytinAssistantText.java" "$A/ZeytinAssistantHints.java" \
   "$A/AssistantReceivables.java" "$A/AssistantKnowledge.java" "$A/AssistantPersona.java" \

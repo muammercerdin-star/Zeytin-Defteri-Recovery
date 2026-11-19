@@ -18,7 +18,7 @@ public final class AssistantReceivables {
 
     /** Alacak sorusu mu? ("alacak", "borçlu", "borcu var", "kim ödemedi", "kimden para"). */
     public static boolean asks(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (s.matches(".*\\b(alacag\\p{L}*|alacak\\p{L}*|borclu\\p{L}*|borcu|borclari|odemedi\\p{L}*|kimden para|tahsil\\p{L}*)\\b.*")) {
             // Tezgâh (tüccar) tarafının borcu "borcum" — üretici alacağı değil.
             return !s.matches(".*\\b(borcum|borclarim|odeyecegim|vereceg\\p{L}*)\\b.*");
@@ -37,7 +37,7 @@ public final class AssistantReceivables {
         for (String w : (raw == null ? "" : raw).split("[\\s,.!]+")) {
             if (w.isEmpty()) continue;
             String bare = w.replaceAll("['’]\\p{L}*$", "");
-            String k = ElekVoiceEntry.normalize(bare);
+            String k = TurkishText.normalize(bare);
             if (k.isEmpty() || k.matches(FILLER)) continue;
             if (b.length() > 0) b.append(' ');
             b.append(bare);

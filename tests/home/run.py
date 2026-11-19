@@ -16,6 +16,6 @@ final class ZeytinAssistantData { static Long date(String v){ try { SimpleDateFo
     classes = temp / 'classes'
     subprocess.run(['java', '-m', 'jdk.compiler/com.sun.tools.javac.Main', '-encoding', 'UTF-8', '-d', str(classes),
                     str(src / 'HomeDashboardModel.java'), str(src / 'GardenTodayAdvisor.java'),
-                    str(src / 'ZeytinAssistantCommand.java'), str(src / 'ZeytinAssistantPeriod.java'), str(stub),
+                    str(src / 'TurkishText.java'), str(src / 'ZeytinAssistantCommand.java'), str(src / 'ZeytinAssistantPeriod.java'), str(stub),
                     str(root / 'tests/home/HomeDashboardModelTest.java')], check=True)
     subprocess.run(['java', '-cp', str(classes), 'com.zeytindefteri.app.HomeDashboardModelTest'], cwd=root, check=True)

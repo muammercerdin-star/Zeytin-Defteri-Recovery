@@ -8,7 +8,7 @@ public class AssistantMarketTest {
     static void check(boolean ok, String m) { checks++; if (!ok) throw new AssertionError(m); }
     static void eq(Object a, Object e, String m) { check(Objects.equals(a, e), m + ": beklenen «" + e + "», gelen «" + a + "»"); }
     static ZeytinAssistantMarket.Grade g(String n, int p, double med, boolean trend, double pct) { return new ZeytinAssistantMarket.Grade(n, p, med, 0, trend, pct); }
-    static String norm(String s) { return ZeytinAssistantCommand.normalize(s); }
+    static String norm(String s) { return TurkishText.normalize(s); }
 
     public static void main(String[] args) {
         eq(ZeytinAssistantMarket.grade("DOUBLE"), "Double", "double");

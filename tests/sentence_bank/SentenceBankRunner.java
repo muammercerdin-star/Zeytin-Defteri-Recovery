@@ -23,6 +23,8 @@ import java.util.Set;
  * "elek gir" komutu → salamura/bahçe/gönderi kaydı → işlem → ZeytinAssistantCommand (soru, ekran açma, özel cevap).
  * Controller'da bu sıra değişirse burası da değişmelidir (İP3'te tek kapıya taşınacak).
  *
+ * ELEK alanlarında kilo başı fiyat "<boy>_fiyat" (TL/kg) olarak yazılır (İP2).
+ *
  * Kullanım:
  *   java ... SentenceBankRunner cumleler.tsv       → karşılaştırır, özet yazar; "dogru" bozulursa çıkış 1
  *   java ... SentenceBankRunner --dump < cumleler  → her satır için "cümle TAB eylem TAB alanlar" yazar
@@ -51,7 +53,7 @@ public final class SentenceBankRunner {
 
     static Outcome route(String raw) {
         Map<String, String> f = new LinkedHashMap<>();
-        String n = ElekVoiceEntry.normalize(raw);
+        String n = TurkishText.normalize(raw);
         if (n.matches(CLOSE)) {
             return new Outcome("KAPAT", f);
         }
@@ -136,6 +138,9 @@ public final class SentenceBankRunner {
         for (int i = 0; i < e.kg.length; i++) {
             if (e.kg[i] > 0) {
                 f.put(GRADE_KEYS[i], num(e.kg[i]));
+            }
+            if (e.price[i] > 0) {
+                f.put(GRADE_KEYS[i] + "_fiyat", num(e.price[i]));
             }
         }
         if (e.sold != null) {

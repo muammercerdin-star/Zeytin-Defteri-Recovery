@@ -45,14 +45,6 @@ public final class TezgahVoice {
 
     // ------------------------------------------------------------------ anlama
 
-    /** Küçük harf, Türkçe harfsiz, yalnız harf/rakam ve tek boşluk (asistanla aynı kural). */
-    public static String norm(String s) {
-        if (s == null) return "";
-        s = s.toLowerCase(new java.util.Locale("tr", "TR")).replace('ı', 'i');
-        return java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}+", "")
-                .replaceAll("[^a-z0-9 ]", " ").replaceAll("\\s+", " ").trim();
-    }
-
     private static boolean has(String s, String... words) {
         for (String w : words) if (s.contains(w)) return true;
         return false;
@@ -60,12 +52,12 @@ public final class TezgahVoice {
 
     /** Sorudaki üretici adı: alım defterindeki adlarla eşleşenler (en iyi eşleşme; birden çoksa hepsi). */
     public static List<String> matchSellers(String question, List<TezgahPurchases.Purchase> all) {
-        String q = " " + norm(question) + " ";
+        String q = " " + TurkishText.normalize(question) + " ";
         String[] words = q.trim().split(" ");
         Map<String, String> names = new LinkedHashMap<>();
         for (TezgahPurchases.Purchase p : all) {
-            String key = norm(p.seller);
-            if (key.isEmpty() || key.equals(norm(TezgahWizardFlow.WALK_IN))) continue;
+            String key = TurkishText.normalize(p.seller);
+            if (key.isEmpty() || key.equals(TurkishText.normalize(TezgahWizardFlow.WALK_IN))) continue;
             if (!names.containsKey(key)) names.put(key, p.seller.trim());
         }
         int best = 0;
@@ -96,7 +88,7 @@ public final class TezgahVoice {
     }
 
     public static Kind kind(String question, List<TezgahPurchases.Purchase> all) {
-        String s = norm(question);
+        String s = TurkishText.normalize(question);
         if (s.isEmpty()) return Kind.HELP;
         if (has(s, "ne sorabilirim", "neler sorabilirim", "yardim", "ne biliyorsun")) return Kind.HELP;
         if (has(s, "kasa")) return Kind.CRATES;
@@ -119,7 +111,7 @@ public final class TezgahVoice {
     public static Answer answer(String question, List<TezgahPurchases.Purchase> all, List<TezgahLedger.Entry> ledger,
                                 List<TezgahCrates.Move> crates, String today, String yesterday) {
         Kind k = kind(question, all);
-        String s = norm(question);
+        String s = TurkishText.normalize(question);
         switch (k) {
             case DAY: return day(all, s.contains("dun") && !s.contains("bugun") ? yesterday : today,
                     s.contains("dun") && !s.contains("bugun") ? "Dün" : "Bugün");
@@ -184,13 +176,13 @@ public final class TezgahVoice {
             return new Answer(Kind.PRODUCER, "Hangisi?", b.toString());
         }
         String name = names.get(0);
-        String key = norm(name);
+        String key = TurkishText.normalize(name);
         String from = seasonStart(today);
         int n = 0, open = 0, older = 0, oldOpen = 0;
         double kg = 0, gross = 0, debt = 0, oldDebt = 0;
         String lastDate = "";
         for (TezgahPurchases.Purchase p : all) {
-            if (!norm(p.seller).equals(key)) continue;
+            if (!TurkishText.normalize(p.seller).equals(key)) continue;
             boolean thisSeason = from.isEmpty() || (p.date != null && p.date.compareTo(from) >= 0);
             if (thisSeason) { n++; kg += p.kg; gross += p.gross; } else older++;
             if (p.remaining() > 0.5) {
@@ -217,7 +209,7 @@ public final class TezgahVoice {
             double r = p.remaining();
             if (r <= 0.5) continue;
             total += r;
-            String key = norm(p.seller);
+            String key = TurkishText.normalize(p.seller);
             String who = p.seller == null || p.seller.trim().isEmpty() ? "Adsız" : p.seller.trim();
             if (key.isEmpty()) key = "adsiz";
             double[] v = by.get(key);

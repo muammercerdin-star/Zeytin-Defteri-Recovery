@@ -35,7 +35,8 @@ final class ElekVoiceSession {
         double[] kg();
         double[] prices();
         boolean soldOnSave();
-        void fill(double[] kg, Boolean sold, String buyer);
+        /** prices: sınıf fiyatları (TL/kg); sesle söylenen fiyat varsa yalnız bu kayıt için forma yazılır. */
+        void fill(double[] kg, double[] prices, Boolean sold, String buyer);
         /** Formu kaydeder; kaydedilen elek kaydının id'si ya da -1. */
         long save();
         void openReceipt(long recordId);
@@ -188,7 +189,7 @@ final class ElekVoiceSession {
         logic.sync(host.kg(), host.prices(), host.soldOnSave());   // formda elle yapılan değişiklikler önce alınır
         ElekVoiceDialog.Reply r = logic.handle(text);
         if (r.action == ElekVoiceDialog.Action.FILL || r.action == ElekVoiceDialog.Action.CANCEL || r.action == ElekVoiceDialog.Action.SAVE) {
-            host.fill(logic.kg.clone(), logic.sold, logic.buyer);
+            host.fill(logic.kg.clone(), logic.prices(), logic.sold, logic.buyer);
         }
         if (r.action == ElekVoiceDialog.Action.SAVE) {
             long id = host.save();

@@ -62,7 +62,7 @@ public final class AssistantPersona {
     /** Sohbet cümlesiyse cevap; değilse null (asıl asistan cevaplar). */
     public String handle(String raw) {
         if (raw == null) return null;
-        String s = ElekVoiceEntry.normalize(raw);
+        String s = TurkishText.normalize(raw);
         if (s.isEmpty()) return null;
         // "Zeytin, nasılsın" / "hey Zeytin bana bir fıkra anlat": hitap sözü atılır.
         s = s.replaceFirst("^(hey |ey |ya |bak )?zeytin(cim|im)? (?=(sen|nasilsin|naber|bana|beni|adin|kac|bir|hadi|haydi|sence|bak|dinle|soyle|anlat|merhaba|selam|gunaydin|iyi|tesekkur)\\b)", "");
@@ -120,7 +120,7 @@ public final class AssistantPersona {
             if (has(s, "soylemem|ayip|gerek yok|bosver|gec|sir")) { stage = Stage.ASK_ADDRESS; return "Hehe, sır kalsın o zaman. Sana nasıl hitap edeyim? " + options(); }
             int[] end = new int[1]; double v = Double.NaN;
             String[] t = s.split(" ");
-            for (int i = 0; i < t.length && Double.isNaN(v); i++) v = ElekVoiceEntry.number(t, i, end);
+            for (int i = 0; i < t.length && Double.isNaN(v); i++) v = TurkishText.number(t, i, end);
             if (Double.isNaN(v) || v < 10 || v > 110) return "Yaşını anlayamadım. Kaç yaşındasın?";
             age = (int) v;
             if (!address.isEmpty()) { stage = Stage.NONE; return ageJoke() + "Tamam " + call() + ", aklımda. Ne lazım olursa söyle."; }
@@ -511,7 +511,7 @@ public final class AssistantPersona {
 
     /** Soru ise "bilemedim"; anlatılan bir şeyse ilgi gösterip konuşmayı sürdürür ("Hıı, öyle mi? Anlat bakalım"). */
     public String fallback(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         boolean question = raw != null && raw.contains("?")
                 || s.matches(".*(^|\\s)(ne|neden|niye|nasil|kim|kimi|hangi|nerede|nereye|kac|mi|mu|misin|musun|midir|mudur)(\\s|$).*");
         if (question || s.isEmpty()) return fallback();
@@ -526,14 +526,14 @@ public final class AssistantPersona {
 
     /** "120 kilo 45 liradan kaç eder", "300 çarpı 40", "100 artı 200 artı 300", "1000 bölü 8": hesap; değilse null. */
     static String calc(String s) {
-        // Sayılar ElekVoiceEntry.number ile okunur: "50.000" binlik ayraçlı (50 bin), "12,5" ondalık, "elli bin" yazıyla.
+        // Sayılar TurkishText.number ile okunur: "50.000" binlik ayraçlı (50 bin), "12,5" ondalık, "elli bin" yazıyla.
         String[] t = s.split(" ");
         java.util.List<Double> nums = new java.util.ArrayList<>();
         java.util.List<String> after = new java.util.ArrayList<>();
         java.util.List<Integer> at = new java.util.ArrayList<>(), endAt = new java.util.ArrayList<>();
         for (int i = 0; i < t.length; i++) {
             int[] end = new int[1];
-            double v = ElekVoiceEntry.number(t, i, end);
+            double v = TurkishText.number(t, i, end);
             if (Double.isNaN(v)) continue;
             nums.add(v); at.add(i); endAt.add(end[0]); after.add(end[0] < t.length ? t[end[0]] : "");
             i = end[0] - 1;
@@ -655,7 +655,7 @@ public final class AssistantPersona {
     static String nameIn(String raw, boolean strict) {
         String[] tok = (raw == null ? "" : raw).replaceAll("['’]\\p{L}*", " ").split("[^\\p{L}]+");
         java.util.List<String> raws = new java.util.ArrayList<>(), norms = new java.util.ArrayList<>();
-        for (String w : tok) if (!w.isEmpty()) { raws.add(w); norms.add(ElekVoiceEntry.normalize(w)); }
+        for (String w : tok) if (!w.isEmpty()) { raws.add(w); norms.add(TurkishText.normalize(w)); }
         int pick = -1;
         for (int i = 0; i < norms.size() && pick < 0; i++) {
             if (norms.get(i).matches("adim|ismim|adimdir|ismimdir")) {
@@ -681,7 +681,7 @@ public final class AssistantPersona {
     private static boolean nameLike(String n) {
         if (n.length() < 2 || n.length() > 20 || n.matches(NOT_NAME)) return false;
         int[] end = new int[1];
-        return Double.isNaN(ElekVoiceEntry.number(new String[]{n}, 0, end));
+        return Double.isNaN(TurkishText.number(new String[]{n}, 0, end));
     }
 
     /** "Ben Akhisarlıyım", "Memleketim Ayvalık", "Aslen Edremit'tenim", "Gömeç köyündenim"; soru beklenirken yalnız "Ayvalık". */
@@ -691,17 +691,17 @@ public final class AssistantPersona {
         for (String w : tok) if (!w.isEmpty()) raws.add(w);
         if (raws.isEmpty() || raws.size() > 5) return "";
         for (int i = 0; i < raws.size(); i++) {
-            String w = raws.get(i), n = ElekVoiceEntry.normalize(w.replace("'", ""));
+            String w = raws.get(i), n = TurkishText.normalize(w.replace("'", ""));
             // "Akhisarlıyım"
             if (n.matches("\\p{L}{3,}l[iu]y[iu]m") && !n.matches("(iyi|deli|bel|hali|kul|evli|bekar|emekli|hasta)\\p{L}*")) return cap(w.replace("'", "").substring(0, w.replace("'", "").length() - 5));
             // "Edremit'tenim", "Ayvalık'tanım"
-            if (w.contains("'") && ElekVoiceEntry.normalize(w.substring(w.indexOf('\'') + 1)).matches("(dan|den|tan|ten)[iu]m")) return cap(w.substring(0, w.indexOf('\'')));
+            if (w.contains("'") && TurkishText.normalize(w.substring(w.indexOf('\'') + 1)).matches("(dan|den|tan|ten)[iu]m")) return cap(w.substring(0, w.indexOf('\'')));
             if (n.matches("(memleketim|aslen|koyum|kasabam)") && i + 1 < raws.size()) return cap(raws.get(i + 1).replaceAll("'.*", ""));
             if (n.matches("koyunden(im)?|koyluyum") && i > 0) return cap(raws.get(i - 1).replaceAll("'.*", "")) + " köyü";
         }
         if (expected) {
             for (String w : raws) {
-                String n = ElekVoiceEntry.normalize(w.replaceAll("'.*", ""));
+                String n = TurkishText.normalize(w.replaceAll("'.*", ""));
                 if (n.length() >= 3 && !n.matches(NOT_NAME + "|aslen|memleketim|koy\\p{L}*|buralar\\p{L}*|burali\\p{L}*|buradan\\p{L}*")) return cap(w.replaceAll("'.*", ""));
             }
         }

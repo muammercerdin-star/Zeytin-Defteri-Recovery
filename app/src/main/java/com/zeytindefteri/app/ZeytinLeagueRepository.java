@@ -222,9 +222,8 @@ public final class ZeytinLeagueRepository {
         } catch (java.security.NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
     }
     private static String regionPart(String value) {
-        String lower = value.trim().toLowerCase(new Locale("tr", "TR")).replace('ı', 'i');
-        return Normalizer.normalize(lower, Normalizer.Form.NFD).replaceAll("\\p{M}+", "")
-                .replaceAll("[^a-z0-9]+", "_").replaceAll("^_|_$", "");
+        String folded = TurkishText.fold(value.trim());
+        return folded.replaceAll("[^a-z0-9]+", "_").replaceAll("^_|_$", "");
     }
 
 }

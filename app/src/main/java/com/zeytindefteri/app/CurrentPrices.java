@@ -41,7 +41,7 @@ final class CurrentPrices {
     /** "DOUBLE", "1", "1 No", "YAGLIK", "Yağlık" → 0..5; tanınmazsa -1. */
     static int index(String grade) {
         if (grade == null) return -1;
-        String g = grade.trim().toLowerCase(new Locale("tr", "TR")).replace("ğ", "g").replace("ı", "i");
+        String g = TurkishText.fold(grade.trim());
         switch (g) {
             case "double": return 0;
             case "1": case "1 no": return 1;

@@ -71,7 +71,7 @@ public final class VoiceRecordDialog {
     /** Cümle bu kayıtlardan birini başlatıyor mu? Soru cümleleri ("salamura stoğum ne?") başlatmaz. */
     public static Kind detect(String raw) {
         if (raw == null || raw.contains("?")) return null;
-        String s = ElekVoiceEntry.normalize(raw);
+        String s = TurkishText.normalize(raw);
         if (s.matches(".*(^|\\s)(kac|ne|nedir|nasil|hangi|hangisi|mi|mu|zaman|stok\\p{L}*|durum\\p{L}*|hazir mi)(\\s|$).*")) return null;
         if (s.matches(".*\\b(meydan\\p{L}*|sohbet\\p{L}*|gonderi\\p{L}*|paylas\\p{L}*)\\b.*")
                 && s.matches(".*\\b(yaz\\p{L}*|paylas\\p{L}*|gonder\\p{L}*|at)\\b.*")) return Kind.POST;
@@ -86,7 +86,7 @@ public final class VoiceRecordDialog {
     /** İlk cümlede söylenmiş olanlar (ör. "Girelli'den 300 kilo topladık", "50 kilo salamura bastım"). */
     public void prefill(String raw, int gardenIndex) {
         if (gardenIndex >= 0) values.put("garden", gardenIndex);
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (kind == Kind.HARVEST) {
             HarvestVoiceEntry h = HarvestVoiceEntry.parse(raw);
             if (h != null) { values.put("kg", h.total); if (h.graded()) values.put("grades", h.kg.clone()); values.put("day", h.dayOffset); }
@@ -115,7 +115,7 @@ public final class VoiceRecordDialog {
     public boolean done() { return done; }
 
     public Reply handle(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (s.isEmpty()) return ask("Duyamadım. " + (confirming ? "Formu açayım mı?" : slots[current].question));
         if (has(s, "vazgec|vazgectim|iptal|bosver")) { done = true; return new Reply("Tamam, bıraktım.", Action.CANCEL); }
         if (confirming) {
@@ -234,7 +234,7 @@ public final class VoiceRecordDialog {
             }
         }
         String[] order = {"birinci|ilk", "ikinci", "ucuncu", "dorduncu"};
-        String s = ElekVoiceEntry.normalize(raw);
+        String s = TurkishText.normalize(raw);
         for (int i = 0; i < order.length && i < gardens.size(); i++) if (has(s, order[i])) return i;
         return -1;
     }

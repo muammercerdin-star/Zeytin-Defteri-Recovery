@@ -20,6 +20,11 @@ public final class ElekVoiceEntry {
     public static final String[] LABELS = {"Double", "1 Numara", "2 Numara", "3 Numara", "4 Numara", "Yağlık"};
 
     public final double[] kg = new double[6];
+    /**
+     * Söylenen kilo başı fiyat (TL/kg), sınıf sırasıyla; 0 = söylenmedi (formdaki fiyat kalır).
+     * "double 2 kilo 220 lira" → 110 (toplam ÷ kilo); "3 numara 120 kilo 110 liradan" → 110 (kilo başı).
+     */
+    public final double[] price = new double[6];
     /** true: "sattım", false: "satmadım", null: söylenmedi (form varsayılanı kalır). */
     public Boolean sold;
     /** "Ahmet'e sattım" → "Ahmet"; söylenmediyse "". */
@@ -36,13 +41,12 @@ public final class ElekVoiceEntry {
             if (kg[i] <= 0) continue;
             if (b.length() > 0) b.append(" · ");
             b.append(LABELS[i]).append(' ').append(fmt(kg[i])).append(" kg");
+            if (price[i] > 0) b.append(" (").append(fmt(price[i])).append(" TL/kg)");
         }
         return b.toString();
     }
 
     private static final Locale TR = new Locale("tr", "TR");
-    private static final String[] UNITS = {"sifir", "bir", "iki", "uc", "dort", "bes", "alti", "yedi", "sekiz", "dokuz"};
-    private static final String[] TENS = {"", "on", "yirmi", "otuz", "kirk", "elli", "altmis", "yetmis", "seksen", "doksan"};
     private static final String[] ORDINALS = {"birinci", "ikinci", "ucuncu", "dorduncu"};
     private static final Pattern QUESTION = Pattern.compile(
             "(^|\\s)(kac|ne|neler|nedir|nasil|hangi|hangisi|mi|mu|misin|musun|midir|mudur|mıdır)(\\s|$)");
@@ -52,13 +56,13 @@ public final class ElekVoiceEntry {
     /** Cümle bir elek girişi değilse null. */
     public static ElekVoiceEntry parse(String raw) {
         if (raw == null) return null;
-        String s = normalize(raw);
+        String s = TurkishText.normalize(raw);
         if (s.isEmpty() || raw.contains("?") || QUESTION.matcher(s).find()) return null;
         if (s.matches(".*\\b(sil|guncelle|degistir|iptal)\\b.*")) return null;
 
         // 1) Belirteçlere ayır: sınıf (G) ve sayı (N)
         String[] t = s.split(" ");
-        List<double[]> items = new ArrayList<>();       // {tip(0=sınıf,1=sayı), değer}
+        List<double[]> items = new ArrayList<>();       // {tip(0=sınıf,1=sayı), değer, para(0 yok, 1 toplam lira, 2 kilo başı)}
         for (int i = 0; i < t.length; i++) {
             String w = t[i];
             if (w.isEmpty()) continue;
@@ -67,7 +71,7 @@ public final class ElekVoiceEntry {
             Matcher glued = Pattern.compile("^([1-4])(numara\\p{L}*|no|nolu)$").matcher(w);   // "3numara", "3numaradan"
             if (glued.find()) { items.add(new double[]{0, Integer.parseInt(glued.group(1))}); continue; }
             int[] end = new int[1];
-            double v = number(t, i, end);
+            double v = TurkishText.number(t, i, end);
             if (!Double.isNaN(v)) {
                 boolean single = end[0] == i + 1;
                 String next = end[0] < t.length ? t[end[0]] : "";
@@ -76,7 +80,7 @@ public final class ElekVoiceEntry {
                         && v >= 1 && v <= 4 && v == Math.floor(v)) {
                     items.add(new double[]{0, v}); i = end[0];         // "3 numara" → sınıf
                 } else {
-                    items.add(new double[]{1, v}); i = end[0] - 1;
+                    items.add(new double[]{1, v, money(next)}); i = end[0] - 1;
                 }
             }
         }
@@ -88,16 +92,35 @@ public final class ElekVoiceEntry {
         ElekVoiceEntry e = new ElekVoiceEntry();
         boolean any = false;
         boolean[] used = new boolean[items.size()];
+        int pairs = 0;
+        List<double[]> totals = new ArrayList<>();      // {sınıf, toplam lira}: kilo başına bölünecek
         for (int i = 0; i < items.size(); i++) {
             if (items.get(i)[0] != 0) continue;
             int g = (int) items.get(i)[1];
             int j = numberFirst ? i - 1 : i + 1;
-            if (j >= 0 && j < items.size() && items.get(j)[0] == 1 && !used[j]) {
+            // Lira sözü kilo değildir: "double 220 lira" kilo sayılmaz.
+            if (j >= 0 && j < items.size() && isKilo(items.get(j)) && !used[j]) {
                 double v = items.get(j)[1];
-                if (v > 0 && v <= 100000) { e.kg[g] += v; used[j] = true; any = true; }
+                if (v > 0 && v <= 100000) {
+                    e.kg[g] += v;
+                    used[j] = true;
+                    any = true;
+                    pairs++;
+                    int k = numberFirst ? i + 1 : j + 1;
+                    readPrice(items, k, used, g, e, totals);
+                }
             }
         }
         if (!any) return null;
+        // Toplam lira ("2 kilo 220 lira") ancak her sınıfın kendi tutarı söylendiyse kiloya bölünür;
+        // "3 numara 120, 2 numara 80, 13.200 lira" gibi tek toplam hangi sınıfın olduğu belirsiz: fiyat yazılmaz.
+        if (totals.size() == pairs) {
+            for (double[] t2 : totals) {
+                int g = (int) t2[0];
+                double per = Math.round(t2[1] / e.kg[g] * 100.0) / 100.0;
+                if (per > 0 && per <= 100000) e.price[g] = per;
+            }
+        }
         if (s.matches(".*\\b(satmadim|satmadik|satilmadi|satmayacagim)\\b.*")) e.sold = false;
         else if (s.matches(".*\\b(sattim|sattik|satildi|sattigim|satiyorum|sat|verdim|verdik)\\b.*")) e.sold = true;
         Matcher b = BUYER.matcher(raw);
@@ -111,9 +134,33 @@ public final class ElekVoiceEntry {
         return e;
     }
 
+    /** Sayının yanındaki söz para mı: 1 toplam ("220 lira"), 2 kilo başı ("110 liradan"), 0 değil. */
+    private static double money(String next) {
+        if (!TurkishText.unit(next).equals(TurkishText.LIRA)) return 0;
+        return TurkishText.perUnitPrice(next) ? 2 : 1;
+    }
+
+    private static boolean isKilo(double[] item) {
+        return item[0] == 1 && (item.length < 3 || item[2] == 0);
+    }
+
+    /** Kilonun hemen arkasındaki lira: kilo başıysa doğrudan fiyat, toplamsa sonra kiloya bölünmek üzere saklanır. */
+    private static void readPrice(List<double[]> items, int k, boolean[] used, int g, ElekVoiceEntry e, List<double[]> totals) {
+        if (k < 0 || k >= items.size() || used[k]) return;
+        double[] it = items.get(k);
+        if (it[0] != 1 || it.length < 3 || it[2] == 0) return;
+        if (it[1] <= 0 || it[1] > 10000000) return;
+        used[k] = true;
+        if (it[2] == 2) {
+            e.price[g] = it[1];
+            return;
+        }
+        totals.add(new double[]{g, it[1]});
+    }
+
     /** Cümlede geçen satış bilgisi (kilo olmasa da): {sold} ve alıcı. "Ahmet'e sattım, bitti" gibi. */
     public static Boolean soldIn(String raw) {
-        String s = normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (s.matches(".*\\b(satmadim|satmadik|satilmadi|satmayacagim)\\b.*")) return false;
         if (s.matches(".*\\b(sattim|sattik|satildi|sattigim|satiyorum|sat|verdim|verdik)\\b.*")) return true;
         return null;
@@ -133,7 +180,7 @@ public final class ElekVoiceEntry {
     /** Cümlede adı geçen sınıflar (sıra: Double..Yağlık). "3 numarayı sil" → [3]. */
     public static boolean[] gradesIn(String raw) {
         boolean[] out = new boolean[6];
-        String s = normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         String[] t = s.split(" ");
         for (int i = 0; i < t.length; i++) {
             int g = gradeWord(t[i]);
@@ -142,7 +189,7 @@ public final class ElekVoiceEntry {
             if (glued.find()) { out[Integer.parseInt(glued.group(1))] = true; continue; }
             String next = i + 1 < t.length ? t[i + 1] : "";
             if (next.startsWith("numara") || next.equals("no") || next.equals("nolu")) {
-                int[] end = new int[1]; double v = number(t, i, end);
+                int[] end = new int[1]; double v = TurkishText.number(t, i, end);
                 if (!Double.isNaN(v) && end[0] == i + 1 && v >= 1 && v <= 4 && v == Math.floor(v)) out[(int) v] = true;
             }
         }
@@ -155,46 +202,6 @@ public final class ElekVoiceEntry {
         if (w.startsWith("yaglik") || w.equals("yagli") || w.equals("yaglisi")) return 5;
         for (int i = 0; i < ORDINALS.length; i++) if (w.equals(ORDINALS[i])) return i + 1;
         return -1;
-    }
-
-    /** t[i]'den başlayan sayı (rakam ya da yazıyla); end[0] = sayıdan sonraki belirteç. Sayı değilse NaN. */
-    static double number(String[] t, int i, int[] end) {
-        String w = t[i];
-        if (w.matches("\\d{1,3}(\\.\\d{3})+")) { end[0] = i + 1; return withHalf(Double.parseDouble(w.replace(".", "")), t, end); }
-        if (w.matches("\\d+([.,]\\d+)?")) { end[0] = i + 1; return withHalf(Double.parseDouble(w.replace(',', '.')), t, end); }
-        double total = 0, cur = 0; int j = i; boolean seen = false;
-        while (j < t.length) {
-            String x = t[j]; int u = index(UNITS, x), k = index(TENS, x);
-            // "elli beş iki kasa": birler basamağı doluysa yeni birler yeni sayıdır (57 değil 55 + 2).
-            if (u > 0) { if (cur % 10 != 0) break; cur += u; seen = true; }
-            else if (k > 0) { if (cur % 100 != 0) break; cur += 10 * k; seen = true; }
-            else if (x.equals("yuz")) { cur = (cur == 0 ? 1 : cur) * 100; seen = true; }
-            else if (x.equals("bin")) { total += (cur == 0 ? 1 : cur) * 1000; cur = 0; seen = true; }
-            else break;
-            j++;
-        }
-        if (!seen) return Double.NaN;
-        end[0] = j;
-        return withHalf(total + cur, t, end);
-    }
-
-    private static double withHalf(double v, String[] t, int[] end) {
-        // "yirmi buçuk", "120 kilo buçuk" değil: yalnız hemen arkasındaki "buçuk"
-        if (end[0] < t.length && t[end[0]].equals("bucuk")) { end[0]++; return v + 0.5; }
-        return v;
-    }
-
-    private static int index(String[] arr, String w) { for (int i = 0; i < arr.length; i++) if (arr[i].equals(w)) return i; return -1; }
-
-    static String normalize(String raw) {
-        String s = raw.toLowerCase(TR)
-                .replace('ı', 'i').replace('ç', 'c').replace('ş', 's').replace('ğ', 'g').replace('ö', 'o').replace('ü', 'u')
-                .replace('â', 'a').replace('î', 'i').replace('û', 'u');
-        s = s.replaceAll("(\\d)\\s*(kg|kilo)\\b", "$1 kilo");
-        s = s.replaceAll("(\\d)\\.(?=\\s*(numara|no)\\b)", "$1");      // "3. numara"
-        s = s.replaceAll("['’]\\p{L}*", " ");                          // ekler: "Ahmet'e"
-        s = s.replaceAll("[^a-z0-9.,]+", " ").replaceAll("(?<!\\d)[.,]|[.,](?!\\d)", " ");
-        return s.trim().replaceAll("\\s+", " ");
     }
 
     private static String fmt(double v) {

@@ -49,7 +49,7 @@ final class AssistantCloud {
         if (raw == null) return false;
         String t = raw.trim();
         if (t.isEmpty() || t.length() > 300 || t.contains("?")) return false;
-        String s = ElekVoiceEntry.normalize(t);
+        String s = TurkishText.normalize(t);
         if (s.split(" ").length < 3) return false;
         if (s.matches(".*(^|\\s)(kac|ne|neden|niye|nasil|hangi|hangisi|mi|mu|misin|musun|midir|mudur|kim|nerede)(\\s|$).*")) return false;
         if (s.matches(".*\\b(ac|goster|sil|kapat|git|getir|hatirlat|anlamadig\\p{L}*|meydan\\p{L}*)\\b.*")) return false;
@@ -65,7 +65,7 @@ final class AssistantCloud {
         String[] t = s.split(" ");
         for (int i = 0; i < t.length; i++) {
             int[] end = new int[1];
-            if (!Double.isNaN(ElekVoiceEntry.number(t, i, end))) return true;
+            if (!Double.isNaN(TurkishText.number(t, i, end))) return true;
         }
         return false;
     }
@@ -97,7 +97,7 @@ final class AssistantCloud {
             return null;
         }
         if (r == null) return null;
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (s.isEmpty()) return null;
 
         // ---- işlem: kurallar cümlede bir işlem sözü bulduysa o geçerli ("damlama" → sulama)
@@ -113,7 +113,7 @@ final class AssistantCloud {
                 : s.matches(".*\\bdun\\b.*") ? -1 : 0;
 
         // ---- sayılar: cümlede geçmeyen sayı kabul edilmez
-        List<Double> said = numbers(s);
+        List<Double> said = TurkishText.numbers(s);
         double qty = number(r, "miktar");
         if (qty > 0 && !contains(said, qty)) qty = 0;
         double cost = number(r, "tutar");
@@ -147,20 +147,6 @@ final class AssistantCloud {
         return 0;   // "kisi" gibi sözler, null, metin: yok sayılır
     }
 
-    /** Cümledeki tüm sayılar ("üç", "1500'e", "2.500", "12,5"). */
-    static List<Double> numbers(String s) {
-        List<Double> out = new ArrayList<>();
-        String[] t = s.split(" ");
-        for (int i = 0; i < t.length; i++) {
-            int[] end = new int[1];
-            double v = ElekVoiceEntry.number(t, i, end);
-            if (Double.isNaN(v) || v <= 0) continue;
-            out.add(v);
-            i = Math.max(i, end[0] - 1);
-        }
-        return out;
-    }
-
     private static boolean contains(List<Double> list, double v) { return countOf(list, v) > 0; }
     private static int countOf(List<Double> list, double v) { int c = 0; for (double d : list) if (same(d, v)) c++; return c; }
     private static boolean same(double a, double b) { return Math.abs(a - b) < 0.001; }
@@ -172,7 +158,7 @@ final class AssistantCloud {
 
     /** Bahçe adı cümlede geçiyor mu ("Girelide", "kuyudibine", "Kuyu dibinde" gibi ekli ve bitişik yazılışlar dahil). */
     static boolean mentioned(String normalizedSentence, String garden) {
-        String g = ElekVoiceEntry.normalize(garden == null ? "" : garden).replace(" ", "");
+        String g = TurkishText.normalize(garden == null ? "" : garden).replace(" ", "");
         if (g.length() < 3) return false;
         if (g.length() <= 5) {
             for (String w : normalizedSentence.split(" ")) if (w.startsWith(g)) return true;
@@ -207,7 +193,7 @@ final class AssistantCloud {
 
     /** İzin cevabı: 1 evet, 0 hayır, -1 başka bir şey söylendi. */
     static int consent(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (s.matches("(evet|olur|tamam|sor|hadi|tabi|tabii|peki|aynen|he|sor bakalim|evet sor)( .*)?") && !s.matches(".*\\b(hayir|istemem|sorma)\\b.*")) return 1;
         if (s.matches("(hayir|istemem|sorma|gerek yok|yok|olmaz|kalsin|bosver)( .*)?")) return 0;
         return -1;
@@ -215,13 +201,13 @@ final class AssistantCloud {
 
     /** "internet yardımcısı durumu", "yardımcı neden çalışmadı": son denemenin sonucu. */
     static boolean asksStatus(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         return s.matches(".*\\b(internet\\p{L}*|yardimci\\p{L}*)\\b.*") && s.matches(".*\\b(durum\\p{L}*|neden calismadi|niye calismadi|calisiyor mu|ne oldu)\\b.*");
     }
 
     /** Sesli ayar: "internet yardımcısını kapat / aç". 1 aç, 0 kapat, -1 değil. */
     static int toggleCommand(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (!s.matches(".*\\binternet\\p{L}*\\b.*") || !s.matches(".*\\b(yardimci\\p{L}*|sorma\\p{L}*|asistan\\p{L}*)\\b.*")) return -1;
         if (s.matches(".*\\b(kapat\\p{L}*|kapa|istemiyorum|durdur)\\b.*") || s.matches(".*\\binternete sorma\\b.*")) return 0;
         if (s.matches(".*\\b(ac|acil\\p{L}*|baslat|aktif\\p{L}*|kullan)\\b.*")) return 1;

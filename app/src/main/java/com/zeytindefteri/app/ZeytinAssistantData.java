@@ -111,8 +111,8 @@ public final class ZeytinAssistantData implements AutoCloseable {
         Long latest=null; boolean found=false; long now=date(today());
         try(Cursor c=db.getGardenOperations(garden.id)) {
             while(c.moveToNext()) {
-                String stored=ZeytinAssistantCommand.normalize(str(c,"type"));
-                if(!stored.equals(ZeytinAssistantCommand.normalize(type)) && !(type.equals("Gübre") && stored.equals("gubreleme")))continue;
+                String stored=TurkishText.normalize(str(c,"type"));
+                if(!stored.equals(TurkishText.normalize(type)) && !(type.equals("Gübre") && stored.equals("gubreleme")))continue;
                 found=true;Long d=date(str(c,"operation_date"));
                 if(d!=null && d<=now && (latest==null || d>latest))latest=d;
             }
@@ -203,7 +203,7 @@ public final class ZeytinAssistantData implements AutoCloseable {
             String region=str(c,"region");regions.add(region);
         }}
         String regionFilter="";
-        for(String region:regions)if(!region.isEmpty() && command.text.contains(ZeytinAssistantCommand.normalize(region))){
+        for(String region:regions)if(!region.isEmpty() && command.text.contains(TurkishText.normalize(region))){
             if(!regionFilter.isEmpty() && !regionFilter.equals(region))return "Tek bir piyasa bölgesi söyle.";
             regionFilter=region;
         }
@@ -232,7 +232,7 @@ public final class ZeytinAssistantData implements AutoCloseable {
         for(Map.Entry<String,Double> e:values.entrySet())if(e.getValue()>max){max=e.getValue();result=gradeName(e.getKey());}else if(e.getValue()==max)result+=" / "+gradeName(e.getKey());
         return result+": "+number(max)+" kg (en yüksek kayıtlı miktar).";
     }
-    private static String type(String value){String n=ZeytinAssistantCommand.normalize(value);return n.equals("gubreleme")?"gubre":n;}
+    private static String type(String value){String n=TurkishText.normalize(value);return n.equals("gubreleme")?"gubre":n;}
     private static final class Entry { long day,id;double kg,cost;String label,date; }
     private List<Entry> entries(Garden garden,ZeytinAssistantPeriod period,String source){
         List<Entry> list=new ArrayList<>();

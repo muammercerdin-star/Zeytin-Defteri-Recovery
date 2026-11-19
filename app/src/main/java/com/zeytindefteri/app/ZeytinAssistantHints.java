@@ -119,7 +119,7 @@ public final class ZeytinAssistantHints {
         if (raw == null) return out;
         for (String token : raw.trim().split("\\s+")) {
             String clean = token.replaceAll("^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{N}]+$", "");
-            String key = ZeytinAssistantCommand.normalize(clean);
+            String key = TurkishText.normalize(clean);
             if (key.isEmpty()) continue;
             for (Topic t : topics) {
                 if (t.pattern.matcher(key).find() && !out.contains(clean)) { out.add(clean); break; }
@@ -137,12 +137,12 @@ public final class ZeytinAssistantHints {
      */
     /** Cümlede hiçbir kayıt/konu sözü yoksa (sohbet): kart yerine dostça cevap verilir. */
     static boolean chatOnly(String raw) {
-        String s = ZeytinAssistantCommand.normalize(raw);
+        String s = TurkishText.normalize(raw);
         return !asksHelp(s) && topics(s).isEmpty();
     }
 
     static Hint hint(String raw, String gardenName, Set<Topic> recorded) {
-        String s = ZeytinAssistantCommand.normalize(raw);
+        String s = TurkishText.normalize(raw);
         if (asksHelp(s)) return cards("Kayıtların, hava ve piyasa hakkında sorabilirsin. Bir konu seç:");
         List<Topic> topics = topics(s);
         if (topics.isEmpty()) return cards("Bunu bilmiyorum. Kayıtların, hava ve piyasa hakkında sorabilirsin:");

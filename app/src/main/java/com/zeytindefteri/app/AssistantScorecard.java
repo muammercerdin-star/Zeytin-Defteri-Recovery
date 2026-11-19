@@ -148,7 +148,7 @@ final class AssistantScorecard {
 
     /** "Karneni göster", "karnen nasıl", "karneyi aç". Silme sözü komut sayılmaz. */
     static boolean asksShow(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         if (!mentionsCard(s)) {
             return false;
         }
@@ -175,7 +175,7 @@ final class AssistantScorecard {
      * anlamadıklarım listesi birlikte silinir (KVKK: kullanıcı cihazdaki kaydı kendisi silebilir).
      */
     static boolean asksClearAll(String raw) {
-        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        String s = TurkishText.normalize(raw == null ? "" : raw);
         boolean clear = s.matches(".*\\b(sil\\p{L}*|temizle\\p{L}*|sifirla\\p{L}*|unut)\\b.*");
         if (!clear) {
             return false;

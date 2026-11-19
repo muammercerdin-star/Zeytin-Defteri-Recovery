@@ -68,7 +68,7 @@ public class AssistantCloudTest {
         check(AssistantCloud.consent("evet sor") == 1 && AssistantCloud.consent("hayır") == 0 && AssistantCloud.consent("son sulama ne zaman") == -1, "izin cevabı");
         check(AssistantCloud.toggleCommand("internet yardımcısını kapat") == 0 && AssistantCloud.toggleCommand("internet yardımcısını aç") == 1
                 && AssistantCloud.toggleCommand("elek aç") == -1, "sesli aç/kapat");
-        check(AssistantCloud.mentioned(ElekVoiceEntry.normalize("Kuyu dibinde suladık"), "Kuyu dibi") && !AssistantCloud.mentioned(ElekVoiceEntry.normalize("bahçeye ilaç"), "Girelli"), "bahçe geçiyor mu");
+        check(AssistantCloud.mentioned(TurkishText.normalize("Kuyu dibinde suladık"), "Kuyu dibi") && !AssistantCloud.mentioned(TurkishText.normalize("bahçeye ilaç"), "Girelli"), "bahçe geçiyor mu");
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " AssistantCloud");
         if (bad > 0) System.exit(1);
     }

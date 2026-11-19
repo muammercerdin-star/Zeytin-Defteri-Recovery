@@ -2,9 +2,9 @@
 # Sütunlar: cumle TAB beklenen_eylem TAB beklenen_alanlar TAB durum TAB kaynak_test
 # durum: dogru = bugün böyle anlaşılıyor, bozulursa test kalır.
 #        beklenen_hata = bilinen yanlış; beklenen sütunu DOĞRU sonucu yazar. Düzelince sınayıcı uyarır, durum dogru yapılır.
-# Alanlar "anahtar=değer;..." (yoksa "-"). ELEK: double,1no..4no,yaglik,satis,alici · ISLEM: tur,gun,miktar,birim,tutar
+# Alanlar "anahtar=değer;..." (yoksa "-"). ELEK: double,1no..4no,yaglik,<boy>_fiyat,satis,alici · ISLEM: tur,gun,miktar,birim,tutar
 #        HASAT: boylar,toplam,gun · SORU_*: boy,islem · EKRAN_AC: ekran. gun yalnız bugün değilse yazılır (-1 dün, -2 evvelsi gün).
-# double_fiyat gibi kilo başı fiyat alanını sınayıcı İP2'de okumaya başlayacak (ElekVoiceEntry'de henüz fiyat alanı yok).
+# ELEK'te <boy>_fiyat = söylenen kilo başı fiyat (TL/kg): "2 kilo 220 lira" → 110, "110 liradan" → 110 (İP2).
 cumle	beklenen_eylem	beklenen_alanlar	durum	kaynak_test
 Elek aç	EKRAN_AC	ekran=ELEK	dogru	assistant/AssistantCommandTest.java
 Piyasayı aç	EKRAN_AC	ekran=MARKET	dogru	assistant/AssistantCommandTest.java
@@ -255,8 +255,13 @@ dabıl dört kilo bir numara on beş kilo iki numara yirmi beş kilo üç numara
 karneni göster	KARNE_GOSTER	-	dogru	ip1_karne
 karnen nasıl	KARNE_GOSTER	-	dogru	ip1_karne
 bugün bakırladık	ISLEM	tur=İlaçlama	beklenen_hata	is_emri_18_kasim
-double 2 kilo 220 lira	ELEK	double=2;double_fiyat=110	beklenen_hata	is_emri_18_kasim
+double 2 kilo 220 lira	ELEK	double=2;double_fiyat=110	dogru	is_emri_18_kasim
 bugün bakır attık	ISLEM	tur=İlaçlama	beklenen_hata	ip1_bilinen_hata
 Bakır attım	ISLEM	tur=İlaçlama	beklenen_hata	operation_voice/OperationVoiceDialogTest.java
 Deltametrin attım 250 ml	ISLEM	tur=İlaçlama;miktar=250;birim=ml	beklenen_hata	operation_voice/OperationVoiceDialogTest.java
 Girelli kaç yaşında?	SORU_AGE	-	beklenen_hata	assistant/AssistantCommandTest.java
+3 numara 120 kilo 110 liradan sattım	ELEK	3no=120;3no_fiyat=110;satis=evet	dogru	ip2_lira
+Double iki kilo iki yüz yirmi TL	ELEK	double=2;double_fiyat=110	dogru	ip2_lira
+double 2 kilo 220 lira 1 numara 3 kilo 300 lira	ELEK	double=2;double_fiyat=110;1no=3;1no_fiyat=100	dogru	ip2_lira
+İzmit'ten gübre aldık 50 kilo	ISLEM	tur=Gübre;miktar=50;birim=kg	dogru	ip2_birim
+3 çuval gübre attık	ISLEM	tur=Gübre;miktar=3;birim=çuval	dogru	ip2_birim

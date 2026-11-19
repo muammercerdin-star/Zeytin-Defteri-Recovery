@@ -635,7 +635,7 @@ public final class ZeytinAssistantController {
         typing=false;hideKeyboard();input.setText("");
         quietMisses=0;
         lastQuestion=raw.trim();lastRaw=raw;question.setText(lastQuestion);heard.setText("");
-        if(opDialog==null&&recDialog==null&&ElekVoiceEntry.normalize(raw).matches("(tesekkur\\p{L}*|sag ol\\p{L}*|sagol\\p{L}*|tamam bu kadar|bu kadar|yeter|kapat|gorusuruz|hosca kal|eyvallah)( .*)?")){
+        if(opDialog==null&&recDialog==null&&TurkishText.normalize(raw).matches("(tesekkur\\p{L}*|sag ol\\p{L}*|sagol\\p{L}*|tamam bu kadar|bu kadar|yeter|kapat|gorusuruz|hosca kal|eyvallah)( .*)?")){
             closeAfterSpeech=true;
             postDialog(new OperationVoiceDialog.Reply("Rica ederim, kolay gelsin.",OperationVoiceDialog.Action.CANCEL),"Zeytin Asistanı");
             if(!ttsReady||tts==null)main.postDelayed(()->{if(visible()&&dialog!=null)dialog.dismiss();},1500);
@@ -707,8 +707,8 @@ public final class ZeytinAssistantController {
                 }
                 // "Bugün Girelli'yi ilaçladım", "Mazot aldım 500 lira": cevap yerine işlem formu dolu açılır.
                 // "Elek gireceğim / elek kaydı": elek ekranı açılır, sesli elek hemen başlar.
-                if(pick==null&&ElekVoiceEntry.normalize(raw).matches(".*\\belek\\b.*")&&ElekVoiceEntry.normalize(raw).matches(".*\\b(gir\\p{L}*|kaydet\\p{L}*|kaydi|ekle\\p{L}*|yaz\\p{L}*|yapacag\\p{L}*|baslat|basla\\p{L}*)\\b.*")
-                        &&!ElekVoiceEntry.normalize(raw).matches(".*(^|\\s)(kac|ne|mi|mu|hangi|nasil|son)(\\s|$).*")){
+                if(pick==null&&TurkishText.normalize(raw).matches(".*\\belek\\b.*")&&TurkishText.normalize(raw).matches(".*\\b(gir\\p{L}*|kaydet\\p{L}*|kaydi|ekle\\p{L}*|yaz\\p{L}*|yapacag\\p{L}*|baslat|basla\\p{L}*)\\b.*")
+                        &&!TurkishText.normalize(raw).matches(".*(^|\\s)(kac|ne|mi|mu|hangi|nasil|son)(\\s|$).*")){
                     meter(token,raw,owner,"ELEK_AC");
                     final long eg=resolution.garden==null?0:resolution.garden.id;
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Elek ekranını açıyorum…");haptic();dialog.dismiss();host.openElekVoice(eg);}});
