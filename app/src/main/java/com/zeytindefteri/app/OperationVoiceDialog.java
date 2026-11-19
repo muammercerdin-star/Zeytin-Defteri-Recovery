@@ -31,6 +31,8 @@ public final class OperationVoiceDialog {
     private int refusals;
     /** "250 olacak" denip miktar mı tutar mı belli değilse bekleyen değer. */
     private double pendingValue = -1;
+    /** Çiftçi özetten sonra "evet/kaydet" dedi mi (İP3: yazma yalnız bu onayla, bkz. Approval). */
+    private boolean confirmed;
 
     /** gardens: bahçe adları; gardenIndex: cümlede adı geçen bahçe (yoksa -1). Tek bahçe varsa o seçilir. */
     public OperationVoiceDialog(OperationVoiceEntry entry, List<String> gardens, int gardenIndex) {
@@ -40,6 +42,11 @@ public final class OperationVoiceDialog {
     }
 
     public Step step() { return step; }
+
+    /** Çiftçi kaydı sesle onayladı mı (yalnız özetten sonraki "evet"le true olur). */
+    boolean confirmed() {
+        return confirmed;
+    }
     String type() { return OperationKinds.TYPES[entry.type]; }
 
     /** İlk soru (sohbetin başı). */
@@ -122,6 +129,7 @@ public final class OperationVoiceDialog {
                 }
                 if (has(s, "evet|kaydet|tamam|olur|dogru|aynen|he|onayla")) {
                     step = Step.DONE;
+                    confirmed = true;
                     return new Reply("Kaydettim. Eline sağlık.", Action.SAVE);
                 }
                 return ask("Kaydedeyim mi? Evet ya da hayır de.");

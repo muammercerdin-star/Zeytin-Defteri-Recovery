@@ -46,7 +46,8 @@ public final class ZeytinAssistantController {
         /** "Bugün Girelli'yi ilaçladım": işlem formunu dolu aç (kaydetmez; kullanıcı Kaydet'e basar). */
         default void openOperationEntry(long gardenId,OperationVoiceEntry entry){navigate("OPERATION",gardenId);}
         /** Sohbetle tamamlanmış bahçe işini kaydeder ("evet" dendikten sonra); kayıt id'si ya da -1. */
-        default long saveOperation(long gardenId,String type,String date,double quantity,String unit,double cost,String note){return -1;}
+        /** Sesle konuşulan işi kaydeder; yalnız çiftçinin "evet"inden doğan onay belgesiyle (Approval). */
+        default long saveOperation(Approval approval,long gardenId,String type,String date,double quantity,String unit,double cost,String note){return -1;}
         /** Sohbetle toplanan hasat / salamura / bahçe / gönderi: ilgili form her şey yazılı açılır (kayıt Kaydet'le). */
         default void openRecordForm(VoiceRecordDialog d,long gardenId){}
         /** "Elek gireceğim": elek ekranı açılır ve sesli elek konuşması hemen başlar. */
@@ -1112,7 +1113,8 @@ public final class ZeytinAssistantController {
             case SAVE:{
                 java.util.Calendar c=java.util.Calendar.getInstance();c.add(java.util.Calendar.DAY_OF_MONTH,d.entry.dayOffset);
                 String date=new java.text.SimpleDateFormat("dd.MM.yyyy",new Locale("tr","TR")).format(c.getTime());
-                long id=host.saveOperation(gid,OperationKinds.TYPES[d.entry.type],date,d.quantityForSave(),d.unitForSave(),d.entry.cost,d.noteForSave());
+                Approval approval=Approval.operationConfirmed(d);
+                long id=host.saveOperation(approval,gid,OperationKinds.TYPES[d.entry.type],date,d.quantityForSave(),d.unitForSave(),d.entry.cost,d.noteForSave());
                 opDialog=null;
                 postDialog(new OperationVoiceDialog.Reply(id>0?"Kaydettim. "+persona().thanks():"Kaydedemedim. Formu açıyorum, oradan kaydedersin.",OperationVoiceDialog.Action.SAVE),"Bahçe işi · kaydedildi");
                 if(id<=0){final long g=gid;main.postDelayed(()->{if(visible())dialog.dismiss();host.openOperationEntry(g,d.entry);},1500);}

@@ -7306,7 +7306,11 @@ public class ProducerFeedActivity extends Activity {
                                 }
 
                                 @Override
-                                public long saveOperation(long gardenId, String type, String date, double quantity, String unit, double cost, String note) {
+                                public long saveOperation(Approval approval, long gardenId, String type, String date, double quantity, String unit, double cost, String note) {
+                                    // Onay kapısı: çiftçinin "evet"i olmadan hiçbir karar kayıt yazamaz.
+                                    if (!ActionGate.mayWrite(ActionCatalog.ISLEM, approval)) {
+                                        return -1;
+                                    }
                                     long id;
                                     try { id = db.addOperation((int) gardenId, type, date, quantity, unit, cost, note); }
                                     catch (RuntimeException e) { id = -1; }
