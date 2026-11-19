@@ -271,3 +271,12 @@ Double 50 kilo kilosu 140 lira	ELEK	double=50;double_fiyat=140	dogru	ip2_lira_du
 Double 50 kilo 140 lira kilosu	ELEK	double=50;double_fiyat=140	dogru	ip2_lira_duzeltme
 1 numara 200 kilo 25 bin lira	ELEK	1no=200;1no_fiyat=125	dogru	ip2_lira_duzeltme
 Yağlık 300 kilo 40 lira	ELEK	yaglik=300;yaglik_fiyat=40	dogru	ip2_lira_duzeltme
+sinek tuzağı astık	ISLEM	tur=Sinek tuzağı	dogru	ip5_inceleme
+Girelli'ye 15 sinek tuzağı astık	ISLEM	tur=Sinek tuzağı;miktar=15;birim=adet	dogru	ip5_inceleme
+bugün tuzağı değiştirdik	ISLEM	tur=Sinek tuzağı	dogru	ip5_inceleme
+ot biçtik	ISLEM	tur=Diğer;not=Ot biçme	dogru	ip5_yeni_isler
+bugün Girelli'de otları biçtik 2 saat	ISLEM	tur=Diğer;not=Ot biçme;miktar=2;birim=saat	dogru	ip5_yeni_isler
+kalem aşısı yaptık	ISLEM	tur=Diğer;not=Aşılama	dogru	ip5_yeni_isler
+dün 30 ağaca aşı yaptık	ISLEM	tur=Diğer;not=Aşılama;gun=-1;miktar=30;birim=ağaç	dogru	ip5_yeni_isler
+kultivatör çektik	ISLEM	tur=Toprak İşleme	dogru	ip5_yeni_isler
+bugün işçi çalıştı	ISLEM	tur=İşçilik	dogru	ip5_yeni_isler

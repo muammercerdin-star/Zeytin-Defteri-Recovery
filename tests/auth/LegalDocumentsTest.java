@@ -41,7 +41,7 @@ public final class LegalDocumentsTest {
             check(filled.contains("Muammer Çerdin") && !filled.contains(LegalDocuments.CONTROLLER_PENDING), file + " controller name filled");
             check(LegalDocuments.fill(raw(file), "").contains(LegalDocuments.CONTROLLER_PENDING), file + " empty name is marked pending");
             check(filled.contains("Sürüm " + LegalDocuments.VERSION), file + " shows current version");
-            check("2.3".equals(LegalDocuments.VERSION), "version 2.3");
+            check("2.4".equals(LegalDocuments.VERSION), "version 2.4");
             String named = LegalDocuments.fill(raw(file), "Ad Soyad");
             check(named.contains("Ad Soyad") && !named.contains(LegalDocuments.CONTROLLER_PENDING), file + " name substitution");
             // No fabricated contact data or absolute guarantees.
@@ -54,7 +54,15 @@ public final class LegalDocumentsTest {
             check(kvkk.contains(section), "KVKK section: " + section);
         }
         check(kvkk.contains("açık rıza beyanı değildir"), "KVKK notice is not consent");
+        // İP5 (2.4): kayıtlardan çıkarılan öneriler — veri kategorisi ve hukuki sebep, yalnız telefonda.
+        check(kvkk.split("Kayıtlardan çıkarılan öneriler", -1).length == 3, "KVKK: öneriler kategoride ve hukuki sebepte");
+        check(kvkk.contains("uygulamayı kolaylaştırmaktaki meşru menfaat (KVKK m. 5/2-f). İşleme yalnızca telefonunda yapılır"),
+                "KVKK: öneriler m. 5/2-f, yalnız telefonda");
+        check(kvkk.contains("nereye dokunduğun izlenmez"), "KVKK: gizli izleme yok");
         String privacy = raw("legal_privacy.txt");
+        check(privacy.split("Kayıtlardan çıkarılan öneriler", -1).length == 3, "Gizlilik: öneriler paragrafı ve saklama maddesi");
+        check(privacy.contains("\"Bu yanlış\" kayıtların telefonunda kalır; hesabını sildiğinde ya da uygulamayı kaldırdığında silinir"),
+                "Gizlilik saklama: Bu yanlış kayıtları");
         for (String section : new String[]{"Firebase Authentication", "Supabase", "Bahçe ve sezon", "Meydan",
                 "Bildirimler", "Analitik", "Saklama ve silme", "Üçüncü taraf"}) {
             check(privacy.contains(section), "Privacy section: " + section);

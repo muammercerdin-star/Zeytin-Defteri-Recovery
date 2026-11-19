@@ -20,7 +20,7 @@ import java.util.List;
  */
 final class LearnedTermsDb extends SQLiteOpenHelper {
     static final String FILE = "zd_learned_terms.db";
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;   // 2: not sütunu (İP5, "Diğer" işleri)
     private static LearnedTermsDb instance;
 
     private LearnedTermsDb(Context context) {
@@ -38,7 +38,8 @@ final class LearnedTermsDb extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS learned_terms (owner TEXT NOT NULL, term TEXT NOT NULL, word TEXT NOT NULL, "
                 + "action TEXT NOT NULL, field TEXT NOT NULL DEFAULT '', value TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL, "
-                + "source TEXT NOT NULL, created INTEGER NOT NULL, uses INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (owner, term))");
+                + "source TEXT NOT NULL, created INTEGER NOT NULL, uses INTEGER NOT NULL DEFAULT 0, note TEXT NOT NULL DEFAULT '', "
+                + "PRIMARY KEY (owner, term))");
         db.execSQL("CREATE TABLE IF NOT EXISTS declined_sentences (owner TEXT NOT NULL, sentence TEXT NOT NULL, "
                 + "created INTEGER NOT NULL, PRIMARY KEY (owner, sentence))");
     }
@@ -46,6 +47,22 @@ final class LearnedTermsDb extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         onCreate(db);
+        if (oldVersion < 2 && !hasColumn(db, "learned_terms", "note")) {
+            // Eski sözler korunur; notları boş kalır.
+            db.execSQL("ALTER TABLE learned_terms ADD COLUMN note TEXT NOT NULL DEFAULT ''");
+        }
+    }
+
+    private static boolean hasColumn(SQLiteDatabase db, String table, String column) {
+        try (Cursor c = db.rawQuery("PRAGMA table_info(" + table + ")", null)) {
+            int name = c.getColumnIndex("name");
+            while (c.moveToNext()) {
+                if (column.equals(c.getString(name))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** Bu hesabın sözlüğü. */
@@ -111,6 +128,7 @@ final class LearnedTermsDb extends SQLiteOpenHelper {
                 v.put("action", t.action);
                 v.put("field", t.field);
                 v.put("value", t.value);
+                v.put("note", t.note);
                 v.put("kind", t.kind);
                 v.put("source", t.source);
                 v.put("created", t.created);
@@ -170,6 +188,7 @@ final class LearnedTermsDb extends SQLiteOpenHelper {
                     c.getString(c.getColumnIndexOrThrow("action")),
                     c.getString(c.getColumnIndexOrThrow("field")),
                     c.getString(c.getColumnIndexOrThrow("value")),
+                    c.getString(c.getColumnIndexOrThrow("note")),
                     c.getString(c.getColumnIndexOrThrow("kind")),
                     c.getString(c.getColumnIndexOrThrow("source")),
                     c.getLong(c.getColumnIndexOrThrow("created")),

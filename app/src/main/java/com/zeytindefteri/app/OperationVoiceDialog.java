@@ -49,6 +49,12 @@ public final class OperationVoiceDialog {
     }
     String type() { return OperationKinds.TYPES[entry.type]; }
 
+    /** Okunan iş adı: "Diğer" işlerinde notu ("ot biçme"), yoksa tür. */
+    private String workName() {
+        String name = entry.note.isEmpty() ? type() : entry.note;
+        return name.toLowerCase(TR);
+    }
+
     /** İlk soru (sohbetin başı). */
     public Reply start() {
         Reply r = next();
@@ -168,9 +174,10 @@ public final class OperationVoiceDialog {
         if (t >= 0 && t != entry.type && !before.isEmpty() && OperationVoiceEntry.typeOf(before) == entry.type) {
             // Tür değişince eski miktar ("2 saat") yeni türe uymaz: silinir, yeni türe göre yeniden sorulur.
             entry.type = t; entry.quantity = 0; entry.unit = ""; what = "";
+            entry.note = t == OperationVoiceEntry.OTHER ? OperationVoiceEntry.noteOf(after) : "";
             askedQuantity = false; askedWhat = false; refusals = 0;
             Reply r = next();
-            return ask("Tamam, " + type().toLowerCase(TR) + " olarak düzelttim. " + r.speech);
+            return ask("Tamam, " + workName() + " olarak düzelttim. " + r.speech);
         }
 
         // ---- sayı: "350 değil 250", "3 saat değil 4", "tutar 250 olacak", "250 olacak"
@@ -315,7 +322,7 @@ public final class OperationVoiceDialog {
         StringBuilder b = new StringBuilder();
         if (garden >= 0 && gardens != null && garden < gardens.size()) b.append(gardens.get(garden)).append(", ");
         b.append(entry.dayOffset == 0 ? "bugün" : entry.dayOffset == -1 ? "dün" : "evvelsi gün").append(' ')
-                .append(type().toLowerCase(TR));
+                .append(workName());
         if (!what.isEmpty()) b.append(", ").append(what);
         if (entry.quantity > 0) b.append(", ").append(ElekVoiceDialog.num(entry.quantity)).append(' ').append(unitWord(entry.unit));
         if (entry.cost > 0) b.append(", ").append(ElekVoiceDialog.money(entry.cost)).append(" lira");
@@ -331,6 +338,10 @@ public final class OperationVoiceDialog {
     /** Not: ilacın/gübrenin adı; birim türde yoksa miktar da nota. */
     public String noteForSave() {
         StringBuilder b = new StringBuilder(what);
+        // "Diğer" işi: notun başında işin adı ("Ot biçme"); kayıtta tür "Diğer" kalır.
+        if (!entry.note.isEmpty()) {
+            b.insert(0, b.length() > 0 ? entry.note + ", " : entry.note);
+        }
         boolean fits = false;
         for (String u : OperationKinds.form(type()).units) if (u.equalsIgnoreCase(entry.unit)) fits = true;
         if (entry.quantity > 0 && !fits) { if (b.length() > 0) b.append(", "); b.append(ElekVoiceDialog.num(entry.quantity)).append(' ').append(entry.unit); }

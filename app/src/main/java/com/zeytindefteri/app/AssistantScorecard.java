@@ -27,6 +27,19 @@ final class AssistantScorecard {
 
     private static final String[] COUNTERS = {UNDERSTOOD, MISSED, FILLED, CORRECTED};
 
+    /** Öneri sayaçları (İP5), türüne göre: "oneri_gosterilen.alici", "oneri_kabul.fiyat", "oneri_yanlis.urun". */
+    static final String SHOWN = "oneri_gosterilen";
+    static final String ACCEPTED = "oneri_kabul";
+    static final String WRONG = "oneri_yanlis";
+    private static final String[] SUGGESTION_EVENTS = {SHOWN, ACCEPTED, WRONG};
+
+    /** Öneri sayacının anahtarı; bilinmeyen olay ya da tür "". */
+    static String suggestionKey(String event, String category) {
+        boolean eventKnown = java.util.Arrays.asList(SUGGESTION_EVENTS).contains(event);
+        boolean categoryKnown = java.util.Arrays.asList(HabitCorrections.CATEGORIES).contains(category);
+        return eventKnown && categoryKnown ? event + "." + category : "";
+    }
+
     private AssistantScorecard() {
     }
 
@@ -81,6 +94,10 @@ final class AssistantScorecard {
             if (c.equals(key)) {
                 known = true;
             }
+        }
+        if (key != null && key.contains(".")) {
+            int dot = key.indexOf('.');
+            known = !suggestionKey(key.substring(0, dot), key.substring(dot + 1)).isEmpty();
         }
         if (!known || delta <= 0) {
             return keep;
@@ -193,7 +210,8 @@ final class AssistantScorecard {
         long filled = get(stored, FILLED);
         long fixed = get(stored, CORRECTED);
         int saves = spans(stored).size();
-        if (ok + miss == 0 && filled == 0 && saves == 0) {
+        String suggestions = suggestions(stored);
+        if (ok + miss == 0 && filled == 0 && saves == 0 && suggestions.isEmpty()) {
             String empty = "Karnem henüz boş. Benimle konuştukça ve kayıt girdikçe dolacak.";
             return new String[]{empty, empty};
         }
@@ -207,12 +225,32 @@ final class AssistantScorecard {
         } else {
             b.append("\n• Kayıt süresi: henüz kayıt yok");
         }
+        b.append(suggestions);
         b.append("\n\nYalnız sayılar tutulur, cümlelerin karneye girmez. Bu bilgiler yalnız bu telefonda.");
         String speech = "Karnemi ekrana yazdım.";
         if (ok + miss > 0) {
             speech = "Karnemi ekrana yazdım. " + (ok + miss) + " cümlenin " + ok + " tanesini anladım.";
         }
         return new String[]{speech, b.toString()};
+    }
+
+    /** Öneri satırları (yalnız gösterilmiş türler): "• Öneri · alıcı: 6 gösterildi, 4 kabul, 1 «Bu yanlış»". */
+    static String suggestions(String stored) {
+        StringBuilder b = new StringBuilder();
+        String[] names = {"alıcı", "fiyat", "sınıf", "bahçe", "ilaç / gübre", "miktar", "işçi sayısı"};
+        for (int i = 0; i < HabitCorrections.CATEGORIES.length; i++) {
+            String c = HabitCorrections.CATEGORIES[i];
+            long shown = get(stored, SHOWN + "." + c);
+            if (shown == 0) {
+                continue;
+            }
+            long accepted = get(stored, ACCEPTED + "." + c);
+            long wrong = get(stored, WRONG + "." + c);
+            b.append("\n• Öneri · ").append(names[i]).append(": ").append(shown).append(" gösterildi, ")
+                    .append(accepted).append(" kabul").append(percent(accepted, shown)).append(", ")
+                    .append(wrong).append(" «Bu yanlış»");
+        }
+        return b.toString();
     }
 
     private static String percent(long part, long whole) {

@@ -29,3 +29,46 @@ vazgec	sor	bugün bakırladık	SORMA	-	dogru
 vazgec	sor	dün bakırladık	SOR	bakırladık	dogru
 genel_fiil	sor	bugün pazara gittim	SORMA	-	dogru
 genel_fiil	sor	bakır attık	SORMA	-	dogru
+ogret_toprak	sor	bugün diskaradık	SOR	diskaradık	dogru
+ogret_toprak	ogret	diskaradık|Toprak İşleme	-	-	dogru
+ogret_toprak	cumle	bugün diskaradık	ISLEM	tur=Toprak İşleme	dogru
+ogret_toprak	cumle	dün Girelli'yi diskaradık 3 dekar	ISLEM	tur=Toprak İşleme;gun=-1;miktar=3;birim=dekar	dogru
+ogret_toprak	unut	diskaradığı unut	SOZ_UNUT	-	dogru
+ogret_toprak	cumle	bugün diskaradık	ANLASILMADI	-	dogru
+ogret_toprak	sor	bugün diskaradık	SOR	diskaradık	dogru
+ogret_tuzak	sor	bugün feromonladık	SOR	feromonladık	dogru
+ogret_tuzak	ogret	feromonladık|Sinek tuzağı	-	-	dogru
+ogret_tuzak	cumle	bugün Girelli'yi feromonladık	ISLEM	tur=Sinek tuzağı	dogru
+ogret_tuzak	unut	feromonladığı unut	SOZ_UNUT	-	dogru
+ogret_tuzak	cumle	bugün feromonladık	ANLASILMADI	-	dogru
+ogret_iscilik	sor	bugün ırgatladık	SOR	ırgatladık	dogru
+ogret_iscilik	ogret	ırgatladık|İşçilik	-	-	dogru
+ogret_iscilik	cumle	dün ırgatladık 1500 lira	ISLEM	tur=İşçilik;gun=-1;tutar=1500	dogru
+ogret_iscilik	unut	ırgatladığı unut	SOZ_UNUT	-	dogru
+ogret_iscilik	cumle	dün ırgatladık 1500 lira	ANLASILMADI	-	dogru
+ogret_otbicme	sor	bugün tırpanladık	SOR	tırpanladık	dogru
+ogret_otbicme	ogret	tırpanladık|Ot biçme / Temizlik	-	-	dogru
+ogret_otbicme	cumle	bugün tırpanladık	ISLEM	tur=Diğer;not=Ot biçme	dogru
+ogret_otbicme	cumle	dün Kuyu dibini tırpanladık 2 saat	ISLEM	tur=Diğer;not=Ot biçme;gun=-1;miktar=2;birim=saat	dogru
+ogret_otbicme	unut	tırpanladığı unut	SOZ_UNUT	-	dogru
+ogret_otbicme	cumle	bugün tırpanladık	ANLASILMADI	-	dogru
+ogret_otbicme	sor	bugün tırpanladık	SOR	tırpanladık	dogru
+ogret_temizlik	ogret	temizledik|temizlik	-	-	dogru
+ogret_temizlik	cumle	ağaçların altını temizledik	ISLEM	tur=Diğer;not=Ot biçme	dogru
+ogret_asilama	sor	bugün aşıladık	SOR	aşıladık	dogru
+ogret_asilama	ogret	aşıladık|Aşılama	-	-	dogru
+ogret_asilama	cumle	bugün aşıladık	ISLEM	tur=Diğer;not=Aşılama	dogru
+ogret_asilama	cumle	dün Girelli'de 40 ağaç aşıladık	ISLEM	tur=Diğer;not=Aşılama;gun=-1;miktar=40;birim=ağaç	dogru
+ogret_asilama	unut	aşıladığı unut	SOZ_UNUT	-	dogru
+ogret_asilama	cumle	bugün aşıladık	ANLASILMADI	-	dogru
+iki_diger	ogret	tırpanladık|Ot biçme / Temizlik	-	-	dogru
+iki_diger	ogret	aşıladık|Aşılama	-	-	dogru
+iki_diger	cumle	bugün tırpanladık	ISLEM	tur=Diğer;not=Ot biçme	dogru
+iki_diger	cumle	bugün aşıladık	ISLEM	tur=Diğer;not=Aşılama	dogru
+iki_diger	unut	aşıladığı unut	SOZ_UNUT	-	dogru
+iki_diger	cumle	bugün tırpanladık	ISLEM	tur=Diğer;not=Ot biçme	dogru
+iki_diger	cumle	bugün aşıladık	ANLASILMADI	-	dogru
+sohbet_sorma	sor	çok yoruldum bugün	SORMA	-	dogru
+sohbet_sorma	sor	canım sıkıldı	SORMA	-	dogru
+sohbet_sorma	sor	torunlar geldi sevindik	SORMA	-	dogru
+sohbet_sorma	sor	akşam maçı izledik	SORMA	-	dogru

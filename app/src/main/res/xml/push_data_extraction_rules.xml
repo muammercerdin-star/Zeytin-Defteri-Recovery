@@ -8,6 +8,7 @@
         <exclude domain="sharedpref" path="zd_assistant_misses.xml" />
         <exclude domain="sharedpref" path="zd_assistant_scorecard.xml" />
         <exclude domain="database" path="zd_learned_terms.db" />
+        <exclude domain="database" path="zd_habits.db" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="zeytin_push.xml" />
@@ -17,5 +18,6 @@
         <exclude domain="sharedpref" path="zd_assistant_misses.xml" />
         <exclude domain="sharedpref" path="zd_assistant_scorecard.xml" />
         <exclude domain="database" path="zd_learned_terms.db" />
+        <exclude domain="database" path="zd_habits.db" />
     </device-transfer>
 </data-extraction-rules>

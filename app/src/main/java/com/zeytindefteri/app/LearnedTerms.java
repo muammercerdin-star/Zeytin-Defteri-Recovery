@@ -141,6 +141,11 @@ final class LearnedTerms {
         final String action;
         final String field;
         final String value;
+        /**
+         * Aynı türün işleri ayırt eden not (İP5): "Diğer" türüyle kaydedilen "Ot biçme" ve "Aşılama".
+         * Boşsa yoktur. Yedek dosyasına yalnız doluysa 10. sütun olarak yazılır (eski sürüm o satırı atlar).
+         */
+        final String note;
         /** Tür: öğretilen (çiftçi açıkça söyledi). */
         final String kind;
         /** Kaynak: ses | yazi | bulut-onayli. */
@@ -149,11 +154,17 @@ final class LearnedTerms {
         final int uses;
 
         Term(String term, String word, String action, String field, String value, String kind, String source, long created, int uses) {
+            this(term, word, action, field, value, "", kind, source, created, uses);
+        }
+
+        Term(String term, String word, String action, String field, String value, String note, String kind, String source,
+             long created, int uses) {
             this.term = term;
             this.word = word;
             this.action = action;
             this.field = field == null ? "" : field;
             this.value = value == null ? "" : value;
+            this.note = note == null ? "" : note;
             this.kind = kind;
             this.source = source;
             this.created = created;
@@ -161,7 +172,7 @@ final class LearnedTerms {
         }
 
         Term withUse() {
-            return new Term(term, word, action, field, value, kind, source, created, uses + 1);
+            return new Term(term, word, action, field, value, note, kind, source, created, uses + 1);
         }
 
         /** "ilaçlama", "hasat": cevapta okunan anlam. */
@@ -245,14 +256,32 @@ final class LearnedTerms {
         final String value;
         /** Öğrenilen sözün yerine kurallara verilen söz (kurallar bunu zaten anlar). */
         final String phrase;
+        /** "Diğer" türündeki işin adı (kayıt notu); boşsa yok. */
+        final String note;
+        /** Sesli cevapta düğmenin adı yerine söylenebilecek sözler ("tuzak", "temizlik"). */
+        final String[] says;
 
         Choice(String label, String spoken, String action, String field, String value, String phrase) {
+            this(label, spoken, action, field, value, "", phrase);
+        }
+
+        Choice(String label, String spoken, String action, String field, String value, String note, String phrase, String... says) {
             this.label = label;
             this.spoken = spoken;
             this.action = action;
             this.field = field;
             this.value = value;
+            this.note = note;
             this.phrase = phrase;
+            this.says = says;
+        }
+
+        /** Çiftçinin kayıtlarında sayıldığı ad: tür ya da (Diğer ise) not; hasat için "Hasat". */
+        String key() {
+            if (!note.isEmpty()) {
+                return note;
+            }
+            return value.isEmpty() ? label : value;
         }
     }
 
@@ -261,7 +290,17 @@ final class LearnedTerms {
             new Choice("Gübre", "gübre", ActionCatalog.ISLEM, "tur", "Gübre", "gubre attik"),
             new Choice("Budama", "budama", ActionCatalog.ISLEM, "tur", "Budama", "budadik"),
             new Choice("Sulama", "sulama", ActionCatalog.ISLEM, "tur", "Sulama", "suladik"),
-            new Choice("Hasat", "hasat", ActionCatalog.HASAT, "", "", "topladik")));
+            new Choice("Hasat", "hasat", ActionCatalog.HASAT, "", "", "topladik"),
+            // İP5: kuralların zaten anladığı işler (söyleyiş kurallarda var).
+            new Choice("Toprak İşleme", "toprak işleme", ActionCatalog.ISLEM, "tur", "Toprak İşleme", "", "toprak isledik",
+                    "toprak isleme", "toprak"),
+            new Choice("Sinek tuzağı", "sinek tuzağı", ActionCatalog.ISLEM, "tur", "Sinek tuzağı", "", "tuzak astik",
+                    "sinek tuzagi", "tuzak"),
+            new Choice("İşçilik", "işçilik", ActionCatalog.ISLEM, "tur", "İşçilik", "", "isci calisti", "iscilik", "isci"),
+            // İP5: listede tür olarak yok; "Diğer" türüyle, notunda işin adıyla kaydedilir (kararla).
+            new Choice("Ot biçme / Temizlik", "ot biçme", ActionCatalog.ISLEM, "tur", "Diğer", "Ot biçme", "ot bictik",
+                    "ot bicme", "ot bicme temizlik", "temizlik", "ot"),
+            new Choice("Aşılama", "aşılama", ActionCatalog.ISLEM, "tur", "Diğer", "Aşılama", "asi yaptik", "asilama", "asi")));
 
     private LearnedTerms() {
     }
@@ -354,7 +393,7 @@ final class LearnedTerms {
 
     static Choice choiceOf(Term t) {
         for (Choice c : CHOICES) {
-            if (c.action.equals(t.action) && c.value.equals(t.value)) {
+            if (c.action.equals(t.action) && c.value.equals(t.value) && c.note.equals(t.note)) {
                 return c;
             }
         }
@@ -365,17 +404,73 @@ final class LearnedTerms {
     static Choice choiceFor(String answer) {
         String a = TurkishText.normalize(answer);
         for (Choice c : CHOICES) {
-            String key = TurkishText.normalize(c.label);
-            if (a.equals(key) || a.startsWith(key + " ") || a.endsWith(" " + key)) {
+            if (says(a, TurkishText.normalize(c.label))) {
                 return c;
+            }
+        }
+        for (Choice c : CHOICES) {
+            for (String key : c.says) {
+                if (says(a, key)) {
+                    return c;
+                }
             }
         }
         return null;
     }
 
+    private static boolean says(String answer, String key) {
+        if (key.isEmpty()) {
+            return false;
+        }
+        return answer.equals(key) || answer.startsWith(key + " ") || answer.endsWith(" " + key);
+    }
+
+    /**
+     * Öğretme penceresinin düğme sırası: çiftçinin kendi kayıtlarında en sık yaptığı iş üstte (İP5).
+     * counts: Choice.key() → kayıt sayısı (işlem türü, "Diğer" işlerinde not, hasat). Eşitlikte sabit sıra.
+     * "Başka" ve "Vazgeç" bu listede yoktur; pencere onları hep en alta koyar.
+     */
+    static List<Choice> ordered(Map<String, Integer> counts) {
+        List<Choice> out = new ArrayList<>(CHOICES);
+        if (counts == null || counts.isEmpty()) {
+            return out;
+        }
+        final Map<String, Integer> c = counts;
+        // Sıralama kararlı: eşit sayıda sabit sıra korunur.
+        out.sort((x, y) -> Integer.compare(count(c, y), count(c, x)));
+        return out;
+    }
+
+    /**
+     * Bir işlem kaydının öğretme düğmesindeki adı: "Diğer" ise notun başındaki iş adı ("Ot biçme, 2 saat" → "Ot biçme"),
+     * eski "Gübreleme" yazımı "Gübre"; düğmesi olmayan iş "". Kayıt sayımında kullanılır (WorkCounts).
+     */
+    static String workKey(String type, String note) {
+        String t = type == null ? "" : type.trim();
+        if ("Gübreleme".equalsIgnoreCase(t)) {
+            t = "Gübre";
+        }
+        String n = TurkishText.normalize(note == null ? "" : note);
+        for (Choice c : CHOICES) {
+            if (!c.note.isEmpty() && c.value.equals(t) && (n.equals(TurkishText.normalize(c.note))
+                    || n.startsWith(TurkishText.normalize(c.note) + " "))) {
+                return c.note;
+            }
+            if (c.note.isEmpty() && c.value.equals(t) && !t.isEmpty()) {
+                return t;
+            }
+        }
+        return "";
+    }
+
+    private static int count(Map<String, Integer> counts, Choice choice) {
+        Integer n = counts.get(choice.key());
+        return n == null ? 0 : n;
+    }
+
     /** Yeni öğretilen söz. */
     static Term teach(String word, Choice c, String source, long now) {
-        return new Term(verbRoot(word), word, c.action, c.field, c.value, TAUGHT, source, now, 0);
+        return new Term(verbRoot(word), word, c.action, c.field, c.value, c.note, TAUGHT, source, now, 0);
     }
 
     // ============================================================ YEDEK (Ayarlar → Yedekle dosyası)
@@ -392,6 +487,11 @@ final class LearnedTerms {
         for (Term t : terms) {
             String[] cells = {t.term, t.word, t.action, t.field, t.value, t.kind, t.source,
                     String.valueOf(t.created), String.valueOf(t.uses)};
+            if (!t.note.isEmpty()) {
+                // İP5: ayırt edici not 10. sütunda. Eski sürüm 9 sütun bekler, bu satırı sessizce atlar.
+                cells = java.util.Arrays.copyOf(cells, 10);
+                cells[9] = t.note;
+            }
             for (int i = 0; i < cells.length; i++) {
                 if (i > 0) {
                     b.append('\t');
@@ -428,7 +528,7 @@ final class LearnedTerms {
 
     private static Term parseLine(String line) {
         String[] c = line.split("\t", -1);
-        if (c.length != 9) {
+        if (c.length != 9 && c.length != 10) {
             return null;
         }
         for (int i = 0; i < c.length; i++) {
@@ -448,7 +548,8 @@ final class LearnedTerms {
             return null;
         }
         String source = SOURCE_TEXT.equals(c[6]) || SOURCE_CLOUD.equals(c[6]) ? c[6] : SOURCE_VOICE;
-        Term t = new Term(root, c[1], c[2], c[3], c[4], TAUGHT, source, created, Math.max(0, uses));
+        String note = c.length == 10 ? c[9] : "";
+        Term t = new Term(root, c[1], c[2], c[3], c[4], note, TAUGHT, source, created, Math.max(0, uses));
         Choice choice = choiceOf(t);
         if (choice == null || !choice.field.equals(t.field)) {
             return null;

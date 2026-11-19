@@ -207,6 +207,9 @@ final class RuleBrain implements Brain {
     static Map<String, String> operationFields(OperationVoiceEntry e) {
         Map<String, String> f = new LinkedHashMap<>();
         f.put("tur", OperationKinds.TYPES[e.type]);
+        if (!e.note.isEmpty()) {
+            f.put("not", e.note);
+        }
         if (e.dayOffset != 0) {
             f.put("gun", String.valueOf(e.dayOffset));
         }

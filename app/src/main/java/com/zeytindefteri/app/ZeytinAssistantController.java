@@ -748,15 +748,17 @@ public final class ZeytinAssistantController {
                 for(Garden g:gardens)gardenNames.add(g.name);
                 final BrainContext records=BrainContext.recordsOnly(gardenNames);
                 final Decision decision=pick!=null?RuleBrain.question(raw,cmd):brain.recordStage(new Brain.Input(raw),records,cmd);
+                // Ekranda ne yapılacağını saf AssistantOutcome seçer (testli); burada yalnız yürütülür.
+                final AssistantOutcome.Kind path=AssistantOutcome.records(decision,openForm);
                 // "Bugün 3 numara 120 kilo (sattım)": cevap yerine elek formu dolu açılır; kayıt kullanıcının onayıyla.
                 // "Girelli'den 300 kilo topladık": hasat (elekten önce: boy söylense de "topladık" hasattır).
-                if(decision.is(ActionCatalog.HASAT)&&"soru".equals(decision.variant)){
+                if(path==AssistantOutcome.Kind.HARVEST_QUESTIONS){
                     meter(token,raw,owner,decision.action);
                     startRecord(VoiceRecordDialog.Kind.HARVEST,raw,gardens,resolution,token,owner,season,active);
                     return;
                 }
                 final HarvestVoiceEntry harvest=LearnedBrain.payload(decision,HarvestVoiceEntry.class);
-                if(harvest!=null){
+                if(path==AssistantOutcome.Kind.HARVEST_FORM){
                     meter(token,raw,owner,decision.action);
                     final long hid=resolution.garden==null?0:resolution.garden.id;
                     final String where=resolution.garden==null?"":resolution.garden.name+", ";
@@ -765,13 +767,13 @@ public final class ZeytinAssistantController {
                     return;
                 }
                 // "Ahmet'ten ne kadar alacağım var?", "Kim bana borçlu?": alıcı listesindeki açık alacaklardan.
-                if(decision.is(ActionCatalog.ALACAK_SORU)){
+                if(path==AssistantOutcome.Kind.RECEIVABLES){
                     meter(token,raw,owner,decision.action);
                     post(token,owner,season,active,cmd,true,"","Alıcılar · açık alacaklar",AssistantReceivables.answer(raw,AssistantReceivablesData.load(activity,owner,season)));
                     return;
                 }
                 final ElekVoiceEntry voice=LearnedBrain.payload(decision,ElekVoiceEntry.class);
-                if(voice!=null){
+                if(path==AssistantOutcome.Kind.ELEK_FORM){
                     meter(token,raw,owner,decision.action);
                     final long gid=resolution.garden==null?0:resolution.garden.id;
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Elek formunu dolduruyorum…");haptic();
@@ -779,14 +781,14 @@ public final class ZeytinAssistantController {
                     return;
                 }
                 // "Elek gireceğim / elek kaydı": elek ekranı açılır, sesli elek hemen başlar.
-                if(decision.is(ActionCatalog.ELEK_AC)){
+                if(path==AssistantOutcome.Kind.ELEK_SCREEN){
                     meter(token,raw,owner,decision.action);
                     final long eg=resolution.garden==null?0:resolution.garden.id;
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Elek ekranını açıyorum…");haptic();dialog.dismiss();host.openElekVoice(eg);}});
                     return;
                 }
                 final VoiceRecordDialog.Kind recKind=LearnedBrain.payload(decision,VoiceRecordDialog.Kind.class);
-                if(recKind!=null){
+                if(path==AssistantOutcome.Kind.RECORD_QUESTIONS){
                     meter(token,raw,owner,decision.action);
                     startRecord(recKind,raw,gardens,resolution,token,owner,season,active);
                     return;
@@ -796,7 +798,7 @@ public final class ZeytinAssistantController {
                 if(op!=null)meter(token,raw,owner,decision.action);
                 final LearnedTerms.Term taught=LearnedBrain.term(decision);
                 final String told=taught!=null&&taught.uses<LearnedTerms.TELL_USES?LearnedTerms.told(taught)+" ":"";
-                if(op!=null && "soru".equals(decision.variant) && !openForm){
+                if(path==AssistantOutcome.Kind.OPERATION_QUESTIONS){
                     // Karşısında insan varmış gibi: eksikleri tek tek sorar ("Hangi bahçeyi?", "Ne attın?"), "evet"le kaydeder.
                     final List<String> names=new java.util.ArrayList<>();for(Garden g:gardens)names.add(g.name);
                     final int gi=resolution.explicit&&resolution.garden!=null?gardens.indexOf(resolution.garden):-1;
@@ -808,7 +810,7 @@ public final class ZeytinAssistantController {
                         if(taught!=null&&!told.isEmpty())addForgetButton(taught);}});
                     return;
                 }
-                if(op!=null){
+                if(path==AssistantOutcome.Kind.OPERATION_FORM){
                     final long gid=resolution.garden==null?0:resolution.garden.id;
                     final String where=resolution.garden==null?"":resolution.garden.name+", ";
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"İşlem formunu dolduruyorum…");haptic();
@@ -843,24 +845,28 @@ public final class ZeytinAssistantController {
                         main.post(()->{if(visible())Toast.makeText(activity,"İnternet yardımcısı: "+why,Toast.LENGTH_LONG).show();});
                     }
                 }
-                if(decision.is(ActionCatalog.OZEL_CEVAP)||!decision.understood()){
+                // Tanınmayan iş fiili ("bakırladık"): tek soru, büyük düğmeler; öğretilen söz hep anlaşılır (İP4).
+                // Sohbet cümlesinde ("çok yoruldum") sorulmaz, aşağıdaki sohbet cevabı gelir; "bugün bakırladık" sorulur.
+                final String teach=pick==null?LearnedBrain.teachQuestion(raw,decision,brain.store(),gardenNames):null;
+                final boolean regionMarket=cmd.kind==Kind.MARKET && !ZeytinAssistantMarket.ownSales(cmd.text);
+                final AssistantOutcome.Kind later=AssistantOutcome.rest(decision,teach,cmd.kind==Kind.NAVIGATION,regionMarket);
+                if(later==AssistantOutcome.Kind.SPECIAL||later==AssistantOutcome.Kind.TEACH||later==AssistantOutcome.Kind.CHAT||later==AssistantOutcome.Kind.HINT){
                     // Selam, teşekkür, kayıt silme, ilaç dozu: sabit cevap önce (dozda ilaçlama sorusu önerilmez).
                     String special=LearnedBrain.payload(decision,String.class);
                     if(special!=null)meter(token,raw,owner,decision.action);
-                    if(special!=null){post(token,owner,season,active,cmd,false,"",special);return;}
-                    // Tanınmayan iş fiili ("bakırladık"): tek soru, büyük düğmeler; öğretilen söz hep anlaşılır (İP4).
-                    // Sohbet cümlesinde ("çok yoruldum") sorulmaz, aşağıdaki sohbet cevabı gelir; "bugün bakırladık" sorulur.
-                    final String teach=pick==null?LearnedBrain.teachQuestion(raw,decision,brain.store(),gardenNames):null;
-                    if(teach!=null){
+                    if(later==AssistantOutcome.Kind.SPECIAL){post(token,owner,season,active,cmd,false,"",special);return;}
+                    if(later==AssistantOutcome.Kind.TEACH){
                         rememberMiss(raw,owner);
                         final String source=lastSource;
-                        main.post(()->{if(current(token,owner,season,active))askTeach(raw,teach,source);});
+                        // Düğme sırası: çiftçinin kendi kayıtlarında en sık yaptığı iş üstte (İP5).
+                        final Map<String,Integer> counts=WorkCounts.load(activity,owner);
+                        main.post(()->{if(current(token,owner,season,active))askTeach(raw,teach,source,counts);});
                         return;
                     }
                     // Kalıba uymadı: sorudaki konu kelimelerinden yakın sorular ya da konu kartları.
                     Set<ZeytinAssistantHints.Topic> recorded=data.recordedTopics(gardens);
                     String named=resolution.explicit && resolution.garden!=null?resolution.garden.name:"";
-                    if("sohbet".equals(decision.variant)){
+                    if(later==AssistantOutcome.Kind.CHAT){
                         // Konusu olmayan sohbet: soğuk "bilmiyorum + kartlar" yerine dostça cevap, sohbet sürer.
                         final String line=persona().fallback(raw);
                         rememberMiss(raw,owner);
@@ -873,11 +879,11 @@ public final class ZeytinAssistantController {
                     return;
                 }
                 meter(token,raw,owner,decision.action);   // EKRAN_AC ya da SORU_<tür>
-                if(cmd.kind==Kind.NAVIGATION){
+                if(later==AssistantOutcome.Kind.NAVIGATE){
                     if(!resolution.error.isEmpty() && (!isGlobal(cmd.target) || !resolution.error.startsWith("Önce"))){post(token,owner,season,active,cmd,false,gardenName,resolution.error);return;}
                     main.post(()->{if(current(token,owner,season,active)){long id=resolution.garden==null?0:resolution.garden.id;transition(State.ANSWERING,"Ekranı açıyorum…");haptic();Toast.makeText(activity,"Ekranı açıyorum…",Toast.LENGTH_SHORT).show();dialog.dismiss();host.navigate(cmd.target,id);}});return;
                 }
-                if(cmd.kind==Kind.MARKET && !ZeytinAssistantMarket.ownSales(cmd.text)){
+                if(later==AssistantOutcome.Kind.MARKET){
                     // Piyasa sorusu: kendi bölgenin (ya da söylenen bölgenin) anonim fiyatları. Bölgeye
                     // ulaşılamazsa kendi satış kayıtlarından cevap, bunu açıkça söyleyerek.
                     String regionId="",regionName="";
@@ -1220,14 +1226,22 @@ public final class ZeytinAssistantController {
     // ============================================================ ÖĞRENİLEN SÖZLER (İP4)
 
     /** "Bakırladık ne işi?": tek soru, okunur, büyük düğmeler; sesle de cevaplanabilir. */
-    private void askTeach(String raw,String word,String source){
+    private void askTeach(String raw,String word,String source,Map<String,Integer> counts){
         pendingTeach=new String[]{raw,word,source};
         postDialog(new OperationVoiceDialog.Reply(LearnedTerms.capital(word)+" ne işi?",OperationVoiceDialog.Action.ASK),"Zeytin · yeni söz");
         answer.setTextSize(24);
         List<String> labels=new java.util.ArrayList<>();
-        for(LearnedTerms.Choice c:LearnedTerms.CHOICES)labels.add(c.label);
+        for(LearnedTerms.Choice c:LearnedTerms.ordered(counts))labels.add(c.label);
         labels.add("Başka");
         labels.add("Vazgeç");
+        // Düğmeler çoğaldı: ekrana sığmazsa kendi içinde kayar (soru üstte kalır, "Başka" ve "Vazgeç" en altta).
+        LinearLayout buttons=column();
+        int rows=(labels.size()+1)/2;
+        int height=rows*(dp(64)+dp(10));
+        int most=activity.getResources().getDisplayMetrics().heightPixels*45/100;
+        ScrollView scroll=new ScrollView(activity);
+        scroll.addView(buttons);
+        hintBox.addView(scroll,new LinearLayout.LayoutParams(-1,Math.min(height,most)));
         for(int i=0;i<labels.size();i+=2){
             LinearLayout line=row();
             LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,dp(64),1);
@@ -1235,7 +1249,7 @@ public final class ZeytinAssistantController {
             line.addView(teachButton(labels.get(i)),left);
             if(i+1<labels.size())line.addView(teachButton(labels.get(i+1)),new LinearLayout.LayoutParams(0,dp(64),1));
             else line.addView(new View(activity),new LinearLayout.LayoutParams(0,dp(64),1));
-            hintBox.addView(line,margins(-1,-2,dp(10),0));
+            buttons.addView(line,margins(-1,-2,dp(10),0));
         }
     }
     private View teachButton(String label){
@@ -1299,7 +1313,7 @@ public final class ZeytinAssistantController {
         if(word==null)return;
         String type=OperationKinds.TYPES[entry.type];
         for(LearnedTerms.Choice c:LearnedTerms.CHOICES){
-            if(!c.value.equals(type))continue;
+            if(!c.value.equals(type)||!c.note.equals(entry.note))continue;
             LearnedTerms.Store store=learned().store();
             if(store.get(LearnedTerms.verbRoot(word))==null)store.put(LearnedTerms.teach(word,c,LearnedTerms.SOURCE_CLOUD,System.currentTimeMillis()));
             return;

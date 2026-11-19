@@ -18,6 +18,14 @@ public final class OperationVoiceEntry {
     public double quantity;
     public String unit = "";
     public double cost;
+    /**
+     * "Diğer" türündeki işin adı (İP5): "Ot biçme", "Aşılama". Kayıt notuna yazılır; diğer türlerde boş.
+     * Listede tür olarak olmayan bu işler kararla "Diğer" + not olarak kaydedilir.
+     */
+    public String note = "";
+
+    /** "Diğer" türünün sırası (OperationKinds.TYPES). */
+    static final int OTHER = 9;
 
     private static final Pattern QUESTION = Pattern.compile(
             "(^|\\s)(kac|ne|nedir|nasil|hangi|hangisi|mi|mu|misin|musun|zaman|ne zaman|kaldi|gecti)(\\s|$)");
@@ -46,6 +54,9 @@ public final class OperationVoiceEntry {
         if (!DONE.matcher(s).find() && !s.matches(".*\\b(bugun|dun|evvelsi|evelsi|onceki)\\b.*")) return null;
         OperationVoiceEntry e = new OperationVoiceEntry();
         e.type = type;
+        if (type == OTHER) {
+            e.note = noteOf(s);
+        }
         if (s.matches(".*\\b(evvelsi|evvelki|evelsi|evelki|onceki gun|obur gun)\\b.*")) e.dayOffset = -2;
         else if (s.matches(".*\\bdun\\b.*")) e.dayOffset = -1;
         amounts(s.split(" "), e);
@@ -74,6 +85,10 @@ public final class OperationVoiceEntry {
         return e;
     }
 
+    /** Tuzak işi fiilleri: astık, kurduk, koyduk, değiştirdik, yeniledik, taktık. */
+    private static final String TRAP_VERB =
+            ".*\\b(as(tim|tik|ti|tilar|ildi)|kur(dum|duk|du)|koy(dum|duk|du)|degistir\\p{L}*|yenile\\p{L}*|tak(tim|tik|ti))\\b.*";
+
     /** Tür: söz kökünden. Sıra önemli: "ilaç" sulamadan önce ("ilaçlı su"), "mazot" nakliyeden önce. */
     static int typeOf(String s) {
         if (s.matches(".*\\b(ilac\\p{L}*|ilacla\\p{L}*|spreyle\\p{L}*|kukurt\\p{L}*|bordo bulamac\\p{L}*|bakir sulfat\\p{L}*|bakirli ilac\\p{L}*)\\b.*")) return 2;
@@ -83,11 +98,25 @@ public final class OperationVoiceEntry {
                 || s.matches(".*\\b(su|suyu|suyunu|sulari|suyumuzu) (ver\\p{L}*|sal\\p{L}*|ac\\p{L}*|bas\\p{L}*|akit\\p{L}*|cektik|cektim)\\b.*")) return 0;
         if (s.matches(".*\\b(buda\\p{L}*)\\b.*")) return 3;
         if (s.matches(".*\\b(tuzak\\p{L}*)\\b.*")) return 4;
+        // "Sinek tuzağı astık": "tuzağı" sadeleşince "tuzagi"; yalnız tuzak işi fiiliyle ("tuzağı kaydı" soru kalır).
+        if (s.matches(".*\\btuzag\\p{L}*\\b.*") && s.matches(TRAP_VERB)) return 4;
         if (s.matches(".*\\b(surdum|surduk|surduruldu|capala\\p{L}*|freze\\p{L}*|toprak isle\\p{L}*|toprak islemesi|diskaro\\p{L}*|kultivator\\p{L}*)\\b.*")) return 5;
         if (s.matches(".*\\b(isci\\p{L}*|yevmiye\\p{L}*|iscilik)\\b.*")) return 6;
         if (s.matches(".*\\b(mazot\\p{L}*|yakit\\p{L}*|motorin\\p{L}*)\\b.*")) return 7;
         if (s.matches(".*\\b(nakliye\\p{L}*|tasidim|tasidik|tasittim|kamyon\\p{L}*|traktorle tasi\\p{L}*)\\b.*")) return 8;
+        if (!noteOf(s).isEmpty()) return OTHER;
         return -1;
+    }
+
+    /**
+     * Listede tür olarak olmayan işin adı (İP5, "Diğer" + not). Yalnız açık söyleyişler: "ot biçtik", "otları biçtik",
+     * "aşı yaptık", "kalem aşısı yaptık". "Tırpanladık", "aşıladık" gibi çiftçinin kendi sözleri burada yok:
+     * onlar öğretme sorusuyla bir kez öğretilir. Bulunmazsa "".
+     */
+    static String noteOf(String s) {
+        if (s.matches(".*\\bot(lar|lari|u)? bic\\p{L}*.*")) return "Ot biçme";
+        if (s.matches(".*\\b(asi|asisi|asilari) (yaptim|yaptik|yaptilar|yapildi|vurduk|vurdum)\\b.*")) return "Aşılama";
+        return "";
     }
 
     /** "2 saat", "18 kilo", "500 ml", "25 litre", "3 işçi", "500 lira". */
@@ -99,6 +128,10 @@ public final class OperationVoiceEntry {
             if (Double.isNaN(v) || v <= 0) continue;
             String next = end[0] < t.length ? t[end[0]] : "";
             String u = TurkishText.unit(next);
+            // "15 sinek tuzağı": sayı ile tuzak arasında "sinek" var
+            if (u.isEmpty() && next.equals("sinek") && end[0] + 1 < t.length && t[end[0] + 1].startsWith("tuza")) {
+                u = "adet";
+            }
             // "yevmiye kişi başı 1200", "adam başına 1000 lira": işçi sayısıyla çarpılır
             if (i >= 1 && t[i - 1].matches("basi|basina|basindan") && i >= 2 && t[i - 2].matches("kisi|adam|isci|nefer")) { perHead = v; i = Math.max(i, end[0] - 1); continue; }
             if (u.equals("lira")) { if (e.cost <= 0) e.cost = v; }
@@ -124,7 +157,8 @@ public final class OperationVoiceEntry {
 
     /** Okuma: "ilaçlama, bugün, 500 ml, 300 lira". */
     public String summary() {
-        StringBuilder b = new StringBuilder(OperationKinds.TYPES[type].toLowerCase(new java.util.Locale("tr", "TR")));
+        String name = note.isEmpty() ? OperationKinds.TYPES[type] : note;
+        StringBuilder b = new StringBuilder(name.toLowerCase(new java.util.Locale("tr", "TR")));
         b.append(", ").append(dayOffset == 0 ? "bugün" : dayOffset == -1 ? "dün" : "evvelsi gün");
         if (quantity > 0) b.append(", ").append(ElekVoiceDialog.num(quantity)).append(' ').append(unit);
         if (cost > 0) b.append(", ").append(ElekVoiceDialog.num(cost)).append(" lira");

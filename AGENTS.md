@@ -64,7 +64,7 @@ Her akıllı özellik şu döngüye uyar: **topla → iyileştir → ölç → g
 
 # Yayın günü (Play'e yeni sürüm çıkarken unutulmayacaklar)
 
-- Yasal metin sürümü değiştiyse site aynı gün güncellenir: hazır dal `work/site-2.3` (2.3, İP4 metniyle aynı)
+- Yasal metin sürümü değiştiyse site aynı gün güncellenir: hazır dal `work/site-2.4` (2.4, İP5 metniyle aynı)
   `work/site`'a birleştirilir; Cloudflare canlıya alır. Uygulama çıkmadan önce birleştirilmez. Metin yeniden
   değişirse dal yeniden üretilir: raw metinler + LegalDocuments kopyalanır, `python3 -B site/tools/build_legal.py`,
   `python3 -B tests/site/check_site.py`.
