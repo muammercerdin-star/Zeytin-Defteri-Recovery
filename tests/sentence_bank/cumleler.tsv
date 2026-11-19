@@ -1,0 +1,262 @@
+# Zeytin Defteri cümle bankası (İP1). Yalnız geliştirici testidir; telefondan veri gelmez.
+# Sütunlar: cumle TAB beklenen_eylem TAB beklenen_alanlar TAB durum TAB kaynak_test
+# durum: dogru = bugün böyle anlaşılıyor, bozulursa test kalır.
+#        beklenen_hata = bilinen yanlış; beklenen sütunu DOĞRU sonucu yazar. Düzelince sınayıcı uyarır, durum dogru yapılır.
+# Alanlar "anahtar=değer;..." (yoksa "-"). ELEK: double,1no..4no,yaglik,satis,alici · ISLEM: tur,gun,miktar,birim,tutar
+#        HASAT: boylar,toplam,gun · SORU_*: boy,islem · EKRAN_AC: ekran. gun yalnız bugün değilse yazılır (-1 dün, -2 evvelsi gün).
+# double_fiyat gibi kilo başı fiyat alanını sınayıcı İP2'de okumaya başlayacak (ElekVoiceEntry'de henüz fiyat alanı yok).
+cumle	beklenen_eylem	beklenen_alanlar	durum	kaynak_test
+Elek aç	EKRAN_AC	ekran=ELEK	dogru	assistant/AssistantCommandTest.java
+Piyasayı aç	EKRAN_AC	ekran=MARKET	dogru	assistant/AssistantCommandTest.java
+Girelli’yi en son ne zaman suladım?	SORU_IRRIGATION	-	dogru	assistant/AssistantCommandTest.java
+Son gübreleme ne zaman?	SORU_FERTILIZER	-	dogru	assistant/AssistantCommandTest.java
+Bu sezon kaç kilo hasat yaptım?	SORU_HARVEST	-	dogru	assistant/AssistantCommandTest.java
+Bu sezon masrafım kaç?	SORU_EXPENSE	-	dogru	assistant/AssistantCommandTest.java
+Satış gelirim kaç?	SORU_REVENUE	-	dogru	assistant/AssistantCommandTest.java
+2 numara kaç kilo?	SORU_ELEK	boy=2	dogru	assistant/AssistantCommandTest.java
+Girelli’nin havası nasıl?	SORU_WEATHER	-	dogru	assistant/AssistantCommandTest.java
+Yarın yağmur var mı?	SORU_WEATHER	-	dogru	assistant/AssistantCommandTest.java
+Şu an hangi bahçe seçili?	SORU_ACTIVE	-	dogru	assistant/AssistantCommandTest.java
+Bana bir şarkı söyle	SOHBET	-	dogru	assistant/AssistantCommandTest.java
+Girelli’de kaç ağaç var?	SORU_TREES	-	dogru	assistant/AssistantCommandTest.java
+Girelli’nin çeşidi ne?	SORU_VARIETY	-	dogru	assistant/AssistantCommandTest.java
+En son ne zaman gübre attım?	SORU_FERTILIZER	-	dogru	assistant/AssistantCommandTest.java
+En son ne zaman ilaçlama yaptım?	SORU_SPRAY	-	dogru	assistant/AssistantCommandTest.java
+Kaç kilo sattım?	SORU_SOLD	-	dogru	assistant/AssistantCommandTest.java
+Toplam satışım ne kadar?	SORU_REVENUE	-	dogru	assistant/AssistantCommandTest.java
+Yağlık kaç kilo?	SORU_ELEK	boy=YAGLIK	dogru	assistant/AssistantCommandTest.java
+Elek dağılımım nasıl?	SORU_ELEK	-	dogru	assistant/AssistantCommandTest.java
+Salamurada kaç kilo ürün var?	SORU_BRINE	-	dogru	assistant/AssistantCommandTest.java
+Hazır ürün kaç kilo?	SORU_READY	-	dogru	assistant/AssistantCommandTest.java
+Piyasa nasıl?	SORU_MARKET	-	dogru	assistant/AssistantCommandTest.java
+Akhisar’da 2 numara kaç para?	SORU_MARKET	boy=2	dogru	assistant/AssistantCommandTest.java
+Nem kaç?	SORU_WEATHER	-	dogru	assistant/AssistantCommandTest.java
+Rüzgâr kaç?	SORU_WEATHER	-	dogru	assistant/AssistantCommandTest.java
+Bana sezon özeti ver	SORU_SUMMARY	-	dogru	assistant/AssistantCommandTest.java
+Bu sezon durumum nasıl?	SORU_SUMMARY	-	dogru	assistant/AssistantCommandTest.java
+Yarın ilaç atayım mı?	SORU_WEATHER	-	dogru	assistant/AssistantCommandTest.java
+Gübre dozu kaç gram?	OZEL_CEVAP	-	dogru	assistant/AssistantCommandTest.java
+iki numara kaç kilo	SORU_ELEK	boy=2	dogru	assistant/AssistantCommandTest.java
+Toplam hasadım kaç	SORU_HARVEST	-	dogru	assistant/AssistantCommandTest.java
+Bu sezon kaç kilo hasat yaptım	SORU_HARVEST	-	dogru	assistant/AssistantCommandTest.java
+Yarın yağmur var mı	SORU_WEATHER	-	dogru	assistant/AssistantCommandTest.java
+Nem kaç	SORU_WEATHER	-	dogru	assistant/AssistantDataTest.java
+Yarın ilaç atayım mı	SORU_WEATHER	-	dogru	assistant/AssistantDataTest.java
+Hava nasıl	SORU_WEATHER	-	dogru	assistant/AssistantDataTest.java
+Yarın yağmur yağacak mı?	SORU_WEATHER	-	dogru	assistant_answers/AnswersTest.java
+Bugün yağacak mı	SORU_WEATHER	-	dogru	assistant_answers/AnswersTest.java
+Önemli bir şey var mı	SORU_TODAY	-	dogru	assistant_answers/AnswersTest.java
+Havale ne zaman gelecek	ANLASILMADI	-	dogru	assistant_answers/AnswersTest.java
+Kaç ağaç var	SORU_TREES	-	dogru	assistant_answers/AnswersTest.java
+Sinek tuzağı astık mı	SORU_OPERATION	islem=Sinek tuzağı	dogru	assistant_answers/AnswersTest.java
+Gübre masrafım ne kadar	SORU_EXPENSE	islem=Gübre	dogru	assistant_answers/AnswersTest.java
+Kar zarar ne durumda	SORU_SUMMARY	-	dogru	assistant_answers/AnswersTest.java
+Son sulama ne zaman?	SORU_IRRIGATION	-	dogru	assistant_answers/AnswersTest.java
+Toplam hasat kaç?	SORU_HARVEST	-	dogru	assistant_answers/AnswersTest.java
+Hangi bahçe daha çok verdi	SORU_HARVEST	-	dogru	assistant_answers/AnswersTest.java
+Elek sonucu ne	SORU_ELEK	-	dogru	assistant_answers/AnswersTest.java
+Dün ne yaptık	SORU_OPERATION	-	dogru	assistant_answers/AnswersTest.java
+Girelli ile Afşar karşılaştır	SORU_COMPARISON	-	dogru	assistant_answers/AnswersTest.java
+Girelli’ye suyu en son ne vakit verdik ya	ANLASILMADI	-	dogru	assistant_hints/HintsTest.java
+Bu ay damlaya kaç para gitti	SORU_MARKET	-	dogru	assistant_hints/HintsTest.java
+Damlaya ne kadar para verdik	ANLASILMADI	-	dogru	assistant_hints/HintsTest.java
+Ne sorabilirim?	ANLASILMADI	-	dogru	assistant_hints/HintsTest.java
+Traktörün radyosunu aç	ANLASILMADI	-	dogru	assistant_hints/HintsTest.java
+Suyu ne vakit verdik	ANLASILMADI	-	dogru	assistant_hints/HintsTest.java
+Dışarısı soğuk mu	ANLASILMADI	-	dogru	assistant_hints/HintsTest.java
+Bu ay Girelli’yi kaç kere suladık	SORU_IRRIGATION	-	dogru	assistant_hints/HintsTest.java
+Hava nasıl?	SORU_WEATHER	-	dogru	assistant_hints/HintsTest.java
+Hangi bahçe daha çok verdi?	SORU_HARVEST	-	dogru	assistant_hints/HintsTest.java
+Toplam sulama kaç kez?	SORU_IRRIGATION	-	dogru	assistant_hints/HintsTest.java
+Toplam son satış ne zaman?	SORU_REVENUE	-	dogru	assistant_hints/HintsTest.java
+Mazot masrafı	SORU_EXPENSE	islem=Mazot	dogru	assistant_hints/HintsTest.java
+Kaç ağaç var?	SORU_TREES	-	dogru	assistant_hints/HintsTest.java
+Bugün bahçede ne var?	SORU_TODAY	-	dogru	assistant_hints/HintsTest.java
+Girelli ile Afşar’ı karşılaştır.	SORU_COMPARISON	-	dogru	assistant_hints/HintsTest.java
+Son satış ne zaman?	SORU_REVENUE	-	dogru	assistant_hints/HintsTest.java
+Son alıcı kim?	SORU_REVENUE	-	dogru	assistant_hints/HintsTest.java
+Bu ay masrafım kaç?	SORU_EXPENSE	-	dogru	assistant_hints/HintsTest.java
+Bu hafta ne yaptık?	SORU_OPERATION	-	dogru	assistant_hints/HintsTest.java
+Geçen ay kaç kilo hasat yaptım?	SORU_HARVEST	-	dogru	assistant_hints/HintsTest.java
+1 numara kaç para?	SORU_MARKET	boy=1	dogru	assistant_market/AssistantMarketTest.java
+Alaşehir'de double fiyatı ne?	SORU_MARKET	boy=DOUBLE	dogru	assistant_market/AssistantMarketTest.java
+Anlamadığın cümleleri göster	ANLAMADIKLARI_GOSTER	-	dogru	assistant_misses/AssistantMissesTest.java
+neleri anlamadın	ANLAMADIKLARI_GOSTER	-	dogru	assistant_misses/AssistantMissesTest.java
+anlamadıklarını sil	ANLAMADIKLARI_SIL	-	dogru	assistant_misses/AssistantMissesTest.java
+anlamıyorsun sen	SOHBET	-	dogru	assistant_misses/AssistantMissesTest.java
+ben anlamadım	ANLASILMADI	-	dogru	assistant_misses/AssistantMissesTest.java
+Girelli'den 300 kilo topladık	HASAT	toplam=300	dogru	assistant_more/AssistantMoreTest.java
+Dün 3 numara 120, 2 numara 80 hasat ettik	HASAT	2no=80;3no=120;toplam=200;gun=-1	dogru	assistant_more/AssistantMoreTest.java
+Bugün 1,5 ton topladık	HASAT	toplam=1500	dogru	assistant_more/AssistantMoreTest.java
+Bugün beş yüz kilo zeytin çırptık	HASAT	toplam=500	dogru	assistant_more/AssistantMoreTest.java
+Bu sezon kaç kilo topladım?	SORU_HARVEST	-	dogru	assistant_more/AssistantMoreTest.java
+bu sezon kac kilo topladim	SORU_HARVEST	-	dogru	assistant_more/AssistantMoreTest.java
+3 numara 120 kilo sattım	ELEK	3no=120;satis=evet	dogru	assistant_more/AssistantMoreTest.java
+topladık	HASAT	-	dogru	assistant_more/AssistantMoreTest.java
+Ahmet'ten ne kadar alacağım var?	ALACAK_SORU	-	dogru	assistant_more/AssistantMoreTest.java
+Kim bana borçlu?	ALACAK_SORU	-	dogru	assistant_more/AssistantMoreTest.java
+Bu sezon satışım ne?	SORU_REVENUE	-	dogru	assistant_more/AssistantMoreTest.java
+Kime borcum var?	ANLASILMADI	-	dogru	assistant_more/AssistantMoreTest.java
+Merhaba	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+adım ne	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+nasılsın	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+hahaha	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+fıkra anlat	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+adın ne	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+Bugün ilaçladım	ISLEM	tur=İlaçlama	dogru	assistant_persona/AssistantPersonaTest.java
+selam	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+bu sezon masrafım ne kadar oldu acaba	SORU_EXPENSE	-	dogru	assistant_persona/AssistantPersonaTest.java
+bana Mehmet abi de	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+adımı unut	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+Sen zekisin maşallah	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+120 kilo 45 liradan kaç eder	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+300 çarpı 40	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+50.000 x 50.000	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+elli bin bölü dört	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+12,5 kere 8	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+1000 eksi 250	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+5000'in yüzde 10'u kaç	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+3 numara 120 kilo 2 numara 80	ELEK	2no=80;3no=120	dogru	assistant_persona/AssistantPersonaTest.java
+canım sıkkın	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+bu sene zeytin az	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+kolay gelsin	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+robot musun	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+zeytin ne zaman toplanır	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+salak mısın sen	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+toplam ne kadar hasat ettim	SORU_HARVEST	-	dogru	assistant_persona/AssistantPersonaTest.java
+Bana bundan sonra Muammer de	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+Beni artık Mehmet abi diye çağır	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+Benim adım Ali Rıza	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+Bana abi de	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+Bana bir türkü söyle de	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+merhaba	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+benim adım Muammer Çerdin efendim	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+nerelisin	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+nereliyim	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+Ben Edremitliyim	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+iyiyim sen	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+naber	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+pek iyi değilim	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+oğlum askere gitti özledim	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+iyi akşamlar	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+budama ne zaman yapılır	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+zeytin sineği nedir	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+kaç kilo zeytinden bir kilo yağ çıkar	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+sızma ne demek	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+asit neden yükselir	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+Memecik nasıl bir zeytin	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+zeytin çeşitleri neler	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+son gübre ne zaman verdim	SORU_FERTILIZER	-	dogru	assistant_persona/AssistantPersonaTest.java
+zeytin sineği için hangi ilaç	SORU_SPRAY	-	dogru	assistant_persona/AssistantPersonaTest.java
+Meydan'a yaz: yağmur yağdı	KAYIT_POST	-	dogru	assistant_persona/AssistantPersonaTest.java
+1 numara 40 kilo daha 20 kilo	ELEK	1no=40	dogru	assistant_persona/AssistantPersonaTest.java
+bu ay ne yapılır	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+saat kaç	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+bilmece sor	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+bir atasözü söyle	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+şarkı söyle	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+100 artı 200 artı 300	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+2 artı 3 çarpı 4	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+göğsüm ağrıyor	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+seçim kim kazanır sence	SOHBET	-	dogru	assistant_persona/AssistantPersonaTest.java
+3 numara 120	ELEK	3no=120	dogru	elek_voice/ElekVoiceBuyerTest.java
+2 numara 50	ELEK	2no=50	dogru	elek_voice/ElekVoiceBuyerTest.java
+1 numara 10	ELEK	1no=10	dogru	elek_voice/ElekVoiceBuyerTest.java
+3 numara 40 kilo Özer'e sattım bitti	ELEK	3no=40;satis=evet;alici=Özer	dogru	elek_voice/ElekVoiceBuyerTest.java
+3 numara 120 kilo	ELEK	3no=120	dogru	elek_voice/ElekVoiceDialogTest.java
+2 numara 80, double 20	ELEK	double=20;2no=80	dogru	elek_voice/ElekVoiceDialogTest.java
+3 numara yanlış 100 olacak	ELEK	3no=100	dogru	elek_voice/ElekVoiceDialogTest.java
+3 numara kaç	SORU_ELEK	boy=3	dogru	elek_voice/ElekVoiceDialogTest.java
+4 numara 10	ELEK	4no=10	dogru	elek_voice/ElekVoiceDialogTest.java
+1 numara 50	ELEK	1no=50	dogru	elek_voice/ElekVoiceDialogTest.java
+3 numara 30	ELEK	3no=30	dogru	elek_voice/ElekVoiceDialogTest.java
+2 numara 20	ELEK	2no=20	dogru	elek_voice/ElekVoiceDialogTest.java
+3 numarayı sil	OZEL_CEVAP	-	dogru	elek_voice/ElekVoiceDialogTest.java
+2 numara 10	ELEK	2no=10	dogru	elek_voice/ElekVoiceDialogTest.java
+3 numaradan 120 kilo	ELEK	3no=120	dogru	elek_voice/ElekVoiceDialogTest.java
+2 numarayı 80 yap	ELEK	2no=80	dogru	elek_voice/ElekVoiceDialogTest.java
+3 numara 100	ELEK	3no=100	dogru	elek_voice/ElekVoiceDialogTest.java
+Bugün 3 numara 120 kilo	ELEK	3no=120	dogru	elek_voice/ElekVoiceEntryTest.java
+Bugün 3 numara 120 kilo, 2 numara 80 kilo sattım	ELEK	2no=80;3no=120;satis=evet	dogru	elek_voice/ElekVoiceEntryTest.java
+3 numara 120 kilo satmadım	ELEK	3no=120;satis=hayir	dogru	elek_voice/ElekVoiceEntryTest.java
+üç numara yüz yirmi kilo	ELEK	3no=120	dogru	elek_voice/ElekVoiceEntryTest.java
+bir numara elli kilo iki numara otuz beş	ELEK	1no=50;2no=35	dogru	elek_voice/ElekVoiceEntryTest.java
+120 kilo 3 numara, 80 kilo 2 numara	ELEK	2no=80;3no=120	dogru	elek_voice/ElekVoiceEntryTest.java
+duble yirmi kilo yağlık otuz beş buçuk	ELEK	double=20;yaglik=35.5	dogru	elek_voice/ElekVoiceEntryTest.java
+Double 13 kilo 1 numara 82 2 numara 235 3 numara 352 4 numara 195 yağlık 72	ELEK	double=13;1no=82;2no=235;3no=352;4no=195;yaglik=72	dogru	elek_voice/ElekVoiceEntryTest.java
+3. numara 40 kg	ELEK	3no=40	dogru	elek_voice/ElekVoiceEntryTest.java
+3numara 40kg	ELEK	3no=40	dogru	elek_voice/ElekVoiceEntryTest.java
+birinci 60 kilo ikinci 40 kilo	ELEK	1no=60;2no=40	dogru	elek_voice/ElekVoiceEntryTest.java
+3 numara 1.200 kilo	ELEK	3no=1200	dogru	elek_voice/ElekVoiceEntryTest.java
+2 numara bin iki yüz elli kilo	ELEK	2no=1250	dogru	elek_voice/ElekVoiceEntryTest.java
+3 numara 12,5 kilo	ELEK	3no=12.5	dogru	elek_voice/ElekVoiceEntryTest.java
+3 numara 120 kilo Ahmet'e sattım	ELEK	3no=120;satis=evet;alici=Ahmet	dogru	elek_voice/ElekVoiceEntryTest.java
+2 numara 50 kilo Mehmet Yılmaz'a sattım	ELEK	2no=50;satis=evet;alici=Mehmet Yılmaz	dogru	elek_voice/ElekVoiceEntryTest.java
+Bugün 3 numara kaç kilo?	SORU_ELEK	boy=3	dogru	elek_voice/ElekVoiceEntryTest.java
+3 numara 120 kilo mu	SORU_ELEK	boy=3	dogru	elek_voice/ElekVoiceEntryTest.java
+Bu sezon 3 numara ne kadar	SORU_ELEK	boy=3	dogru	elek_voice/ElekVoiceEntryTest.java
+Bugün elek kaydı ekle	ELEK_AC	-	dogru	elek_voice/ElekVoiceEntryTest.java
+3 numara	SORU_ELEK	boy=3	dogru	elek_voice/ElekVoiceEntryTest.java
+120 kilo	ANLASILMADI	-	dogru	elek_voice/ElekVoiceEntryTest.java
+3 numara 120 kilo sil	OZEL_CEVAP	-	dogru	elek_voice/ElekVoiceEntryTest.java
+Yarın yağmur yağacak mı	SORU_WEATHER	-	dogru	elek_voice/ElekVoiceEntryTest.java
+1 numara 10 kilo 2 numara 5	ELEK	1no=10;2no=5	dogru	elek_voice/ElekVoiceEntryTest.java
+Bugün yağmur var mı?	SORU_WEATHER	-	dogru	final_assistant/FinalDataTest.java
+Bugün en düşük kaç?	SORU_WEATHER	-	dogru	final_assistant/FinalDataTest.java
+5 günlük hava nasıl?	SORU_WEATHER	-	dogru	final_assistant/FinalDataTest.java
+Dün 2 saat su verdim 150 lira	ISLEM	tur=Sulama;gun=-1;miktar=2;birim=saat;tutar=150	dogru	operation_voice/OperationVoiceDialogTest.java
+Gübre attık	ISLEM	tur=Gübre	dogru	operation_voice/OperationVoiceDialogTest.java
+Dün Girelli'ye üç saat su verdik, elektrik de 350 lira.	ISLEM	tur=Sulama;gun=-1;miktar=3;birim=saat;tutar=350	dogru	operation_voice/OperationVoiceDialogTest.java
+Dün Girelliyi ilaçladık 2 litre 2000 tuttu	ISLEM	tur=İlaçlama;gun=-1;miktar=2;birim=L;tutar=2000	dogru	operation_voice/OperationVoiceDialogTest.java
+Dün Girelli'de sulama yaptık 2 saat elektrik 200	ISLEM	tur=Sulama;gun=-1;miktar=2;birim=saat;tutar=200	dogru	operation_voice/OperationVoiceDialogTest.java
+Dün Kuyu dibinde damlamayı açtık 4 saat	ISLEM	tur=Sulama;gun=-1;miktar=4;birim=saat	dogru	operation_voice/OperationVoiceDialogTest.java
+Bugün Girelli'yi suladım 2 saat	ISLEM	tur=Sulama;miktar=2;birim=saat	dogru	operation_voice/OperationVoiceDialogTest.java
+Bugün 40 ağaç budadım	ISLEM	tur=Budama;miktar=40;birim=ağaç	dogru	operation_voice/OperationVoiceDialogTest.java
+Bugün suladım	ISLEM	tur=Sulama	dogru	operation_voice/OperationVoiceDialogTest.java
+Bugün Girelli'yi ilaçladım	ISLEM	tur=İlaçlama	dogru	operation_voice/OperationVoiceDialogTest.java
+Dün 2 saat su verdim	ISLEM	tur=Sulama;gun=-1;miktar=2;birim=saat	dogru	operation_voice/OperationVoiceEntryTest.java
+Hacılar'ı suladık	ISLEM	tur=Sulama	dogru	operation_voice/OperationVoiceEntryTest.java
+18 kilo gübre attık	ISLEM	tur=Gübre;miktar=18;birim=kg	dogru	operation_voice/OperationVoiceEntryTest.java
+20 tane tuzak astım	ISLEM	tur=Sinek tuzağı;miktar=20;birim=adet	dogru	operation_voice/OperationVoiceEntryTest.java
+Bahçeyi sürdüm	ISLEM	tur=Toprak İşleme	dogru	operation_voice/OperationVoiceEntryTest.java
+Bugün çapaladık	ISLEM	tur=Toprak İşleme	dogru	operation_voice/OperationVoiceEntryTest.java
+3 işçi çalıştı 1500 lira	ISLEM	tur=İşçilik;miktar=3;birim=kişi;tutar=1500	dogru	operation_voice/OperationVoiceEntryTest.java
+Mazot aldım 500 lira	ISLEM	tur=Mazot;tutar=500	dogru	operation_voice/OperationVoiceEntryTest.java
+Bugün nakliye yaptım 800 lira	ISLEM	tur=Nakliye;tutar=800	dogru	operation_voice/OperationVoiceEntryTest.java
+Son ilaçlama ne zaman?	SORU_SPRAY	-	dogru	operation_voice/OperationVoiceEntryTest.java
+son sulama ne zaman	SORU_IRRIGATION	-	dogru	operation_voice/OperationVoiceEntryTest.java
+Bu sezon masrafım kaç	SORU_EXPENSE	-	dogru	operation_voice/OperationVoiceEntryTest.java
+Dün suladım	ISLEM	tur=Sulama;gun=-1	dogru	operation_voice/OperationVoiceEntryTest.java
+Evvelsi gün gübre attım	ISLEM	tur=Gübre;gun=-2	dogru	operation_voice/OperationVoiceEntryTest.java
+18 kilo gübre attık 900 lira	ISLEM	tur=Gübre;miktar=18;birim=kg;tutar=900	dogru	operation_voice/OperationVoiceEntryTest.java
+Mazot aldım 25 litre 1000 lira	ISLEM	tur=Mazot;miktar=25;birim=L;tutar=1000	dogru	operation_voice/OperationVoiceEntryTest.java
+500 ml ilaç attım	ISLEM	tur=İlaçlama;miktar=500;birim=ml	dogru	operation_voice/OperationVoiceEntryTest.java
+Bugün iki yüz ağaç budadık	ISLEM	tur=Budama;miktar=200;birim=ağaç	dogru	operation_voice/OperationVoiceEntryTest.java
+Bugün Girelli'yi ilaçladım 500 ml 300 lira	ISLEM	tur=İlaçlama;miktar=500;birim=ml;tutar=300	dogru	operation_voice/OperationVoiceEntryTest.java
+Dün Girelliye 3 saat su saldık elektrik 350 tuttu	ISLEM	tur=Sulama;gun=-1;miktar=3;birim=saat;tutar=350	dogru	operation_voice/OperationVoiceEntryTest.java
+Bugün gübre serptik 50 kilo 1500'e patladı	ISLEM	tur=Gübre;miktar=50;birim=kg;tutar=1500	dogru	operation_voice/OperationVoiceEntryTest.java
+Dün mazot aldık mazot parası 500	ISLEM	tur=Mazot;gun=-1;tutar=500	dogru	operation_voice/OperationVoiceEntryTest.java
+Bugün kükürt attık	ISLEM	tur=İlaçlama	dogru	operation_voice/OperationVoiceEntryTest.java
+Dün Girelli'de 3 işçi çalıştı, yevmiye kişi başı 1200.	ISLEM	tur=İşçilik;gun=-1;miktar=3;birim=kişi;tutar=3600	dogru	operation_voice/OperationVoiceEntryTest.java
+Bugün Kuyu dibine 10 tuzak astık	ISLEM	tur=Sinek tuzağı;miktar=10;birim=adet	dogru	operation_voice/OperationVoiceEntryTest.java
+evelsi gün kuyudibine gübre attık 20 kilo	ISLEM	tur=Gübre;gun=-2;miktar=20;birim=kg	dogru	operation_voice/OperationVoiceEntryTest.java
+Dün akşam Girelli'de motoru çalıştırıp hortumla zeytinlere can suyu verdik, mazotu 300 tuttu	ISLEM	tur=Sulama;gun=-1;tutar=300	dogru	operation_voice/OperationVoiceEntryTest.java
+Bugün ağaçlara suyu açtık 3 saat	ISLEM	tur=Sulama;miktar=3;birim=saat	dogru	operation_voice/OperationVoiceEntryTest.java
+Hasat gireceğim	HASAT	-	dogru	voice_records/VoiceRecordDialogTest.java
+50 kilo salamura bastım	KAYIT_BRINE	-	dogru	voice_records/VoiceRecordDialogTest.java
+Yeni bahçe ekle	KAYIT_GARDEN	-	dogru	voice_records/VoiceRecordDialogTest.java
+Meydan'a yaz: yağmur başladı	KAYIT_POST	-	dogru	voice_records/VoiceRecordDialogTest.java
+Salamura stoğum	SORU_BRINE	-	dogru	voice_records/VoiceRecordDialogTest.java
+3 numara 120, 2 numara 80	ELEK	2no=80;3no=120	dogru	voice_records/VoiceRecordDialogTest.java
+on iki işçi çalıştı bin beş yüz lira	ISLEM	tur=İşçilik;miktar=12;birim=kişi;tutar=1500	dogru	is_emri_18_kasim
+bugun ilacladik	ISLEM	tur=İlaçlama	dogru	is_emri_18_kasim
+İzmit'ten gübre aldık 50 TL	ISLEM	tur=Gübre;tutar=50	dogru	is_emri_18_kasim
+dabıl dört kilo bir numara on beş kilo iki numara yirmi beş kilo üç numara on dört kilo dört numara beş kilo yağlık yok	ELEK	double=4;1no=15;2no=25;3no=14;4no=5	dogru	is_emri_18_kasim
+karneni göster	KARNE_GOSTER	-	dogru	ip1_karne
+karnen nasıl	KARNE_GOSTER	-	dogru	ip1_karne
+bugün bakırladık	ISLEM	tur=İlaçlama	beklenen_hata	is_emri_18_kasim
+double 2 kilo 220 lira	ELEK	double=2;double_fiyat=110	beklenen_hata	is_emri_18_kasim
+bugün bakır attık	ISLEM	tur=İlaçlama	beklenen_hata	ip1_bilinen_hata
+Bakır attım	ISLEM	tur=İlaçlama	beklenen_hata	operation_voice/OperationVoiceDialogTest.java
+Deltametrin attım 250 ml	ISLEM	tur=İlaçlama;miktar=250;birim=ml	beklenen_hata	operation_voice/OperationVoiceDialogTest.java
+Girelli kaç yaşında?	SORU_AGE	-	beklenen_hata	assistant/AssistantCommandTest.java
