@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gizlilik Politikası · Zeytin Defteri</title>
-<meta name="description" content="Zeytin Defteri Gizlilik Politikası; sürüm 2.1, 17 Kasım 2026.">
+<meta name="description" content="Zeytin Defteri Gizlilik Politikası; sürüm 2.2, 19 Kasım 2026.">
 <meta property="og:title" content="Gizlilik Politikası · Zeytin Defteri">
-<meta property="og:description" content="Zeytin Defteri Gizlilik Politikası; sürüm 2.1, 17 Kasım 2026.">
+<meta property="og:description" content="Zeytin Defteri Gizlilik Politikası; sürüm 2.2, 19 Kasım 2026.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="tr_TR">
 <meta property="og:url" content="https://zeytindefteri.tr/gizlilik.html">
@@ -20,7 +20,7 @@
 <div class="shell">
 <header class="site-nav"><div class="nav-inner"><a class="brand" href="/index.html"><span class="mark" aria-hidden="true">Z</span>Zeytin Defteri</a><a class="nav-back" href="/index.html">Ana sayfa</a></div></header>
 <main id="icerik" class="doc-main"><article class="document"><h1>Gizlilik Politikası</h1>
-<p>Sürüm 2.1 · 17 Kasım 2026</p>
+<p>Sürüm 2.2 · 19 Kasım 2026</p>
 <p>Bu politika, Zeytin Defteri&#x27;nin hangi hizmetleri kullandığını, verilerinin nerede tutulduğunu ve nasıl silinebileceğini açıklar. Kişisel verilerin işlenmesine ilişkin yasal bilgilendirme için ayrıca &quot;KVKK Aydınlatma Metni&quot;ni inceleyebilirsin.</p>
 <p>Yayıncı: Muammer Çerdin (bireysel geliştirici)<br>
 İletişim: muammercerdin@gmail.com</p>
@@ -48,6 +48,7 @@ Bir içeriği veya kullanıcıyı şikâyet edebilir, kullanıcıları engelleye
 <p>Meydan yanıtları gibi bildirimleri gönderebilmek için cihazının Firebase Cloud Messaging bildirim anahtarı hesabınla ilişkilendirilir. Çıkış yaptığında bu anahtar silinir. Hatırlatmalar cihazında yerel olarak planlanır. Bildirim iznini Android ayarlarından istediğin zaman kapatabilirsin.</p>
 <h2 id="bolum-7">7. Sesli asistan</h2>
 <p>Mikrofon izni yalnızca sesli asistanı kullandığında istenir. Konuşman, cihazındaki Android konuşma tanıma hizmeti tarafından metne dönüştürülür; bu hizmetin işleyişi cihazındaki sağlayıcının (çoğunlukla Google) koşullarına tabidir. Bu hizmet, cihazına ve ayarlarına bağlı olarak sesi metne dönüştürmek için sağlayıcının (çoğunlukla Google) sunucularına gönderebilir. Zeytin Defteri ses kaydını kendi sunucularına göndermez ve saklamaz.</p>
+<p>Asistanın daha iyi anlaması için telefonunda bir kayıt tutulur: söylediğin ya da yazdığın son 300 cümle, asistanın onu nasıl anladığı ve sesle doldurulan formlarda Kaydet&#x27;ten önce değiştirdiğin alanların adları. Ayrıca yalnızca sayılardan oluşan bir karne tutulur (anlaşılan ve anlaşılmayan cümle sayısı, kayıt süresi). Bu kayıt telefonundan çıkmaz: hiçbir sunucuya gönderilmez ve Android yedeğine dahil edilmez. Asistana &quot;karneni göster&quot; diyerek karneyi görebilir, &quot;konuşma kaydını sil&quot; diyerek kaydın tamamını silebilirsin.</p>
 <h2 id="bolum-8">8. İnternet yardımcısı</h2>
 <p>Sesli asistanın kendi kurallarıyla anlayamadığı bir iş cümlesi olduğunda, yalnızca ilk kullanımda buna izin verdiysen, o cümle ve cümleyi doğru bahçeye bağlamak için bahçelerinin adları internetteki yardımcıya gönderilir. Yardımcı, Cloudflare Workers AI üzerinde çalışan bir yapay zekâ modelidir; istek, hesabının doğrulanması için oturum belirteciyle birlikte Supabase ve Cloudflare üzerinden iletilir. Cümle ve cevap tarafımızca kaydedilmez ve günlüğe yazılmaz; Cloudflare, Workers AI&#x27;a gönderilen içeriği model eğitiminde kullanmadığını belirtmektedir. Yardımcı yalnızca bir öneri üretir; hiçbir kayıt sen onaylamadan yapılmaz. İzni sesli asistana &quot;internet yardımcısını kapat&quot; diyerek istediğin zaman kapatabilirsin.</p>
 <h2 id="bolum-9">9. Bilgisayar bağlantısı (Tezgâh)</h2>
@@ -74,6 +75,7 @@ Uygulama çöktüğünde hatayı bulup düzeltebilmemiz için Google Firebase Cr
 <li>Meydan içerikleri: Kendi gönderi ve yanıtlarını uygulama içinden kaldırabilirsin.</li>
 <li>Piyasa katkıları: &quot;Piyasaya Anonim Katkı&quot;yı kapattığında yeni katkı gönderilmez ve bu cihazdan gönderilmiş katkıların sunucudan geri çekilir. Başka bir cihazdan ya da uygulamayı yeniden kurmadan önce gönderilmiş katkıların kaldırılmasını muammercerdin@gmail.com adresinden talep edebilirsin.</li>
 <li>Hesabın tamamı: Ayarlar &gt; &quot;Hesabımı Sil&quot; ile hesabını ve ilişkili verilerini uygulama içinden kalıcı olarak silebilirsin. Güvenliğin için son birkaç dakika içinde giriş yapmış olman gerekir. Bu işlemle giriş hesabın, bulut yedeklerin (bahçe, işlem, hasat, elek, satış ve salamura kayıtları ile tezgâh yedeğin), Meydan gönderilerin ve fotoğrafların, engelleme listen, verdiğin şikayetler, Zeytin Ligi kayıtların ve bu cihazdan gönderilmiş anonim piyasa katkıların silinir; başka gönderilere yazdığın yorumların içeriği silinir ve &quot;Silinmiş kullanıcı&quot; olarak görünür. Bu cihazdaki kayıtların da silinir. Başka kullanıcıların senin hakkında verdiği şikayet kayıtları güvenlik ve moderasyon amacıyla saklanabilir; kimlik içermeyen toplu piyasa istatistikleri silinmez. Uygulamaya erişemiyorsan silme talebini, hesabında kayıtlı e-posta adresinden muammercerdin@gmail.com adresine yazarak da iletebilirsin; talebin, kimliğin doğrulandıktan sonra işleme alınır.</li>
+<li>Sesli asistanın cihazdaki kaydı: Telefonunda en fazla son 300 cümle tutulur, eskileri kendiliğinden silinir. Asistana &quot;konuşma kaydını sil&quot; dediğinde, hesabını sildiğinde ya da uygulamayı kaldırdığında tamamen silinir.</li>
 <li>Çökme raporları: Firebase Crashlytics panelinde 90 gün tutulur, sonra Google tarafından silinir.</li>
 <li>Tezgâh bilgisayar bağlantısı: aktarıcı Tezgâh içeriğini saklamaz; kayıtlı bilgisayarlar için tuttuğu cihaz kaydı en fazla 30 gün geçerlidir. Tarayıcıda saklanan bağlantı anahtarı, bilgisayarı telefonundan kaldırana kadar durur.</li>
 <li>Lig izinleri: &quot;Zeytin Ligi&#x27;nde Yer Al&quot; ve &quot;Ligde Adımla Görüneyim&quot; kayıtları, izni geri alana ya da hesabını silene kadar tutulur.</li>
