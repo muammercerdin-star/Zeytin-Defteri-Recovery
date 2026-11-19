@@ -34,8 +34,10 @@ public final class SentenceBankRunner {
     static final class Outcome {
         final String action;
         final String fields;
+        final Decision decision;
 
         Outcome(Decision d) {
+            this.decision = d;
             this.action = d.action;
             this.fields = d.fieldsText();
         }

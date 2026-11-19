@@ -18,6 +18,14 @@ public final class OperationVoiceEntry {
     public double quantity;
     public String unit = "";
     public double cost;
+    /**
+     * "Diğer" türündeki işin adı (İP5): "Ot biçme", "Aşılama". Kayıt notuna yazılır; diğer türlerde boş.
+     * Listede tür olarak olmayan bu işler kararla "Diğer" + not olarak kaydedilir.
+     */
+    public String note = "";
+
+    /** "Diğer" türünün sırası (OperationKinds.TYPES). */
+    static final int OTHER = 9;
 
     private static final Pattern QUESTION = Pattern.compile(
             "(^|\\s)(kac|ne|nedir|nasil|hangi|hangisi|mi|mu|misin|musun|zaman|ne zaman|kaldi|gecti)(\\s|$)");
@@ -46,6 +54,9 @@ public final class OperationVoiceEntry {
         if (!DONE.matcher(s).find() && !s.matches(".*\\b(bugun|dun|evvelsi|evelsi|onceki)\\b.*")) return null;
         OperationVoiceEntry e = new OperationVoiceEntry();
         e.type = type;
+        if (type == OTHER) {
+            e.note = noteOf(s);
+        }
         if (s.matches(".*\\b(evvelsi|evvelki|evelsi|evelki|onceki gun|obur gun)\\b.*")) e.dayOffset = -2;
         else if (s.matches(".*\\bdun\\b.*")) e.dayOffset = -1;
         amounts(s.split(" "), e);
@@ -93,7 +104,19 @@ public final class OperationVoiceEntry {
         if (s.matches(".*\\b(isci\\p{L}*|yevmiye\\p{L}*|iscilik)\\b.*")) return 6;
         if (s.matches(".*\\b(mazot\\p{L}*|yakit\\p{L}*|motorin\\p{L}*)\\b.*")) return 7;
         if (s.matches(".*\\b(nakliye\\p{L}*|tasidim|tasidik|tasittim|kamyon\\p{L}*|traktorle tasi\\p{L}*)\\b.*")) return 8;
+        if (!noteOf(s).isEmpty()) return OTHER;
         return -1;
+    }
+
+    /**
+     * Listede tür olarak olmayan işin adı (İP5, "Diğer" + not). Yalnız açık söyleyişler: "ot biçtik", "otları biçtik",
+     * "aşı yaptık", "kalem aşısı yaptık". "Tırpanladık", "aşıladık" gibi çiftçinin kendi sözleri burada yok:
+     * onlar öğretme sorusuyla bir kez öğretilir. Bulunmazsa "".
+     */
+    static String noteOf(String s) {
+        if (s.matches(".*\\bot(lar|lari|u)? bic\\p{L}*.*")) return "Ot biçme";
+        if (s.matches(".*\\b(asi|asisi|asilari) (yaptim|yaptik|yaptilar|yapildi|vurduk|vurdum)\\b.*")) return "Aşılama";
+        return "";
     }
 
     /** "2 saat", "18 kilo", "500 ml", "25 litre", "3 işçi", "500 lira". */
@@ -134,7 +157,8 @@ public final class OperationVoiceEntry {
 
     /** Okuma: "ilaçlama, bugün, 500 ml, 300 lira". */
     public String summary() {
-        StringBuilder b = new StringBuilder(OperationKinds.TYPES[type].toLowerCase(new java.util.Locale("tr", "TR")));
+        String name = note.isEmpty() ? OperationKinds.TYPES[type] : note;
+        StringBuilder b = new StringBuilder(name.toLowerCase(new java.util.Locale("tr", "TR")));
         b.append(", ").append(dayOffset == 0 ? "bugün" : dayOffset == -1 ? "dün" : "evvelsi gün");
         if (quantity > 0) b.append(", ").append(ElekVoiceDialog.num(quantity)).append(' ').append(unit);
         if (cost > 0) b.append(", ").append(ElekVoiceDialog.num(cost)).append(" lira");

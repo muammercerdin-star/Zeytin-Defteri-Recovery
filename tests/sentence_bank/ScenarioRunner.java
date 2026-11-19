@@ -72,7 +72,8 @@ public final class ScenarioRunner {
             }
             case "sor": {
                 SentenceBankRunner.Outcome o = SentenceBankRunner.route(text, store);
-                String word = o.understood() ? null : LearnedTerms.teachable(text, store);
+                // Asistanın kapısı: sohbet cümlesinde ("çok yoruldum") sorulmaz (LearnedBrain.teachQuestion).
+                String word = LearnedBrain.teachQuestion(text, o.decision, store, java.util.Arrays.asList("Girelli", "Kuyu dibi"));
                 return word == null ? "SORMA -" : "SOR " + word;
             }
             default: {

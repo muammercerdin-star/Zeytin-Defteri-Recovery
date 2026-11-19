@@ -858,7 +858,9 @@ public final class ZeytinAssistantController {
                     if(later==AssistantOutcome.Kind.TEACH){
                         rememberMiss(raw,owner);
                         final String source=lastSource;
-                        main.post(()->{if(current(token,owner,season,active))askTeach(raw,teach,source);});
+                        // Düğme sırası: çiftçinin kendi kayıtlarında en sık yaptığı iş üstte (İP5).
+                        final Map<String,Integer> counts=WorkCounts.load(activity,owner);
+                        main.post(()->{if(current(token,owner,season,active))askTeach(raw,teach,source,counts);});
                         return;
                     }
                     // Kalıba uymadı: sorudaki konu kelimelerinden yakın sorular ya da konu kartları.
@@ -1224,14 +1226,22 @@ public final class ZeytinAssistantController {
     // ============================================================ ÖĞRENİLEN SÖZLER (İP4)
 
     /** "Bakırladık ne işi?": tek soru, okunur, büyük düğmeler; sesle de cevaplanabilir. */
-    private void askTeach(String raw,String word,String source){
+    private void askTeach(String raw,String word,String source,Map<String,Integer> counts){
         pendingTeach=new String[]{raw,word,source};
         postDialog(new OperationVoiceDialog.Reply(LearnedTerms.capital(word)+" ne işi?",OperationVoiceDialog.Action.ASK),"Zeytin · yeni söz");
         answer.setTextSize(24);
         List<String> labels=new java.util.ArrayList<>();
-        for(LearnedTerms.Choice c:LearnedTerms.CHOICES)labels.add(c.label);
+        for(LearnedTerms.Choice c:LearnedTerms.ordered(counts))labels.add(c.label);
         labels.add("Başka");
         labels.add("Vazgeç");
+        // Düğmeler çoğaldı: ekrana sığmazsa kendi içinde kayar (soru üstte kalır, "Başka" ve "Vazgeç" en altta).
+        LinearLayout buttons=column();
+        int rows=(labels.size()+1)/2;
+        int height=rows*(dp(64)+dp(10));
+        int most=activity.getResources().getDisplayMetrics().heightPixels*45/100;
+        ScrollView scroll=new ScrollView(activity);
+        scroll.addView(buttons);
+        hintBox.addView(scroll,new LinearLayout.LayoutParams(-1,Math.min(height,most)));
         for(int i=0;i<labels.size();i+=2){
             LinearLayout line=row();
             LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,dp(64),1);
@@ -1239,7 +1249,7 @@ public final class ZeytinAssistantController {
             line.addView(teachButton(labels.get(i)),left);
             if(i+1<labels.size())line.addView(teachButton(labels.get(i+1)),new LinearLayout.LayoutParams(0,dp(64),1));
             else line.addView(new View(activity),new LinearLayout.LayoutParams(0,dp(64),1));
-            hintBox.addView(line,margins(-1,-2,dp(10),0));
+            buttons.addView(line,margins(-1,-2,dp(10),0));
         }
     }
     private View teachButton(String label){
@@ -1303,7 +1313,7 @@ public final class ZeytinAssistantController {
         if(word==null)return;
         String type=OperationKinds.TYPES[entry.type];
         for(LearnedTerms.Choice c:LearnedTerms.CHOICES){
-            if(!c.value.equals(type))continue;
+            if(!c.value.equals(type)||!c.note.equals(entry.note))continue;
             LearnedTerms.Store store=learned().store();
             if(store.get(LearnedTerms.verbRoot(word))==null)store.put(LearnedTerms.teach(word,c,LearnedTerms.SOURCE_CLOUD,System.currentTimeMillis()));
             return;

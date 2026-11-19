@@ -104,7 +104,14 @@ final class LearnedBrain implements Brain {
         if (t.field.isEmpty()) {
             return true;
         }
-        return t.value.equals(d.fields.get(t.field));
+        if (!t.value.equals(d.fields.get(t.field))) {
+            return false;
+        }
+        // "Diğer" işleri notla ayrılır: ot biçme öğretilen söz aşılama diye anlaşılmaz.
+        if (t.note.isEmpty()) {
+            return true;
+        }
+        return t.note.equals(d.fields.get("not"));
     }
 
     private static Decision command(String action, String reason, Object payload) {

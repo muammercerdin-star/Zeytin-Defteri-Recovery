@@ -30,6 +30,7 @@ public class BrainEquivalenceTest {
         LearnedBrain empty = new LearnedBrain(new LearnedTerms.Memory(), brain);
         int learnedDiffs = 0;
         int newCommand = 0;
+        int noteAdded = 0;
         boolean[][] dialogs = {{true, true}, {false, true}, {true, false}};   // {opDialogNull, recDialogNull}
         long compared = 0;
         int diffs = 0;
@@ -56,6 +57,10 @@ public class BrainEquivalenceTest {
                             sameLearned = true;
                             newCommand++;
                         }
+                        // İP5: "Diğer" işinin adı yeni "not" alanında ("ot biçtik" → tur=Diğer;not=Ot biçme); geri kalanı aynı.
+                        if (!sameLearned && onlyNote(want, viaLearned)) {
+                            sameLearned = true;
+                        }
                         if (!sameLearned) {
                             learnedDiffs++;
                             if (learnedDiffs <= 20) {
@@ -63,6 +68,10 @@ public class BrainEquivalenceTest {
                             }
                         }
                         boolean same = want[0].equals(got.action) && want[1].equals(got.fieldsText()) && want[2].equals(got.variant);
+                        if (!same && onlyNote(want, got)) {
+                            same = true;
+                            noteAdded++;
+                        }
                         if (!same) {
                             diffs++;
                             if (diffs <= 40) {
@@ -77,11 +86,22 @@ public class BrainEquivalenceTest {
         System.out.println(sentences.size() + " cümle (" + bank + " cümle bankası) · " + compared + " karşılaştırma · " + diffs + " fark");
         System.out.println("Öğrenilen sözler beyni, boş sözlük: " + compared + " karşılaştırma · " + learnedDiffs + " fark"
                 + " (yeni komut \"öğrendiklerini söyle\": " + newCommand + ")");
+        System.out.println("İP5 bilinçli fark: Diğer işine not alanı eklendi (\"ot biçtik\" → not=Ot biçme): " + noteAdded + " karşılaştırma");
         if (diffs > 0 || learnedDiffs > 0) {
             System.out.println("FAIL birebir aynılık");
             System.exit(1);
         }
         System.out.println("PASS birebir aynılık: RuleBrain eski zincirle her cümlede aynı");
+    }
+
+    /** Tek fark İP5'in "Diğer" notu mu: eylem ve değişke aynı, alanlardan ";not=…" çıkınca eskisiyle aynı. */
+    static boolean onlyNote(String[] want, Decision got) {
+        String note = got.fields.get("not");
+        if (note == null || !"Diğer".equals(got.fields.get("tur"))) {
+            return false;
+        }
+        String without = got.fieldsText().replace(";not=" + note, "");
+        return want[0].equals(got.action) && want[1].equals(without) && want[2].equals(got.variant);
     }
 
     static int bankSize(Path root) throws IOException {

@@ -34,6 +34,8 @@ public class NewOperationActivity extends Activity {
     /** Asistandan ("Dün 2 saat su verdim"): tarih kaydırması, miktar, birim, tutar. Form dolu açılır, kaydetmez. */
     public static final String EXTRA_VOICE_DAY_OFFSET = "voice_day_offset", EXTRA_VOICE_QUANTITY = "voice_quantity",
             EXTRA_VOICE_UNIT = "voice_unit", EXTRA_VOICE_COST = "voice_cost";
+    /** "Diğer" türündeki işin adı (İP5): forma not olarak yazılır ("Ot biçme"). */
+    public static final String EXTRA_VOICE_NOTE = "voice_note";
 
     private DatabaseHelper databaseHelper;
     private OperationCloudRepository operationCloudRepository;
@@ -108,6 +110,11 @@ public class NewOperationActivity extends Activity {
             else etNote.setText(ElekVoiceDialog.num(q) + " " + (u == null ? "" : u));
         }
         if (cost > 0) etCost.setText(TezgahQr.field(cost));
+        String work = getIntent().getStringExtra(EXTRA_VOICE_NOTE);
+        if (work != null && !work.isEmpty()) {
+            String rest = etNote.getText().toString().trim();
+            etNote.setText(rest.isEmpty() ? work : work + ", " + rest);
+        }
         rememberVoiceFill(offset, q, cost);
         Toast.makeText(this, "Sesle dolduruldu · kontrol edip Kaydet'e bas", Toast.LENGTH_LONG).show();
     }
