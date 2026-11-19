@@ -74,6 +74,10 @@ public final class OperationVoiceEntry {
         return e;
     }
 
+    /** Tuzak işi fiilleri: astık, kurduk, koyduk, değiştirdik, yeniledik, taktık. */
+    private static final String TRAP_VERB =
+            ".*\\b(as(tim|tik|ti|tilar|ildi)|kur(dum|duk|du)|koy(dum|duk|du)|degistir\\p{L}*|yenile\\p{L}*|tak(tim|tik|ti))\\b.*";
+
     /** Tür: söz kökünden. Sıra önemli: "ilaç" sulamadan önce ("ilaçlı su"), "mazot" nakliyeden önce. */
     static int typeOf(String s) {
         if (s.matches(".*\\b(ilac\\p{L}*|ilacla\\p{L}*|spreyle\\p{L}*|kukurt\\p{L}*|bordo bulamac\\p{L}*|bakir sulfat\\p{L}*|bakirli ilac\\p{L}*)\\b.*")) return 2;
@@ -83,6 +87,8 @@ public final class OperationVoiceEntry {
                 || s.matches(".*\\b(su|suyu|suyunu|sulari|suyumuzu) (ver\\p{L}*|sal\\p{L}*|ac\\p{L}*|bas\\p{L}*|akit\\p{L}*|cektik|cektim)\\b.*")) return 0;
         if (s.matches(".*\\b(buda\\p{L}*)\\b.*")) return 3;
         if (s.matches(".*\\b(tuzak\\p{L}*)\\b.*")) return 4;
+        // "Sinek tuzağı astık": "tuzağı" sadeleşince "tuzagi"; yalnız tuzak işi fiiliyle ("tuzağı kaydı" soru kalır).
+        if (s.matches(".*\\btuzag\\p{L}*\\b.*") && s.matches(TRAP_VERB)) return 4;
         if (s.matches(".*\\b(surdum|surduk|surduruldu|capala\\p{L}*|freze\\p{L}*|toprak isle\\p{L}*|toprak islemesi|diskaro\\p{L}*|kultivator\\p{L}*)\\b.*")) return 5;
         if (s.matches(".*\\b(isci\\p{L}*|yevmiye\\p{L}*|iscilik)\\b.*")) return 6;
         if (s.matches(".*\\b(mazot\\p{L}*|yakit\\p{L}*|motorin\\p{L}*)\\b.*")) return 7;
@@ -99,6 +105,10 @@ public final class OperationVoiceEntry {
             if (Double.isNaN(v) || v <= 0) continue;
             String next = end[0] < t.length ? t[end[0]] : "";
             String u = TurkishText.unit(next);
+            // "15 sinek tuzağı": sayı ile tuzak arasında "sinek" var
+            if (u.isEmpty() && next.equals("sinek") && end[0] + 1 < t.length && t[end[0] + 1].startsWith("tuza")) {
+                u = "adet";
+            }
             // "yevmiye kişi başı 1200", "adam başına 1000 lira": işçi sayısıyla çarpılır
             if (i >= 1 && t[i - 1].matches("basi|basina|basindan") && i >= 2 && t[i - 2].matches("kisi|adam|isci|nefer")) { perHead = v; i = Math.max(i, end[0] - 1); continue; }
             if (u.equals("lira")) { if (e.cost <= 0) e.cost = v; }
