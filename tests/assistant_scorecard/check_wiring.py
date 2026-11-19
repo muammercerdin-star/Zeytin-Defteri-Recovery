@@ -11,21 +11,22 @@ forms = {
     "İşlem": (app / "NewOperationActivity.java").read_text(encoding="utf-8"),
     "Hasat": (root / "app/src/main/java/HarvestActivity.java").read_text(encoding="utf-8"),
 }
+rb = (app / "RuleBrain.java").read_text(encoding="utf-8")   # İP3: karar sırası beyinde
+sc = c.split("private void scorecardCommand(Decision d){")[1].split("\n    }")[0]
 checks = [
     ("karne komutu anlamadıklarımdan sonra, sohbetten önce",
-     "handleScorecardCommand(raw))return;" in c
-     and c.index("handleMissesCommand(raw))return;") < c.index("handleScorecardCommand(raw))return;") < c.index("persona().handle(raw)")),
+     "scorecardCommand(d);return;" in c
+     and rb.index("AssistantMisses.asksClear(in.raw)") < rb.index("AssistantScorecard.asksShow(in.raw)") < rb.index("c.persona.handle(in.raw)")),
     ("karne yeni ekran açmaz (asistan cevabına yazılır)",
-     "AssistantMeter.show(activity,host.owner())" in c and "startActivity" not in c.split("private boolean handleScorecardCommand")[1].split("\n    }")[0]),
+     "AssistantMeter.show(activity,host.owner())" in c and "startActivity" not in sc),
     ("anlaşılmayan cümle karneye de yazılır", "meter(meterTurn,raw,owner,null);" in c),
     ("anlamadıklarını sil kayıttaki anlaşılmayanları da siler", "AssistantMeter.clearMissed(activity,host.owner());" in c),
-    ("elek, işlem, hasat, alacak dalları ölçülür",
-     all(f'meter(token,raw,owner,"{a}")' in c for a in ["ELEK", "ISLEM", "HASAT", "ALACAK_SORU", "ELEK_AC", "OZEL_CEVAP"])),
-    ("soru ve ekran açma ölçülür", 'meter(token,raw,owner,cmd.kind==Kind.NAVIGATION?"EKRAN_AC":"SORU_"+cmd.kind.name());' in c),
+    ("elek, işlem, hasat, alacak, elek aç, hazır cevap, soru ve ekran dalları kararın adıyla ölçülür",
+     c.count("meter(token,raw,owner,decision.action)") >= 9),
     ("aynı cümle yeniden sorulunca ikinci kez sayılmaz", "if(again)meteredTurn=token;" in c),
-    ("sohbet anlaşılan sayılır", 'AssistantMeter.understood(activity,host.owner(),raw,"SOHBET")' in c),
+    ("sohbet anlaşılan sayılır", "AssistantMeter.understood(activity,host.owner(),raw,d.action);" in c and "if(d.is(ActionCatalog.SOHBET)){" in c),
     ("konuşma kaydını sil hepsini siler", "AssistantMeter.clearAll(activity,host.owner());" in c
-     and "AssistantScorecard.asksClearAll(raw)" in c),
+     and "AssistantScorecard.asksClearAll(in.raw)" in rb),
     ("ölçü yalnız telefonda (ağ yok)", all(w not in meter for w in ["http", "Firebase", "firestore", "supabase", "URL"])),
 ]
 res = root / "app/src/main/res/xml"

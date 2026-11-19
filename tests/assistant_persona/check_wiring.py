@@ -2,9 +2,10 @@
 import os, sys
 A = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "app", "src", "main", "java", "com", "zeytindefteri", "app")
 c = open(os.path.join(A, "ZeytinAssistantController.java"), encoding="utf-8").read()
+rb = open(os.path.join(A, "RuleBrain.java"), encoding="utf-8").read()   # İP3: karar sırası beyinde
 checks = [
     ("panel acilinca adiyla selamlar", "persona().greeting(AssistantPersona.hourNow())" in c),
-    ("sohbet cumleleri kisilige gider (kayit/soru oncesi)", "persona().handle(raw)" in c and c.index("persona().handle(raw)") < c.index("run(raw,ZeytinAssistantCommand.parse(raw),null);\n    }")),
+    ("sohbet cumleleri kisilige gider (kayit/soru oncesi)", "commands?persona():null" in c and c.index("rules.conversationStage(") < c.index("run(raw,ZeytinAssistantCommand.parse(raw),null);\n    }") and rb.index("c.persona.handle(in.raw)") < rb.index("Decision recordStage(")),
     ("kayit sonrasi adiyla tesekkur", "persona().thanks()" in c),
     ("tanisma bir kez, ikinci cevaptan sonra", "persona().introduceOnce()" in c),
     ("bilgiler yalniz telefonda (SharedPreferences)", "getSharedPreferences(\"zd_assistant_persona\"" in c),

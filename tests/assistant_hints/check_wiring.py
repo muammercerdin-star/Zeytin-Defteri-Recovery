@@ -13,10 +13,13 @@ def part(start, end):
     i = c.index(start); return c[i:c.index(end, i + len(start))]
 
 run = part('private void run(', 'private void advisorReply(')
-unknown = run[run.index('if(cmd.kind==Kind.UNKNOWN)'):run.index('if(cmd.kind==Kind.NAVIGATION)')]
+unknown = run[run.index('if(decision.is(ActionCatalog.OZEL_CEVAP)||!decision.understood())'):run.index('if(cmd.kind==Kind.NAVIGATION)')]
+rb = (ROOT / 'app/src/main/java/com/zeytindefteri/app/RuleBrain.java').read_text(encoding='utf-8')   # İP3: karar beyinde
+q = rb[rb.index('static Decision question('):]
 # A) Yarım anlama: önce sabit cevaplar (doz, silme, selam), sonra öneriler.
-check('ZeytinAssistantText.special(raw)' in unknown and 'ZeytinAssistantHints.hint(raw' in unknown
-      and unknown.index('special(raw)') < unknown.index('ZeytinAssistantHints.hint('), 'özel cevaplar önerilerden önce gelmiyor')
+check('ZeytinAssistantText.special(raw)' in q and q.index('special(raw)') < q.index('ZeytinAssistantHints.chatOnly(raw)')
+      and 'decision.payload(String.class)' in unknown and 'ZeytinAssistantHints.hint(raw' in unknown
+      and unknown.index('decision.payload(String.class)') < unknown.index('ZeytinAssistantHints.hint('), 'özel cevaplar önerilerden önce gelmiyor')
 check('data.recordedTopics(gardens)' in unknown, 'kaydı olmayan konu süzülmüyor')
 check('resolution.explicit' in unknown, 'öneriye yalnızca soruda adı geçen bahçe taşınmalı')
 check('recordedTopics(' in d and 'rawQuery' not in d and 'execSQL' not in d, 'kayıtlı konular yeni SQL ile okunuyor')

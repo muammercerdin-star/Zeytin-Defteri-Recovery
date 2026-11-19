@@ -130,6 +130,8 @@ public final class ZeytinAssistantController {
     private boolean closeAfterSpeech;
     /** Sohbet kişiliği (ad, yaş, hitap): yalnız bu telefonda saklanır. */
     private AssistantPersona persona;
+    /** Cümleyi eyleme çeviren beyin (İP3): bugün kurallar; değiştirilebilir parça, yürütme bu sınıfta. */
+    private final RuleBrain rules=new RuleBrain();
     private int answersThisPanel;
 
     private android.content.SharedPreferences personaPrefs(){return activity.getSharedPreferences("zd_assistant_persona",Context.MODE_PRIVATE);}
@@ -138,31 +140,41 @@ public final class ZeytinAssistantController {
         return persona;
     }
     private void savePersona(){if(persona!=null)personaPrefs().edit().putString("p_"+host.owner(),persona.encode()).apply();}
-    /** İnternet yardımcısı: tek seferlik izin cevabı ve "internet yardımcısını aç/kapat" sesli ayarı. */
-    private boolean handleCloudCommand(String raw){
-        if(AssistantCloud.asksStatus(raw)){
+    /**
+     * İnternet yardımcısı komutları (kararı RuleBrain verir): durum, aç/kapat ve tek seferlik izin cevabı.
+     * asked: izin sorusu beklenirken saklanan cümle (izin verilince o cümle yeniden işlenir).
+     */
+    private void cloudCommand(Decision d,String asked){
+        if(d.is(ActionCatalog.BULUT_DURUM)){
             String mode=AssistantCloudClient.mode(activity,host.owner());
             String state=!AssistantCloudClient.configured()?"İnternet yardımcısı bu sürümde kapalı (adres yok).":"off".equals(mode)?"İnternet yardımcısı kapalı; açmak için “internet yardımcısını aç” de.":mode.isEmpty()?"İnternet yardımcısı için henüz izin sorulmadı.":"İnternet yardımcısı açık.";
             postDialog(new OperationVoiceDialog.Reply(state+" "+AssistantCloudClient.lastStatus,OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");
-            return true;
+            return;
         }
-        int toggle=AssistantCloud.toggleCommand(raw);
-        if(toggle>=0){
-            pendingCloud=null;
-            AssistantCloudClient.setMode(activity,host.owner(),toggle==1);
-            postDialog(new OperationVoiceDialog.Reply(toggle==1?"Tamam, anlamadığım iş cümlelerini internetteki yardımcıya soracağım.":"Tamam, internete hiçbir şey sormayacağım.",OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");
-            return true;
+        if(d.is(ActionCatalog.BULUT_AC)||d.is(ActionCatalog.BULUT_KAPAT)){
+            boolean on=d.is(ActionCatalog.BULUT_AC);
+            AssistantCloudClient.setMode(activity,host.owner(),on);
+            postDialog(new OperationVoiceDialog.Reply(on?"Tamam, anlamadığım iş cümlelerini internetteki yardımcıya soracağım.":"Tamam, internete hiçbir şey sormayacağım.",OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");
+            return;
         }
-        if(pendingCloud==null)return false;
-        final String asked=pendingCloud;pendingCloud=null;
-        int c=AssistantCloud.consent(raw);
-        if(c==1){AssistantCloudClient.setMode(activity,host.owner(),true);lastRaw=asked;meterAgain=true;run(asked,ZeytinAssistantCommand.parse(asked),null);return true;}
-        if(c==0){
-            AssistantCloudClient.setMode(activity,host.owner(),false);
-            postDialog(new OperationVoiceDialog.Reply("Peki, internete sormayacağım. O cümleyi başka türlü söyleyebilir ya da formdan ekleyebilirsin. Fikrini değiştirirsen “internet yardımcısını aç” de.",OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");
-            return true;
+        if(d.is(ActionCatalog.BULUT_IZIN_EVET)){
+            AssistantCloudClient.setMode(activity,host.owner(),true);
+            lastRaw=asked;
+            meterAgain=true;
+            run(asked,ZeytinAssistantCommand.parse(asked),null);
+            return;
         }
-        return false;   // başka bir şey söylendi: soruyu bırak, yeni cümleyi işle
+        AssistantCloudClient.setMode(activity,host.owner(),false);
+        postDialog(new OperationVoiceDialog.Reply("Peki, internete sormayacağım. O cümleyi başka türlü söyleyebilir ya da formdan ekleyebilirsin. Fikrini değiştirirsen “internet yardımcısını aç” de.",OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");
+    }
+    /**
+     * Konuşma aşamasında internet yardımcısı basamağına gelindi mi (eski sırada: kapanış, anlamadıklarım, karne ve
+     * durum sorusu o basamaktan önce cevaplanır). Gelindiyse bekleyen izin sorusu bu cümleyle kapanır.
+     */
+    private static boolean pastCloudStep(Decision d){
+        if(d==null)return true;
+        return !(d.is(ActionCatalog.KAPAT)||d.is(ActionCatalog.ANLAMADIKLARI_SIL)||d.is(ActionCatalog.ANLAMADIKLARI_GOSTER)
+                ||d.is(ActionCatalog.KONUSMA_KAYDI_SIL)||d.is(ActionCatalog.KARNE_GOSTER)||d.is(ActionCatalog.BULUT_DURUM));
     }
 
     /** Anlamadığı cümleler: yalnız bu telefonda, kullanıcı isterse gösterilir (AssistantMisses). */
@@ -184,37 +196,32 @@ public final class ZeytinAssistantController {
         }
         AssistantMeter.understood(activity,owner,raw,action);
     }
-    /** "Karneni göster": yalnız sayılar; asistan ekranında okunur, yeni ekran açılmaz. */
-    private boolean handleScorecardCommand(String raw){
-        if(AssistantScorecard.asksClearAll(raw)){
+    /** "Karneni göster" / "konuşma kaydını sil": yalnız sayılar; asistan ekranında okunur, yeni ekran açılmaz. */
+    private void scorecardCommand(Decision d){
+        if(d.is(ActionCatalog.KONUSMA_KAYDI_SIL)){
             AssistantMeter.clearAll(activity,host.owner());
             String done="Tamam, bu telefondaki konuşma kaydını, karneyi ve anlamadığım cümleleri sildim.";
             postDialog(new OperationVoiceDialog.Reply(done,OperationVoiceDialog.Action.ASK),"Zeytin · karne");
-            return true;
+            return;
         }
-        if(!AssistantScorecard.asksShow(raw))return false;
         String[] shown=AssistantMeter.show(activity,host.owner());
         postDialog(new OperationVoiceDialog.Reply(shown[0],OperationVoiceDialog.Action.ASK),"Zeytin · karne");
         answer.setTextSize(14);
         answer.setText(shown[1]);
-        return true;
     }
-    private boolean handleMissesCommand(String raw){
+    /** "Anlamadığın cümleleri göster / sil": yalnız bu telefondaki liste. */
+    private void missesCommand(Decision d){
         android.content.SharedPreferences p=activity.getSharedPreferences("zd_assistant_misses",Context.MODE_PRIVATE);
         String key="m_"+host.owner();
-        if(AssistantMisses.asksClear(raw)){
+        if(d.is(ActionCatalog.ANLAMADIKLARI_SIL)){
             p.edit().remove(key).apply();
             AssistantMeter.clearMissed(activity,host.owner());
             postDialog(new OperationVoiceDialog.Reply("Tamam, anlamadığım cümleler listesini sildim.",OperationVoiceDialog.Action.ASK),"Zeytin · anlamadıklarım");
-            return true;
+            return;
         }
-        if(AssistantMisses.asksShow(raw)){
-            String[] shown=AssistantMisses.show(p.getString(key,""));
-            postDialog(new OperationVoiceDialog.Reply(shown[0],OperationVoiceDialog.Action.ASK),"Zeytin · anlamadıklarım");
-            answer.setTextSize(14);answer.setText(shown[1]);   // okunan kısa söz; ekranda liste
-            return true;
-        }
-        return false;
+        String[] shown=AssistantMisses.show(p.getString(key,""));
+        postDialog(new OperationVoiceDialog.Reply(shown[0],OperationVoiceDialog.Action.ASK),"Zeytin · anlamadıklarım");
+        answer.setTextSize(14);answer.setText(shown[1]);   // okunan kısa söz; ekranda liste
     }
 
     public ZeytinAssistantController(Activity activity,Host host){
@@ -631,27 +638,43 @@ public final class ZeytinAssistantController {
     private boolean current(int token,String owner,int season,long active){
         return visible() && conversation.current(token) && owner.equals(host.owner()) && season==host.season() && active==host.activeGarden();
     }
+    /**
+     * Yeni cümle (ses, yazı ve öneri kartı aynı kapıdan): açık sorulu konuşma varsa cümle ona gider; yoksa kararı
+     * beyin verir (RuleBrain), asistan yalnız yürütür. Konuşma aşaması burada, kayıt aşaması run() içinde.
+     */
     private void submit(String raw){
         if(!visible()||raw.trim().isEmpty())return;
         typing=false;hideKeyboard();input.setText("");
         quietMisses=0;
         lastQuestion=raw.trim();lastRaw=raw;question.setText(lastQuestion);heard.setText("");
-        if(opDialog==null&&recDialog==null&&TurkishText.normalize(raw).matches("(tesekkur\\p{L}*|sag ol\\p{L}*|sagol\\p{L}*|tamam bu kadar|bu kadar|yeter|kapat|gorusuruz|hosca kal|eyvallah)( .*)?")){
+        if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
+        boolean commands=recDialog==null;
+        final String asked=pendingCloud;
+        BrainContext context=BrainContext.assistant(opDialog==null&&recDialog==null,commands,asked!=null,commands?persona():null);
+        Decision talk=rules.conversationStage(new Brain.Input(raw),context);
+        if(commands&&pastCloudStep(talk))pendingCloud=null;   // izin sorusu yalnız bir cevap bekler
+        if(talk!=null){converse(talk,raw,asked);return;}
+        if(recDialog!=null&&!recDialog.done()){answerRecord(raw);return;}
+        run(raw,ZeytinAssistantCommand.parse(raw),null);
+    }
+    /** Konuşma aşamasının kararını yürütür (kapanış, anlamadıklarım, karne, internet yardımcısı, sohbet). */
+    private void converse(Decision d,String raw,String asked){
+        if(d.is(ActionCatalog.KAPAT)){
             closeAfterSpeech=true;
             postDialog(new OperationVoiceDialog.Reply("Rica ederim, kolay gelsin.",OperationVoiceDialog.Action.CANCEL),"Zeytin Asistanı");
             if(!ttsReady||tts==null)main.postDelayed(()->{if(visible()&&dialog!=null)dialog.dismiss();},1500);
             return;
         }
-        if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
-        if(recDialog==null&&handleMissesCommand(raw))return;
-        if(recDialog==null&&handleScorecardCommand(raw))return;
-        if(recDialog==null&&handleCloudCommand(raw))return;
-        if(recDialog==null){
-            String chat=persona().handle(raw);
-            if(chat!=null){AssistantMeter.understood(activity,host.owner(),raw,"SOHBET");savePersona();postDialog(new OperationVoiceDialog.Reply(chat,OperationVoiceDialog.Action.ASK),"Zeytin · sohbet");return;}
+        if(d.is(ActionCatalog.ANLAMADIKLARI_SIL)||d.is(ActionCatalog.ANLAMADIKLARI_GOSTER)){missesCommand(d);return;}
+        if(d.is(ActionCatalog.KONUSMA_KAYDI_SIL)||d.is(ActionCatalog.KARNE_GOSTER)){scorecardCommand(d);return;}
+        if(d.is(ActionCatalog.SOHBET)){
+            String chat=d.payload(String.class);
+            AssistantMeter.understood(activity,host.owner(),raw,d.action);
+            savePersona();
+            postDialog(new OperationVoiceDialog.Reply(chat,OperationVoiceDialog.Action.ASK),"Zeytin · sohbet");
+            return;
         }
-        if(recDialog!=null&&!recDialog.done()){answerRecord(raw);return;}
-        run(raw,ZeytinAssistantCommand.parse(raw),null);
+        cloudCommand(d,asked);
     }
     /** "Anladığım" etiketinden zaman ya da bahçe değişti: soru balonu aynı kalır, cevap yeniden hesaplanır. */
     private void rerun(ZeytinAssistantCommand cmd,Pick pick){
@@ -675,17 +698,19 @@ public final class ZeytinAssistantController {
                 List<Garden> gardens=data.gardens();
                 Resolution resolution=pick!=null?pick.resolve(gardens):ZeytinAssistantCommand.resolve(raw,gardens,active,cmd.kind==Kind.MARKET);
                 String gardenName=resolution.garden==null?"":resolution.garden.name;
+                // Karar beyinde (RuleBrain): hasat, alacak, elek, işlem, sorular. "Anladığım" etiketinden yeniden sorma
+                // cümleyi yeniden ayrıştırmaz, etiketle değişen soruyla yalnız soru cevabına gider.
+                final Decision decision=pick!=null?RuleBrain.question(raw,cmd):rules.recordStage(new Brain.Input(raw),BrainContext.recordsOnly(!gardens.isEmpty()),cmd);
                 // "Bugün 3 numara 120 kilo (sattım)": cevap yerine elek formu dolu açılır; kayıt kullanıcının onayıyla.
                 // "Girelli'den 300 kilo topladık": hasat (elekten önce: boy söylense de "topladık" hasattır).
-                final VoiceRecordDialog.Kind recKind=pick==null?VoiceRecordDialog.detect(raw):null;
-                if(recKind==VoiceRecordDialog.Kind.HARVEST&&!gardens.isEmpty()){
-                    meter(token,raw,owner,"HASAT");
-                    startRecord(recKind,raw,gardens,resolution,token,owner,season,active);
+                if(decision.is(ActionCatalog.HASAT)&&"soru".equals(decision.variant)){
+                    meter(token,raw,owner,decision.action);
+                    startRecord(VoiceRecordDialog.Kind.HARVEST,raw,gardens,resolution,token,owner,season,active);
                     return;
                 }
-                final HarvestVoiceEntry harvest=pick==null&&gardens.isEmpty()?HarvestVoiceEntry.parse(raw):null;
+                final HarvestVoiceEntry harvest=decision.payload(HarvestVoiceEntry.class);
                 if(harvest!=null){
-                    meter(token,raw,owner,"HASAT");
+                    meter(token,raw,owner,decision.action);
                     final long hid=resolution.garden==null?0:resolution.garden.id;
                     final String where=resolution.garden==null?"":resolution.garden.name+", ";
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Hasat formunu dolduruyorum…");haptic();
@@ -693,36 +718,36 @@ public final class ZeytinAssistantController {
                     return;
                 }
                 // "Ahmet'ten ne kadar alacağım var?", "Kim bana borçlu?": alıcı listesindeki açık alacaklardan.
-                if(pick==null&&AssistantReceivables.asks(raw)){
-                    meter(token,raw,owner,"ALACAK_SORU");
+                if(decision.is(ActionCatalog.ALACAK_SORU)){
+                    meter(token,raw,owner,decision.action);
                     post(token,owner,season,active,cmd,true,"","Alıcılar · açık alacaklar",AssistantReceivables.answer(raw,AssistantReceivablesData.load(activity,owner,season)));
                     return;
                 }
-                final ElekVoiceEntry voice=pick==null?ElekVoiceEntry.parse(raw):null;
+                final ElekVoiceEntry voice=decision.payload(ElekVoiceEntry.class);
                 if(voice!=null){
-                    meter(token,raw,owner,"ELEK");
+                    meter(token,raw,owner,decision.action);
                     final long gid=resolution.garden==null?0:resolution.garden.id;
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Elek formunu dolduruyorum…");haptic();
                         Toast.makeText(activity,"Elek formu açılıyor: "+voice.summary(),Toast.LENGTH_SHORT).show();dialog.dismiss();host.openElekEntry(gid,voice);}});
                     return;
                 }
-                // "Bugün Girelli'yi ilaçladım", "Mazot aldım 500 lira": cevap yerine işlem formu dolu açılır.
                 // "Elek gireceğim / elek kaydı": elek ekranı açılır, sesli elek hemen başlar.
-                if(pick==null&&TurkishText.normalize(raw).matches(".*\\belek\\b.*")&&TurkishText.normalize(raw).matches(".*\\b(gir\\p{L}*|kaydet\\p{L}*|kaydi|ekle\\p{L}*|yaz\\p{L}*|yapacag\\p{L}*|baslat|basla\\p{L}*)\\b.*")
-                        &&!TurkishText.normalize(raw).matches(".*(^|\\s)(kac|ne|mi|mu|hangi|nasil|son)(\\s|$).*")){
-                    meter(token,raw,owner,"ELEK_AC");
+                if(decision.is(ActionCatalog.ELEK_AC)){
+                    meter(token,raw,owner,decision.action);
                     final long eg=resolution.garden==null?0:resolution.garden.id;
                     main.post(()->{if(current(token,owner,season,active)){transition(State.ANSWERING,"Elek ekranını açıyorum…");haptic();dialog.dismiss();host.openElekVoice(eg);}});
                     return;
                 }
-                if(recKind!=null&&recKind!=VoiceRecordDialog.Kind.HARVEST){
-                    meter(token,raw,owner,"KAYIT_"+recKind.name());
+                final VoiceRecordDialog.Kind recKind=decision.payload(VoiceRecordDialog.Kind.class);
+                if(recKind!=null){
+                    meter(token,raw,owner,decision.action);
                     startRecord(recKind,raw,gardens,resolution,token,owner,season,active);
                     return;
                 }
-                final OperationVoiceEntry op=pick==null?OperationVoiceEntry.parse(raw):null;
-                if(op!=null)meter(token,raw,owner,"ISLEM");
-                if(op!=null && !gardens.isEmpty()){
+                // "Bugün Girelli'yi ilaçladım", "Mazot aldım 500 lira": bahçe varsa eksikler sorulur, yoksa işlem formu dolu açılır.
+                final OperationVoiceEntry op=decision.payload(OperationVoiceEntry.class);
+                if(op!=null)meter(token,raw,owner,decision.action);
+                if(op!=null && "soru".equals(decision.variant)){
                     // Karşısında insan varmış gibi: eksikleri tek tek sorar ("Hangi bahçeyi?", "Ne attın?"), "evet"le kaydeder.
                     final List<String> names=new java.util.ArrayList<>();for(Garden g:gardens)names.add(g.name);
                     final int gi=resolution.explicit&&resolution.garden!=null?gardens.indexOf(resolution.garden):-1;
@@ -767,15 +792,15 @@ public final class ZeytinAssistantController {
                         main.post(()->{if(visible())Toast.makeText(activity,"İnternet yardımcısı: "+why,Toast.LENGTH_LONG).show();});
                     }
                 }
-                if(cmd.kind==Kind.UNKNOWN){
+                if(decision.is(ActionCatalog.OZEL_CEVAP)||!decision.understood()){
                     // Selam, teşekkür, kayıt silme, ilaç dozu: sabit cevap önce (dozda ilaçlama sorusu önerilmez).
-                    String special=ZeytinAssistantText.special(raw);
-                    if(special!=null)meter(token,raw,owner,"OZEL_CEVAP");
+                    String special=decision.payload(String.class);
+                    if(special!=null)meter(token,raw,owner,decision.action);
                     if(special!=null){post(token,owner,season,active,cmd,false,"",special);return;}
                     // Kalıba uymadı: sorudaki konu kelimelerinden yakın sorular ya da konu kartları.
                     Set<ZeytinAssistantHints.Topic> recorded=data.recordedTopics(gardens);
                     String named=resolution.explicit && resolution.garden!=null?resolution.garden.name:"";
-                    if(ZeytinAssistantHints.chatOnly(raw)){
+                    if("sohbet".equals(decision.variant)){
                         // Konusu olmayan sohbet: soğuk "bilmiyorum + kartlar" yerine dostça cevap, sohbet sürer.
                         final String line=persona().fallback(raw);
                         rememberMiss(raw,owner);
@@ -787,7 +812,7 @@ public final class ZeytinAssistantController {
                     if(data.unchanged())postHint(token,owner,season,active,hint,recorded);
                     return;
                 }
-                meter(token,raw,owner,cmd.kind==Kind.NAVIGATION?"EKRAN_AC":"SORU_"+cmd.kind.name());
+                meter(token,raw,owner,decision.action);   // EKRAN_AC ya da SORU_<tür>
                 if(cmd.kind==Kind.NAVIGATION){
                     if(!resolution.error.isEmpty() && (!isGlobal(cmd.target) || !resolution.error.startsWith("Önce"))){post(token,owner,season,active,cmd,false,gardenName,resolution.error);return;}
                     main.post(()->{if(current(token,owner,season,active)){long id=resolution.garden==null?0:resolution.garden.id;transition(State.ANSWERING,"Ekranı açıyorum…");haptic();Toast.makeText(activity,"Ekranı açıyorum…",Toast.LENGTH_SHORT).show();dialog.dismiss();host.navigate(cmd.target,id);}});return;

@@ -9,18 +9,19 @@ python3 - "$A" "$ROOT" <<'P'
 import sys, os, re
 A, ROOT = sys.argv[1], sys.argv[2]
 c = open(os.path.join(A, "ZeytinAssistantController.java"), encoding="utf-8").read()
+rb = open(os.path.join(A, "RuleBrain.java"), encoding="utf-8").read()   # İP3: karar sırası beyinde
 cl = open(os.path.join(A, "AssistantCloudClient.java"), encoding="utf-8").read()
 g = open(os.path.join(ROOT, "app", "build.gradle"), encoding="utf-8").read()
 i_cloud = c.index("AssistantCloudClient.ask(raw,names)")
 checks = [
-    ("kurallar once: elek/islem/hasat yollarindan sonra", c.index("final OperationVoiceEntry op=") < i_cloud and c.index("ElekVoiceEntry.parse(raw)") < i_cloud),
+    ("kurallar once: elek/islem/hasat yollarindan sonra", c.index("final OperationVoiceEntry op=") < i_cloud and c.index("final ElekVoiceEntry voice=decision.payload(") < i_cloud),
     ("cevap denetlenir (accept)", "AssistantCloud.accept(AssistantCloudClient.ask(raw,names),raw,names)" in c),
     ("sonuc okunur, evet beklenir (OperationVoiceDialog)", "opDialog=new OperationVoiceDialog(cloud.entry,names,cloud.garden)" in c),
     ("ilk seferde izin sorulur", "pendingCloud=raw;postDialog(new OperationVoiceDialog.Reply(AssistantCloud.ASK" in c),
     ("kapaliyken ve internetsiz sorulmaz", "!\"off\".equals(mode)&&AssistantCloudClient.online(activity)" in c),
     ("uygulamada anahtar yok (yalniz Firebase belgesi)", "Bearer \" + token" in cl and not re.search(r"(sk-|api[_-]?key\s*=)", cl, re.I)),
     ("adres derleme ayarindan (repoda degil)", "zdBuildString('ZEYTIN_AI_URL')" in g),
-    ("duzeltmeler modele gitmez (opDialog once)", c.index("if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}") < c.index("handleCloudCommand(raw))return;")),
+    ("duzeltmeler modele gitmez (opDialog once)", c.index("if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}") < c.index("rules.conversationStage(")),
 ]
 bad = 0
 for n, ok in checks:

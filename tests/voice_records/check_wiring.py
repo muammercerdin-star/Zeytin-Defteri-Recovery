@@ -4,8 +4,9 @@ A = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "app", 
 r = lambda f: open(os.path.join(A, f), encoding="utf-8").read()
 P = "com/zeytindefteri/app/"
 c, f = r(P + "ZeytinAssistantController.java"), r(P + "ProducerFeedActivity.java")
+rb = r(P + "RuleBrain.java")   # İP3: karar sırası beyinde
 checks = [
-    ("asistan kayit sohbetlerini baslatir", "VoiceRecordDialog.detect(raw)" in c and "startRecord(" in c and "answerRecord(raw)" in c),
+    ("asistan kayit sohbetlerini baslatir", "VoiceRecordDialog.detect(raw)" in rb and "startRecord(" in c and "answerRecord(raw)" in c),
     ("kayit sohbeti formu her sey yazili acar", "host.openRecordForm(d,g)" in c and "public void openRecordForm(" in f),
     ("hasat formu iscilik/nakliye ile dolar", "EXTRA_VOICE_LABOR" in r("HarvestActivity.java") and "HarvestActivity.EXTRA_VOICE_TRANSPORT" in f),
     ("salamura yeni parti penceresi sesle dolu acilir", "applyVoiceToBatch(etOliveKg, etSaltKg, etWaterLiter, etVariety)" in r(P + "BrineActivity.java")),

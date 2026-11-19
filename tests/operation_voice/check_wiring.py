@@ -3,9 +3,10 @@ import os, sys
 A = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "app", "src", "main", "java", "com", "zeytindefteri", "app")
 r = lambda f: open(os.path.join(A, f), encoding="utf-8").read()
 c, f, n = r("ZeytinAssistantController.java"), r("ProducerFeedActivity.java"), r("NewOperationActivity.java")
+rb = r("RuleBrain.java")   # İP3: karar sırası beyinde
 checks = [
-    ("asistan islem cumlesini taniyip formu acar", "OperationVoiceEntry.parse(raw)" in c and "host.openOperationEntry(gid,op)" in c),
-    ("elek cumlesi once (islem onu ezmez)", c.index("ElekVoiceEntry.parse(raw)") < c.index("OperationVoiceEntry.parse(raw)")),
+    ("asistan islem cumlesini taniyip formu acar", "OperationVoiceEntry.parse(raw)" in rb and "host.openOperationEntry(gid,op)" in c),
+    ("elek cumlesi once (islem onu ezmez)", rb.index("ElekVoiceEntry.parse(raw)") < rb.index("OperationVoiceEntry.parse(raw)")),
     ("ana ekran formu tur + tarih + miktar + tutar ile acar", "NewOperationActivity.EXTRA_VOICE_DAY_OFFSET" in f and "NewOperationActivity.EXTRA_VOICE_COST" in f),
     ("form sesle dolar ama kendiliginden kaydetmez", "applyVoice()" in n and n.count("saveOperation()") == 2),
     ("ornek cumleler asistanda", "SESLE BAHÇE İŞİ" in r("ZeytinAssistantText.java")),

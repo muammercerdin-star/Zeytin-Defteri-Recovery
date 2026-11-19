@@ -6,12 +6,13 @@ A = Path(__file__).resolve().parents[2] / 'app/src/main/java/com/zeytindefteri/a
 c = (A / 'ZeytinAssistantController.java').read_text(encoding='utf8')
 f = (A / 'ProducerFeedActivity.java').read_text(encoding='utf8')
 e = (A / 'ElekActivity.java').read_text(encoding='utf8')
+rb = (A / 'RuleBrain.java').read_text(encoding='utf8')   # İP3: karar sırası beyinde
 fails = []
 def check(ok, m):
     print(('PASS ' if ok else 'FAIL ') + m)
     if not ok: fails.append(m)
-check(c.index('ElekVoiceEntry.parse(raw)') < c.index('if(cmd.kind==Kind.UNKNOWN)'), 'elek girişi soru yollarından önce denenir')
-check('pick==null?ElekVoiceEntry.parse(raw):null' in c, 'etiketle yeniden sorulduğunda form açılmaz')
+check(rb.index('ElekVoiceEntry.parse(raw)') < rb.index('static Decision question('), 'elek girişi soru yollarından önce denenir')
+check('pick!=null?RuleBrain.question(raw,cmd):rules.recordStage(' in c, 'etiketle yeniden sorulduğunda form açılmaz')
 check('default void openElekEntry(' in c, 'Host varsayılan davranışı: boş elek formu')
 check('public void openElekEntry(long gardenId, ElekVoiceEntry entry)' in f and 'EXTRA_VOICE_KG, entry.kg' in f, 'ana ekran kiloları forma gönderir')
 body = e[e.index('private void applyVoiceEntry('):]
