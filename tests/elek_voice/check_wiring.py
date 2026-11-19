@@ -11,7 +11,7 @@ fails = []
 def check(ok, m):
     print(('PASS ' if ok else 'FAIL ') + m)
     if not ok: fails.append(m)
-check(rb.index('ElekVoiceEntry.parse(raw)') < rb.index('static Decision question('), 'elek girişi soru yollarından önce denenir')
+check(rb.index('ElekRules.decide(raw,') < rb.index('static Decision question('), 'elek girişi soru yollarından önce denenir')
 check('pick!=null?RuleBrain.question(raw,cmd):rules.recordStage(' in c, 'etiketle yeniden sorulduğunda form açılmaz')
 check('default void openElekEntry(' in c, 'Host varsayılan davranışı: boş elek formu')
 check('public void openElekEntry(long gardenId, ElekVoiceEntry entry)' in f and 'EXTRA_VOICE_KG, entry.kg' in f, 'ana ekran kiloları forma gönderir')
@@ -22,7 +22,7 @@ check('savedInstanceState == null' in e[e.index('EXTRA_VOICE_KG)'):][:0] or 'sav
 v = (A / 'ElekVoiceSession.java').read_text(encoding='utf8')
 lay = (A.parents[3] / 'res/layout/activity_elek.xml').read_text(encoding='utf8')
 check('@+id/btnElekVoice' in lay and 'R.id.btnElekVoice' in e, 'elek formunda "Sesle doldur" düğmesi')
-check(v.count('host.save()') == 1 and v.index('host.save()') > v.index('if (r.action == ElekVoiceDialog.Action.SAVE)'), 'kayıt yalnız konuşmanın SAVE cevabında (onaydan sonra)')
+check(v.count('host.save(') == 1 and v.index('host.save(Approval.elekConfirmed(logic))') > v.index('if (r.action == ElekVoiceDialog.Action.SAVE)'), 'kayıt yalnız konuşmanın SAVE cevabında (onaydan sonra, onay belgesiyle)')
 check('voice.close()' in e[e.index('protected void onPause()'):][:200], 'ekrandan çıkınca mikrofon kapanır')
 check('voiceSavedId = result;' in e, 'kaydın numarası konuşmaya döner (makbuz açılır)')
 check('RECORD_AUDIO' in v and 'MIC_REQUEST' in e, 'mikrofon izni istenir')

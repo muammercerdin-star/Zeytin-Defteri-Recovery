@@ -60,6 +60,14 @@ final class Decision {
         return null;
     }
 
+    /** Alan değeri olarak sayı: tam sayı "120", kesirli "2.5". */
+    static String num(double v) {
+        if (v == Math.floor(v)) {
+            return String.valueOf((long) v);
+        }
+        return String.valueOf(v);
+    }
+
     /** Alanlar "k=v;k=v" (yoksa "-"): cümle bankası ve testlerin yazımı. */
     String fieldsText() {
         if (fields.isEmpty()) {

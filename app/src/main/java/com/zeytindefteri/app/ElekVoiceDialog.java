@@ -34,6 +34,10 @@ public final class ElekVoiceDialog {
     private boolean buyerAsked;
     private java.util.List<String> buyerChoices = new java.util.ArrayList<>();
     private Phase phase = Phase.LISTENING;
+    /** Cümleyi eyleme çeviren beyin: asistanla aynı kural parçası (ElekRules), Elek ekranı bağlamıyla. */
+    private final Brain brain = new ElekRules();
+    /** Çiftçi özetten sonra "evet" dedi mi. */
+    private boolean confirmed;
     private final Deque<double[]> undo = new ArrayDeque<>();
     private int fills = 0, misses = 0;
 
@@ -66,7 +70,7 @@ public final class ElekVoiceDialog {
         }
         if (phase == Phase.ASK_BUYER) return answerBuyer(raw, s);
         if (phase == Phase.CONFIRM) {
-            ElekVoiceEntry e = ElekVoiceEntry.parse(forParse(raw));
+            ElekVoiceEntry e = heard(raw);
             if (e != null) { apply(e, raw); return askConfirm("Düzelttim. "); }
             // Önce olumsuz: "doğru değil", "tamam değil", "evet ama bekle" KAYDETMEZ.
             if (has(s, "hayir", "duzelt", "bekle", "dur", "degil", "yanlis", "kaydetme", "olmaz")) {
@@ -79,6 +83,7 @@ public final class ElekVoiceDialog {
             }
             if (yes(s)) {
                 phase = Phase.DONE;
+                confirmed = true;
                 return new Reply(isSold() ? "Kaydediyorum, fişi hazırlıyorum." : "Kaydediyorum.", Action.SAVE, false);
             }
             return new Reply("Kaydetmem için evet, düzeltmek için hayır de.", Action.NONE, true);
@@ -99,7 +104,7 @@ public final class ElekVoiceDialog {
             if (any) { undo.push(before); return new Reply("Sildim. " + listLine(), Action.FILL, true); }
             return new Reply("Hangi sınıfı sileyim? Örneğin: 3 numarayı sil.", Action.NONE, true);
         }
-        ElekVoiceEntry e = ElekVoiceEntry.parse(forParse(raw));
+        ElekVoiceEntry e = heard(raw);
         Boolean soldSaid = ElekVoiceEntry.soldIn(raw);
         String buyerSaid = ElekVoiceEntry.buyerIn(raw);
         boolean finish = has(s, "bitti", "hepsi bu", "bu kadar", "tamamdir", "kaydet", "tamam", "bitir");
@@ -132,9 +137,21 @@ public final class ElekVoiceDialog {
                 : "Anlayamadım. Örneğin: 3 numara 120 kilo diyebilirsin.", Action.NONE, true);
     }
 
-    /** Konuşmada "değiştir / güncelle" düzeltme demektir ("3 numarayı 100 olarak değiştir"); ayrıştırıcı bu sözleri görmesin. */
-    static String forParse(String raw) {
-        return raw == null ? "" : raw.replaceAll("(?iu)\\b(de[gğ]i[sş]tir|g[uü]ncelle)\\p{L}*", " ");
+    /**
+     * Söylenen elek bilgisi: cümle asistanla AYNI kapıdan (Brain → ElekRules) geçer, Elek ekranı bağlamıyla
+     * ("değiştir/güncelle" düzeltme sözleri atılır). Elek kararı değilse null.
+     */
+    private ElekVoiceEntry heard(String raw) {
+        Decision d = brain.decide(new Brain.Input(raw), BrainContext.elekScreen());
+        if (!d.is(ActionCatalog.ELEK)) {
+            return null;
+        }
+        return d.payload(ElekVoiceEntry.class);
+    }
+
+    /** Çiftçi özetten sonra "evet" dedi mi (İP3: kayıt yalnız bu onayla, bkz. Approval). */
+    boolean confirmed() {
+        return confirmed;
     }
 
     /**

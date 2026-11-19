@@ -45,7 +45,7 @@ public final class SentenceBankRunner {
     }
 
     static Outcome route(String raw) {
-        BrainContext context = BrainContext.full(true, AssistantPersona.decode(""));
+        BrainContext context = BrainContext.full(true, AssistantPersona.decode("")::handle);
         return new Outcome(BRAIN.decide(new Brain.Input(raw), context));
     }
 

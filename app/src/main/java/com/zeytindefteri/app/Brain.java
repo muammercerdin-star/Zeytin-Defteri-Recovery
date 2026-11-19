@@ -7,6 +7,9 @@ package com.zeytindefteri.app;
  */
 interface Brain {
 
+    /** Kural beyninin adı (RuleBrain ve onun elek parçası ElekRules). */
+    String RULES = "kural";
+
     /** Girdi: kullanıcının sözü olduğu gibi ve TurkishText ile sadeleşmiş hâli. */
     final class Input {
         final String raw;

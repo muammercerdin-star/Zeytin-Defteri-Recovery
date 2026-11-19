@@ -132,6 +132,8 @@ public final class ZeytinAssistantController {
     private AssistantPersona persona;
     /** Cümleyi eyleme çeviren beyin (İP3): bugün kurallar; değiştirilebilir parça, yürütme bu sınıfta. */
     private final RuleBrain rules=new RuleBrain();
+    /** İnternet yardımcısı aynı arayüzde (yalnız kuralların anlamadığı ya da soru sandığı iş cümlesinde, izinle). */
+    private final CloudBrain cloudBrain=new CloudBrain(AssistantCloudClient::ask);
     private int answersThisPanel;
 
     private android.content.SharedPreferences personaPrefs(){return activity.getSharedPreferences("zd_assistant_persona",Context.MODE_PRIVATE);}
@@ -650,7 +652,9 @@ public final class ZeytinAssistantController {
         if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
         boolean commands=recDialog==null;
         final String asked=pendingCloud;
-        BrainContext context=BrainContext.assistant(opDialog==null&&recDialog==null,commands,asked!=null,commands?persona():null);
+        java.util.function.Function<String,String> chat=null;
+        if(commands)chat=persona()::handle;
+        BrainContext context=BrainContext.assistant(opDialog==null&&recDialog==null,commands,asked!=null,chat);
         Decision talk=rules.conversationStage(new Brain.Input(raw),context);
         if(commands&&pastCloudStep(talk))pendingCloud=null;   // izin sorusu yalnız bir cevap bekler
         if(talk!=null){converse(talk,raw,asked);return;}
@@ -700,7 +704,10 @@ public final class ZeytinAssistantController {
                 String gardenName=resolution.garden==null?"":resolution.garden.name;
                 // Karar beyinde (RuleBrain): hasat, alacak, elek, işlem, sorular. "Anladığım" etiketinden yeniden sorma
                 // cümleyi yeniden ayrıştırmaz, etiketle değişen soruyla yalnız soru cevabına gider.
-                final Decision decision=pick!=null?RuleBrain.question(raw,cmd):rules.recordStage(new Brain.Input(raw),BrainContext.recordsOnly(!gardens.isEmpty()),cmd);
+                final List<String> gardenNames=new java.util.ArrayList<>();
+                for(Garden g:gardens)gardenNames.add(g.name);
+                final BrainContext records=BrainContext.recordsOnly(gardenNames);
+                final Decision decision=pick!=null?RuleBrain.question(raw,cmd):rules.recordStage(new Brain.Input(raw),records,cmd);
                 // "Bugün 3 numara 120 kilo (sattım)": cevap yerine elek formu dolu açılır; kayıt kullanıcının onayıyla.
                 // "Girelli'den 300 kilo topladık": hasat (elekten önce: boy söylense de "topladık" hasattır).
                 if(decision.is(ActionCatalog.HASAT)&&"soru".equals(decision.variant)){
@@ -768,21 +775,21 @@ public final class ZeytinAssistantController {
                 // karşılaştırılarak denetlenir (AssistantCloud.accept), okunur, "evet" denmeden kaydedilmez.
                 // Soru kalıbı değil, geçmiş zamanlı bir iş cümlesiyse ("ağaçların altını temizledik, 2 amele tuttuk") kayıt sorusu
                 // (TREES vb.) sanılsa bile yardımcıya gider; ekran açma komutları gitmez (eligible soru ve komutları ayırır).
-                if(pick==null&&cmd.kind!=Kind.NAVIGATION&&!gardens.isEmpty()&&AssistantCloudClient.configured()&&ZeytinAssistantText.special(raw)==null){
-                    final List<String> names=new java.util.ArrayList<>();for(Garden g:gardens)names.add(g.name);
+                if(pick==null&&AssistantCloudClient.configured()&&CloudBrain.wants(raw,cmd,gardenNames)){
                     String mode=AssistantCloudClient.mode(activity,owner);
-                    if(AssistantCloud.eligible(raw,names)&&!"off".equals(mode)&&AssistantCloudClient.online(activity)){
+                    if(!"off".equals(mode)&&AssistantCloudClient.online(activity)){
                         rememberMiss(raw,owner);
                         if(mode.isEmpty()){
                             main.post(()->{if(current(token,owner,season,active)){pendingCloud=raw;postDialog(new OperationVoiceDialog.Reply(AssistantCloud.ASK,OperationVoiceDialog.Action.ASK),"Zeytin · internet yardımcısı");}});
                             return;
                         }
                         main.post(()->{if(current(token,owner,season,active))transition(State.PROCESSING,"Düşünüyorum…");});
-                        final AssistantCloud.Result cloud=AssistantCloud.accept(AssistantCloudClient.ask(raw,names),raw,names);
+                        final Decision help=cloudBrain.decide(new Brain.Input(raw),records);
+                        final AssistantCloud.Result cloud=help.payload(AssistantCloud.Result.class);
                         if(cloud!=null){
                             final List<Garden> owned=gardens;
                             main.post(()->{if(current(token,owner,season,active)){
-                                opDialog=new OperationVoiceDialog(cloud.entry,names,cloud.garden);opGardens=owned;
+                                opDialog=new OperationVoiceDialog(cloud.entry,gardenNames,cloud.garden);opGardens=owned;
                                 postDialog(opDialog.start(),"Bahçe işi · internet yardımcısı");}});
                             return;
                         }

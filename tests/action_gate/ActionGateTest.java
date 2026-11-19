@@ -64,7 +64,7 @@ public class ActionGateTest {
     }
 
     static void greedyBrains() {
-        BrainContext ctx = BrainContext.full(true, AssistantPersona.decode(""));
+        BrainContext ctx = BrainContext.full(true, AssistantPersona.decode("")::handle);
         int confirmed = 0;
         for (ActionCatalog.Action a : ActionCatalog.all()) {
             String id = a.family.isEmpty() ? a.id : a.family + "SPRAY";
@@ -93,7 +93,7 @@ public class ActionGateTest {
         int records = 0;
         for (String raw : BrainEquivalenceTest.corpus(root)) {
             for (boolean gardens : new boolean[]{true, false}) {
-                Decision d = brain.decide(new Brain.Input(raw), BrainContext.full(gardens, AssistantPersona.decode("")));
+                Decision d = brain.decide(new Brain.Input(raw), BrainContext.full(gardens, AssistantPersona.decode("")::handle));
                 if (ActionCatalog.alwaysConfirm(d.action)) {
                     records++;
                     if (ActionGate.allowed(d).ordinal() > ActionCatalog.Level.FORMU_DOLDUR.ordinal() || ActionGate.mayActAlone(d)) {
@@ -113,7 +113,8 @@ public class ActionGateTest {
             if (!Modifier.isStatic(m.getModifiers()) || m.getReturnType() != Approval.class) {
                 continue;
             }
-            boolean fromDialog = Arrays.equals(m.getParameterTypes(), new Class<?>[]{OperationVoiceDialog.class});
+            boolean fromDialog = Arrays.equals(m.getParameterTypes(), new Class<?>[]{OperationVoiceDialog.class})
+                    || Arrays.equals(m.getParameterTypes(), new Class<?>[]{ElekVoiceDialog.class});
             check(fromDialog, "onay belgesi yalnız sesli onaylı konuşmadan: " + m);
             for (Class<?> p : m.getParameterTypes()) {
                 check(p != Decision.class && p != Brain.class, "beyin kararından onay belgesi üretilemez: " + m);

@@ -6,7 +6,7 @@ c = r("com/zeytindefteri/app/ZeytinAssistantController.java"); f = r("com/zeytin
 h = r("HarvestActivity.java"); d = r("com/zeytindefteri/app/ZeytinAssistantData.java")
 rb = r("com/zeytindefteri/app/RuleBrain.java")   # İP3: karar sırası beyinde
 checks = [
-    ("hasat cumlesi hasat formunu acar (elekten once)", "HarvestVoiceEntry.parse(raw)" in rb and rb.index("HarvestVoiceEntry.parse(raw)") < rb.index("ElekVoiceEntry.parse(raw)") and "host.openHarvestEntry(hid,harvest)" in c),
+    ("hasat cumlesi hasat formunu acar (elekten once)", "HarvestVoiceEntry.parse(raw)" in rb and rb.index("HarvestVoiceEntry.parse(raw)") < rb.index("ElekRules.decide(raw,") and "host.openHarvestEntry(hid,harvest)" in c),
     ("alacak sorusu kayitlardan cevaplanir", "AssistantReceivables.asks(raw)" in rb and "decision.is(ActionCatalog.ALACAK_SORU)" in c and "AssistantReceivablesData.load(" in c and "BuyerDirectory.list" in r("com/zeytindefteri/app/AssistantReceivablesData.java")),
     ("ana ekran hasat formunu boy boy kilo ile acar", "HarvestActivity.EXTRA_VOICE_KG" in f),
     ("hasat formu sesle dolar ama kendiliginden kaydetmez", "applyVoice()" in h and h.count("saveHarvest()") == 2),

@@ -434,8 +434,12 @@ public class ElekActivity extends Activity {
                 calculateAll();
                 refreshElekInsights();
             }
-            @Override public long save() {
+            @Override public long save(Approval approval) {
                 voiceSavedId = -1;
+                // Onay kapısı: sesli kayıt yalnız çiftçinin "evet"iyle (elle Kaydet düğmesi bu yoldan geçmez).
+                if (!ActionGate.mayWrite(ActionCatalog.ELEK, approval)) {
+                    return -1;
+                }
                 saveElekRecord();
                 return voiceSavedId;
             }

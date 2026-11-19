@@ -16,7 +16,7 @@ sc = c.split("private void scorecardCommand(Decision d){")[1].split("\n    }")[0
 checks = [
     ("karne komutu anlamadıklarımdan sonra, sohbetten önce",
      "scorecardCommand(d);return;" in c
-     and rb.index("AssistantMisses.asksClear(in.raw)") < rb.index("AssistantScorecard.asksShow(in.raw)") < rb.index("c.persona.handle(in.raw)")),
+     and rb.index("AssistantMisses.asksClear(in.raw)") < rb.index("AssistantScorecard.asksShow(in.raw)") < rb.index("c.chat.apply(in.raw)")),
     ("karne yeni ekran açmaz (asistan cevabına yazılır)",
      "AssistantMeter.show(activity,host.owner())" in c and "startActivity" not in sc),
     ("anlaşılmayan cümle karneye de yazılır", "meter(meterTurn,raw,owner,null);" in c),

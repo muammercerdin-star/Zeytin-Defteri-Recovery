@@ -42,7 +42,7 @@ public class BrainEquivalenceTest {
                         String[] want = LegacyRouter.route(raw, old);
                         boolean close = dialog[0] && dialog[1];
                         boolean commands = dialog[1];
-                        BrainContext ctx = BrainContext.of(close, commands, pending, gardens, AssistantPersona.decode(""));
+                        BrainContext ctx = BrainContext.of(close, commands, pending, gardens, AssistantPersona.decode("")::handle);
                         Decision got = brain.decide(new Brain.Input(raw), ctx);
                         compared++;
                         boolean same = want[0].equals(got.action) && want[1].equals(got.fieldsText()) && want[2].equals(got.variant);

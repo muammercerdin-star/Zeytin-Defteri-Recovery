@@ -38,7 +38,8 @@ final class ElekVoiceSession {
         /** prices: sınıf fiyatları (TL/kg); sesle söylenen fiyat varsa yalnız bu kayıt için forma yazılır. */
         void fill(double[] kg, double[] prices, Boolean sold, String buyer);
         /** Formu kaydeder; kaydedilen elek kaydının id'si ya da -1. */
-        long save();
+        /** Formu kaydeder; yalnız çiftçinin "evet"inden doğan onay belgesiyle (Approval). */
+        long save(Approval approval);
         void openReceipt(long recordId);
         /** Alıcı listesindeki adlar ("Kime sattın?" cevabı bunlarla eşleştirilir). */
         default java.util.List<String> buyers() { return new java.util.ArrayList<>(); }
@@ -192,7 +193,7 @@ final class ElekVoiceSession {
             host.fill(logic.kg.clone(), logic.prices(), logic.sold, logic.buyer);
         }
         if (r.action == ElekVoiceDialog.Action.SAVE) {
-            long id = host.save();
+            long id = host.save(Approval.elekConfirmed(logic));
             if (id > 0) {
                 String done = logic.isSold() ? "Kaydettim. Fiş hazır." : "Kaydettim.";
                 say(r.speech + " " + done, false, () -> { close(); host.openReceipt(id); });

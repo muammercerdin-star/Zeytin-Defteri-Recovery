@@ -15,7 +15,7 @@ import java.util.Map;
  * asistanın yürütme adımında denenir (Oturum 2'de CloudBrain olarak bu arayüze oturur).
  */
 final class RuleBrain implements Brain {
-    static final String NAME = "kural";
+    static final String NAME = Brain.RULES;
 
     /** Kapanış sözü (ZeytinAssistantController.submit'ten taşındı). */
     private static final String CLOSE = "(tesekkur\\p{L}*|sag ol\\p{L}*|sagol\\p{L}*|tamam bu kadar|bu kadar|yeter|kapat"
@@ -33,6 +33,9 @@ final class RuleBrain implements Brain {
 
     @Override
     public Decision decide(Input in, BrainContext c) {
+        if (c.screen == BrainContext.Screen.ELEK) {
+            return new ElekRules().decide(in, c);
+        }
         if (c.conversation) {
             Decision talk = conversationStage(in, c);
             if (talk != null) {
@@ -72,8 +75,8 @@ final class RuleBrain implements Brain {
         if (cloud != null) {
             return cloud;
         }
-        if (c.persona != null) {
-            String chat = c.persona.handle(in.raw);
+        if (c.chat != null) {
+            String chat = c.chat.apply(in.raw);
             if (chat != null) {
                 return found(ActionCatalog.SOHBET, null, "", "Sohbet sözü", chat);
             }
@@ -119,9 +122,9 @@ final class RuleBrain implements Brain {
         if (AssistantReceivables.asks(raw)) {
             return found(ActionCatalog.ALACAK_SORU, null, "", "Alacak/borç sorusu", null);
         }
-        ElekVoiceEntry elek = ElekVoiceEntry.parse(raw);
+        Decision elek = ElekRules.decide(raw, BrainContext.Screen.ASSISTANT);
         if (elek != null) {
-            return found(ActionCatalog.ELEK, elekFields(elek), "", "Elek sınıfı ve kilo söylendi", elek);
+            return elek;
         }
         if (opensElek(in.text)) {
             return found(ActionCatalog.ELEK_AC, null, "", "Elek girme isteği", null);
@@ -181,26 +184,7 @@ final class RuleBrain implements Brain {
         return new Decision(action, fields, 1, reason, variant, level, payload, NAME);
     }
 
-    // ============================================================ ALANLAR (cümle bankasının yazımı)
-
-    static Map<String, String> elekFields(ElekVoiceEntry e) {
-        Map<String, String> f = new LinkedHashMap<>();
-        for (int i = 0; i < e.kg.length; i++) {
-            if (e.kg[i] > 0) {
-                f.put(GRADE_KEYS[i], num(e.kg[i]));
-            }
-            if (e.price[i] > 0) {
-                f.put(GRADE_KEYS[i] + "_fiyat", num(e.price[i]));
-            }
-        }
-        if (e.sold != null) {
-            f.put("satis", e.sold ? "evet" : "hayir");
-        }
-        if (!e.buyer.isEmpty()) {
-            f.put("alici", e.buyer);
-        }
-        return f;
-    }
+    // ============================================================ ALANLAR (cümle bankasının yazımı; elek: ElekRules)
 
     static Map<String, String> harvestFields(String raw) {
         Map<String, String> f = new LinkedHashMap<>();
@@ -210,10 +194,10 @@ final class RuleBrain implements Brain {
         }
         for (int i = 0; i < h.kg.length; i++) {
             if (h.kg[i] > 0) {
-                f.put(GRADE_KEYS[i], num(h.kg[i]));
+                f.put(GRADE_KEYS[i], Decision.num(h.kg[i]));
             }
         }
-        f.put("toplam", num(h.total));
+        f.put("toplam", Decision.num(h.total));
         if (h.dayOffset != 0) {
             f.put("gun", String.valueOf(h.dayOffset));
         }
@@ -227,19 +211,12 @@ final class RuleBrain implements Brain {
             f.put("gun", String.valueOf(e.dayOffset));
         }
         if (e.quantity > 0) {
-            f.put("miktar", num(e.quantity));
+            f.put("miktar", Decision.num(e.quantity));
             f.put("birim", e.unit);
         }
         if (e.cost > 0) {
-            f.put("tutar", num(e.cost));
+            f.put("tutar", Decision.num(e.cost));
         }
         return f;
-    }
-
-    static String num(double v) {
-        if (v == Math.floor(v)) {
-            return String.valueOf((long) v);
-        }
-        return String.valueOf(v);
     }
 }

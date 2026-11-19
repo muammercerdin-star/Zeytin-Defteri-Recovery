@@ -6,7 +6,7 @@ c, f, n = r("ZeytinAssistantController.java"), r("ProducerFeedActivity.java"), r
 rb = r("RuleBrain.java")   # İP3: karar sırası beyinde
 checks = [
     ("asistan islem cumlesini taniyip formu acar", "OperationVoiceEntry.parse(raw)" in rb and "host.openOperationEntry(gid,op)" in c),
-    ("elek cumlesi once (islem onu ezmez)", rb.index("ElekVoiceEntry.parse(raw)") < rb.index("OperationVoiceEntry.parse(raw)")),
+    ("elek cumlesi once (islem onu ezmez)", rb.index("ElekRules.decide(raw,") < rb.index("OperationVoiceEntry.parse(raw)")),
     ("ana ekran formu tur + tarih + miktar + tutar ile acar", "NewOperationActivity.EXTRA_VOICE_DAY_OFFSET" in f and "NewOperationActivity.EXTRA_VOICE_COST" in f),
     ("form sesle dolar ama kendiliginden kaydetmez", "applyVoice()" in n and n.count("saveOperation()") == 2),
     ("ornek cumleler asistanda", "SESLE BAHÇE İŞİ" in r("ZeytinAssistantText.java")),

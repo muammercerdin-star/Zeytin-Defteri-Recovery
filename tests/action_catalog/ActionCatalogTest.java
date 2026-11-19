@@ -64,7 +64,7 @@ public class ActionCatalogTest {
         for (String raw : BrainEquivalenceTest.corpus(root)) {
             for (boolean gardens : new boolean[]{true, false}) {
                 for (boolean pending : new boolean[]{true, false}) {
-                    Decision d = brain.decide(new Brain.Input(raw), BrainContext.of(true, true, pending, gardens, AssistantPersona.decode("")));
+                    Decision d = brain.decide(new Brain.Input(raw), BrainContext.of(true, true, pending, gardens, AssistantPersona.decode("")::handle));
                     ActionCatalog.Action a = ActionCatalog.get(d.action);
                     if (produced.add(d.action)) {
                         check(a != null, "üretilen eylem katalogda: " + d.action);

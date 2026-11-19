@@ -1,18 +1,24 @@
 package com.zeytindefteri.app;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Function;
+
 /**
- * Beyne verilen bağlam (İP3; saf). Beyin cümleyi tek başına değil, konuşmanın durumuyla okur. Karar aşamaları:
+ * Beyne verilen bağlam (İP3; saf, hafif: yalnız Java). Beyin cümleyi tek başına değil, konuşmanın durumuyla okur.
  *
+ * Asistanda iki aşama vardır:
  * 1. Konuşma aşaması (ekranda, kayıtlar okunmadan): kapanış, anlamadıklarım/karne/internet yardımcısı komutları,
  *    sohbet. Açık sorulu konuşma (işlem/hasat soruları) varken bu aşama, eski zincirdeki gibi kısıtlanır.
- * 2. Kayıt aşaması (kayıtlar okunduktan sonra): hasat, alacak, elek, işlem, sorular. Bahçe olup olmadığı burada bilinir.
+ * 2. Kayıt aşaması (kayıtlar okunduktan sonra): hasat, alacak, elek, işlem, sorular. Bahçeler burada bilinir.
  *
- * Asistan önce konuşma aşamasını sorar; karar "kayıtlar gerekli" ise kayıtları okuyup kayıt aşamasını sorar.
- * Cümle bankası ve testler ikisini birden tek çağrıda sorar (recordsKnown + conversation).
+ * Elek ekranındaki "Sesle doldur" aynı kapıdan, ELEK ekranı bağlamıyla girer: orada cümle yalnız elek olarak okunur.
+ * Cümle bankası ve testler iki aşamayı tek çağrıda sorar.
  */
 final class BrainContext {
-    /** Cümle nereden geldi. Bugün asistan (ses ve yazı aynı kapıdan); Elek "Sesle doldur" Oturum 2'de eklenecek. */
-    enum Screen { ASSISTANT }
+    /** Cümle nereden geldi: asistan (ses ve yazı aynı kapıdan) ya da Elek ekranındaki "Sesle doldur". */
+    enum Screen { ASSISTANT, ELEK }
 
     final Screen screen;
     /** Konuşma aşaması sorulsun mu (asistanda ilk soru; kayıt aşamasında ve izin sonrası yeniden sormada hayır). */
@@ -23,14 +29,17 @@ final class BrainContext {
     final boolean commandsAllowed;
     /** İnternet yardımcısı için izin sorusu bekliyor. */
     final boolean cloudConsentPending;
-    /** Kayıtlar okundu mu (bahçe bilgisi geçerli mi); hayırsa kayıt aşamasına gelince "kayıtlar gerekli" döner. */
+    /** Kayıtlar okundu mu (bahçe bilgisi geçerli mi). */
     final boolean recordsKnown;
     final boolean hasGardens;
-    /** Konuşmadaki sohbet durumu (bekleyen soru, ad); sohbet aşaması bunu kullanır ve değiştirebilir. */
-    final AssistantPersona persona;
+    /** Bahçe adları (internet yardımcısı cümledeki bahçeyi bunlarla eşler); okunmadıysa boş. */
+    final List<String> gardenNames;
+    /** Sohbet: cümleye sohbet cevabı (yoksa null). Asistanda kişiliğin handle'ı; durumu değiştirebilir. */
+    final Function<String, String> chat;
 
     private BrainContext(Screen screen, boolean conversation, boolean closeAllowed, boolean commandsAllowed,
-                         boolean cloudConsentPending, boolean recordsKnown, boolean hasGardens, AssistantPersona persona) {
+                         boolean cloudConsentPending, boolean recordsKnown, boolean hasGardens, List<String> gardenNames,
+                         Function<String, String> chat) {
         this.screen = screen;
         this.conversation = conversation;
         this.closeAllowed = closeAllowed;
@@ -38,32 +47,34 @@ final class BrainContext {
         this.cloudConsentPending = cloudConsentPending;
         this.recordsKnown = recordsKnown;
         this.hasGardens = hasGardens;
-        this.persona = persona;
+        List<String> names = gardenNames == null ? new ArrayList<String>() : new ArrayList<>(gardenNames);
+        this.gardenNames = Collections.unmodifiableList(names);
+        this.chat = chat;
     }
 
     /** Asistanda yeni cümle (kayıtlar henüz okunmadı). */
-    static BrainContext assistant(boolean closeAllowed, boolean commandsAllowed, boolean cloudConsentPending, AssistantPersona persona) {
-        return new BrainContext(Screen.ASSISTANT, true, closeAllowed, commandsAllowed, cloudConsentPending, false, false, persona);
+    static BrainContext assistant(boolean closeAllowed, boolean commandsAllowed, boolean cloudConsentPending, Function<String, String> chat) {
+        return new BrainContext(Screen.ASSISTANT, true, closeAllowed, commandsAllowed, cloudConsentPending, false, false, null, chat);
     }
 
-    /** Kayıtlar okundu: kayıt aşaması (konuşma aşaması bu cümle için zaten soruldu ya da atlanıyor). */
-    BrainContext withRecords(boolean gardens) {
-        return new BrainContext(screen, false, closeAllowed, commandsAllowed, cloudConsentPending, true, gardens, persona);
+    /** Kayıtlar okundu: yalnız kayıt aşaması (eski run() gibi; izin sonrası yeniden sormada da). */
+    static BrainContext recordsOnly(List<String> gardenNames) {
+        boolean gardens = gardenNames != null && !gardenNames.isEmpty();
+        return new BrainContext(Screen.ASSISTANT, false, false, false, false, true, gardens, gardenNames, null);
     }
 
-    /** İnternet yardımcısına izin verildi, bekleyen cümle yeniden: yalnız kayıt aşaması (eski run() gibi). */
-    static BrainContext recordsOnly(boolean hasGardens) {
-        return new BrainContext(Screen.ASSISTANT, false, false, false, false, true, hasGardens, null);
+    /** Elek ekranındaki "Sesle doldur": cümle yalnız elek olarak okunur. */
+    static BrainContext elekScreen() {
+        return new BrainContext(Screen.ELEK, false, false, false, false, true, true, null, null);
     }
 
     /** Testler ve cümle bankası: iki aşama tek çağrıda (taze sohbet, bahçe var/yok). */
-    static BrainContext full(boolean hasGardens, AssistantPersona persona) {
-        return new BrainContext(Screen.ASSISTANT, true, true, true, false, true, hasGardens, persona);
+    static BrainContext full(boolean hasGardens, Function<String, String> chat) {
+        return new BrainContext(Screen.ASSISTANT, true, true, true, false, true, hasGardens, null, chat);
     }
 
     /** Testler: eski zincirin bütün bayraklarıyla. */
-    static BrainContext of(boolean closeAllowed, boolean commandsAllowed, boolean cloudConsentPending, boolean hasGardens, AssistantPersona persona) {
-        return new BrainContext(Screen.ASSISTANT, true, closeAllowed, commandsAllowed, cloudConsentPending, true, hasGardens, persona);
+    static BrainContext of(boolean closeAllowed, boolean commandsAllowed, boolean cloudConsentPending, boolean hasGardens, Function<String, String> chat) {
+        return new BrainContext(Screen.ASSISTANT, true, closeAllowed, commandsAllowed, cloudConsentPending, true, hasGardens, null, chat);
     }
-
 }
