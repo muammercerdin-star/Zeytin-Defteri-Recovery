@@ -22,7 +22,7 @@ J
     "$A/OperationVoiceEntry.java" "$A/OperationKinds.java" "$A/HarvestVoiceEntry.java" "$A/VoiceRecordDialog.java" \
     "$A/ZeytinAssistantCommand.java" "$A/ZeytinAssistantPeriod.java" "$A/ZeytinAssistantText.java" "$A/ZeytinAssistantHints.java" \
     "$A/AssistantReceivables.java" "$A/AssistantKnowledge.java" "$A/AssistantPersona.java" \
-    "$A/AssistantMisses.java" "$A/AssistantScorecard.java" "$A/AssistantCloud.java" \
+    "$A/AssistantMisses.java" "$A/AssistantScorecard.java" "$A/HabitCorrections.java" "$A/HabitRules.java" "$A/AssistantCloud.java" \
     "$A/ActionCatalog.java" "$A/Decision.java" "$A/Brain.java" "$A/BrainContext.java" "$A/RuleBrain.java" \
     "$A/ElekRules.java" "$A/CloudBrain.java" "$A/LearnedTerms.java" "$A/LearnedBrain.java" \
     "$out/src/ZeytinAssistantData.java" "$@" 2>&1 | grep -v "^Note:"

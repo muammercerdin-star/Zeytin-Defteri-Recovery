@@ -119,6 +119,14 @@ final class AssistantMeter {
         }
     }
 
+    /** Öneri olayı (İP5): gösterildi / kabul / "Bu yanlış", türüne göre. Yalnız sayı. */
+    static void suggestion(Context context, String owner, String event, String category) {
+        String key = AssistantScorecard.suggestionKey(event, category);
+        if (!key.isEmpty()) {
+            count(context, owner, key, 1);
+        }
+    }
+
     private static synchronized void count(Context context, String owner, String key, long delta) {
         try {
             SharedPreferences p = context.getSharedPreferences(SCORE_PREFS, Context.MODE_PRIVATE);
