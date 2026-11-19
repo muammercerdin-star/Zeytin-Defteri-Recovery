@@ -36,7 +36,7 @@ check('"Alıcı belirtme", name ->' not in _e, 'alıcı seçicide "alıcı belir
 check('EXTRA_VOICE_PRICE, entry.price' in f, 'asistan sesli fiyatı forma gönderir')
 check('applyRecordPrices(voicePrice);' in _e, 'asistandan gelen fiyat forma yazılır')
 check('public void fill(double[] values, double[] prices, Boolean sold, String buyer)' in _e and 'applyRecordPrices(prices);' in _e, 'Sesle doldur fiyatı forma yazar')
-_rp = _e[_e.index('private void applyRecordPrices('):]
+_rp = _e[_e.index(' applyRecordPrices(double[] prices) {'):]
 _rp = _rp[:_rp.index('\n    }\n')]
 check('qrPricesActive = true' in _rp and 'putFloat' not in _rp and 'edit()' not in _rp, 'sesli fiyat kayıtlı fiyat ayarını değiştirmez (yalnız bu kayıt)')
 print('elek_voice wiring:', 'PASS' if not fails else f'{len(fails)} FAIL'); sys.exit(1 if fails else 0)
