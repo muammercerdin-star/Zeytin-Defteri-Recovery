@@ -8,5 +8,5 @@ T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT
 source "$ROOT/tests/sentence_bank/brain_build.sh"
 brain_build "$T" "$A/ActionGate.java" "$A/Approval.java" "$A/OperationVoiceDialog.java" "$DIR/LearnedTermsTest.java"
-java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp "$BRAIN_CP" com.zeytindefteri.app.LearnedTermsTest
+java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dbank="$ROOT/tests/sentence_bank/cumleler.tsv" -cp "$BRAIN_CP" com.zeytindefteri.app.LearnedTermsTest
 python3 "$DIR/check_wiring.py"

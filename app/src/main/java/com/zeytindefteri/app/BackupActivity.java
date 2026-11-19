@@ -252,6 +252,9 @@ public final class BackupActivity extends Activity {
         if (tp.contains("tare")) m.put("tare", (double) tp.getFloat("tare", (float) TezgahModel.DEFAULT_TARE));
         int crates = tp.getInt(TezgahCratesActivity.TOTAL_KEY + owner, 0);
         if (crates > 0) m.put("crate_total", (long) crates);
+        // Asistanın öğrendiği sözler: yalnız bu elle alınan dosyaya (bulut yedeği kendi prefsMap'ini kullanır, girmez).
+        String terms = LearnedTerms.exportText(LearnedTermsDb.store(this, owner).all());
+        if (!terms.isEmpty()) m.put(LearnedTerms.BACKUP_KEY, terms);
         return m;
     }
 
@@ -346,6 +349,9 @@ public final class BackupActivity extends Activity {
         Object crates = d.prefs.get("crate_total");
         if (crates instanceof Number) e.putInt(TezgahCratesActivity.TOTAL_KEY + owner, ((Number) crates).intValue());
         e.apply();
+        // Öğrenilen sözler eklenir; telefonda aynı söz varsa telefondaki kalır.
+        Object terms = d.prefs.get(LearnedTerms.BACKUP_KEY);
+        if (terms != null) LearnedTerms.importText(String.valueOf(terms), LearnedTermsDb.store(this, owner));
         render();
         toast("Geri yüklendi ✓ " + TezgahBackup.describe(d));
     }

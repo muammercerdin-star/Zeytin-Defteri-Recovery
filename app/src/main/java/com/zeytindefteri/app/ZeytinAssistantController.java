@@ -849,7 +849,8 @@ public final class ZeytinAssistantController {
                     if(special!=null)meter(token,raw,owner,decision.action);
                     if(special!=null){post(token,owner,season,active,cmd,false,"",special);return;}
                     // Tanınmayan iş fiili ("bakırladık"): tek soru, büyük düğmeler; öğretilen söz hep anlaşılır (İP4).
-                    final String teach=pick==null?LearnedTerms.teachable(raw,brain.store()):null;
+                    // Sohbet cümlesinde ("çok yoruldum") sorulmaz, aşağıdaki sohbet cevabı gelir; "bugün bakırladık" sorulur.
+                    final String teach=pick==null?LearnedBrain.teachQuestion(raw,decision,brain.store(),gardenNames):null;
                     if(teach!=null){
                         rememberMiss(raw,owner);
                         final String source=lastSource;

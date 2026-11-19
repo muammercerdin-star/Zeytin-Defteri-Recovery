@@ -13,6 +13,8 @@ acc = (app / "AccountDeletion.java").read_text(encoding="utf-8")
 backup = (root / "app/src/main/res/xml/push_backup_rules.xml").read_text(encoding="utf-8")
 extract = (root / "app/src/main/res/xml/push_data_extraction_rules.xml").read_text(encoding="utf-8")
 manual = (app / "TezgahBackup.java").read_text(encoding="utf-8")
+bact = (app / "BackupActivity.java").read_text(encoding="utf-8")
+cloudb = (app / "TezgahCloudBackup.java").read_text(encoding="utf-8") + (app / "TezgahCloudPack.java").read_text(encoding="utf-8")
 learn = c[c.index("private void learnFromCloud("):]
 learn = learn[:learn.index("\n    }\n")]
 checks = [
@@ -20,7 +22,9 @@ checks = [
      "learned().conversationStage(" in c and "brain.recordStage(new Brain.Input(raw),records,cmd)" in c
      and "rules.conversationStage(" not in c and "rules.recordStage(" not in c),
     ("öğretme sorusu: anlaşılmadığında, hazır cevaptan sonra, ipucundan önce",
-     c.index("if(special!=null){post(") < c.index("LearnedTerms.teachable(raw,brain.store())") < c.index("ZeytinAssistantHints.hint(raw")),
+     c.index("if(special!=null){post(") < c.index("LearnedBrain.teachQuestion(raw,decision,brain.store(),gardenNames)") < c.index("ZeytinAssistantHints.hint(raw")),
+    ("öğretme sorusu sohbet cümlesinde sorulmaz (iş biçiminde değilse)",
+     '"sohbet".equals(d.variant) && !LearnedTerms.workShaped(raw, gardens)' in lb and "LearnedTerms.teachable(raw,brain.store())" not in c),
     ("öğretme sorusu tek soru, okunur, büyük düğmeler", 'LearnedTerms.capital(word)+" ne işi?"' in c and "answer.setTextSize(24);" in c
      and "dp(64)" in c and 'labels.add("Vazgeç");' in c and 'labels.add("Başka");' in c),
     ("öğretilen işte form dolu açılır (soru sorulmadan)", "teachOpenForm=true;" in c and '"soru".equals(decision.variant) && !openForm' in c),
@@ -32,7 +36,10 @@ checks = [
     ("sözler ayrı dosyada (zd_learned_terms.db), ana veritabanında değil", 'FILE = "zd_learned_terms.db"' in db),
     ("Google otomatik yedeğinden ve cihaz aktarımından hariç",
      'path="zd_learned_terms.db"' in backup and extract.count('path="zd_learned_terms.db"') == 2),
-    ("Ayarlar → Yedekle dosyasına girmez (tablo listesinde yok)", "learned_terms" not in manual),
+    ("Tezgâh tablo listesinde yok (sözler ayrı ayar satırı olarak gider)", "learned_terms" not in manual),
+    ("Ayarlar → Yedekle dosyasına girer, geri yüklemede eklenir",
+     "m.put(LearnedTerms.BACKUP_KEY, terms);" in bact and "LearnedTerms.importText(String.valueOf(terms), LearnedTermsDb.store(this, owner));" in bact),
+    ("bulut yedeğine (sunucu) girmez", "LearnedTerms" not in cloudb and "learned_terms" not in cloudb),
     ("hesap silinince sözler de silinir", "LearnedTermsDb.clear(activity, uid);" in acc),
     ("sözlük internete gitmez", all(not re.search(w, t) for t in (db, lt, lb) for w in ["http", "Firebase", "firestore", "supabase", "URL\\("])),
 ]

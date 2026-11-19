@@ -12,7 +12,8 @@ import java.util.List;
 /**
  * Öğrenilen sözlerin telefondaki tablosu (İP4). Ana veritabanından AYRI bir SQLite dosyasıdır (zd_learned_terms.db):
  * böylece Android'in otomatik Google yedeğinden ve cihaz aktarımından hariç tutulabilir (push_backup_rules,
- * push_data_extraction_rules) ve Ayarlar → Yedekle dosyasına girmez. Sözler telefondan çıkmaz.
+ * push_data_extraction_rules). Yalnız çiftçinin elle aldığı Ayarlar → Yedekle dosyasına girer (BackupActivity;
+ * bulut yedeğine girmez). Sözler sunucuya gönderilmez.
  *
  * Tablolar (hesap başına): learned_terms (söz, anlam, tür, kaynak, tarih, kullanım), declined_sentences ("Vazgeç").
  * Hata olursa sessizce geçer: sözlük okunamazsa asistan kurallarla bugünkü gibi çalışır.

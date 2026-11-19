@@ -41,6 +41,96 @@ final class LearnedTerms {
         Collections.addAll(GENERIC, roots);
     }
 
+    /**
+     * Kişisel / duygu / beden / aile fiilleri: sohbet cümlesinde iş sanılıp "… ne işi?" diye sorulmaz
+     * ("bugün yoruldum", "annem hastalandı", "torunum doğdu").
+     */
+    private static final Set<String> PERSONAL = new HashSet<>();
+
+    /** İş cümlesinin yanında durabilen sözler: zaman, kişi, sayı ("bugün bakırladık", "dün sabah biz bakırladık"). */
+    private static final String FRAME_WORDS = "bugun|dun|yarin|sabah|aksam|ogle|ogleden|sonra|once|gece|erken|gec|"
+            + "evvelsi|evvelki|onceki|gecen|hafta|haftaya|ay|bu|su|o|biz|ben|hep|beraber|birlikte|de|da|ki|ve|ile|"
+            + "pazartesi|sali|carsamba|persembe|cuma|cumartesi|pazar|"
+            // bahçe adından kesme işaretiyle ayrılan ek ("Girelli'yi" → girelli + yi)
+            + "yi|yu|i|u|ye|ya|e|a|den|dan|ten|tan|nin|nun|in|un|yla|yle|la|le";
+
+    /** Çekimli etken fiil: "bakırladık/-dım/-dı", "bakırlıyoruz", "bakırlayacağız", "bakırlamıştık". */
+    private static final String WORK_FORM = ".*([dt][iu](k|m)?|[iu]?yor(um|uz)?|[ae]c[ae]g[iu]z|m[iu]st[iu]k)";
+
+    /** Edilgen ("ödendi", "silindi") ve isim sanılan biçimler sorulmaz. */
+    private static final String PASSIVE_FORM = ".*([iu]n|[iu]l|en|an)[dt][iu]";
+
+    static {
+        String[] words = {"yoruldum", "sikildim", "agridi", "uzuldum", "sevindim", "hastalandi", "dogdu", "evlendi",
+                "korktum", "uyudum", "uyandim", "kizdim", "sinirlendim", "biktim", "acktim", "acikdim", "susadim",
+                "usudum", "yattim", "dinlendik", "guldum", "agladim", "ozledim", "bayildim", "dustum", "uzuldu",
+                "yoruldu", "hastalandim", "iyilesti", "iyilestim", "oldu", "olduk", "barisdik", "kustum", "darildim",
+                "sikildi", "kizdi", "sevindi", "korktu", "uyudu", "agladi", "guldu", "dusundum", "eglendik", "anlamadim",
+                "anlamadin", "anladin", "bilmedim", "duymadim", "duydun", "sustum", "bekledim", "sasirdim",
+                // piyasa ve fiyat sözleri ("1500'e patladı")
+                "patladi", "yukseldi", "artti", "azaldi", "dustu", "kalkti", "indi", "cikti", "firladi", "coktu"};
+        for (String w : words) {
+            String r = verbRoot(w);
+            if (!r.isEmpty()) {
+                PERSONAL.add(r);
+            }
+        }
+    }
+
+    /**
+     * Sohbet sanılan cümle yine de iş cümlesi biçiminde mi: tek fiili kişisel değil ve yanındaki her söz zaman, kişi,
+     * sayı ya da bahçe adı ("bugün bakırladık", "Girelli'yi bakırladık"). "çok yoruldum", "dün maç izledim" değil.
+     */
+    static boolean workShaped(String raw, List<String> gardens) {
+        String word = candidate(raw);
+        if (word == null) {
+            return false;
+        }
+        String root = verbRoot(TurkishText.normalize(word));
+        if (root.isEmpty() || PERSONAL.contains(root)) {
+            return false;
+        }
+        String folded = TurkishText.fold(word).replaceAll("[^a-z]", "");
+        if (!folded.matches(WORK_FORM) || folded.matches(PASSIVE_FORM)) {
+            return false;
+        }
+        String[] words = TurkishText.words(raw);
+        if (words.length < 2) {
+            return false;
+        }
+        int verbs = 0;
+        for (String w : words) {
+            if (!verbRoot(w).isEmpty() && verbRoot(w).equals(root)) {
+                verbs++;
+                continue;
+            }
+            if (w.matches("\\d+([.,]\\d+)?") || w.matches(FRAME_WORDS)) {
+                continue;
+            }
+            if (isGarden(w, gardens)) {
+                continue;
+            }
+            return false;
+        }
+        return verbs == 1;
+    }
+
+    private static boolean isGarden(String w, List<String> gardens) {
+        if (gardens == null) {
+            return false;
+        }
+        for (String g : gardens) {
+            String n = TurkishText.normalize(g);
+            if (n.isEmpty() || n.contains(" ")) {
+                continue;
+            }
+            if (w.equals(n) || (w.startsWith(n) && w.length() - n.length() <= 4)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Öğretilen bir söz. */
     static final class Term {
         /** Kök (sadeleşmiş, eksiz): "bakirl". Sözlüğün anahtarı. */
@@ -286,6 +376,103 @@ final class LearnedTerms {
     /** Yeni öğretilen söz. */
     static Term teach(String word, Choice c, String source, long now) {
         return new Term(verbRoot(word), word, c.action, c.field, c.value, TAUGHT, source, now, 0);
+    }
+
+    // ============================================================ YEDEK (Ayarlar → Yedekle dosyası)
+
+    /** Yedek dosyasındaki ayar anahtarı. Yalnız elle alınan Yedekle dosyasına girer; bulut yedeğine girmez. */
+    static final String BACKUP_KEY = "learned_terms";
+
+    /** Sözlük → tek metin (her söz bir satır, alanlar sekmeyle). Söz yoksa "". */
+    static String exportText(List<Term> terms) {
+        StringBuilder b = new StringBuilder();
+        if (terms == null) {
+            return "";
+        }
+        for (Term t : terms) {
+            String[] cells = {t.term, t.word, t.action, t.field, t.value, t.kind, t.source,
+                    String.valueOf(t.created), String.valueOf(t.uses)};
+            for (int i = 0; i < cells.length; i++) {
+                if (i > 0) {
+                    b.append('\t');
+                }
+                b.append(cell(cells[i]));
+            }
+            b.append('\n');
+        }
+        return b.toString();
+    }
+
+    /**
+     * Yedekteki sözleri sözlüğe ekler; telefonda aynı söz varsa telefondaki kalır (üzerine yazılmaz).
+     * Bozuk satır ya da tanınmayan anlam (seçeneklerde olmayan iş) atlanır. Eklenen söz sayısı.
+     */
+    static int importText(String text, Store store) {
+        if (text == null || text.isEmpty() || store == null) {
+            return 0;
+        }
+        int added = 0;
+        for (String line : text.split("\n")) {
+            Term t = parseLine(line);
+            if (t == null) {
+                continue;
+            }
+            if (store.get(t.term) != null) {
+                continue;
+            }
+            store.put(t);
+            added++;
+        }
+        return added;
+    }
+
+    private static Term parseLine(String line) {
+        String[] c = line.split("\t", -1);
+        if (c.length != 9) {
+            return null;
+        }
+        for (int i = 0; i < c.length; i++) {
+            c[i] = uncell(c[i]);
+        }
+        long created;
+        int uses;
+        try {
+            created = Long.parseLong(c[7]);
+            uses = Integer.parseInt(c[8]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        // Kök yeniden hesaplanır: dosyada elle değiştirilmiş anahtar sözlüğe girmez.
+        String root = verbRoot(c[1]);
+        if (root.isEmpty() || !root.equals(c[0])) {
+            return null;
+        }
+        String source = SOURCE_TEXT.equals(c[6]) || SOURCE_CLOUD.equals(c[6]) ? c[6] : SOURCE_VOICE;
+        Term t = new Term(root, c[1], c[2], c[3], c[4], TAUGHT, source, created, Math.max(0, uses));
+        Choice choice = choiceOf(t);
+        if (choice == null || !choice.field.equals(t.field)) {
+            return null;
+        }
+        return t;
+    }
+
+    private static String cell(String s) {
+        String v = s == null ? "" : s;
+        return v.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n");
+    }
+
+    private static String uncell(String s) {
+        StringBuilder b = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (ch == '\\' && i + 1 < s.length()) {
+                char n = s.charAt(++i);
+                b.append(n == 't' ? '\t' : n == 'n' ? '\n' : n);
+            } else {
+                b.append(ch);
+            }
+        }
+        return b.toString();
     }
 
     /** "Vazgeç" kaydının anahtarı: sadeleşmiş cümle. */

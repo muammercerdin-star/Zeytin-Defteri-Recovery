@@ -80,6 +80,22 @@ final class LearnedBrain implements Brain {
         return new Decision(d.action, d.fields, d.confidence, reason, d.variant, d.requested, new Taught(d.payload, t), NAME);
     }
 
+    /**
+     * Anlaşılmayan cümlede öğretme sorusu ("Bakırladık ne işi?") sorulacak söz; sorulmayacaksa null.
+     * Sohbet cümlesinde ("çok yoruldum", "annem hastalandı", "dün maç izledim") sorulmaz: eski dostça sohbet cevabı
+     * gelir. Sohbet sanılan cümle ancak iş cümlesi biçimindeyse sorulur ("bugün bakırladık", "Girelli'yi bakırladık":
+     * zaman/bahçe + kişisel olmayan tek fiil).
+     */
+    static String teachQuestion(String raw, Decision d, LearnedTerms.Store store, java.util.List<String> gardens) {
+        if (d == null || d.understood()) {
+            return null;
+        }
+        if ("sohbet".equals(d.variant) && !LearnedTerms.workShaped(raw, gardens)) {
+            return null;
+        }
+        return LearnedTerms.teachable(raw, store);
+    }
+
     /** Karar, öğretilen anlamı mı taşıyor. */
     static boolean means(Decision d, LearnedTerms.Term t) {
         if (!d.is(t.action)) {

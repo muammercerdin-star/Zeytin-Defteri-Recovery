@@ -29,6 +29,9 @@ public class LearnedTermsTest {
         teachAndUse();
         commands();
         texts();
+        chatNeverTaught();
+        outcomesUnchanged();
+        backup();
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " LearnedTerms");
         if (bad > 0) {
             System.exit(1);
@@ -124,5 +127,123 @@ public class LearnedTermsTest {
         eq(LearnedTerms.accusative("kuruttuk"), "u", "ünlü uyumu u");
         eq(LearnedTerms.accusative("sürdük"), "ü", "ünlü uyumu ü");
         eq(LearnedTerms.accusative("bakırla"), "yı", "ünlüyle biten");
+    }
+
+    static final java.util.List<String> GARDENS = java.util.Arrays.asList("Girelli", "Karşıyaka");
+
+    static Decision record(String raw) {
+        RuleBrain rules = new RuleBrain();
+        return rules.recordStage(new Brain.Input(raw), BrainContext.recordsOnly(GARDENS), ZeytinAssistantCommand.parse(raw));
+    }
+
+    /** Sohbet cümlesinde öğretme sorusu çıkmaz (cihazdan önce yakalanan hata: "çok yoruldum" → "Yoruldum ne işi?"). */
+    static void chatNeverTaught() {
+        LearnedTerms.Memory empty = new LearnedTerms.Memory();
+        String[] chat = {"çok yoruldum", "canım sıkıldı", "dün maç izledim", "başım ağrıdı", "torunum doğdu",
+                "annem hastalandı", "hava soğudu", "bugün yağmur yağdı", "oğlum evlendi", "kızım okulu bitirdi",
+                "dizim ağrıyor", "uykum kaçtı", "çok üzüldüm", "bugün çok sevindim", "bugün yoruldum", "dün dinlendik",
+                "bugün üşüdüm", "sabah uyandım", "dün akşam güldük", "bugün hastalandım", "çay içtik", "seni özledim",
+                "ödendi", "Üretici", "randıman", "tartım", "bugün ödendi", "dün silindi", "sonra ödeyeceğim",
+                "1500'e patladı", "fiyat bugün yükseldi"};
+        for (String s : chat) {
+            Decision d = record(s);
+            check(LearnedBrain.teachQuestion(s, d, empty, GARDENS) == null, "sohbette öğretme sorusu yok: " + s);
+        }
+        // İş fiili hâlâ sorulur
+        Decision d = record("bugün bakırladık");
+        eq(LearnedBrain.teachQuestion("bugün bakırladık", d, empty, GARDENS), "bakırladık", "iş fiili sorulur");
+        for (String s : new String[]{"Girelli'yi bakırladık", "dün sabah bakırladık", "Karşıyaka'yı bakırladık",
+                "biz bugün bakırladık", "bugün bakırlıyoruz", "yarın bakırlayacağız"}) {
+            check(LearnedBrain.teachQuestion(s, record(s), empty, GARDENS) != null, "iş cümlesi biçimi sorulur: " + s);
+        }
+    }
+
+    /** Asistanın anlaşılmayan cümledeki yürütmesi (sözlük boşken): eskiden sohbet/özel cevap olan hiçbir cümle değişmez. */
+    static String outcome(String raw, Decision d, LearnedTerms.Store store, boolean withTeach) {
+        if (d.understood() && !d.is(ActionCatalog.OZEL_CEVAP)) {
+            return "anlasildi";
+        }
+        if (LearnedBrain.payload(d, String.class) != null) {
+            return "ozel";
+        }
+        if (withTeach && LearnedBrain.teachQuestion(raw, d, store, GARDENS) != null) {
+            return "ogret";
+        }
+        return "sohbet".equals(d.variant) ? "sohbet" : "ipucu";
+    }
+
+    static void outcomesUnchanged() {
+        String bank = System.getProperty("bank", "");
+        if (bank.isEmpty()) {
+            check(false, "cümle bankası yolu verilmedi (-Dbank)");
+            return;
+        }
+        java.util.List<String> lines;
+        try {
+            lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get(bank), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (java.io.IOException e) {
+            check(false, "cümle bankası okunamadı: " + e);
+            return;
+        }
+        LearnedTerms.Memory empty = new LearnedTerms.Memory();
+        int total = 0;
+        int changed = 0;
+        int newTeach = 0;
+        for (String line : lines) {
+            if (line.startsWith("#") || line.trim().isEmpty()) {
+                continue;
+            }
+            String raw = line.split("\t", -1)[0];
+            Decision d = record(raw);
+            String before = outcome(raw, d, empty, false);
+            String after = outcome(raw, d, empty, true);
+            total++;
+            if (before.equals(after)) {
+                continue;
+            }
+            // Tek izinli fark: eskiden ipucu kartı gösterilen iş cümlesine öğretme sorusu (İP4'ün işi).
+            if (before.equals("ipucu") && after.equals("ogret")) {
+                newTeach++;
+                continue;
+            }
+            // Sohbet sanılan iş cümlesi ("bugün bakırladık"): yalnız iş biçimindeyse ve görünür listede.
+            if (before.equals("sohbet") && after.equals("ogret") && LearnedTerms.workShaped(raw, GARDENS)) {
+                newTeach++;
+                System.out.println("  sohbet → öğretme: " + raw);
+                continue;
+            }
+            changed++;
+            check(false, "yürütme değişti: «" + raw + "» " + before + " → " + after);
+        }
+        check(total > 200 && changed == 0, "cümle bankası yürütme: " + total + " cümle, " + changed + " izinsiz fark");
+        System.out.println("Yürütme karşılaştırması: " + total + " cümle · izinsiz fark " + changed + " · ipucu→öğretme " + newTeach);
+    }
+
+    /** Ayarlar → Yedekle: dışa yazma, geri yüklemede telefondaki söz korunur, bozuk/uydurma satır atlanır. */
+    static void backup() {
+        LearnedTerms.Memory phone = new LearnedTerms.Memory();
+        phone.put(LearnedTerms.teach("bakırladık", LearnedTerms.CHOICES.get(0), LearnedTerms.SOURCE_VOICE, 10));
+        phone.put(LearnedTerms.teach("kükürtledik", LearnedTerms.CHOICES.get(0), LearnedTerms.SOURCE_TEXT, 20));
+        String text = LearnedTerms.exportText(phone.all());
+        check(text.split("\n").length == 2, "iki söz yazıldı");
+        eq(LearnedTerms.exportText(new LearnedTerms.Memory().all()), "", "boş sözlük → boş metin");
+
+        LearnedTerms.Memory fresh = new LearnedTerms.Memory();
+        check(LearnedTerms.importText(text, fresh) == 2, "yeni telefona iki söz");
+        LearnedTerms.Term k = fresh.get(LearnedTerms.verbRoot("kükürtledik"));
+        check(k != null && k.value.equals("İlaçlama") && k.source.equals(LearnedTerms.SOURCE_TEXT) && k.created == 20, "alanlar korunur");
+
+        LearnedTerms.Memory other = new LearnedTerms.Memory();
+        other.put(LearnedTerms.teach("bakırladık", LearnedTerms.CHOICES.get(1), LearnedTerms.SOURCE_VOICE, 99));
+        check(LearnedTerms.importText(text, other) == 1, "aynı söz telefonda varsa eklenmez");
+        eq(other.get("bakirl").value, "Gübre", "telefondaki anlam kalır");
+
+        String forged = "bakirl\tbakırladık\tSATIS\t\t\togretilen\tses\t1\t0\n"
+                + "xyz\tbakırladık\tISLEM\ttur\tİlaçlama\togretilen\tses\t1\t0\n"
+                + "bozuk satır\n"
+                + "bud\tbudadık\tISLEM\ttur\tİlaçlama\togretilen\tses\tabc\t0\n";
+        check(LearnedTerms.importText(forged, new LearnedTerms.Memory()) == 0, "uydurma/bozuk satır alınmaz");
+        check(LearnedTerms.importText(null, fresh) == 0, "boş yedek");
+
     }
 }
