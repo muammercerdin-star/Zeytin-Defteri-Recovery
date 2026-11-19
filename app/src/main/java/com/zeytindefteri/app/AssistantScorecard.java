@@ -155,6 +155,22 @@ final class AssistantScorecard {
         return !s.matches(".*\\b(sil\\p{L}*|temizle\\p{L}*|sifirla\\p{L}*)\\b.*");
     }
 
+    /**
+     * "Konuşma kaydını sil", "karneni sil", "cümle kaydını temizle": telefondaki cümle kaydı, karne ve
+     * anlamadıklarım listesi birlikte silinir (KVKK: kullanıcı cihazdaki kaydı kendisi silebilir).
+     */
+    static boolean asksClearAll(String raw) {
+        String s = ElekVoiceEntry.normalize(raw == null ? "" : raw);
+        boolean clear = s.matches(".*\\b(sil\\p{L}*|temizle\\p{L}*|sifirla\\p{L}*|unut)\\b.*");
+        if (!clear) {
+            return false;
+        }
+        boolean card = s.matches(".*\\b(karne|karnen|karneni|karneyi|karnemi|karnesi|karnesini)\\b.*");
+        boolean log = s.matches(".*\\b(konusma|konusmalar\\p{L}*|cumle|cumleler\\p{L}*)\\b.*")
+                && s.matches(".*\\b(kayd\\p{L}*|kayit\\p{L}*|gecmis\\p{L}*)\\b.*");
+        return card || log;
+    }
+
     /** {okunacak kısa söz, ekranda gösterilecek metin}. */
     static String[] show(String stored) {
         long ok = get(stored, UNDERSTOOD);

@@ -55,6 +55,19 @@ final class AssistantMeter {
         }
     }
 
+    /** "Konuşma kaydını sil": cümle kaydı, karne ve anlamadıklarım listesi bu telefondan silinir. */
+    static synchronized void clearAll(Context context, String owner) {
+        try {
+            SharedPreferences misses = context.getSharedPreferences(MISSES_PREFS, Context.MODE_PRIVATE);
+            String o = owner == null ? "" : owner;
+            misses.edit().remove(logKey(owner)).remove("m_" + o).apply();
+            SharedPreferences score = context.getSharedPreferences(SCORE_PREFS, Context.MODE_PRIVATE);
+            score.edit().remove(scoreKey(owner)).apply();
+        } catch (RuntimeException ignored) {
+            // ölçü işi bozmaz
+        }
+    }
+
     /**
      * Kayıt ekranında Kaydet başarılı oldu. openedAt: ekranın açıldığı (ya da önceki kaydın yapıldığı) an,
      * SystemClock.elapsedRealtime(); sesle doldurulan alanlar varsa düzeltilenler sayılır ve kayda yazılır.

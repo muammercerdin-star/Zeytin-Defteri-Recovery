@@ -5,11 +5,15 @@
         <exclude domain="sharedpref" path="push_seen.xml" />
         <exclude domain="sharedpref" path="zd_device.xml" />
         <exclude domain="sharedpref" path="local_reminder_delivery.xml" />
+        <exclude domain="sharedpref" path="zd_assistant_misses.xml" />
+        <exclude domain="sharedpref" path="zd_assistant_scorecard.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="zeytin_push.xml" />
         <exclude domain="sharedpref" path="push_seen.xml" />
         <exclude domain="sharedpref" path="zd_device.xml" />
         <exclude domain="sharedpref" path="local_reminder_delivery.xml" />
+        <exclude domain="sharedpref" path="zd_assistant_misses.xml" />
+        <exclude domain="sharedpref" path="zd_assistant_scorecard.xml" />
     </device-transfer>
 </data-extraction-rules>

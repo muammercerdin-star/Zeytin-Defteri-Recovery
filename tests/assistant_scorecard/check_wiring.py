@@ -24,8 +24,15 @@ checks = [
     ("soru ve ekran açma ölçülür", 'meter(token,raw,owner,cmd.kind==Kind.NAVIGATION?"EKRAN_AC":"SORU_"+cmd.kind.name());' in c),
     ("aynı cümle yeniden sorulunca ikinci kez sayılmaz", "if(again)meteredTurn=token;" in c),
     ("sohbet anlaşılan sayılır", 'AssistantMeter.understood(activity,host.owner(),raw,"SOHBET")' in c),
+    ("konuşma kaydını sil hepsini siler", "AssistantMeter.clearAll(activity,host.owner());" in c
+     and "AssistantScorecard.asksClearAll(raw)" in c),
     ("ölçü yalnız telefonda (ağ yok)", all(w not in meter for w in ["http", "Firebase", "firestore", "supabase", "URL"])),
 ]
+res = root / "app/src/main/res/xml"
+backup = (res / "push_backup_rules.xml").read_text(encoding="utf-8")
+extract = (res / "push_data_extraction_rules.xml").read_text(encoding="utf-8")
+for f in ["zd_assistant_misses.xml", "zd_assistant_scorecard.xml"]:
+    checks.append((f + " Android yedeğine girmez", f'path="{f}"' in backup and extract.count(f'path="{f}"') == 2))
 for name, src in forms.items():
     checks.append((name + " formu kaydı karneye yazar", "AssistantMeter.saved(this" in src))
     checks.append((name + " formu açılış anını tutar", "meterOpenedAt = android.os.SystemClock.elapsedRealtime();" in src))

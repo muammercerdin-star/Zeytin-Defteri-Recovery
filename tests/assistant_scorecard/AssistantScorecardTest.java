@@ -23,6 +23,7 @@ public class AssistantScorecardTest {
         command();
         showing();
         formFill();
+        clearAll();
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " AssistantScorecard");
         if (bad > 0) {
             System.exit(1);
@@ -107,5 +108,20 @@ public class AssistantScorecardTest {
         check(f.size() == 1, "sesle sıfırlanan alan çıkar");
         f.clear();
         check(f.size() == 0, "temizle");
+    }
+
+    static void clearAll() {
+        String[] yes = {"konuşma kaydını sil", "karneni sil", "karneyi sıfırla", "cümle kaydını temizle",
+            "konusma kaydimi sil", "konuşma geçmişini unut"};
+        for (String q : yes) {
+            check(AssistantScorecard.asksClearAll(q), "silme komutu: " + q);
+            check(!AssistantScorecard.asksShow(q), "silme komutu göster sayılmaz: " + q);
+        }
+        String[] no = {"karneni göster", "Girelli'deki kaydı sil", "son satış kaydını sil", "anlamadıklarını sil",
+            "bugün ilaçladım", "konuşalım mı", ""};
+        for (String q : no) {
+            check(!AssistantScorecard.asksClearAll(q), "silme komutu değil: " + q);
+        }
+        check(!AssistantScorecard.asksClearAll(null), "boş cümle");
     }
 }

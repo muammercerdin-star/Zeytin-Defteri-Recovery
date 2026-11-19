@@ -185,6 +185,12 @@ public final class ZeytinAssistantController {
     }
     /** "Karneni göster": yalnız sayılar; asistan ekranında okunur, yeni ekran açılmaz. */
     private boolean handleScorecardCommand(String raw){
+        if(AssistantScorecard.asksClearAll(raw)){
+            AssistantMeter.clearAll(activity,host.owner());
+            String done="Tamam, bu telefondaki konuşma kaydını, karneyi ve anlamadığım cümleleri sildim.";
+            postDialog(new OperationVoiceDialog.Reply(done,OperationVoiceDialog.Action.ASK),"Zeytin · karne");
+            return true;
+        }
         if(!AssistantScorecard.asksShow(raw))return false;
         String[] shown=AssistantMeter.show(activity,host.owner());
         postDialog(new OperationVoiceDialog.Reply(shown[0],OperationVoiceDialog.Action.ASK),"Zeytin · karne");
