@@ -68,6 +68,10 @@ public class TurkishTextTest {
         num(TurkishText.number("120"), 120, "rakam");
         num(TurkishText.number("on iki"), 12, "on iki");
         num(TurkishText.number("bin beş yüz"), 1500, "bin beş yüz");
+        num(TurkishText.number("25 bin"), 25000, "25 bin");
+        num(TurkishText.number("25 bin 500"), 25500, "25 bin 500");
+        num(TurkishText.number("1,5 milyon"), 1500000, "1,5 milyon");
+        num(TurkishText.number("3"), 3, "tek rakam aynı");
         num(TurkishText.number("iki bin beş yüz elli"), 2550, "iki bin beş yüz elli");
         num(TurkishText.number("yüz yirmi"), 120, "yüz yirmi");
         num(TurkishText.number("iki buçuk"), 2.5, "iki buçuk");

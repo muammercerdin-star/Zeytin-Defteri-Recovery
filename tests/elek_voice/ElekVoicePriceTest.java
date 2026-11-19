@@ -37,6 +37,23 @@ public class ElekVoicePriceTest {
         check(e != null && Math.abs(e.price[0] - 33.33) < 0.001, "kuruşa yuvarlanır: " + price(e));
         e = ElekVoiceEntry.parse("double 220 lira");
         check(e == null, "kilosuz lira kilo sayılmaz: " + kg(e));
+        // İP2 düzeltme: bölünce kilo fiyatı mantıksız kalırsa lira kilo fiyatıdır; "kilosu" sözü kilo fiyatıdır
+        e = ElekVoiceEntry.parse("3 numara 120 kilo 110 lira");
+        check(e != null && e.price[3] == 110, "120 kilo 110 lira → kilosu 110: " + price(e));
+        e = ElekVoiceEntry.parse("double 150 kilo 140 lira");
+        check(e != null && e.price[0] == 140, "150 kilo 140 lira → kilosu 140: " + price(e));
+        e = ElekVoiceEntry.parse("double 50 kilo kilosu 140 lira");
+        check(e != null && e.price[0] == 140, "kilosu 140 lira: " + price(e));
+        e = ElekVoiceEntry.parse("double 50 kilo 140 lira kilosu");
+        check(e != null && e.price[0] == 140, "140 lira kilosu: " + price(e));
+        e = ElekVoiceEntry.parse("double 50 kilo kilo başı 140 lira");
+        check(e != null && e.kg[0] == 50 && e.price[0] == 140, "kilo başı 140 lira: " + kg(e) + price(e));
+        e = ElekVoiceEntry.parse("1 numara 200 kilo 25 bin lira");
+        check(e != null && e.kg[1] == 200 && e.price[1] == 125, "25 bin lira toplam → 125: " + price(e));
+        e = ElekVoiceEntry.parse("3 numara 120 kilo 1 lira");
+        check(e != null && e.price[3] == 0, "mantıksız fiyat yazılmaz: " + price(e));
+        check(ElekVoiceEntry.priceFromTotal(220, 2) == 110, "priceFromTotal toplam");
+        check(ElekVoiceEntry.priceFromTotal(110, 120) == 110, "priceFromTotal kilo fiyatı");
         // Lira yoksa bugünkü davranış aynı
         e = ElekVoiceEntry.parse("Bugün 3 numara 120 kilo, 2 numara 80 kilo sattım");
         check(e != null && e.kg[3] == 120 && e.kg[2] == 80 && e.price[3] == 0 && Boolean.TRUE.equals(e.sold), "lirasız eski davranış");

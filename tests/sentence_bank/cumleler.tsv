@@ -4,7 +4,7 @@
 #        beklenen_hata = bilinen yanlış; beklenen sütunu DOĞRU sonucu yazar. Düzelince sınayıcı uyarır, durum dogru yapılır.
 # Alanlar "anahtar=değer;..." (yoksa "-"). ELEK: double,1no..4no,yaglik,<boy>_fiyat,satis,alici · ISLEM: tur,gun,miktar,birim,tutar
 #        HASAT: boylar,toplam,gun · SORU_*: boy,islem · EKRAN_AC: ekran. gun yalnız bugün değilse yazılır (-1 dün, -2 evvelsi gün).
-# ELEK'te <boy>_fiyat = söylenen kilo başı fiyat (TL/kg): "2 kilo 220 lira" → 110, "110 liradan" → 110 (İP2).
+# ELEK'te <boy>_fiyat = söylenen kilo başı fiyat (TL/kg): "2 kilo 220 lira" → 110, "110 liradan" → 110 (İP2). Bölünce kilosu 10 TL altı kalırsa söylenen lira kilo fiyatıdır ("120 kilo 110 lira" → 110); "kilosu 140 lira" → 140.
 cumle	beklenen_eylem	beklenen_alanlar	durum	kaynak_test
 Elek aç	EKRAN_AC	ekran=ELEK	dogru	assistant/AssistantCommandTest.java
 Piyasayı aç	EKRAN_AC	ekran=MARKET	dogru	assistant/AssistantCommandTest.java
@@ -265,3 +265,9 @@ Double iki kilo iki yüz yirmi TL	ELEK	double=2;double_fiyat=110	dogru	ip2_lira
 double 2 kilo 220 lira 1 numara 3 kilo 300 lira	ELEK	double=2;double_fiyat=110;1no=3;1no_fiyat=100	dogru	ip2_lira
 İzmit'ten gübre aldık 50 kilo	ISLEM	tur=Gübre;miktar=50;birim=kg	dogru	ip2_birim
 3 çuval gübre attık	ISLEM	tur=Gübre;miktar=3;birim=çuval	dogru	ip2_birim
+3 numara 120 kilo 110 lira	ELEK	3no=120;3no_fiyat=110	dogru	ip2_lira_duzeltme
+Double 150 kilo 140 lira	ELEK	double=150;double_fiyat=140	dogru	ip2_lira_duzeltme
+Double 50 kilo kilosu 140 lira	ELEK	double=50;double_fiyat=140	dogru	ip2_lira_duzeltme
+Double 50 kilo 140 lira kilosu	ELEK	double=50;double_fiyat=140	dogru	ip2_lira_duzeltme
+1 numara 200 kilo 25 bin lira	ELEK	1no=200;1no_fiyat=125	dogru	ip2_lira_duzeltme
+Yağlık 300 kilo 40 lira	ELEK	yaglik=300;yaglik_fiyat=40	dogru	ip2_lira_duzeltme

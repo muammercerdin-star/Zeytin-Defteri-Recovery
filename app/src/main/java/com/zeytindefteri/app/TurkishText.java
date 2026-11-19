@@ -85,7 +85,8 @@ public final class TurkishText {
         }
         if (w.matches("\\d+([.,]\\d+)?")) {
             end[0] = i + 1;
-            return withHalf(Double.parseDouble(w.replace(',', '.')), t, end);
+            double v = withHalf(Double.parseDouble(w.replace(',', '.')), t, end);
+            return withScale(v, t, end);
         }
         double total = 0;
         double cur = 0;
@@ -153,6 +154,29 @@ public final class TurkishText {
             }
             out.add(v);
             i = Math.max(i, end[0] - 1);
+        }
+        return out;
+    }
+
+    /** Rakamdan sonra gelen "bin" / "milyon": "25 bin" → 25000, "1,5 milyon" → 1500000, "25 bin 500" → 25500. */
+    private static double withScale(double v, String[] t, int[] end) {
+        if (end[0] >= t.length) {
+            return v;
+        }
+        String w = t[end[0]];
+        if (w.equals("milyon")) {
+            end[0]++;
+            return v * 1000000;
+        }
+        if (!w.equals("bin")) {
+            return v;
+        }
+        end[0]++;
+        double out = v * 1000;
+        // "25 bin 500 lira": arkadan gelen küçük sayı eklenir (rakamla ya da yazıyla).
+        if (end[0] < t.length && t[end[0]].matches("\\d{1,3}")) {
+            out += Double.parseDouble(t[end[0]]);
+            end[0]++;
         }
         return out;
     }

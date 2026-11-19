@@ -80,7 +80,13 @@ public final class ElekVoiceEntry {
                         && v >= 1 && v <= 4 && v == Math.floor(v)) {
                     items.add(new double[]{0, v}); i = end[0];         // "3 numara" → sınıf
                 } else {
-                    items.add(new double[]{1, v, money(next)}); i = end[0] - 1;
+                    double m = money(next);
+                    // "kilosu 140 lira", "kilo başı 140 lira", "140 lira kilosu": toplam değil, kilo fiyatı.
+                    if (m == 1 && perKiloAround(t, i, end[0])) {
+                        m = 2;
+                    }
+                    items.add(new double[]{1, v, m});
+                    i = end[0] - 1;
                 }
             }
         }
@@ -117,8 +123,7 @@ public final class ElekVoiceEntry {
         if (totals.size() == pairs) {
             for (double[] t2 : totals) {
                 int g = (int) t2[0];
-                double per = Math.round(t2[1] / e.kg[g] * 100.0) / 100.0;
-                if (per > 0 && per <= 100000) e.price[g] = per;
+                e.price[g] = priceFromTotal(t2[1], e.kg[g]);
             }
         }
         if (s.matches(".*\\b(satmadim|satmadik|satilmadi|satmayacagim)\\b.*")) e.sold = false;
@@ -132,6 +137,45 @@ public final class ElekVoiceEntry {
             }
         }
         return e;
+    }
+
+    /** Kilo başı fiyatın altı mantıksız sayılır: "120 kilo 110 lira" toplam olamaz (0,92 TL/kg), kilo fiyatıdır. */
+    static final double MIN_PRICE_PER_KG = 10;
+
+    /**
+     * "2 kilo 220 lira" → 110 (toplam ÷ kilo). Bölünce kilo fiyatı mantıksız kalırsa ("120 kilo 110 lira" → 0,92)
+     * söylenen lira kilo fiyatıdır → 110. İkisi de olmuyorsa fiyat yazılmaz (0).
+     */
+    static double priceFromTotal(double lira, double kg) {
+        if (kg <= 0 || lira <= 0) {
+            return 0;
+        }
+        double per = Math.round(lira / kg * 100.0) / 100.0;
+        if (per >= MIN_PRICE_PER_KG && per <= 100000) {
+            return per;
+        }
+        if (per < MIN_PRICE_PER_KG && lira >= MIN_PRICE_PER_KG && lira <= 100000) {
+            return lira;
+        }
+        return 0;
+    }
+
+    /** Sayının hemen önünde ya da liranın arkasında "kilosu / kilo başı / kilogramı" var mı. */
+    private static boolean perKiloAround(String[] t, int start, int end) {
+        String before = start > 0 ? t[start - 1] : "";
+        String before2 = start > 1 ? t[start - 2] : "";
+        String after = end + 1 < t.length ? t[end + 1] : "";
+        String after2 = end + 2 < t.length ? t[end + 2] : "";
+        if (before.matches("kilosu|kilosunu|kilogrami|kgsi|kilosuna")) {
+            return true;
+        }
+        if (before.equals("basi") && before2.matches("kilo|kg")) {
+            return true;
+        }
+        if (after.matches("kilosu|kilogrami|kgsi")) {
+            return true;
+        }
+        return after.matches("kilo|kg") && after2.matches("basi|basina");
     }
 
     /** Sayının yanındaki söz para mı: 1 toplam ("220 lira"), 2 kilo başı ("110 liradan"), 0 değil. */
