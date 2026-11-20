@@ -291,3 +291,9 @@ Ayşe Hanım'a 80 kilo sattım, parasını ayın 15'inde verecek	SATIS	alici=Ay�
 Kooperatif'e 500 kilo sattık, ödemesini 10 gün sonra yapacak	SATIS	alici=Kooperatif;kilo=500;odeme=alinmadi;vade=10 gun sonra;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
 Hasan Abi'ye 250 kilo sattık, kilosu 70 lira, parasını cuma verecek	SATIS	alici=Hasan Abi;kilo=250;fiyat=70;odeme=alinmadi;vade=cuma;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
 Ali Usta'ya 300 kilo sattım, parasını peşin aldım	SORU_SOLD	-	dogru	ip7_tek_eylem
+bugün silkeledik	HASAT	-	beklenen_hata	ip8_silkele
+Girelli'yi 300 kilo silkeledik	HASAT	toplam=300	beklenen_hata	ip8_silkele
+bugün silkeliyoruz	HASAT	-	beklenen_hata	ip8_silkele
+yarın Kuyu dibini silkeleyeceğiz	HASAT	-	beklenen_hata	ip8_silkele
+zeytin nasıl silkelenir	SOHBET	-	dogru	ip8_silkele
+silkeleme mi sırık mı daha iyi	SOHBET	-	dogru	ip8_silkele
