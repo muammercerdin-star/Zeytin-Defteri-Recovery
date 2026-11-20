@@ -324,6 +324,11 @@ final class LearnedTerms {
         return root;
     }
 
+    /** Genel fiil mi ("attık", "yaptık"): öğretilmez, katkıya da gitmez. */
+    static boolean generic(String root) {
+        return GENERIC.contains(root);
+    }
+
     /** Öğretmeye uygun söz: cümledeki SON fiil (Türkçede fiil sondadır), genel fiil değilse. Yoksa null. */
     static String candidate(String raw) {
         String[] words = TurkishText.words(raw);
