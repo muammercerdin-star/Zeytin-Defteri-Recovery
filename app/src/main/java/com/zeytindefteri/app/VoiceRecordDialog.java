@@ -78,8 +78,11 @@ public final class VoiceRecordDialog {
         if (s.matches(".*\\b(yeni bahce|bahce ekle\\p{L}*|bahce kaydet\\p{L}*|bahce ac\\p{L}*|bahce aldim|bahce olustur\\p{L}*)\\b.*")) return Kind.GARDEN;
         if (s.matches(".*\\b(salamura\\p{L}*|kavanoz\\p{L}*|bidon\\p{L}*)\\b.*")
                 && s.matches(".*\\b(bastim|bastik|kurdum|kurduk|yaptim|yaptik|koydum|koyduk|basacagim|kuracagim|yeni|ekle\\p{L}*|gir\\p{L}*)\\b.*")) return Kind.BRINE;
-        if (s.matches(".*\\b(hasat\\p{L}*|topladik|topladim|cirptik|cirptim|silkeledik)\\b.*")
-                && s.matches(".*\\b(gir\\p{L}*|kaydet\\p{L}*|ekle\\p{L}*|yaz\\p{L}*|topladik|topladim|cirptik|cirptim|silkeledik|ettik|yaptik)\\b.*")) return Kind.HARVEST;
+        // İP8: "silkeledik / silkeliyoruz / silkeleyeceğiz" yaygın hasat sözü (bilgi sorusu "nasıl silkelenir" değil).
+        String shake = "silkeledik|silkeledim|silkeliyoruz|silkeliyorum|silkeleyecegiz|silkeleyecegim";
+        if (s.matches(".*\\b(hasat\\p{L}*|topladik|topladim|cirptik|cirptim|" + shake + ")\\b.*")
+                && s.matches(".*\\b(gir\\p{L}*|kaydet\\p{L}*|ekle\\p{L}*|yaz\\p{L}*|topladik|topladim|cirptik|cirptim|" + shake
+                + "|ettik|yaptik)\\b.*")) return Kind.HARVEST;
         return null;
     }
 

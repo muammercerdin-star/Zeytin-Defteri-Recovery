@@ -116,7 +116,7 @@ final class AssistantKnowledge {
                     "Yeşil ve siyah zeytin aynı ağaçtan çıkar. Yeşil, ham haliyle toplanır; siyah, ağaçta olgunlaşıp kararınca.",
                     "Arada bir de alacalı dönem vardır; mor, kızıl renge dönen zeytin. Bazı yörelerde onu da sofralık yaparlar."),
             new Topic("yontem",
-                    "\\b((nasil|neyle) (toplanir|hasat edilir)|sirikla|silkele\\p{L}*|hasat makine\\p{L}*)\\b",
+                    "\\b((nasil|neyle) (toplanir|hasat edilir|silkelenir)|sirikla|silkele(me\\p{L}*|mek\\p{L}*)?|hasat makine\\p{L}*)\\b",
                     "Sırıkla vurmak dalları ve gelecek yılın sürgünlerini kırar; tarak ya da sarsma makinesi daha iyidir. Toplanan zeytini çuval yerine delikli kasada taşı, ezilmesin.",
                     "Yere örtü sermek zeytini topraktan korur; yerden toplanan zeytin asidi yükseltir, ayrı tut."),
             new Topic("bekletme",

@@ -1,0 +1,9 @@
+# İP8-A: 'silkeledik / silkeliyoruz / silkeleyeceğiz' hasat sözü (eskiden bilgi sorusu sanılıyordu). Tek bilinçli fark.
+bugün silkeledik	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+bugün silkeledik	bahçesiz	TEACH · silkeledik
+Girelli'yi 300 kilo silkeledik	bahçeli	HARVEST_QUESTIONS · HASAT toplam=300 · HARVEST
+Girelli'yi 300 kilo silkeledik	bahçesiz	HARVEST_FORM · HASAT toplam=300
+bugün silkeliyoruz	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+bugün silkeliyoruz	bahçesiz	TEACH · silkeliyoruz
+yarın Kuyu dibini silkeleyeceğiz	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+yarın Kuyu dibini silkeleyeceğiz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
