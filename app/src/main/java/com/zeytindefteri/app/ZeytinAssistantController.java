@@ -301,7 +301,8 @@ public final class ZeytinAssistantController {
         main.post(()->{if(panel==session && visible()){
             String q=pendingQuestion;pendingQuestion=null;answersThisPanel=0;
             if(q!=null)submit(q);
-            else postDialog(new OperationVoiceDialog.Reply(persona().greeting(AssistantPersona.hourNow()),OperationVoiceDialog.Action.ASK),"Zeytin");
+            else if(pendingPractice){pendingPractice=false;startPractice();}
+            else welcome();   // yönlendiren asistan: karşılama; kendiliğinden dinlemez
         }});
     }
     /** Ana sayfadaki hazır sorular için: paneli açar ve soruyu mikrofon açmadan yazılı gönderir. */
@@ -662,6 +663,8 @@ public final class ZeytinAssistantController {
         lastQuestion=raw.trim();lastRaw=raw;question.setText(lastQuestion);heard.setText("");
         final boolean voice=heardByVoice;
         heardByVoice=false;
+        if(practice){practiceAnswer(raw);return;}
+        if(guideJob!=null){guideAnswer(raw);return;}
         if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){answerDialog(raw);return;}
         if(pendingTeach!=null&&answerTeach(raw))return;
         boolean commands=recDialog==null;
@@ -848,6 +851,31 @@ public final class ZeytinAssistantController {
                         Toast.makeText(activity,"Sıkım formu açılıyor: "+oilEntry.summary()+". Eksikleri yazıp Kaydet'e bas.",Toast.LENGTH_LONG).show();
                         dialog.dismiss();
                         activity.startActivity(new android.content.Intent(activity,OilActivity.class).putExtra(OilActivity.EXTRA_VOICE,raw));
+                    });
+                    return;
+                }
+                // Yönlendiren asistan: Tanecik sahnesi. Cevap da okunur (konuşan çiftçi cevabı kaybetmez); ekran açılır,
+                // Tanecik parlatır ve söyler. GÖSTER sormadan; ÖĞRET kayıt yapmaz.
+                if(path==AssistantOutcome.Kind.SCENE){
+                    meter(token,raw,owner,decision.action);
+                    final TanecikScenes.Scene scene=LearnedBrain.payload(decision,TanecikScenes.Scene.class);
+                    String said="";
+                    if(!scene.answerOf.isEmpty()){
+                        if("alacaklar".equals(scene.id))said=AssistantReceivables.answer(scene.answerOf,AssistantReceivablesData.load(activity,owner,season));
+                        else said=data.answer(ZeytinAssistantCommand.parse(scene.answerOf),null,gardens,true);
+                    }
+                    final String answerText=said;
+                    final String opening=scene.steps.get(0).text;
+                    main.post(()->{
+                        if(!current(token,owner,season,active))return;
+                        String shown=answerText.isEmpty()?opening:opening+" "+answerText;
+                        guidePost(shown,"Tanecik · "+scene.title,false);
+                        haptic();
+                        main.postDelayed(()->{
+                            if(!visible())return;
+                            dialog.dismiss();
+                            if(!ScenePlayer.open(activity,scene,answerText))Toast.makeText(activity,"Ekranı açamadım.",Toast.LENGTH_SHORT).show();
+                        },night()?2500:1800);
                     });
                     return;
                 }
@@ -1255,6 +1283,7 @@ public final class ZeytinAssistantController {
                 if(id>0&&opCloudRaw!=null)learnFromCloud(opCloudRaw,d.entry);
                 opDialog=null;opCloudRaw=null;
                 postDialog(new OperationVoiceDialog.Reply(id>0?"Kaydettim. "+persona().thanks():"Kaydedemedim. Formu açıyorum, oradan kaydedersin.",OperationVoiceDialog.Action.SAVE),"Bahçe işi · kaydedildi");
+                guideSaved(d,id>0);
                 if(id<=0){final long g=gid;main.postDelayed(()->{if(visible())dialog.dismiss();host.openOperationEntry(g,d.entry);},1500);}
                 break;
             }
@@ -1267,6 +1296,453 @@ public final class ZeytinAssistantController {
             case CANCEL: opDialog=null; postDialog(r,"Bahçe işi"); break;
             default: postDialog(r,"Bahçe işi · sesle kayıt");
         }
+    }
+
+    // ============================================================ YÖNLENDİREN ASİSTAN
+
+    /** Karşılamanın sorusu (ekran 1). */
+    private static final String GREETING="Bugün bahçede ne yaptın?";
+    /** Ön sorulu iş (Satış, Tahsilat, Masraf) ve cevapları; null: ön soru yok. */
+    private GuidedFlow.Job guideJob;
+    private final Map<String,String> guideAnswers=new HashMap<>();
+    private int guideIndex;
+    /** Düğmeyle başlatılan işin kimliği (kısa yol ve karne için); "" düğmeyle başlamadı. */
+    private String guideStarted="";
+    /** Bu işte şimdiye dek sorulan soru sayısı (ilerleme "2 / 3"). */
+    private int guideAsked;
+    /** Karşılamanın verisi (düğme sırası, kart, adlar, alışkanlıklar). */
+    private GuideData.Snapshot guideData;
+    /** Alıştırma (Tanecik turunun sonu): bir sonraki cümle anlaşılır, KAYIT YAPILMAZ. */
+    private boolean practice;
+    private boolean pendingPractice;
+    private TextView exampleLine;
+    private int exampleAt;
+    private final Runnable exampleTick=new Runnable(){
+        @Override public void run(){
+            if(exampleLine==null||!exampleLine.isAttachedToWindow()||guideData==null)return;
+            List<String> ex=GuidedFlow.examples(guideData.gardens,guideData.buyers);
+            exampleAt=(exampleAt+1)%ex.size();
+            exampleLine.setText("ya da konuş: “"+ex.get(exampleAt)+"”");
+            main.postDelayed(this,4000);
+        }
+    };
+
+    private static boolean night(){
+        return GuideSettings.night(Calendar.getInstance().get(Calendar.HOUR_OF_DAY));
+    }
+
+    /** Karşılama (ekran 1): soru, dört iş düğmesi, "Başka bir iş", tek kart, "Neler yapabilirsin?". Dinlemez. */
+    private void welcome(){
+        guideJob=null;
+        guideStarted="";
+        guideAsked=0;
+        // Adıyla selamlar ("Günaydın Halil amca"); dinlemediği için "buyur dinliyorum" denmez.
+        String hello=persona().greeting(AssistantPersona.hourNow()).replace(", buyur dinliyorum.","");
+        guideSay(GREETING,hello+". "+GREETING,hello+" · Zeytin",false);
+        transition(State.ANSWERING,"Bir işe dokun ya da mikrofona basıp konuş");
+        final String owner=host.owner();
+        final int panel=session;
+        worker.execute(()->{
+            GuideData.Snapshot snap=GuideData.load(activity,owner);
+            main.post(()->{
+                if(panel!=session||!visible()||guideJob!=null||!GREETING.contentEquals(answer.getText()))return;
+                guideData=snap;
+                renderWelcome(snap);
+            });
+        });
+    }
+
+    private void renderWelcome(GuideData.Snapshot snap){
+        LinearLayout box=guideBox();
+        List<GuidedFlow.Job> home=GuidedFlow.home(snap.counts,Calendar.getInstance().get(Calendar.MONTH)+1);
+        for(int i=0;i<home.size();i+=2){
+            LinearLayout line=row();
+            GuidedFlow.Job a=home.get(i);
+            GuidedFlow.Job b=home.get(i+1);
+            LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,-2,1);
+            left.rightMargin=dp(10);
+            line.addView(bigButton(a.label,"",true,v->startJob(a)),left);
+            line.addView(bigButton(b.label,"",true,v->startJob(b)),new LinearLayout.LayoutParams(0,-2,1));
+            box.addView(line,margins(-1,-2,dp(10),0));
+        }
+        box.addView(bigButton("Başka bir iş","",false,v->showOthers(home)),margins(-1,-2,dp(10),0));
+        Calendar now=Calendar.getInstance();
+        int today=now.get(Calendar.YEAR)*10000+(now.get(Calendar.MONTH)+1)*100+now.get(Calendar.DAY_OF_MONTH);
+        GuideCards.Card card=GuideCards.pick(snap.cards,GuideDb.states(activity,host.owner()),now.get(Calendar.HOUR_OF_DAY),now.get(Calendar.MONTH)+1,today,snap.harvestToday);
+        if(card!=null){
+            GuideDb.add(activity,host.owner(),"kart_goster:"+card.type);
+            box.addView(cardView(card,today),margins(-1,-2,dp(14),0));
+        }
+        box.addView(bigButton("Neler yapabilirsin?","",false,v->showExamples()),margins(-1,-2,dp(14),0));
+        List<String> ex=GuidedFlow.examples(snap.gardens,snap.buyers);
+        exampleLine=label("ya da konuş: “"+ex.get(0)+"”",GuideSettings.REASON_SP+1,soft,false);
+        exampleLine.setGravity(Gravity.CENTER);
+        exampleLine.setPadding(0,dp(12),0,dp(4));
+        box.addView(exampleLine);
+        main.removeCallbacks(exampleTick);
+        main.postDelayed(exampleTick,4000);
+    }
+
+    /** Yönlendirmenin içeriği: panel tam boy olur, iri yazıda kendi içinde kayar (taşmaz). */
+    private LinearLayout guideBox(){
+        LinearLayout box=column();
+        ScrollView scroll=new ScrollView(activity);
+        scroll.setFillViewport(false);
+        scroll.addView(box);
+        int most=activity.getResources().getDisplayMetrics().heightPixels*55/100;
+        hintBox.addView(scroll,new LinearLayout.LayoutParams(-1,most));
+        return box;
+    }
+
+    /** Yaşlı kullanıcı için büyük düğme: yazı en az 19 sp, yükseklik en az 60 dp; altında isteğe bağlı gerekçe. */
+    private View bigButton(String title,String reason,boolean primary,View.OnClickListener click){
+        LinearLayout b=column();
+        b.setGravity(Gravity.CENTER_VERTICAL);
+        b.setMinimumHeight(dp(GuideSettings.BUTTON_DP));
+        b.setPadding(dp(16),dp(10),dp(16),dp(10));
+        b.setBackground(round(primary?green:surface,primary?green:border,16));
+        TextView t=label(title,GuideSettings.BUTTON_SP,primary?bg:text,true);
+        b.addView(t);
+        if(!reason.isEmpty()){
+            TextView r=label(reason,GuideSettings.REASON_SP,primary?bg:soft,false);
+            r.setPadding(0,dp(2),0,0);
+            b.addView(r);
+        }
+        b.setContentDescription(reason.isEmpty()?title:title+". "+reason);
+        b.setOnClickListener(v->{
+            stopTts();
+            if(conversation.state()==State.LISTENING){
+                conversation.nextTurn();
+                stopRecognizer();
+            }
+            click.onClick(v);
+        });
+        return b;
+    }
+
+    /** Ekranda soru (en az 28 sp); gece okunmaz ve dinlenmez. ask: okununca dinle (sesle cevap). */
+    private void guidePost(String question,String label,boolean ask){
+        guideSay(question,question,label,ask);
+    }
+
+    /** Ekranda question görünür, spoken okunur (selamla birlikte). */
+    private void guideSay(String question,String spoken,String label,boolean ask){
+        if(!visible())return;
+        conversation.nextTurn();
+        clearAnswerExtras();
+        lastAnswer=spoken;
+        answer.setTextSize(GuideSettings.QUESTION_SP);
+        answer.setText(question);
+        source.setText(label);
+        lastCmd=null;
+        lastScope=null;
+        followUps.removeAllViews();
+        listenAfterSpeech=ask&&!night();
+        transition(State.ANSWERING,night()?"Gece: yalnız yazıyla soruyorum":"Soruyorum…");
+        if(!night()&&ttsReady&&tts!=null)speak();
+    }
+
+    /** İş düğmesi: ön sorusuz işte bugünkü yola başlangıç cümlesi; Satış / Tahsilat / Masraf'ta ön sorular. */
+    private void startJob(GuidedFlow.Job job){
+        GuideDb.add(activity,host.owner(),"dugme_is:"+job.id);
+        guideStarted=job.id;
+        guideAsked=0;
+        if(!job.starter.isEmpty()){
+            guideJob=null;
+            submit(job.starter);
+            return;
+        }
+        guideJob=job;
+        guideAnswers.clear();
+        guideIndex=0;
+        askGuide();
+    }
+
+    private void showOthers(List<GuidedFlow.Job> home){
+        guidePost("Hangi işi yaptın?","Zeytin · başka bir iş",false);
+        LinearLayout box=guideBox();
+        for(GuidedFlow.Job j:GuidedFlow.others(home)){
+            box.addView(bigButton(j.label,"",false,v->startJob(j)),margins(-1,-2,dp(10),0));
+        }
+        box.addView(bigButton("Vazgeç","",false,v->welcome()),margins(-1,-2,dp(14),0));
+    }
+
+    /** Ön soru (ekran 2): katalogdaki alan sorusu, cevap düğmeleri, ilerleme, "Vazgeç". Sesle de cevaplanır. */
+    private void askGuide(){
+        GuidedFlow.Ask a=guideJob.asks.get(guideIndex);
+        guidePost(a.question(),"Zeytin · "+guideJob.label,true);
+        LinearLayout box=guideBox();
+        box.addView(progressLine(guideIndex+1,guideJob.asks.size()));
+        List<String> choices=new java.util.ArrayList<>();
+        if(a.choices==GuidedFlow.Choices.BUYERS&&guideData!=null)choices.addAll(guideData.buyers);
+        if(a.choices==GuidedFlow.Choices.EXPENSES){
+            for(String[] e:GuidedFlow.EXPENSES)choices.add(e[0]);
+        }
+        for(String c:choices){
+            box.addView(bigButton(c,"",false,v->guideAnswer(c)),margins(-1,-2,dp(10),0));
+        }
+        if(a.choices!=GuidedFlow.Choices.EXPENSES){
+            box.addView(bigButton("Yazayım","",false,v->setTyping(true)),margins(-1,-2,dp(10),0));
+        }
+        if(a.optional){
+            box.addView(bigButton(GuidedFlow.SKIP,"",false,v->guideAnswer(GuidedFlow.SKIP)),margins(-1,-2,dp(10),0));
+        }
+        box.addView(bigButton("Vazgeç","",false,v->guideAnswer("vazgeç")),margins(-1,-2,dp(14),0));
+    }
+
+    private TextView progressLine(int at,int total){
+        TextView p=label(GuidedFlow.progress(at,total),GuideSettings.REASON_SP,soft,true);
+        p.setGravity(Gravity.END);
+        p.setPadding(0,dp(4),0,dp(6));
+        return p;
+    }
+
+    /** Ön sorunun cevabı (düğme ya da söz). Cevaplar bitince kurulan cümle bugünkü yola gider. */
+    private void guideAnswer(String raw){
+        GuidedFlow.Ask a=guideJob.asks.get(guideIndex);
+        String s=TurkishText.normalize(raw);
+        if(s.matches(".*\\b(vazgec|vazgectim|iptal|bosver)\\b.*")){
+            guideJob=null;
+            guideStarted="";
+            guidePost("Tamam, bıraktım. Hiçbir şey kaydetmedim.","Zeytin",false);
+            return;
+        }
+        String value=raw.trim();
+        if(a.optional&&s.matches("(gec|atla|yok|bilmiyorum)")){
+            value="";
+        }else if(a.choices==GuidedFlow.Choices.NUMBER){
+            value=GuidedFlow.number(raw);
+            if(value.isEmpty()){
+                guidePost("Sayıyı anlayamadım. "+a.question(),"Zeytin · "+guideJob.label,true);
+                return;
+            }
+        }else if(a.choices==GuidedFlow.Choices.EXPENSES){
+            value="";
+            for(String[] e:GuidedFlow.EXPENSES){
+                if(TurkishText.normalize(e[0]).equals(s))value=e[0];
+            }
+            if("Başka".equals(value)){
+                guideJob=null;
+                guidePost("Ne için harcadın? Söyle, ben yazayım.","Zeytin · masraf",true);
+                return;
+            }
+            if(value.isEmpty()){
+                askGuide();
+                return;
+            }
+        }else{
+            value=ElekVoiceBuyer.spokenName(raw.trim());
+        }
+        guideAnswers.put(a.field,value);
+        guideAsked++;
+        guideIndex++;
+        if(guideIndex<guideJob.asks.size()){
+            askGuide();
+            return;
+        }
+        String sentence=GuidedFlow.sentence(guideJob,guideAnswers);
+        guideJob=null;
+        if(sentence.isEmpty()){
+            guideStarted="";
+            guidePost("Eksik kaldı; hiçbir şey kaydetmedim. Baştan söyler misin?","Zeytin",false);
+            return;
+        }
+        submit(sentence);
+    }
+
+    /**
+     * Bugünkü sesli diyaloğun sorusuna düğmeler (ekran 2 ve 3): bahçeler, alışkanlık (gerekçesiyle, en üstte), "Geç",
+     * onayda "Evet, kaydet" / "Hayır"; ilerleme ve "Vazgeç". Düğme yalnız diyaloğa o cevabı verir (sesle aynı yol).
+     */
+    private void guideButtons(){
+        if(opDialog!=null&&opDialog.step()!=OperationVoiceDialog.Step.DONE){
+            dialogButtons(opDialog.step(),opDialog.typeName(),opDialog.remaining());
+            return;
+        }
+        if(recDialog!=null&&!recDialog.done()){
+            recordButtons();
+            return;
+        }
+        // Diyalog kapandı (vazgeç, form açıldı): düğmeyle başlayan iş bitti.
+        guideStarted="";
+    }
+
+    private void dialogButtons(OperationVoiceDialog.Step step,String type,int remaining){
+        answer.setTextSize(GuideSettings.QUESTION_SP);
+        LinearLayout box=guideBox();
+        box.addView(progressLine(guideAsked+1,guideAsked+remaining));
+        guideAsked++;
+        if(step==OperationVoiceDialog.Step.CONFIRM){
+            box.addView(bigButton("Evet, kaydet","",true,v->submit("evet")),margins(-1,-2,dp(10),0));
+            box.addView(bigButton("Hayır, düzelteyim","",false,v->submit("hayır")),margins(-1,-2,dp(10),0));
+            box.addView(bigButton("Vazgeç","",false,v->submit("vazgeç")),margins(-1,-2,dp(14),0));
+            return;
+        }
+        HabitModel.Habit habit=null;
+        if(guideData!=null&&guideData.habits!=null){
+            if(step==OperationVoiceDialog.Step.WHAT)habit=guideData.habits.product(type);
+            if(step==OperationVoiceDialog.Step.QUANTITY)habit=guideData.habits.amount(type);
+            if(step==OperationVoiceDialog.Step.GARDEN)habit=guideData.habits.operationGarden();
+        }
+        boolean high=habit!=null&&habit.level==HabitModel.Level.HIGH;
+        if(high){
+            final String said=habit.shown;
+            box.addView(bigButton(said,habit.reason(),true,v->submit(said)),margins(-1,-2,dp(10),0));
+        }
+        if(step==OperationVoiceDialog.Step.GARDEN&&opGardens!=null){
+            for(ZeytinAssistantCommand.Garden g:opGardens){
+                if(high&&g.name.equals(habit.shown))continue;
+                box.addView(bigButton(g.name,"",false,v->submit(g.name)),margins(-1,-2,dp(10),0));
+            }
+        }else{
+            box.addView(bigButton("Yazayım","",false,v->setTyping(true)),margins(-1,-2,dp(10),0));
+            box.addView(bigButton(GuidedFlow.SKIP,"",false,v->submit("geç")),margins(-1,-2,dp(10),0));
+        }
+        box.addView(bigButton("Vazgeç","",false,v->submit("vazgeç")),margins(-1,-2,dp(14),0));
+    }
+
+    private void recordButtons(){
+        answer.setTextSize(GuideSettings.QUESTION_SP);
+        LinearLayout box=guideBox();
+        box.addView(progressLine(guideAsked+1,guideAsked+recDialog.remaining()));
+        guideAsked++;
+        String key=recDialog.currentKey();
+        if("onay".equals(key)){
+            box.addView(bigButton("Evet, formu aç","",true,v->submit("evet")),margins(-1,-2,dp(10),0));
+            box.addView(bigButton("Hayır","",false,v->submit("hayır")),margins(-1,-2,dp(10),0));
+        }else if("garden".equals(key)){
+            for(String g:recDialog.gardenNames()){
+                box.addView(bigButton(g,"",false,v->submit(g)),margins(-1,-2,dp(10),0));
+            }
+        }else{
+            box.addView(bigButton("Yazayım","",false,v->setTyping(true)),margins(-1,-2,dp(10),0));
+        }
+        if(recDialog.currentOptional()){
+            box.addView(bigButton(GuidedFlow.SKIP,"",false,v->submit("geç")),margins(-1,-2,dp(10),0));
+        }
+        box.addView(bigButton("Vazgeç","",false,v->submit("vazgeç")),margins(-1,-2,dp(14),0));
+    }
+
+    /**
+     * Kayıttan sonra (ekran 3): iş düğmeyle yapıldıysa kısa yol cümlesi; beyin onu aynı işe çevirmiyorsa ya da bu iş
+     * türü için 3 kez gösterildiyse gösterilmez. Konuşarak yapılan iş, kısa yol daha önce gösterildiyse karnede sayılır.
+     */
+    private void guideSaved(OperationVoiceDialog d,boolean saved){
+        String type=OperationKinds.TYPES[d.entry.type];
+        String job=GuidedFlow.jobOfType(ActionCatalog.ISLEM,type);
+        String owner=host.owner();
+        if(!saved||job.isEmpty()){
+            guideStarted="";
+            return;
+        }
+        if(guideStarted.isEmpty()){
+            if(LearnedTerms.SOURCE_VOICE.equals(lastSource)&&GuideDb.count(activity,owner,"kisa_yol:"+job)>0){
+                GuideDb.add(activity,owner,"kisa_yoldan_sonra_konusarak");
+            }
+            return;
+        }
+        guideStarted="";
+        String garden=d.garden>=0&&opGardens!=null&&d.garden<opGardens.size()?opGardens.get(d.garden).name:"";
+        String shortcut=GuidedFlow.shortcut(ActionCatalog.ISLEM,type,garden,d.entry.quantity,d.entry.unit);
+        long shown=GuideDb.count(activity,owner,"kisa_yol:"+job);
+        if(!GuidedFlow.shortcutAllowed((int)shown)||!GuidedFlow.verified(shortcut,ActionCatalog.ISLEM,type,d.entry.quantity))return;
+        GuideDb.add(activity,owner,"kisa_yol:"+job);
+        TextView tip=label("Bir dahaki sefere sadece şunu demen yeter: “"+shortcut+"”",GuideSettings.BUTTON_SP,green,true);
+        tip.setPadding(0,dp(12),0,0);
+        hintBox.addView(tip);
+    }
+
+    /** Duruma göre soru kartı: gerekçe, ana düğme, "Bu yanlış", "Sonra". */
+    private View cardView(GuideCards.Card card,int today){
+        LinearLayout c=column();
+        c.setPadding(dp(16),dp(14),dp(16),dp(14));
+        c.setBackground(round(surface,warning,16));
+        TextView title=label(card.title.toUpperCase(new Locale("tr","TR")),GuideSettings.REASON_SP,warning,true);
+        c.addView(title);
+        TextView q=label(card.text,GuideSettings.BUTTON_SP,text,true);
+        q.setPadding(0,dp(6),0,dp(4));
+        c.addView(q);
+        c.addView(label(card.reason,GuideSettings.REASON_SP,soft,false));
+        String owner=host.owner();
+        c.addView(bigButton(card.action,"",true,v->{
+            GuideDb.add(activity,owner,"kart_kabul:"+card.type);
+            GuideDb.save(activity,owner,card.type,GuideCards.accepted(GuideDb.states(activity,owner).get(card.type)));
+            cardAccepted(card);
+        }),margins(-1,-2,dp(10),0));
+        LinearLayout line=row();
+        LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,-2,1);
+        left.rightMargin=dp(10);
+        line.addView(bigButton("Bu yanlış","",false,v->{
+            GuideDb.add(activity,owner,"kart_red:"+card.type);
+            GuideDb.save(activity,owner,card.type,GuideCards.rejected(GuideDb.states(activity,owner).get(card.type)));
+            welcome();
+        }),left);
+        line.addView(bigButton("Sonra","",false,v->{
+            GuideDb.save(activity,owner,card.type,GuideCards.later(GuideDb.states(activity,owner).get(card.type),today));
+            welcome();
+        }),new LinearLayout.LayoutParams(0,-2,1));
+        c.addView(line,margins(-1,-2,dp(10),0));
+        return c;
+    }
+
+    private void cardAccepted(GuideCards.Card card){
+        if(GuideCards.PAYMENT.equals(card.type)){
+            GuidedFlow.Job pay=GuidedFlow.job("TAHSILAT");
+            GuideDb.add(activity,host.owner(),"dugme_is:"+pay.id);
+            guideStarted=pay.id;
+            guideJob=pay;
+            guideAnswers.clear();
+            guideAnswers.put("alici",card.payload);
+            guideIndex=1;
+            guideAsked=1;
+            askGuide();
+            return;
+        }
+        GuidedFlow.Job job=GuidedFlow.job(card.payload);
+        if(job!=null)startJob(job);
+    }
+
+    /** "Neler yapabilirsin?" (ekran 4): kendi adlarınla 4 örnek; okunur; dokunulan yazı kutusuna gelir, kayıt yapmaz. */
+    private void showExamples(){
+        List<String> ex=GuidedFlow.examples(guideData==null?null:guideData.gardens,guideData==null?null:guideData.buyers);
+        StringBuilder said=new StringBuilder("Bana şöyle diyebilirsin.");
+        for(String e:ex)said.append(' ').append(e).append('.');
+        guidePost("Bana şöyle diyebilirsin:","Zeytin · neler yapabilirim",false);
+        lastAnswer=said.toString();
+        if(!night()&&ttsReady&&tts!=null)speak();
+        LinearLayout box=guideBox();
+        for(String e:ex){
+            box.addView(bigButton("“"+e+"”","",false,v->{
+                setTyping(true);
+                input.setText(e);
+                input.setSelection(e.length());
+            }),margins(-1,-2,dp(10),0));
+        }
+        box.addView(bigButton("Geri","",false,v->welcome()),margins(-1,-2,dp(14),0));
+    }
+
+    /** Tanecik turunun sonu: alıştırma. Panel açılır, "Bugün suladık" demesi beklenir; KAYIT YAPILMAZ. */
+    public void practice(){
+        if(visible()){
+            startPractice();
+            return;
+        }
+        pendingPractice=true;
+        show();
+        if(!visible())pendingPractice=false;
+    }
+
+    private void startPractice(){
+        practice=true;
+        guidePost("Hadi bir dene: “"+GuidedFlow.PRACTICE+"” de.","Zeytin · alıştırma",true);
+        if(night())main.postDelayed(()->{if(visible()&&practice)listen();},600);
+    }
+
+    private void practiceAnswer(String raw){
+        practice=false;
+        Decision d=learned().decide(new Brain.Input(raw),BrainContext.full(true,persona()::handle));
+        guidePost(GuidedFlow.practiceReply(d),"Zeytin · alıştırma",false);
+        if(!d.understood())practice=true;
     }
 
     // ============================================================ ÖĞRENİLEN SÖZLER (İP4)
@@ -1499,6 +1975,7 @@ public final class ZeytinAssistantController {
         if(ttsReady&&tts!=null)speak();
         else if(tts==null&&listenAfterSpeech){listenAfterSpeech=false;main.postDelayed(()->{if(visible())listen();},1500);}
         // tts henüz hazırlanıyorsa: hazır olunca okunur (durum ANSWERING), okuma bitince dinler.
+        if(!guideStarted.isEmpty())guideButtons();
     }
 
     private void speak(){
@@ -1528,6 +2005,12 @@ public final class ZeytinAssistantController {
     }
     private void releasePanel(){
         opDialog=null;recDialog=null;listenAfterSpeech=false;
+        // Yönlendirme yarım kaldıysa iz bırakmaz (kayıt yok; yalnız ekran durumu).
+        guideJob=null;
+        guideStarted="";
+        guideAsked=0;
+        practice=false;
+        main.removeCallbacks(exampleTick);
         session++;conversation.nextTurn();stopRecognizer();stopTts();hideKeyboard();
         if(tagSheet!=null){try{tagSheet.dismiss();}catch(Exception ignored){}tagSheet=null;}
         transition(State.IDLE,"Asistan kapatıldı");if(wave!=null)wave.listening(false);ttsReady=false;typing=false;

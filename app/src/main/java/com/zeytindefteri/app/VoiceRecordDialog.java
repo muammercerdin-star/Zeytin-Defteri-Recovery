@@ -152,6 +152,41 @@ public final class VoiceRecordDialog {
 
     public boolean done() { return done; }
 
+    /** Şimdi sorulan alan ("garden", "kg"...; onayda "onay"); başlamadıysa "". Yönlendiren asistanın düğmeleri için. */
+    public String currentKey() {
+        if (confirming) {
+            return "onay";
+        }
+        return current >= 0 && current < slots.length ? slots[current].key : "";
+    }
+
+    /** Şimdi sorulan alan "geç" denebilir mi. */
+    public boolean currentOptional() {
+        return !confirming && current >= 0 && current < slots.length && slots[current].optional;
+    }
+
+    /** Şimdiki dahil sorulacak soru sayısı (onay dahil): ilerleme ("2 / 3"). Yalnız okur. */
+    public int remaining() {
+        if (done) {
+            return 0;
+        }
+        if (confirming) {
+            return 1;
+        }
+        int n = 1;
+        for (int i = Math.max(0, current); i < slots.length; i++) {
+            if (!values.containsKey(slots[i].key) && !asked.contains(slots[i].key)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /** Bahçe adları (bahçe sorusunun düğmeleri). */
+    public List<String> gardenNames() {
+        return gardens == null ? java.util.Collections.emptyList() : gardens;
+    }
+
     public Reply handle(String raw) {
         String s = TurkishText.normalize(raw == null ? "" : raw);
         if (s.isEmpty()) return ask("Duyamadım. " + (confirming ? "Formu açayım mı?" : slots[current].question));

@@ -115,6 +115,8 @@ final class TanecikWalker {
         /** Açık bölümün kaydırılabilen ana alanı (liste/sayfa); yoksa null. */
         View scroller();
         void tourEnded();
+        /** Tur sonuna kadar izlendi (Dur'a basılmadı): yönlendiren asistanın alıştırması. Kayıt yapmaz. */
+        default void tourCompleted() { }
     }
 
     private List<TanecikTour.Step> tour;
@@ -1041,7 +1043,12 @@ final class TanecikWalker {
     private void runTourStep() {
         if (tour == null || !active) return;
         if (TanecikTour.cancelRequested) { endTour(); return; }
-        if (tourAt >= tour.size()) { endTour(); return; }
+        if (tourAt >= tour.size()) {
+            TourHost done = tourHost;
+            endTour();
+            if (done != null) done.tourCompleted();
+            return;
+        }
         final TanecikTour.Step step = tour.get(tourAt);
         handler.removeCallbacksAndMessages(null);
         cancelMotion();

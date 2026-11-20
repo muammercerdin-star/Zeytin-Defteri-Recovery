@@ -6672,6 +6672,10 @@ public class ProducerFeedActivity extends Activity {
                 if (!"HOME".equals(currentSection)) ProducerFeedActivity.this.showSection("HOME");
                 updateTanecik();
             }
+            @Override public void tourCompleted() {
+                // Turun sonu: "Hadi bir dene: 'Bugün suladık' de". Zeytin anladığını gösterir; KAYIT YAPMAZ.
+                ProducerFeedActivity.this.practiceAfterTour();
+            }
         });
         updateTanecik();
     }
@@ -7109,6 +7113,15 @@ public class ProducerFeedActivity extends Activity {
     private void openZeytinAssistant() {
         ensureZeytinAssistant();
         zeytinAssistant.show();
+    }
+
+    /** Tanecik turunun sonu: alıştırma paneli (kayıt yapılmaz). */
+    void practiceAfterTour() {
+        if (isFinishing()) {
+            return;
+        }
+        ensureZeytinAssistant();
+        zeytinAssistant.practice();
     }
 
     private void ensureZeytinAssistant() {

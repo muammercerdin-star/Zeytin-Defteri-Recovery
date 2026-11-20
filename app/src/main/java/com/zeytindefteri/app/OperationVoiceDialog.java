@@ -43,6 +43,34 @@ public final class OperationVoiceDialog {
 
     public Step step() { return step; }
 
+    /**
+     * Yönlendiren asistanın ilerlemesi ("2 / 3"): şimdiki dahil sorulacak soru sayısı (onay dahil). Yalnız okur.
+     */
+    public int remaining() {
+        if (step == Step.DONE) {
+            return 0;
+        }
+        int n = 1;
+        if (step == Step.GARDEN && wantsWhat() && !askedWhat && what.isEmpty()) {
+            n++;
+        }
+        if (step.ordinal() < Step.QUANTITY.ordinal() && !askedQuantity && entry.quantity <= 0) {
+            n++;
+        }
+        if (step.ordinal() < Step.COST.ordinal() && !askedCost && entry.cost <= 0) {
+            n++;
+        }
+        if (step != Step.CONFIRM) {
+            n++;
+        }
+        return n;
+    }
+
+    /** İşin türü ("İlaçlama"); yönlendiren asistanın düğmeleri için. */
+    public String typeName() {
+        return type();
+    }
+
     /** Çiftçi kaydı sesle onayladı mı (yalnız özetten sonraki "evet"le true olur). */
     boolean confirmed() {
         return confirmed;
