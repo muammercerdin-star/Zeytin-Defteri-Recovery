@@ -93,8 +93,11 @@ final class RunnerFlow {
             return false;
         }
         journal.add(new Written(ActionPlan.SALE, sale));
-        // Alacak satışla aynı işlemde açılır (SaleRepository); satış silinince o da silinir.
-        journal.add(new Written(ActionPlan.RECEIVABLE, sale));
+        // Alacak satışla aynı işlemde açılır (SaleRepository); satış silinince o da silinir. Tek adımlı satışta
+        // (eğitim turu 1) alacak ayrı adım değildir: formdaki ödeme durumuna göre satışla birlikte açılır ya da açılmaz.
+        if (plan.steps.contains(ActionPlan.RECEIVABLE)) {
+            journal.add(new Written(ActionPlan.RECEIVABLE, sale));
+        }
         if (reminder) {
             long id = w.writeReminder(sale);
             if (id <= 0) {

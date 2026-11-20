@@ -27,8 +27,12 @@ checks = [
     ("doldurma kipi: yazdığını silmez, ekranı kapatmaz, Kaydet'e basmaz",
      "if (onDone != null) {" in guide and "onDone.run();" in guide and "performClick" not in guide
      and "btnSaveSale" not in guide and "btnSaveSale" not in runner),
-    ("doldurucu yalnız 'Alınmadı' düğmesine dokunur",
-     runner.count("performClick") == 1 and "if (v.getId() == R.id.chipPayNone) {\n            v.performClick();" in runner),
+    ("doldurucu yalnız ödeme düğmelerine ('Alınmadı', tek adımlı satışta 'Tamamı') dokunur, Kaydet'e asla",
+     runner.count("performClick") == 1
+     and "if (v.getId() == R.id.chipPayNone || v.getId() == R.id.chipPayFull) {\n            v.performClick();" in runner),
+    ("tek adımlı satış: ödeme söylenmediyse onaydan önce sorulur, varsayılmaz",
+     "if (payment.isEmpty()) {\n            askPayment();\n            return;\n        }" in runner
+     and 'text("Parasını aldın mı?", 22, true)' in runner and "ActionPlan.parseAny(planText)" in sale),
     ("tur kipi eskisi gibi (yazılanı siler, ekranı kapatır)",
      "for (EditText e : typed) e.setText(\"\");" in guide and "this(activity, steps, false, null, null, null);" in guide),
     ("gece (22:00–05:00) Tanecik konuşmaz",

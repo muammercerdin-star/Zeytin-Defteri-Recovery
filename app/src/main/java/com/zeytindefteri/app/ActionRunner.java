@@ -100,6 +100,8 @@ final class ActionRunner {
     private FrameLayout layer;
     private LinearLayout card;
     private boolean askAlways;
+    /** Ödeme durumu: plan söylediyse o (UNPAID / PAID); söylenmediyse "" ve onaydan önce "Parasını aldın mı?" sorulur. */
+    private String payment;
 
     ActionRunner(Activity activity, Form form, ActionPlan plan) {
         this.activity = activity;
@@ -108,6 +110,7 @@ final class ActionRunner {
         this.dueIso = plan.dueDate(Calendar.getInstance());
         this.flow = new RunnerFlow(plan, !dueIso.isEmpty());
         this.quiet = TanecikLines.sleeping(Calendar.getInstance().get(Calendar.HOUR_OF_DAY));
+        this.payment = plan.payment;
     }
 
     RunnerFlow.State state() {
@@ -144,7 +147,11 @@ final class ActionRunner {
                 steps.add(new TanecikTour.GuideStep(priceView, "Kilosu kaç liradan? Buraya yaz.", ""));
             }
         }
-        steps.add(new TanecikTour.GuideStep("chipPayNone", "Para alınmadı.", "@tap"));
+        if (ActionPlan.UNPAID.equals(payment)) {
+            steps.add(new TanecikTour.GuideStep("chipPayNone", "Para alınmadı.", "@tap"));
+        } else if (ActionPlan.PAID.equals(payment)) {
+            steps.add(new TanecikTour.GuideStep("chipPayFull", "Para peşin alındı.", "@tap"));
+        }
         if (!dueIso.isEmpty()) {
             steps.add(new TanecikTour.GuideStep("etDueDate", "Ödeme günü " + ActionPlan.dayText(dueIso) + ".", dotted(dueIso)));
         }
@@ -152,9 +159,12 @@ final class ActionRunner {
         guide.start();
     }
 
-    /** Doldurucunun dokunabildiği tek düğme: "Alınmadı" (ödeme durumu). Kaydet'e asla dokunulmaz. */
+    /** Doldurucunun dokunabildiği düğmeler yalnız ödeme durumu: "Alınmadı" ya da "Tamamı" (peşin). Kaydet'e asla dokunulmaz. */
     private void tap(View v) {
-        if (v.getId() == R.id.chipPayNone) {
+        if (v == null) {
+            return;
+        }
+        if (v.getId() == R.id.chipPayNone || v.getId() == R.id.chipPayFull) {
             v.performClick();
         }
     }
@@ -196,8 +206,12 @@ final class ActionRunner {
     private void showConfirm() {
         ensureLayer();
         card.removeAllViews();
+        if (payment.isEmpty()) {
+            askPayment();
+            return;
+        }
         card.addView(text("Kaydedeyim mi?", 22, true));
-        String summary = ActionPlan.summary(form.buyerName(), form.kilos(), form.gradeLabel(), form.price(), dueIso);
+        String summary = ActionPlan.summary(form.buyerName(), form.kilos(), form.gradeLabel(), form.price(), dueIso, payment);
         TextView body = text(summary, 18, false);
         body.setPadding(0, dp(6), 0, dp(4));
         card.addView(body);
@@ -218,6 +232,38 @@ final class ActionRunner {
         buttons.addView(button("Evet, kaydet", true, v -> confirm()), new LinearLayout.LayoutParams(0, dp(58), 1.4f));
         card.addView(buttons);
         say(missing.isEmpty() ? summary + " Kaydedeyim mi?" : String.join(" ", missing));
+    }
+
+    /**
+     * Tek adımlı satışta ödeme söylenmediyse onaydan önce sorulur; peşin ya da veresiye varsayılmaz. Cevap yalnız
+     * formdaki ödeme düğmesini seçer; kayıt yine "Kaydedeyim mi?" onayıyla yapılır.
+     */
+    private void askPayment() {
+        card.addView(text("Parasını aldın mı?", 22, true));
+        String summary = ActionPlan.summary(form.buyerName(), form.kilos(), form.gradeLabel(), form.price(), dueIso, "");
+        TextView body = text(summary, 18, false);
+        body.setPadding(0, dp(6), 0, dp(4));
+        card.addView(body);
+        LinearLayout buttons = new LinearLayout(activity);
+        buttons.setPadding(0, dp(10), 0, 0);
+        buttons.addView(button("Almadım", false, v -> answerPayment(ActionPlan.UNPAID)), new LinearLayout.LayoutParams(0, dp(58), 1));
+        View gap = new View(activity);
+        buttons.addView(gap, new LinearLayout.LayoutParams(dp(10), 1));
+        buttons.addView(button("Aldım, peşin", true, v -> answerPayment(ActionPlan.PAID)), new LinearLayout.LayoutParams(0, dp(58), 1));
+        card.addView(buttons);
+        TextView stop = text("Vazgeç", 17, false);
+        stop.setMinHeight(dp(48));
+        stop.setGravity(Gravity.CENTER);
+        stop.setOnClickListener(v -> cancel());
+        card.addView(stop);
+        say(summary + " Parasını aldın mı?");
+    }
+
+    private void answerPayment(String answer) {
+        int chip = ActionPlan.PAID.equals(answer) ? R.id.chipPayFull : R.id.chipPayNone;
+        tap(activity.findViewById(chip));
+        payment = answer;
+        showConfirm();
     }
 
     /** Formda hâlâ eksik olan (sorulacak) bilgiler. */
@@ -274,7 +320,8 @@ final class ActionRunner {
     /** Kaydedildi: hepsini birlikte geri alma süresi. */
     private void showUndo() {
         card.removeAllViews();
-        StringBuilder done = new StringBuilder("Kaydedildi: satış, para alınmadı (alacak)");
+        StringBuilder done = new StringBuilder(ActionPlan.PAID.equals(payment) ? "Kaydedildi: satış, para peşin alındı"
+                : "Kaydedildi: satış, para alınmadı (alacak)");
         if (!dueIso.isEmpty()) {
             done.append(", ").append(ActionPlan.dayText(dueIso)).append(" ödeme hatırlatması");
         }

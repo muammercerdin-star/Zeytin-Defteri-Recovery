@@ -290,7 +290,7 @@ Ali Usta'ya 300 kilo sattım, parasını yarın getirecek	SATIS	alici=Ali Usta;k
 Ayşe Hanım'a 80 kilo sattım, parasını ayın 15'inde verecek	SATIS	alici=Ayşe Hanım;kilo=80;odeme=alinmadi;vade=ayin 15;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
 Kooperatif'e 500 kilo sattık, ödemesini 10 gün sonra yapacak	SATIS	alici=Kooperatif;kilo=500;odeme=alinmadi;vade=10 gun sonra;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
 Hasan Abi'ye 250 kilo sattık, kilosu 70 lira, parasını cuma verecek	SATIS	alici=Hasan Abi;kilo=250;fiyat=70;odeme=alinmadi;vade=cuma;adimlar=SATIS,ALACAK,HATIRLATMA	dogru	ip7_cok_adim
-Ali Usta'ya 300 kilo sattım, parasını peşin aldım	SORU_SOLD	-	dogru	ip7_tek_eylem
+Ali Usta'ya 300 kilo sattım, parasını peşin aldım	SATIS	alici=Ali Usta;kilo=300;odeme=alindi;adimlar=SATIS	dogru	ip7_tek_eylem
 bugün silkeledik	HASAT	-	dogru	ip8_silkele
 Girelli'yi 300 kilo silkeledik	HASAT	toplam=300	dogru	ip8_silkele
 bugün silkeliyoruz	HASAT	-	dogru	ip8_silkele
@@ -301,7 +301,7 @@ silkeleme mi sırık mı daha iyi	SOHBET	-	dogru	ip8_silkele
 Hasan'a 200 kilo double sattım kilosu 140'tan	ELEK	double=200;double_fiyat=140;satis=evet;alici=Hasan	beklenen_hata	egitim_turu_1
 dün silktik bugün topluyoruz	HASAT	-	beklenen_hata	egitim_turu_1
 Girelli'den on iki kasa zeytin çıktı	HASAT	-	beklenen_hata	egitim_turu_1
-Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS	beklenen_hata	egitim_turu_1
+Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS	dogru	egitim_turu_1
 iki amele tuttum günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=3000	beklenen_hata	egitim_turu_1
 fabrikaya 40 kasa götürdük	YAGHANE	kasa=40	beklenen_hata	egitim_turu_1
 yağhaneden 120 kilo yağ aldık	YAGHANE	yag=120	beklenen_hata	egitim_turu_1

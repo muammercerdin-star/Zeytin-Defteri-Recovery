@@ -143,6 +143,12 @@ final class RuleBrain implements Brain {
         if (plan != null) {
             return found(ActionCatalog.SATIS, plan.fields(), ActionPlan.VARIANT, "Satış ve sonra ödeme sözü: çok adımlı", plan);
         }
+        // Eğitim turu 1: alıcı + kilo + "sattım" bildirimi tek adımlı satış (form dolar, onay ister). Soru kalıpları
+        // ("ne kadar sattım", "bu sene kaç kilo sattım") ve sınıf söylenen satış (Elek) buraya düşmez.
+        ActionPlan one = ActionPlan.single(raw);
+        if (one != null) {
+            return found(ActionCatalog.SATIS, one.fields(), ActionPlan.SINGLE, "Alıcı, kilo ve 'sattım': satış", one);
+        }
         return question(raw, cmd);
     }
 

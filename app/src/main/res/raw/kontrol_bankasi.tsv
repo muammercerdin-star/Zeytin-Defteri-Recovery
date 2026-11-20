@@ -278,13 +278,14 @@ Ali Usta'ya 300 kilo sattım, parasını yarın getirecek	SATIS	alici=Ali Usta;k
 Ayşe Hanım'a 80 kilo sattım, parasını ayın 15'inde verecek	SATIS	alici=Ayşe Hanım;kilo=80;odeme=alinmadi;vade=ayin 15;adimlar=SATIS,ALACAK,HATIRLATMA
 Kooperatif'e 500 kilo sattık, ödemesini 10 gün sonra yapacak	SATIS	alici=Kooperatif;kilo=500;odeme=alinmadi;vade=10 gun sonra;adimlar=SATIS,ALACAK,HATIRLATMA
 Hasan Abi'ye 250 kilo sattık, kilosu 70 lira, parasını cuma verecek	SATIS	alici=Hasan Abi;kilo=250;fiyat=70;odeme=alinmadi;vade=cuma;adimlar=SATIS,ALACAK,HATIRLATMA
-Ali Usta'ya 300 kilo sattım, parasını peşin aldım	SORU_SOLD	-
+Ali Usta'ya 300 kilo sattım, parasını peşin aldım	SATIS	alici=Ali Usta;kilo=300;odeme=alindi;adimlar=SATIS
 bugün silkeledik	HASAT	-
 Girelli'yi 300 kilo silkeledik	HASAT	toplam=300
 bugün silkeliyoruz	HASAT	-
 yarın Kuyu dibini silkeleyeceğiz	HASAT	-
 zeytin nasıl silkelenir	SOHBET	-
 silkeleme mi sırık mı daha iyi	SOHBET	-
+Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS
 bu sene kaç kilo sattım	SORU_SOLD	-
 ne kadar sattım	SORU_SOLD	-
 ne zaman ilaçlayacağız?	SORU_SPRAY	-

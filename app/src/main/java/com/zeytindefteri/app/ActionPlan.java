@@ -22,6 +22,10 @@ final class ActionPlan {
     static final String RECEIVABLE = "ALACAK";
     static final String REMINDER = ActionCatalog.HATIRLATMA;
     static final String VARIANT = "cok_adim";
+    /** Eğitim turu 1: tek adımlı satış ("Ali Usta'ya 300 kilo sattım"): yalnız satış; ödeme belli değilse formda sorulur. */
+    static final String SINGLE = "tek_adim";
+    static final String PAID = "alindi";
+    static final String UNPAID = "alinmadi";
 
     private static final Locale TR = new Locale("tr", "TR");
     private static final String[] DAYS = {"pazar", "pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi"};
@@ -36,6 +40,8 @@ final class ActionPlan {
     final double price;
     /** Ödeme günü sözü, yazıldığı gibi sadeleşmiş: "haftaya", "yarin", "3 gun sonra", "cuma", "ayin 15", "ay sonu"; yoksa "". */
     final String due;
+    /** Ödeme: UNPAID (çok adımlı), PAID ("peşin aldım") ya da "" (söylenmedi: formda sorulur, varsayılmaz). */
+    final String payment;
 
     private ActionPlan(String buyer, double kilos, String grade, double price, String due) {
         this.buyer = buyer;
@@ -43,6 +49,7 @@ final class ActionPlan {
         this.grade = grade;
         this.price = price;
         this.due = due;
+        this.payment = UNPAID;
         List<String> s = new ArrayList<>();
         s.add(SALE);
         s.add(RECEIVABLE);
@@ -50,6 +57,57 @@ final class ActionPlan {
             s.add(REMINDER);
         }
         this.steps = Collections.unmodifiableList(s);
+    }
+
+    /** Tek adımlı satış: yalnız satış adımı. payment: PAID ya da "" (sorulacak). */
+    private ActionPlan(String buyer, double kilos, String grade, double price, String due, String payment) {
+        this.buyer = buyer;
+        this.kilos = kilos;
+        this.grade = grade;
+        this.price = price;
+        this.due = due;
+        this.payment = payment;
+        this.steps = Collections.singletonList(SALE);
+    }
+
+    /** Tek adımlı mı (yalnız satış). */
+    boolean single() {
+        return steps.size() == 1;
+    }
+
+    /** Satış formunu açan plan: önce çok adımlı, değilse tek adımlı; ikisi de değilse null. */
+    static ActionPlan parseAny(String raw) {
+        ActionPlan multi = parse(raw);
+        if (multi != null) {
+            return multi;
+        }
+        return single(raw);
+    }
+
+    /**
+     * Tek adımlı satış (eğitim turu 1): alıcı (kesme işaretli, büyük harfli ad + "-a/-e") + kilo + "sattım/sattık" ve
+     * soru değil. Ödeme sonraya kaldıysa çok adımlıdır (parse). "peşin / parasını aldım" → ödeme alındı; ödeme
+     * söylenmediyse boş kalır ve formda "Parasını aldın mı?" diye sorulur. Sınıf söylenen satış Elek'te kalır
+     * (RuleBrain'de ElekRules önce gelir).
+     */
+    static ActionPlan single(String raw) {
+        String s = TurkishText.normalize(raw);
+        if (!s.matches(".*\\b(sattim|sattik)\\b.*")) {
+            return null;
+        }
+        if (raw.contains("?") || s.matches(".*\\b(kac|ne kadar|ne zaman|nereye|kime|mi|mu|miyim|miyiz|misin|musun|muyum|muyuz|midir|mudur)\\b.*")) {
+            return null;
+        }
+        if (laterPayment(s)) {
+            return null;
+        }
+        String buyer = buyer(raw);
+        double kilos = kilos(raw);
+        if (buyer.isEmpty() || kilos <= 0) {
+            return null;
+        }
+        String payment = paidNow(s) ? PAID : "";
+        return new ActionPlan(buyer, kilos, grade(s), price(raw), "", payment);
     }
 
     /** Çok adımlı satış cümlesi mi; değilse null. */
@@ -236,7 +294,9 @@ final class ActionPlan {
         if (price > 0) {
             f.put("fiyat", ElekVoiceDialog.num(price));
         }
-        f.put("odeme", "alinmadi");
+        if (!payment.isEmpty()) {
+            f.put("odeme", payment);
+        }
         if (!due.isEmpty()) {
             f.put("vade", due);
         }
@@ -264,6 +324,11 @@ final class ActionPlan {
 
     /** Okunan özet: "Ali Usta'ya 300 kilo 3 No, kilosu 68 liradan satış; para alınmadı; 26 Kasım'da ödeme hatırlatması." */
     static String summary(String buyer, double kilos, String gradeLabel, double price, String dueDate) {
+        return summary(buyer, kilos, gradeLabel, price, dueDate, UNPAID);
+    }
+
+    /** Özet; payment: UNPAID "Para alınmadı.", PAID "Para peşin alındı.", "" ödeme yazılmaz (sorulacak). */
+    static String summary(String buyer, double kilos, String gradeLabel, double price, String dueDate, String payment) {
         StringBuilder b = new StringBuilder();
         if (!buyer.isEmpty()) {
             b.append(HabitModel.dative(buyer)).append(' ');
@@ -276,7 +341,12 @@ final class ActionPlan {
             b.append(", kilosu ").append(ElekVoiceDialog.num(price)).append(" liradan");
             b.append(" (").append(ElekSaleModel.tl(kilos * price)).append(')');
         }
-        b.append(" satış. Para alınmadı.");
+        b.append(" satış.");
+        if (UNPAID.equals(payment)) {
+            b.append(" Para alınmadı.");
+        } else if (PAID.equals(payment)) {
+            b.append(" Para peşin alındı.");
+        }
         if (!dueDate.isEmpty()) {
             b.append(' ').append(dayText(dueDate)).append(" ödeme günü hatırlatması.");
         }

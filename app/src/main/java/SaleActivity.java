@@ -105,7 +105,7 @@ public class SaleActivity extends Activity {
         btnSaveSale.setOnClickListener(v -> saveSale());
         updateSaleKindUi();
         String planText = getIntent() == null ? null : getIntent().getStringExtra(EXTRA_PLAN);
-        ActionPlan plan = savedInstanceState == null && planText != null ? ActionPlan.parse(planText) : null;
+        ActionPlan plan = savedInstanceState == null && planText != null ? ActionPlan.parseAny(planText) : null;
         if (plan != null && realSale) {
             startRunner(plan);
         } else if (savedInstanceState == null) {

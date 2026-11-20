@@ -46,6 +46,7 @@ public class ActionRunnerTest {
     public static void main(String[] a) {
         parsing();
         singleUnchanged();
+        singleSale();
         dates();
         noWriteWithoutConfirm();
         confirmWritesAll();
@@ -94,6 +95,39 @@ public class ActionRunnerTest {
         check(elek.is(ActionCatalog.ELEK), "elek satışı cümlesi elekte kalır: " + elek);
         Decision op = decide("bugün Girelli'yi ilaçladık");
         check(op.is(ActionCatalog.ISLEM), "işlem cümlesi değişmez");
+    }
+
+    /** Eğitim turu 1: tek adımlı satış. Ödeme söylenmediyse boş (formda sorulur); peşinse alındı; soru soru kalır. */
+    static void singleSale() {
+        ActionPlan p = ActionPlan.single("Ali Usta'ya 300 kilo sattım");
+        check(p != null && p.single(), "tek adımlı satış");
+        eq(p.steps.toString(), "[SATIS]", "yalnız satış adımı");
+        eq(p.payment, "", "ödeme söylenmedi: varsayılmaz");
+        eq(decide("Ali Usta'ya 300 kilo sattım").fieldsText(), "alici=Ali Usta;kilo=300;adimlar=SATIS", "beyin: tek adım");
+        eq(decide("Ali Usta'ya 300 kilo sattım").variant, ActionPlan.SINGLE, "değişke");
+        eq(ActionPlan.single("Ali Usta'ya 300 kilo sattım, parasını peşin aldım").payment, ActionPlan.PAID, "peşin: alındı");
+        eq(ActionPlan.parseAny("Ali Usta'ya 300 kilo sattım").payment, "", "satış formu tek adımlıyı da açar");
+        eq(ActionPlan.parseAny("Ali Usta'ya 300 kilo sattım, parasını haftaya verecek").payment, ActionPlan.UNPAID, "çok adımlı önce");
+        String[] notSale = {"bu sene kaç kilo sattım", "ne kadar sattım", "Ali Usta'ya ne kadar sattım", "300 kilo sattım",
+                "Ali Usta'ya 300 kilo sattım mı", "Ali Usta'ya kaç kilo sattım?", "ali usta'ya 300 kilo sattım"};
+        for (String s : notSale) {
+            check(ActionPlan.single(s) == null, "tek adımlı satış değil: " + s);
+        }
+        check(decide("Ali Usta'ya 300 kilo double sattım").is(ActionCatalog.ELEK), "sınıf söylenen satış Elek'te kalır");
+        check(ActionPlan.single("Mustafa'ya 200 kilo sattım") != null, "'Mu' ile başlayan ad soru eki sanılmaz");
+        eq(ActionPlan.summary("Ali Usta", 300, "", 0, "", ""), "Ali Usta'ya 300 kilo satış.", "özet: ödeme yazılmaz (sorulacak)");
+        eq(ActionPlan.summary("Ali Usta", 300, "", 0, "", ActionPlan.PAID), "Ali Usta'ya 300 kilo satış. Para peşin alındı.", "özet: peşin");
+        FakeDb db = new FakeDb();
+        RunnerFlow f = new RunnerFlow(p, false);
+        check(db.rows.isEmpty(), "doldururken hiçbir şey yazılmaz (tek adım)");
+        f.filled();
+        check(f.confirm(db), "tek onayla yazılır");
+        eq(db.log.toString(), "[writeSale]", "yalnız satış yazıldı (hatırlatma yok)");
+        eq(f.journal().size(), 1, "geri al kuyruğunda tek adım");
+        check(f.undo(db) && !db.rows.contains("sale:100"), "Geri al satışı siler");
+        RunnerFlow g = new RunnerFlow(p, false);
+        g.cancel();
+        check(!g.confirm(new FakeDb()), "Hayır: hiçbir şey yazılmaz");
     }
 
     static void dates() {
