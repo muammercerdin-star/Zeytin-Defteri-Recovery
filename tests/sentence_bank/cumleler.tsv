@@ -313,3 +313,19 @@ zeytinleri salamuraya yatırdık	KAYIT_BRINE	-	beklenen_hata	egitim_turu_1
 ağaçlara kireç attık	ISLEM	tur=Diğer;not=Kireç	beklenen_hata	egitim_turu_1
 Karşıyaka'da piç sürgünleri aldık	ISLEM	tur=Budama	beklenen_hata	egitim_turu_1
 akşama kadar tırmık çektik	ISLEM	tur=Toprak İşleme	beklenen_hata	egitim_turu_1
+bu sene kaç kilo sattım	SORU_SOLD	-	dogru	egitim_turu_1_koruma
+ne kadar sattım	SORU_SOLD	-	dogru	egitim_turu_1_koruma
+ne zaman ilaçlayacağız?	SORU_SPRAY	-	dogru	egitim_turu_1_koruma
+yarın ilaçlayacak mıyız?	SORU_SPRAY	-	dogru	egitim_turu_1_koruma
+attık	ANLASILMADI	-	dogru	egitim_turu_1_koruma
+aldık	ANLASILMADI	-	dogru	egitim_turu_1_koruma
+yağ aldık	ANLASILMADI	-	dogru	egitim_turu_1_koruma
+ilaç aldık	ISLEM	tur=İlaçlama	dogru	egitim_turu_1_koruma
+bakır aldık	ANLASILMADI	-	dogru	egitim_turu_1_koruma
+bin beş yüz liralık ilaç aldım	ISLEM	tur=İlaçlama;tutar=1500	dogru	egitim_turu_1_koruma
+fidan aldık	ANLASILMADI	-	dogru	egitim_turu_1_koruma
+toprağı sürdük	ISLEM	tur=Toprak İşleme	dogru	egitim_turu_1_koruma
+sürdük	ISLEM	tur=Toprak İşleme	dogru	egitim_turu_1_koruma
+salamura ne zaman hazır olur	SORU_BRINE	-	dogru	egitim_turu_1_koruma
+Hasan'dan ne kadar alacağım var	ALACAK_SORU	-	dogru	egitim_turu_1_koruma
+kaç kasa zeytin topladık	SORU_HARVEST	-	dogru	egitim_turu_1_koruma

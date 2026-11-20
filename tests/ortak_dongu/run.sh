@@ -6,6 +6,9 @@ set -o pipefail
 cd "$(dirname "$0")/../.."
 ROOT=$(pwd)
 PG=${ZD_PG:-"-h /var/tmp/zdpg -p 55432 -U postgres"}
+# JSON kütüphanesi: diğer testler gibi (brain_build.sh) Termux / Debian varsayılan yolu.
+JSON_JAR=${JSON_JAR:-/usr/share/java/json.jar}
+export JSON_JAR
 S=server/ortak-dongu
 DB=zd_ortak_test_$$
 psql $PG -q -c "create database $DB" >/dev/null

@@ -64,7 +64,10 @@ public class KnowledgePackTest {
 
     static KnowledgePack embedded() throws Exception {
         String json = read("app/src/main/res/raw/bilgi_paketi.json");
-        eq(json, PackTool.generate(read("app/src/main/res/raw/baslangic_sozleri.tsv")), "gömülü paket başlangıç listesinden üretilmiş");
+        String generated = PackTool.generate(read("app/src/main/res/raw/baslangic_sozleri.tsv"));
+        check(PackTool.samePack(json, generated), "gömülü paket başlangıç listesinden üretilmiş (özet üzerinden)");
+        check(PackTool.samePack(new org.json.JSONObject(json).toString(), generated), "yazım biçimi (boşluk, satır) sonucu değiştirmez");
+        check(!PackTool.samePack(json.replace("\"Sulama\"", "\"Budama\""), generated), "farklı içerik farklı paket");
         KnowledgePack p = KnowledgePack.read(json, KnowledgePack.PUBLIC_KEYS);
         check(p != null, "gömülü paket okunur (özet tutuyor)");
         eq(p.terms.size(), 11, "onaylanan 11 söz");

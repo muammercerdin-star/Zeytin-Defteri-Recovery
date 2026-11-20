@@ -285,3 +285,19 @@ bugün silkeliyoruz	HASAT	-
 yarın Kuyu dibini silkeleyeceğiz	HASAT	-
 zeytin nasıl silkelenir	SOHBET	-
 silkeleme mi sırık mı daha iyi	SOHBET	-
+bu sene kaç kilo sattım	SORU_SOLD	-
+ne kadar sattım	SORU_SOLD	-
+ne zaman ilaçlayacağız?	SORU_SPRAY	-
+yarın ilaçlayacak mıyız?	SORU_SPRAY	-
+attık	ANLASILMADI	-
+aldık	ANLASILMADI	-
+yağ aldık	ANLASILMADI	-
+ilaç aldık	ISLEM	tur=İlaçlama
+bakır aldık	ANLASILMADI	-
+bin beş yüz liralık ilaç aldım	ISLEM	tur=İlaçlama;tutar=1500
+fidan aldık	ANLASILMADI	-
+toprağı sürdük	ISLEM	tur=Toprak İşleme
+sürdük	ISLEM	tur=Toprak İşleme
+salamura ne zaman hazır olur	SORU_BRINE	-
+Hasan'dan ne kadar alacağım var	ALACAK_SORU	-
+kaç kasa zeytin topladık	SORU_HARVEST	-

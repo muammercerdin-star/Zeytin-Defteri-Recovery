@@ -29,7 +29,7 @@ public class PackTool {
         }
         Path out = raw.resolve("bilgi_paketi.json");
         if (check) {
-            boolean same = Files.exists(out) && new String(Files.readAllBytes(out), StandardCharsets.UTF_8).equals(text);
+            boolean same = Files.exists(out) && samePack(new String(Files.readAllBytes(out), StandardCharsets.UTF_8), text);
             System.out.println((same ? "PASS" : "FAIL") + " bilgi_paketi.json başlangıç sözlüğüyle aynı (" + pack.terms.size() + " söz)");
             if (!same) {
                 System.exit(1);
@@ -38,6 +38,19 @@ public class PackTool {
         }
         Files.write(out, text.getBytes(StandardCharsets.UTF_8));
         System.out.println("yazıldı: " + out + " · " + pack.terms.size() + " söz · sürüm " + pack.version);
+    }
+
+    /**
+     * İki paket metni aynı paket mi: ikisi de okunur ve sabit sıralı metnin (canonical) özeti aynıdır. JSON kütüphanesi
+     * alanları başka sırayla ya da başka boşlukla yazsa da sonuç değişmez.
+     */
+    static boolean samePack(String a, String b) {
+        KnowledgePack x = KnowledgePack.read(a, KnowledgePack.PUBLIC_KEYS);
+        KnowledgePack y = KnowledgePack.read(b, KnowledgePack.PUBLIC_KEYS);
+        if (x == null || y == null) {
+            return false;
+        }
+        return x.digest.equals(y.digest);
     }
 
     /** TSV → paket metni. "# sürüm: N", "# tarih: yyyy-MM-dd" başlıktan. */
