@@ -287,6 +287,7 @@ bugün silkeliyoruz	HASAT	-
 yarın Kuyu dibini silkeleyeceğiz	HATIRLATMA	tur=Hasat;gun=1
 zeytin nasıl silkelenir	SOHBET	-
 silkeleme mi sırık mı daha iyi	SOHBET	-
+Hasan'a 200 kilo double sattım kilosu 140'tan	ELEK	double=200;double_fiyat=140;satis=evet;alici=Hasan
 dün silktik bugün topluyoruz	HASAT	-
 Girelli'den on iki kasa zeytin çıktı	HASAT	-
 Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS
@@ -343,3 +344,5 @@ kavanozları doldurduk	KAYIT_BRINE	-
 salamuraya ne zaman yatıralım	SORU_BRINE	-
 bugün topluyoruz	HASAT	-
 Karşıyaka'dan 8 çuval zeytin geldi	HASAT	-
+3 numara 120 kilo kilosu 110'dan	ELEK	3no=120;3no_fiyat=110
+Ali Usta'ya 300 kilo sattım kilosu 140'tan	SATIS	alici=Ali Usta;kilo=300;fiyat=140;adimlar=SATIS

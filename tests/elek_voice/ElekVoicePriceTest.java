@@ -74,6 +74,13 @@ public class ElekVoicePriceTest {
         ElekVoiceDialog plain = new ElekVoiceDialog(new double[6], new double[]{150, 120, 100, 90, 80, 40}, false);
         plain.handle("double 2 kilo");
         check(plain.prices()[0] == 150 && plain.amount() == 300, "lirasız: form fiyatı kalır");
+        // Eğitim turu 1: "kilosu 140'tan" (lira denmeden, ayrılma ekiyle) kilo fiyatı; "kilosu 120" (eksiz) fiyat değil.
+        e = ElekVoiceEntry.parse("Hasan'a 200 kilo double sattım kilosu 140'tan");
+        check(e != null && e.kg[0] == 200 && e.price[0] == 140, "kilosu 140'tan → 140 TL/kg: " + kg(e) + price(e));
+        e = ElekVoiceEntry.parse("3 numara 120 kilo kilosu 110'dan");
+        check(e != null && e.kg[3] == 120 && e.price[3] == 110, "kilosu 110'dan → 110 TL/kg: " + kg(e) + price(e));
+        e = ElekVoiceEntry.parse("3 numaranın kilosu 120");
+        check(e != null && e.price[3] == 0, "eksiz 'kilosu 120' fiyat sayılmaz: " + kg(e) + price(e));
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " ElekVoicePrice");
         if (bad > 0) {
             System.exit(1);

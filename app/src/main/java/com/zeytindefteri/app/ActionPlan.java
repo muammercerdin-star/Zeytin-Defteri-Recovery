@@ -180,6 +180,10 @@ final class ActionPlan {
             if ("lira".equals(q.unit) && perKilo) {
                 return q.value;
             }
+            // Eğitim turu 1: "kilosu 140'tan" (lira denmeden) kilo fiyatı.
+            if (q.unit.isEmpty() && perKilo && ElekVoiceEntry.ablativePrices(raw).contains(q.value)) {
+                return q.value;
+            }
         }
         return 0;
     }

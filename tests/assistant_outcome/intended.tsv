@@ -85,3 +85,6 @@ Ali'nin 250 kilosunu silktik	bahçesiz	HARVEST_FORM · HASAT toplam=250
 Muammer'in bahçesinde 1,5 ton silktik	bahçeli	HARVEST_QUESTIONS · HASAT toplam=1500 · HARVEST
 Muammer'in bahçesinde 1,5 ton silktik	bahçesiz	HARVEST_FORM · HASAT toplam=1500
   silktik  	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+# Eğitim turu 1 — madde 9: 'kilosu 140'tan' (lira denmeden) kilo fiyatı okunur.
+Hasan'a 200 kilo double sattım kilosu 140'tan	bahçeli	ELEK_FORM · ELEK double=200;double_fiyat=140;satis=evet;alici=Hasan · Double 200 kg (140 TL/kg)
+Hasan'a 200 kilo double sattım kilosu 140'tan	bahçesiz	ELEK_FORM · ELEK double=200;double_fiyat=140;satis=evet;alici=Hasan · Double 200 kg (140 TL/kg)

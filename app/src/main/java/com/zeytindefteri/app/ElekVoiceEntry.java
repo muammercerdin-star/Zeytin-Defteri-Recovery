@@ -62,6 +62,8 @@ public final class ElekVoiceEntry {
 
         // 1) Belirteçlere ayır: sınıf (G) ve sayı (N)
         String[] t = s.split(" ");
+        // Eğitim turu 1: "kilosu 140'tan" (lira demeden, ayrılma ekiyle) kilo fiyatıdır.
+        java.util.Set<Double> ablative = ablativePrices(raw);
         List<double[]> items = new ArrayList<>();       // {tip(0=sınıf,1=sayı), değer, para(0 yok, 1 toplam lira, 2 kilo başı)}
         for (int i = 0; i < t.length; i++) {
             String w = t[i];
@@ -83,6 +85,9 @@ public final class ElekVoiceEntry {
                     double m = money(next);
                     // "kilosu 140 lira", "kilo başı 140 lira", "140 lira kilosu": toplam değil, kilo fiyatı.
                     if (m == 1 && perKiloAround(t, i, end[0])) {
+                        m = 2;
+                    }
+                    if (m == 0 && i > 0 && t[i - 1].matches("kilosu|kilosunu") && ablative.contains(v)) {
                         m = 2;
                     }
                     items.add(new double[]{1, v, m});
@@ -158,6 +163,19 @@ public final class ElekVoiceEntry {
             return lira;
         }
         return 0;
+    }
+
+    /**
+     * "kilosu 140'tan / 140'dan" (lira denmeden, ayrılma ekiyle söylenen kilo fiyatı; eğitim turu 1):
+     * bu sayılar. normalize() sayının ekini düşürdüğü için ham cümleden okunur.
+     */
+    static java.util.Set<Double> ablativePrices(String raw) {
+        java.util.Set<Double> out = new java.util.HashSet<>();
+        Matcher m = Pattern.compile("(?iu)\\bkilosu(?:nu)?\\s+(\\d+(?:[.,]\\d+)?)\\s*['’]?(?:dan|den|tan|ten)\\b").matcher(raw);
+        while (m.find()) {
+            out.add(Double.parseDouble(m.group(1).replace(',', '.')));
+        }
+        return out;
     }
 
     /** Sayının hemen önünde ya da liranın arkasında "kilosu / kilo başı / kilogramı" var mı. */
