@@ -153,9 +153,12 @@ public class LearnedTermsTest {
         Decision d = record("bugün bakırladık");
         eq(LearnedBrain.teachQuestion("bugün bakırladık", d, empty, GARDENS), "bakırladık", "iş fiili sorulur");
         for (String s : new String[]{"Girelli'yi bakırladık", "dün sabah bakırladık", "Karşıyaka'yı bakırladık",
-                "biz bugün bakırladık", "bugün bakırlıyoruz", "yarın bakırlayacağız"}) {
+                "biz bugün bakırladık", "bugün bakırlıyoruz"}) {
             check(LearnedBrain.teachQuestion(s, record(s), empty, GARDENS) != null, "iş cümlesi biçimi sorulur: " + s);
         }
+        // Eğitim turu 1: gelecek zaman hiç sorulmaz (bilinen bir sözün gelecek zamanı yeni söz değildir).
+        check(LearnedBrain.teachQuestion("yarın bakırlayacağız", record("yarın bakırlayacağız"), empty, GARDENS) == null,
+                "gelecek zaman öğretme sorusu açmaz");
     }
 
     /** Asistanın anlaşılmayan cümledeki yürütmesi (sözlük boşken): eskiden sohbet/özel cevap olan hiçbir cümle değişmez. */

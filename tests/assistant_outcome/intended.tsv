@@ -5,8 +5,6 @@ Girelli'yi 300 kilo silkeledik	bahçeli	HARVEST_QUESTIONS · HASAT toplam=300 ·
 Girelli'yi 300 kilo silkeledik	bahçesiz	HARVEST_FORM · HASAT toplam=300
 bugün silkeliyoruz	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
 bugün silkeliyoruz	bahçesiz	TEACH · silkeliyoruz
-yarın Kuyu dibini silkeleyeceğiz	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
-yarın Kuyu dibini silkeleyeceğiz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
 # Eğitim turu 1 — madde 1: alıcı + kilo + 'sattım' bildirimi tek adımlı satış (eskiden 'ne kadar sattım?' sorusu sanılıyordu); 'peşin aldım' ödemeli tek adım.
 Ali Usta'ya 300 kilo sattım, parasını peşin aldım	bahçeli	MULTI_STEP · SATIS alici=Ali Usta;kilo=300;odeme=alindi;adimlar=SATIS
 Ali Usta'ya 300 kilo sattım, parasını peşin aldım	bahçesiz	MULTI_STEP · SATIS alici=Ali Usta;kilo=300;odeme=alindi;adimlar=SATIS
@@ -33,3 +31,24 @@ Dün Girelli'de ağaçların altını temizledik, iki amele tuttuk 2400 verdik	b
 Dün Girelli'de ağaçların altını temizledik, iki amele tuttuk 2400 verdik	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;gun=-1;miktar=2;birim=kişi;tutar=2400 · işçilik, dün, 2 kişi, 2400 lira
 iki amele tuttum günlüğü 1500	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;miktar=2;birim=kişi;tutar=3000 · işçilik, bugün, 2 kişi, 3000 lira (2 kişi × 1.500 TL)
 iki amele tuttum günlüğü 1500	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;miktar=2;birim=kişi;tutar=3000 · işçilik, bugün, 2 kişi, 3000 lira (2 kişi × 1.500 TL)
+# Eğitim turu 1 — madde 5: gelecek zamanlı iş cümlesi hatırlatma ('yarın Girelli'yi sulayacağız'; İP8'deki 'silkeleyeceğiz' hasat değil hatırlatma); gelecek zaman öğretme sorusu açmaz ('çıkacak', 'ödeyecek'... artık sorulmaz).
+Fırtına çıkacak mı	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “Fırtına” geçiyor. Havayı soruyorsan birine dokun: · [Hava nasıl?, Yarın yağmur var mı?, Yarın rüzgâr kaç?] · [WEATHER]
+Fırtına çıkacak mı	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “Fırtına” geçiyor. Havayı soruyorsan birine dokun: · [Hava nasıl?, Yarın yağmur var mı?, Yarın rüzgâr kaç?] · [WEATHER]
+Bütün borç kapanacak (4 satış).	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Bütün borç kapanacak (4 satış).	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+En eski satışa işlenecek.	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışa” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+En eski satışa işlenecek.	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışa” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Hasan Demir listende yok, yeni alıcı olarak ekleyeceğim.	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Hasan Demir listende yok, yeni alıcı olarak ekleyeceğim.	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+yarın bakırlayacağız	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yarın bakırlayacağız	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tüccar ödeyecek	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “tüccar” geçiyor. Piyasayı soruyorsan birine dokun: · [Piyasa nasıl?, 2 numara kaç para?, Benim 2 numara satış fiyatım] · [MARKET]
+tüccar ödeyecek	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “tüccar” geçiyor. Piyasayı soruyorsan birine dokun: · [Piyasa nasıl?, 2 numara kaç para?, Benim 2 numara satış fiyatım] · [MARKET]
+TÜCCAR ÖDEYECEK: 6.966 ₺	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “TÜCCAR” geçiyor. Piyasayı soruyorsan birine dokun: · [Piyasa nasıl?, 2 numara kaç para?, Benim 2 numara satış fiyatım] · [MARKET]
+TÜCCAR ÖDEYECEK: 6.966 ₺	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “TÜCCAR” geçiyor. Piyasayı soruyorsan birine dokun: · [Piyasa nasıl?, 2 numara kaç para?, Benim 2 numara satış fiyatım] · [MARKET]
+tüccar ödeyecek aynı	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “tüccar” geçiyor. Piyasayı soruyorsan birine dokun: · [Piyasa nasıl?, 2 numara kaç para?, Benim 2 numara satış fiyatım] · [MARKET]
+tüccar ödeyecek aynı	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “tüccar” geçiyor. Piyasayı soruyorsan birine dokun: · [Piyasa nasıl?, 2 numara kaç para?, Benim 2 numara satış fiyatım] · [MARKET]
+yarın Kuyu dibini silkeleyeceğiz	bahçeli	REMINDER · HATIRLATMA tur=Hasat;gun=1
+yarın Kuyu dibini silkeleyeceğiz	bahçesiz	REMINDER · HATIRLATMA tur=Hasat;gun=1
+yarın Girelli'yi sulayacağız	bahçeli	REMINDER · HATIRLATMA tur=Sulama;gun=1
+yarın Girelli'yi sulayacağız	bahçesiz	REMINDER · HATIRLATMA tur=Sulama;gun=1

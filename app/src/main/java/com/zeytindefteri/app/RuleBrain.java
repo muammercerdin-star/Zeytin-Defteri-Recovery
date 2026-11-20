@@ -111,6 +111,12 @@ final class RuleBrain implements Brain {
     /** Kayıt aşaması (kayıtlar okunduktan sonra). cmd: cümlenin soru çözümü (asistan zaten ayrıştırdıysa aynı nesne). */
     Decision recordStage(Input in, BrainContext c, ZeytinAssistantCommand cmd) {
         String raw = in.raw;
+        // Eğitim turu 1: gelecek zamanlı iş cümlesi kayıt değil, hatırlatmadır ("yarın Girelli'yi sulayacağız").
+        // Soru sözü varsa soru kalır; "hasat gireceğim" gibi kayıt açma sözleri buraya düşmez. Her zaman sorulur.
+        TaskReminderEntry reminder = TaskReminderEntry.parse(raw);
+        if (reminder != null) {
+            return found(ActionCatalog.HATIRLATMA, reminder.fields(), "", "Gelecek zamanlı iş: hatırlatma", reminder);
+        }
         VoiceRecordDialog.Kind recKind = VoiceRecordDialog.detect(raw);
         if (recKind == VoiceRecordDialog.Kind.HARVEST && c.hasGardens) {
             return found(ActionCatalog.HASAT, harvestFields(raw), "soru", "Toplama sözü: hasat", recKind);

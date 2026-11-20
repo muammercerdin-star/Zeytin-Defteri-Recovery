@@ -128,7 +128,12 @@ public class BrainEquivalenceTest {
         }
         // Eğitim turu 1: eskiden kayıt değildi ve şimdi yeni kayıt eylemi (tahsilat, yağhane, hatırlatma).
         boolean newAction = got.is(ActionCatalog.TAHSILAT) || got.action.equals(ActionCatalog.YAGHANE) || got.is(ActionCatalog.HATIRLATMA);
-        return !wasRecord && newAction;
+        if (!wasRecord && newAction) {
+            return true;
+        }
+        // Eğitim turu 1 (madde 5): gelecek zamanlı iş cümlesi kayıt değil hatırlatmadır ("yarın … silkeleyeceğiz" eskiden hasattı).
+        return want[0].equals(ActionCatalog.HASAT) && got.is(ActionCatalog.HATIRLATMA)
+                && LearnedBrain.payload(got, TaskReminderEntry.class) != null;
     }
 
     static int bankSize(Path root) throws IOException {

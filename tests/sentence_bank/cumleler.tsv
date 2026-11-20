@@ -294,7 +294,7 @@ Ali Usta'ya 300 kilo sattım, parasını peşin aldım	SATIS	alici=Ali Usta;kilo
 bugün silkeledik	HASAT	-	dogru	ip8_silkele
 Girelli'yi 300 kilo silkeledik	HASAT	toplam=300	dogru	ip8_silkele
 bugün silkeliyoruz	HASAT	-	dogru	ip8_silkele
-yarın Kuyu dibini silkeleyeceğiz	HASAT	-	dogru	ip8_silkele
+yarın Kuyu dibini silkeleyeceğiz	HATIRLATMA	tur=Hasat;gun=1	dogru	ip8_silkele
 zeytin nasıl silkelenir	SOHBET	-	dogru	ip8_silkele
 silkeleme mi sırık mı daha iyi	SOHBET	-	dogru	ip8_silkele
 # Eğitim turu 1 (20 Kasım 2026): doğal karışık cümlelerden bulunan eksikler. YAGHANE yeni eylem (yağhane/fabrika kaydı), henüz katalogda yok.
@@ -305,7 +305,7 @@ Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS	dogru	e
 iki amele tuttum günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=3000	dogru	egitim_turu_1
 fabrikaya 40 kasa götürdük	YAGHANE	kasa=40	dogru	egitim_turu_1
 yağhaneden 120 kilo yağ aldık	YAGHANE	yag=120	dogru	egitim_turu_1
-yarın Girelli'yi sulayacağız	HATIRLATMA	tur=Sulama;gun=1	beklenen_hata	egitim_turu_1
+yarın Girelli'yi sulayacağız	HATIRLATMA	tur=Sulama;gun=1	dogru	egitim_turu_1
 ağaçların altını temizledik	ISLEM	tur=Diğer;not=Temizlik	beklenen_hata	egitim_turu_1
 Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000	dogru	egitim_turu_1
 Hasan borcunun yarısını ödedi	TAHSILAT	alici=Hasan;oran=yarim	dogru	egitim_turu_1
@@ -340,3 +340,8 @@ fabrikadan gübre aldık	ISLEM	tur=Gübre	dogru	egitim_turu_1_koruma
 iki amele tuttum toplam 3000	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=3000	dogru	egitim_turu_1
 iki amele tuttum 3 gün günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=9000	dogru	egitim_turu_1
 üç işçi çalıştı yevmiyesi 1200	ISLEM	tur=İşçilik;miktar=3;birim=kişi;tutar=3600	dogru	egitim_turu_1
+yarın ilaçlayacağız	HATIRLATMA	tur=İlaçlama;gun=1	dogru	egitim_turu_1
+yarın akşam budayacağız	HATIRLATMA	tur=Budama;gun=1;saat=18	dogru	egitim_turu_1
+cuma günü gübre atacağız	HATIRLATMA	tur=Gübre;zaman=cuma	dogru	egitim_turu_1
+öbür gün ot biçeceğiz	HATIRLATMA	tur=Diğer;not=Ot biçme;gun=2	dogru	egitim_turu_1
+yarın tırpanlayacağız	ANLASILMADI	-	dogru	egitim_turu_1_koruma

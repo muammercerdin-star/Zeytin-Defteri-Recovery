@@ -353,6 +353,10 @@ final class LearnedTerms {
         if (word == null) {
             return null;
         }
+        // Eğitim turu 1: gelecek zaman hiç sorulmaz ("sulayacağız" bilinen bir sözün gelecek zamanıdır, yeni söz değil).
+        if (TurkishText.normalize(word).matches("\\p{L}*(acak|ecek|acag|eceg)\\p{L}*")) {
+            return null;
+        }
         if (store.declined(sentenceKey(raw))) {
             return null;
         }

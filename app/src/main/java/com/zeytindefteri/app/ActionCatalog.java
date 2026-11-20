@@ -130,8 +130,10 @@ final class ActionCatalog {
                 "tur", "gun", "miktar", "birim", "tutar", "bahce", "not"));   // not: "Diğer" işinin adı (İP5)
         add(new Action(HASAT, "Hasat", Kind.KAYIT, "Hangi bahçeden kaç kilo topladın?", Level.FORMU_DOLDUR, true, "",
                 "double", "1no", "2no", "3no", "4no", "yaglik", "toplam", "gun", "bahce"));
-        add(new Action(HATIRLATMA, "Hatırlatma", Kind.HATIRLATMA, "Neyi, ne zaman hatırlatayım?", Level.IZINLE_KENDISI, false, "",
-                "ne", "zaman"));
+        // Eğitim turu 1: gelecek zamanlı iş cümlesinden üretilir. Basamak İP7'deki gibi (ödeme hatırlatması izinle
+        // kendiliğinden kurulabilir); asistanın iş hatırlatması ise her zaman sorulur (ZeytinAssistantController.askReminder).
+        add(new Action(HATIRLATMA, "Hatırlatma", Kind.HATIRLATMA, "Neyi, ne zaman hatırlatayım?", Level.IZINLE_KENDISI, true, "",
+                "ne", "zaman", "tur", "not", "gun", "saat"));
         // Bugün sesle açılan diğer kayıtlar
         add(new Action(KAYIT_BRINE, "Salamura", Kind.KAYIT, "Kaç kilo zeytin, ne kadar tuz?", Level.FORMU_DOLDUR, true, "",
                 "zeytin", "tuz", "su", "cins"));

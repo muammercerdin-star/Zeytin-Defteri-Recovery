@@ -239,6 +239,11 @@ final class ActionPlan {
 
     /** Ödeme günü (yyyy-MM-dd), bugüne göre; söz yoksa "". Geçmiş gün verilmez (bugün de değil). */
     String dueDate(Calendar today) {
+        return dueDate(due, today);
+    }
+
+    /** Gün sözünden (due()) tarih (yyyy-MM-dd), bugüne göre; söz yoksa "". Hatırlatma (eğitim turu 1) da kullanır. */
+    static String dueDate(String due, Calendar today) {
         if (due.isEmpty()) {
             return "";
         }

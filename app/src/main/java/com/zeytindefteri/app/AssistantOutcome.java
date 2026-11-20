@@ -34,6 +34,8 @@ final class AssistantOutcome {
         COLLECTION,
         /** Yağhane (eğitim turu 1): sıkım formu dolu açılır; kasa notta, eksikler formda sorulur. */
         OIL_FORM,
+        /** Gelecek zamanlı iş (eğitim turu 1): "hatırlatayım mı?" diye sorulur; kurulursa Geri al ile silinir. */
+        REMINDER,
         /** Kayıt yolu yok: internet yardımcısı denenir, sonra rest(). */
         LATER,
         /** Selam, teşekkür, ilaç dozu gibi hazır cevap. */
@@ -87,6 +89,9 @@ final class AssistantOutcome {
         }
         if (LearnedBrain.payload(d, OilVoiceEntry.class) != null) {
             return Kind.OIL_FORM;
+        }
+        if (LearnedBrain.payload(d, TaskReminderEntry.class) != null) {
+            return Kind.REMINDER;
         }
         return Kind.LATER;
     }

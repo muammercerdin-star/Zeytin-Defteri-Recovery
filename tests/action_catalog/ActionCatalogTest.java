@@ -89,7 +89,9 @@ public class ActionCatalogTest {
         // Eğitim turu 1: tahsilat üretilir ("Ali Usta'dan 2000 lira aldım"); ödeme olduğu için hep onaylı.
         check(produced.contains(ActionCatalog.TAHSILAT) && ActionCatalog.get(ActionCatalog.TAHSILAT).produced, "eğitim turu 1: tahsilat üretilir");
         check(ActionCatalog.alwaysConfirm(ActionCatalog.TAHSILAT), "eğitim turu 1: üretilen tahsilat da hep onaylı");
-        for (String never : new String[]{ActionCatalog.HATIRLATMA, ActionCatalog.TEZGAH_TARTI}) {
+        // Eğitim turu 1: hatırlatma gelecek zamanlı iş cümlesinden üretilir (asistan her zaman sorar: tests/task_reminder).
+        check(produced.contains(ActionCatalog.HATIRLATMA) && ActionCatalog.get(ActionCatalog.HATIRLATMA).produced, "eğitim turu 1: hatırlatma üretilir");
+        for (String never : new String[]{ActionCatalog.TEZGAH_TARTI}) {
             check(!produced.contains(never), "henüz üretilmez: " + never);
             check(!ActionCatalog.get(never).produced, "katalogda üretilmez işaretli: " + never);
         }

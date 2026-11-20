@@ -851,6 +851,18 @@ public final class ZeytinAssistantController {
                     });
                     return;
                 }
+                // Eğitim turu 1: gelecek zamanlı iş ("yarın Girelli'yi sulayacağız") kayıt değil, hatırlatma: her zaman sorulur.
+                if(path==AssistantOutcome.Kind.REMINDER){
+                    meter(token,raw,owner,decision.action);
+                    final TaskReminderEntry task=LearnedBrain.payload(decision,TaskReminderEntry.class);
+                    final long rg=resolution.garden==null?0:resolution.garden.id;
+                    final String rname=resolution.garden==null?"":resolution.garden.name;
+                    main.post(()->{
+                        if(!current(token,owner,season,active))return;
+                        askReminder(task,rg,rname,token,owner,season,active,cmd);
+                    });
+                    return;
+                }
                 // Kuralların anlamadığı iş cümlesi: izin varsa internetteki yardımcıya (Gemma 4) sorulur. Cevap cümleyle
                 // karşılaştırılarak denetlenir (AssistantCloud.accept), okunur, "evet" denmeden kaydedilmez.
                 // Soru kalıbı değil, geçmiş zamanlı bir iş cümlesiyse ("ağaçların altını temizledik, 2 amele tuttuk") kayıt sorusu
@@ -1405,6 +1417,53 @@ public final class ZeytinAssistantController {
                     .setNegativeButton("Vazgeç",null)
                     .show();
         });
+    }
+    /**
+     * Gelecek zamanlı iş (eğitim turu 1): "Yarın 09:00'da Sulama · Girelli hatırlatayım mı?" diye sorulur; gün
+     * söylenmediyse önce gün sorulur. Sormadan kurulmaz; geçmiş ya da gece saatine kurulmaz; kurulunca Geri al çıkar.
+     */
+    private void askReminder(TaskReminderEntry task,long gardenId,String garden,int token,String owner,int season,long active,ZeytinAssistantCommand cmd){
+        long at=task.when(Calendar.getInstance());
+        if(at<0){
+            String[] days={"Yarın sabah","3 gün sonra","1 hafta sonra"};
+            int[] offsets={1,3,7};
+            new android.app.AlertDialog.Builder(activity)
+                    .setTitle(task.title(garden)+" · ne zaman hatırlatayım?")
+                    .setItems(days,(d,which)->confirmReminder(task,gardenId,garden,TaskReminderEntry.at(Calendar.getInstance(),offsets[which],task.hour),token,owner,season,active,cmd))
+                    .setNegativeButton("Vazgeç",null)
+                    .show();
+            return;
+        }
+        confirmReminder(task,gardenId,garden,at,token,owner,season,active,cmd);
+    }
+    private void confirmReminder(TaskReminderEntry task,long gardenId,String garden,long at,int token,String owner,int season,long active,ZeytinAssistantCommand cmd){
+        if(!TaskReminderEntry.allowed(at,System.currentTimeMillis())){
+            post(token,owner,season,active,cmd,true,"","Hatırlatma","O saat geçmiş ya da gece; hatırlatma kurmadım.");
+            return;
+        }
+        String when=TaskReminderEntry.spoken(at,Calendar.getInstance());
+        String title=task.title(garden);
+        new android.app.AlertDialog.Builder(activity)
+                .setTitle("Hatırlatayım mı?")
+                .setMessage(when+" · "+title)
+                .setPositiveButton("Evet, hatırlat",(d,x)->{
+                    long id=TaskReminders.add(activity,owner,gardenId,title,"Asistanla kuruldu.",at);
+                    if(id<=0){
+                        post(token,owner,season,active,cmd,true,"","Hatırlatma","Hatırlatma kurulamadı.");
+                        return;
+                    }
+                    post(token,owner,season,active,cmd,true,"","Hatırlatma","Kuruldu: "+when+" · "+title+".");
+                    new android.app.AlertDialog.Builder(activity)
+                            .setMessage("Hatırlatma kuruldu: "+when+" · "+title)
+                            .setPositiveButton("Tamam",null)
+                            .setNegativeButton("Geri al",(d2,y)->{
+                                boolean ok=TaskReminders.remove(activity,id);
+                                Toast.makeText(activity,ok?"Geri alındı: hatırlatma silindi.":"Geri alınamadı; Hatırlatmalar'dan sil.",Toast.LENGTH_LONG).show();
+                            })
+                            .show();
+                })
+                .setNegativeButton("Hayır",null)
+                .show();
     }
     /** Seçilen alıcının "Ödeme aldım" penceresi; açık borç yoksa açılmaz ve hiçbir şey kaydedilmez. */
     private void openCollection(CollectionEntry entry,BuyerDirectory.Summary buyer,int token,String owner,int season,long active,ZeytinAssistantCommand cmd){
