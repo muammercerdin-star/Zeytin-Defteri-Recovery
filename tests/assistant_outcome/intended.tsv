@@ -67,3 +67,6 @@ Karşıyaka'da piç sürgünleri aldık	bahçeli	OPERATION_QUESTIONS · ISLEM tu
 Karşıyaka'da piç sürgünleri aldık	bahçesiz	OPERATION_FORM · ISLEM tur=Budama · budama, bugün
 akşama kadar tırmık çektik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Toprak İşleme · toprak işleme, bugün
 akşama kadar tırmık çektik	bahçesiz	OPERATION_FORM · ISLEM tur=Toprak İşleme · toprak işleme, bugün
+# Eğitim turu 1 — madde 7: 'zeytinleri salamuraya yatırdık' salamura kaydı (eskiden salamura sorusu sanılıyordu).
+zeytinleri salamuraya yatırdık	bahçeli	RECORD_QUESTIONS · KAYIT_BRINE - · BRINE
+zeytinleri salamuraya yatırdık	bahçesiz	RECORD_QUESTIONS · KAYIT_BRINE - · BRINE

@@ -295,6 +295,7 @@ yarın Girelli'yi sulayacağız	HATIRLATMA	tur=Sulama;gun=1
 ağaçların altını temizledik	ISLEM	tur=Diğer;not=Temizlik
 Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000
 Hasan borcunun yarısını ödedi	TAHSILAT	alici=Hasan;oran=yarim
+zeytinleri salamuraya yatırdık	KAYIT_BRINE	-
 ağaçlara kireç attık	ISLEM	tur=Diğer;not=Kireç
 Karşıyaka'da piç sürgünleri aldık	ISLEM	tur=Budama
 akşama kadar tırmık çektik	ISLEM	tur=Toprak İşleme
@@ -335,3 +336,6 @@ sürgün aldık	ISLEM	tur=Budama
 bugün göztaşı attık	ISLEM	tur=İlaçlama
 yarın bakır atacağız	HATIRLATMA	tur=İlaçlama;gun=1
 ağaçlar sürgün verdi	SORU_TREES	-
+dün 40 kilo zeytini salamuraya attık	KAYIT_BRINE	-
+kavanozları doldurduk	KAYIT_BRINE	-
+salamuraya ne zaman yatıralım	SORU_BRINE	-

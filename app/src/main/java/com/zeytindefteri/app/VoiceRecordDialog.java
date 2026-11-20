@@ -77,7 +77,9 @@ public final class VoiceRecordDialog {
                 && s.matches(".*\\b(yaz\\p{L}*|paylas\\p{L}*|gonder\\p{L}*|at)\\b.*")) return Kind.POST;
         if (s.matches(".*\\b(yeni bahce|bahce ekle\\p{L}*|bahce kaydet\\p{L}*|bahce ac\\p{L}*|bahce aldim|bahce olustur\\p{L}*)\\b.*")) return Kind.GARDEN;
         if (s.matches(".*\\b(salamura\\p{L}*|kavanoz\\p{L}*|bidon\\p{L}*)\\b.*")
-                && s.matches(".*\\b(bastim|bastik|kurdum|kurduk|yaptim|yaptik|koydum|koyduk|basacagim|kuracagim|yeni|ekle\\p{L}*|gir\\p{L}*)\\b.*")) return Kind.BRINE;
+                && s.matches(".*\\b(bastim|bastik|kurdum|kurduk|yaptim|yaptik|koydum|koyduk|basacagim|kuracagim|yeni|ekle\\p{L}*|gir\\p{L}*"
+                        // Eğitim turu 1: "zeytinleri salamuraya yatırdık / attık / doldurduk"
+                        + "|yatirdim|yatirdik|yatirdilar|attim|attik|doldurdum|doldurduk)\\b.*")) return Kind.BRINE;
         // İP8: "silkeledik / silkeliyoruz / silkeleyeceğiz" yaygın hasat sözü (bilgi sorusu "nasıl silkelenir" değil).
         String shake = "silkeledik|silkeledim|silkeliyoruz|silkeliyorum|silkeleyecegiz|silkeleyecegim";
         if (s.matches(".*\\b(hasat\\p{L}*|topladik|topladim|cirptik|cirptim|" + shake + ")\\b.*")

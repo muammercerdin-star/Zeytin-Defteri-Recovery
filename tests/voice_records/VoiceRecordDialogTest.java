@@ -77,6 +77,12 @@ public class VoiceRecordDialogTest {
         check(r.speech.equals("Tamam. Ne yazayım? Söyle, ben yazayım."), "gönderi metni sorulur: " + r.speech);
         r = p2.handle("vazgeç");
         check(r.action == VoiceRecordDialog.Action.CANCEL, "vazgeç");
+        // Eğitim turu 1: "salamuraya yatırdık / attık", "kavanozları doldurduk" salamura kaydı; sorular soru kalır.
+        check(VoiceRecordDialog.detect("zeytinleri salamuraya yatırdık") == VoiceRecordDialog.Kind.BRINE, "salamuraya yatırdık");
+        check(VoiceRecordDialog.detect("dün 40 kilo zeytini salamuraya attık") == VoiceRecordDialog.Kind.BRINE, "salamuraya attık");
+        check(VoiceRecordDialog.detect("kavanozları doldurduk") == VoiceRecordDialog.Kind.BRINE, "kavanozları doldurduk");
+        check(VoiceRecordDialog.detect("salamuraya ne zaman yatıralım") == null, "salamura sorusu kayıt değil");
+        check(VoiceRecordDialog.detect("salamuraya kaç kilo yatırdık") == null, "kaç kilo sorusu kayıt değil");
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " VoiceRecordDialog");
         if (bad > 0) System.exit(1);
     }

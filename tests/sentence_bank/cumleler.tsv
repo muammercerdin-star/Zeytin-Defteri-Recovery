@@ -309,7 +309,7 @@ yarın Girelli'yi sulayacağız	HATIRLATMA	tur=Sulama;gun=1	dogru	egitim_turu_1
 ağaçların altını temizledik	ISLEM	tur=Diğer;not=Temizlik	dogru	egitim_turu_1
 Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000	dogru	egitim_turu_1
 Hasan borcunun yarısını ödedi	TAHSILAT	alici=Hasan;oran=yarim	dogru	egitim_turu_1
-zeytinleri salamuraya yatırdık	KAYIT_BRINE	-	beklenen_hata	egitim_turu_1
+zeytinleri salamuraya yatırdık	KAYIT_BRINE	-	dogru	egitim_turu_1
 ağaçlara kireç attık	ISLEM	tur=Diğer;not=Kireç	dogru	egitim_turu_1
 Karşıyaka'da piç sürgünleri aldık	ISLEM	tur=Budama	dogru	egitim_turu_1
 akşama kadar tırmık çektik	ISLEM	tur=Toprak İşleme	dogru	egitim_turu_1
@@ -350,3 +350,6 @@ sürgün aldık	ISLEM	tur=Budama	dogru	egitim_turu_1
 bugün göztaşı attık	ISLEM	tur=İlaçlama	dogru	egitim_turu_1
 yarın bakır atacağız	HATIRLATMA	tur=İlaçlama;gun=1	dogru	egitim_turu_1
 ağaçlar sürgün verdi	SORU_TREES	-	dogru	egitim_turu_1_koruma
+dün 40 kilo zeytini salamuraya attık	KAYIT_BRINE	-	dogru	egitim_turu_1
+kavanozları doldurduk	KAYIT_BRINE	-	dogru	egitim_turu_1
+salamuraya ne zaman yatıralım	SORU_BRINE	-	dogru	egitim_turu_1_koruma
