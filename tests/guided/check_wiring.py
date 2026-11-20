@@ -86,6 +86,7 @@ checks += [
     ("sahne oynatıcısı Kaydet'e dokunmaz", not any(w in player for w in ("performClick", "saveOperation", "insert("))),
     ("sahne denetimi oynatıcıda: izinsiz sahne oynamaz", "SceneCheck.allowed" in guide),
     ("tur sonu alıştırması yalnız tur tamamlanınca", "done.tourCompleted();" in walker and "practiceAfterTour()" in feed),
+    ("karnede Yönlendirme satırı", "GuidedFlow.karne(GuideDb.counts(activity,host.owner()))" in body(ctl, "private void scorecardCommand(")),
     ("panel kapanınca yarım yönlendirme iz bırakmaz", "guideJob=null;" in body(ctl, "private void releasePanel()")),
 ]
 bad = 0

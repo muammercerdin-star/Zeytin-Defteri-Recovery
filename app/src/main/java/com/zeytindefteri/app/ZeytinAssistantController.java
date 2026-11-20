@@ -220,7 +220,8 @@ public final class ZeytinAssistantController {
         String[] shown=AssistantMeter.show(activity,host.owner());
         postDialog(new OperationVoiceDialog.Reply(shown[0],OperationVoiceDialog.Action.ASK),"Zeytin · karne");
         answer.setTextSize(14);
-        answer.setText(shown[1]);
+        String guideLine=GuidedFlow.karne(GuideDb.counts(activity,host.owner()));
+        answer.setText(shown[1]+"\n\n"+guideLine);
     }
     /** "Anlamadığın cümleleri göster / sil": yalnız bu telefondaki liste. */
     private void missesCommand(Decision d){

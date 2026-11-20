@@ -395,4 +395,41 @@ final class GuidedFlow {
         }
         return "Anladım. Bu bir alıştırmaydı; hiçbir şey kaydetmedim.";
     }
+
+    // ===================================================================== KARNE
+
+    /**
+     * Karnenin "Yönlendirme" satırı (yalnız sayılar, telefonda kalır):
+     * kart gösterildi / kabul / red; düğmeyle başlayan iş; kısa yoldan sonra konuşarak yapılan iş;
+     * sahne oynatıldı / sonuna kadar izlendi / durduruldu.
+     */
+    static String karne(Map<String, Long> counts) {
+        long shown = sum(counts, "kart_goster:");
+        long accepted = sum(counts, "kart_kabul:");
+        long rejected = sum(counts, "kart_red:");
+        long buttons = sum(counts, "dugme_is:");
+        long spoken = sum(counts, "kisa_yoldan_sonra_konusarak");
+        long played = sum(counts, "sahne_oynatildi:");
+        long finished = sum(counts, "sahne_bitti:");
+        long stopped = sum(counts, "sahne_durdu:");
+        StringBuilder b = new StringBuilder("YÖNLENDİRME\n");
+        b.append("Kart: ").append(shown).append(" gösterildi · ").append(accepted).append(" kabul · ").append(rejected).append(" red\n");
+        b.append("Düğmeyle başlayan iş: ").append(buttons).append('\n');
+        b.append("Kısa yoldan sonra konuşarak: ").append(spoken).append('\n');
+        b.append("Sahne: ").append(played).append(" oynatıldı · ").append(finished).append(" sonuna kadar · ").append(stopped).append(" durduruldu");
+        return b.toString();
+    }
+
+    private static long sum(Map<String, Long> counts, String prefix) {
+        long n = 0;
+        if (counts == null) {
+            return 0;
+        }
+        for (Map.Entry<String, Long> e : counts.entrySet()) {
+            if (e.getKey().startsWith(prefix) && e.getValue() != null) {
+                n += e.getValue();
+            }
+        }
+        return n;
+    }
 }

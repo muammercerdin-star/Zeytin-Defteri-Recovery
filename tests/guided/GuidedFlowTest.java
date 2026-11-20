@@ -159,6 +159,28 @@ public class GuidedFlowTest {
         String reply = GuidedFlow.practiceReply(d);
         check(reply.startsWith("Anladım: sulama, bugün.") && reply.contains("hiçbir şey kaydetmedim"), "alıştırma cevabı: " + reply);
         check(GuidedFlow.practiceReply(decide("abuk sabuk")).contains("Bir daha dene"), "anlamadıysa yeniden dene");
+
+        // Karne: "Yönlendirme" satırı türleri toplar, boşken sıfır yazar.
+        Map<String, Long> c = new java.util.HashMap<>();
+        c.put("kart_goster:odeme_gunu", 3L);
+        c.put("kart_goster:hasat", 2L);
+        c.put("kart_kabul:odeme_gunu", 1L);
+        c.put("kart_red:hasat", 2L);
+        c.put("dugme_is:ILACLAMA", 4L);
+        c.put("dugme_is:SATIS", 1L);
+        c.put("kisa_yol:ILACLAMA", 2L);
+        c.put("kisa_yoldan_sonra_konusarak", 1L);
+        c.put("sahne_oynatildi:GOSTER", 5L);
+        c.put("sahne_oynatildi:OGRET", 1L);
+        c.put("sahne_bitti:GOSTER", 4L);
+        c.put("sahne_durdu:OGRET", 1L);
+        String k = GuidedFlow.karne(c);
+        check(k.startsWith("YÖNLENDİRME"), "karne başlığı");
+        check(k.contains("Kart: 5 gösterildi · 1 kabul · 2 red"), "karne kartlar: " + k);
+        check(k.contains("Düğmeyle başlayan iş: 5"), "karne düğme işi");
+        check(k.contains("Kısa yoldan sonra konuşarak: 1"), "karne kısa yol");
+        check(k.contains("Sahne: 6 oynatıldı · 4 sonuna kadar · 1 durduruldu"), "karne sahneler");
+        check(GuidedFlow.karne(null).contains("Kart: 0 gösterildi · 0 kabul · 0 red"), "boş karne");
     }
 
     static String ids(List<GuidedFlow.Job> jobs) {
