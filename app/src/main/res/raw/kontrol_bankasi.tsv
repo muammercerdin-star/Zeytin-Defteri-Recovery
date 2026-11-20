@@ -286,6 +286,8 @@ yarın Kuyu dibini silkeleyeceğiz	HASAT	-
 zeytin nasıl silkelenir	SOHBET	-
 silkeleme mi sırık mı daha iyi	SOHBET	-
 Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS
+Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000
+Hasan borcunun yarısını ödedi	TAHSILAT	alici=Hasan;oran=yarim
 bu sene kaç kilo sattım	SORU_SOLD	-
 ne kadar sattım	SORU_SOLD	-
 ne zaman ilaçlayacağız?	SORU_SPRAY	-
@@ -302,3 +304,7 @@ sürdük	ISLEM	tur=Toprak İşleme
 salamura ne zaman hazır olur	SORU_BRINE	-
 Hasan'dan ne kadar alacağım var	ALACAK_SORU	-
 kaç kasa zeytin topladık	SORU_HARVEST	-
+Hasan Abi 500 lira verdi	TAHSILAT	alici=Hasan Abi;tutar=500
+Ali Usta'dan iki bin lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000
+Bayi'den 500 liralık gübre aldım	ISLEM	tur=Gübre;tutar=500
+Ali Usta'dan 2000 lira aldım mı	ANLASILMADI	-

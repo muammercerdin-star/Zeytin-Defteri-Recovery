@@ -86,7 +86,10 @@ public class ActionCatalogTest {
         // İP7: satış yalnız çok adımlı cümlede üretilir (formu doldurur, onaysız yazmaz); öbürleri hâlâ üretilmez.
         check(produced.contains(ActionCatalog.SATIS) && ActionCatalog.get(ActionCatalog.SATIS).produced, "İP7: satış üretilir");
         check(ActionCatalog.alwaysConfirm(ActionCatalog.SATIS), "İP7: üretilen satış da hep onaylı");
-        for (String never : new String[]{ActionCatalog.TAHSILAT, ActionCatalog.HATIRLATMA, ActionCatalog.TEZGAH_TARTI}) {
+        // Eğitim turu 1: tahsilat üretilir ("Ali Usta'dan 2000 lira aldım"); ödeme olduğu için hep onaylı.
+        check(produced.contains(ActionCatalog.TAHSILAT) && ActionCatalog.get(ActionCatalog.TAHSILAT).produced, "eğitim turu 1: tahsilat üretilir");
+        check(ActionCatalog.alwaysConfirm(ActionCatalog.TAHSILAT), "eğitim turu 1: üretilen tahsilat da hep onaylı");
+        for (String never : new String[]{ActionCatalog.HATIRLATMA, ActionCatalog.TEZGAH_TARTI}) {
             check(!produced.contains(never), "henüz üretilmez: " + never);
             check(!ActionCatalog.get(never).produced, "katalogda üretilmez işaretli: " + never);
         }

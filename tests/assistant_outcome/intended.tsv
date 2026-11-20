@@ -14,3 +14,8 @@ Ali Usta'ya 300 kilo sattım	bahçeli	MULTI_STEP · SATIS alici=Ali Usta;kilo=30
 Ali Usta'ya 300 kilo sattım	bahçesiz	MULTI_STEP · SATIS alici=Ali Usta;kilo=300;adimlar=SATIS
 Ali Usta'ya 300 kilo sattım, parasını 	bahçeli	MULTI_STEP · SATIS alici=Ali Usta;kilo=300;adimlar=SATIS
 Ali Usta'ya 300 kilo sattım, parasını 	bahçesiz	MULTI_STEP · SATIS alici=Ali Usta;kilo=300;adimlar=SATIS
+# Eğitim turu 1 — madde 2: tahsilat ('Ali Usta'dan 2000 lira aldım', 'Hasan borcunun yarısını ödedi'): Ödeme aldım penceresi, kayıt Kaydet'le.
+Ali Usta'dan 2000 lira aldım	bahçeli	COLLECTION · TAHSILAT alici=Ali Usta;tutar=2000
+Ali Usta'dan 2000 lira aldım	bahçesiz	COLLECTION · TAHSILAT alici=Ali Usta;tutar=2000
+Hasan borcunun yarısını ödedi	bahçeli	COLLECTION · TAHSILAT alici=Hasan;oran=yarim
+Hasan borcunun yarısını ödedi	bahçesiz	COLLECTION · TAHSILAT alici=Hasan;oran=yarim

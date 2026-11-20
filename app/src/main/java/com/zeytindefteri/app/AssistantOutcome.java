@@ -30,6 +30,8 @@ final class AssistantOutcome {
         OPERATION_FORM,
         /** Çok adımlı iş (İP7): satış + alacak + ödeme hatırlatması; form görünür dolar, tek onayla yazılır. */
         MULTI_STEP,
+        /** Tahsilat (eğitim turu 1): alıcının "Ödeme aldım" penceresi söylenen tutarla açılır; kayıt Kaydet'le. */
+        COLLECTION,
         /** Kayıt yolu yok: internet yardımcısı denenir, sonra rest(). */
         LATER,
         /** Selam, teşekkür, ilaç dozu gibi hazır cevap. */
@@ -77,6 +79,9 @@ final class AssistantOutcome {
         }
         if (LearnedBrain.payload(d, ActionPlan.class) != null) {
             return Kind.MULTI_STEP;
+        }
+        if (LearnedBrain.payload(d, CollectionEntry.class) != null) {
+            return Kind.COLLECTION;
         }
         return Kind.LATER;
     }

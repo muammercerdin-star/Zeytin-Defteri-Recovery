@@ -123,8 +123,8 @@ final class ActionCatalog {
         // İP7: yalnız çok adımlı satış cümlesinde üretilir (satış + alacak + ödeme hatırlatması), formu doldurur.
         add(new Action(SATIS, "Satış", Kind.SATIS, "Kime, kaç kilo, kaç liradan sattın?", Level.FORMU_DOLDUR, true, "",
                 "alici", "kilo", "fiyat", "tutar", "sinif", "odeme", "vade", "adimlar"));
-        add(new Action(TAHSILAT, "Tahsilat", Kind.ODEME, "Kimden, ne kadar aldın?", Level.FORMU_DOLDUR, false, "",
-                "alici", "tutar", "tarih"));
+        add(new Action(TAHSILAT, "Tahsilat", Kind.ODEME, "Kimden, ne kadar aldın?", Level.FORMU_DOLDUR, true, "",
+                "alici", "tutar", "oran", "tarih"));   // oran: "yarim" (borcun yarısı; eğitim turu 1)
         add(new Action(ISLEM, "Bahçe işi", Kind.KAYIT, "Hangi bahçede ne yaptın?", Level.FORMU_DOLDUR, true, "",
                 "tur", "gun", "miktar", "birim", "tutar", "bahce", "not"));   // not: "Diğer" işinin adı (İP5)
         add(new Action(HASAT, "Hasat", Kind.KAYIT, "Hangi bahçeden kaç kilo topladın?", Level.FORMU_DOLDUR, true, "",

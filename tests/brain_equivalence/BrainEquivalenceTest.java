@@ -94,7 +94,7 @@ public class BrainEquivalenceTest {
         System.out.println(sentences.size() + " cümle (" + bank + " cümle bankası) · " + compared + " karşılaştırma · " + diffs + " fark");
         System.out.println("Öğrenilen sözler beyni, boş sözlük: " + compared + " karşılaştırma · " + learnedDiffs + " fark"
                 + " (yeni komut \"öğrendiklerini söyle\": " + newCommand + ")");
-        System.out.println("İP7 + eğitim turu 1 bilinçli fark: kayıt yolu tutmayan satış cümlesi (çok ya da tek adımlı) satış oldu: " + planned
+        System.out.println("İP7 + eğitim turu 1 bilinçli fark: kayıt yolu tutmayan cümle satış / tahsilat / yağhane / hatırlatma oldu: " + planned
                 + " karşılaştırma");
         System.out.println("İP5 bilinçli fark: Diğer işine not alanı eklendi (\"ot biçtik\" → not=Ot biçme): " + noteAdded + " karşılaştırma");
         if (diffs > 0 || learnedDiffs > 0) {
@@ -123,7 +123,12 @@ public class BrainEquivalenceTest {
                 || want[0].equals(ActionCatalog.HASAT) || want[0].startsWith("KAYIT_") || want[0].equals(ActionCatalog.ELEK_AC)
                 || want[0].equals(ActionCatalog.ALACAK_SORU);
         boolean plan = ActionPlan.VARIANT.equals(got.variant) || ActionPlan.SINGLE.equals(got.variant);   // eğitim turu 1: tek adım
-        return !wasRecord && got.is(ActionCatalog.SATIS) && plan;
+        if (!wasRecord && got.is(ActionCatalog.SATIS) && plan) {
+            return true;
+        }
+        // Eğitim turu 1: eskiden kayıt değildi ve şimdi yeni kayıt eylemi (tahsilat, yağhane, hatırlatma).
+        boolean newAction = got.is(ActionCatalog.TAHSILAT) || got.action.equals("YAGHANE") || got.is(ActionCatalog.HATIRLATMA);
+        return !wasRecord && newAction;
     }
 
     static int bankSize(Path root) throws IOException {

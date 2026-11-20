@@ -829,6 +829,13 @@ public final class ZeytinAssistantController {
                         activity.startActivity(new android.content.Intent(activity,SaleActivity.class).putExtra(SaleActivity.EXTRA_PLAN,raw));}});
                     return;
                 }
+                // Eğitim turu 1: tahsilat ("Ali Usta'dan 2000 lira aldım"). Alıcının "Ödeme aldım" penceresi tutarla açılır;
+                // kayıt yalnız çiftçinin Kaydet'iyle. Alıcı yoksa ya da açık borcu yoksa hiçbir şey kaydedilmez.
+                if(path==AssistantOutcome.Kind.COLLECTION){
+                    meter(token,raw,owner,decision.action);
+                    collect(LearnedBrain.payload(decision,CollectionEntry.class),token,owner,season,active,cmd);
+                    return;
+                }
                 // Kuralların anlamadığı iş cümlesi: izin varsa internetteki yardımcıya (Gemma 4) sorulur. Cevap cümleyle
                 // karşılaştırılarak denetlenir (AssistantCloud.accept), okunur, "evet" denmeden kaydedilmez.
                 // Soru kalıbı değil, geçmiş zamanlı bir iş cümlesiyse ("ağaçların altını temizledik, 2 amele tuttuk") kayıt sorusu
@@ -1347,6 +1354,63 @@ public final class ZeytinAssistantController {
     }
 
     /** Sohbet cevabı: ekrana yazılır, okunur; soruysa okuma bitince yeniden dinler. */
+    /**
+     * Tahsilat (eğitim turu 1; çalışan iş parçacığında çağrılır). Rehberde bu ada uyan alıcı aranır: yoksa söylenir,
+     * birden çoksa hangisi olduğu sorulur, tekse "Ödeme aldım" penceresi açılır. Hiçbir şey kendiliğinden yazılmaz.
+     */
+    private void collect(CollectionEntry entry,int token,String owner,int season,long active,ZeytinAssistantCommand cmd){
+        final List<BuyerDirectory.Summary> found=new java.util.ArrayList<>();
+        DatabaseHelper db=new DatabaseHelper(activity.getApplicationContext());
+        try{
+            List<BuyerDirectory.Summary> all=BuyerDirectory.list(db.getReadableDatabase(),owner,season);
+            List<String> names=new java.util.ArrayList<>();
+            for(BuyerDirectory.Summary b:all)names.add(b.name);
+            for(int i:CollectionEntry.matches(names,entry.buyer))found.add(all.get(i));
+        }catch(RuntimeException e){
+            found.clear();
+        }finally{
+            db.close();
+        }
+        if(found.isEmpty()){
+            String text="Alıcılarında “"+entry.buyer+"” adlı birini bulamadım. Hiçbir şey kaydetmedim.";
+            post(token,owner,season,active,cmd,true,"","Alıcılar · tahsilat",text);
+            return;
+        }
+        main.post(()->{
+            if(!current(token,owner,season,active))return;
+            if(found.size()==1){
+                openCollection(entry,found.get(0),token,owner,season,active,cmd);
+                return;
+            }
+            String[] labels=new String[found.size()];
+            for(int i=0;i<labels.length;i++)labels[i]=found.get(i).name;
+            new android.app.AlertDialog.Builder(activity)
+                    .setTitle("Hangi "+entry.buyer+"?")
+                    .setItems(labels,(d,which)->openCollection(entry,found.get(which),token,owner,season,active,cmd))
+                    .setNegativeButton("Vazgeç",null)
+                    .show();
+        });
+    }
+    /** Seçilen alıcının "Ödeme aldım" penceresi; açık borç yoksa açılmaz ve hiçbir şey kaydedilmez. */
+    private void openCollection(CollectionEntry entry,BuyerDirectory.Summary buyer,int token,String owner,int season,long active,ZeytinAssistantCommand cmd){
+        if(marketDb==null)marketDb=new DatabaseHelper(activity.getApplicationContext());
+        DatabaseHelper db=marketDb;
+        double open=0;
+        try{
+            open=BuyerPayPlan.total(BuyerDirectory.openSales(db.getReadableDatabase(),owner,buyer.id));
+        }catch(RuntimeException ignored){
+            open=0;
+        }
+        double amount=entry.amountFor(open);
+        if(amount<=0){
+            String text=buyer.name+" için açık borç görünmüyor. Hiçbir şey kaydetmedim.";
+            post(token,owner,season,active,cmd,true,"","Alıcılar · tahsilat",text);
+            return;
+        }
+        transition(State.ANSWERING,"Ödeme penceresini açıyorum…");
+        dialog.dismiss();
+        BuyerPaymentSheet.show(activity,db,buyer.id,buyer.name,amount,null);
+    }
     private void postDialog(OperationVoiceDialog.Reply r,String label){
         if(!visible())return;
         conversation.nextTurn();

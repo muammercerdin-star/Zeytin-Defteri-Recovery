@@ -44,6 +44,8 @@ public final class BuyerPaymentSheet {
     private TextView[] methodChips;
     private EditText amount;
     private TextView note;
+    /** Asistandan gelen tutar (eğitim turu 1: "Ali Usta'dan 2000 lira aldım"); yoksa ≤ 0 ve borcun tamamı yazılır. */
+    private double prefill;
 
     private BuyerPaymentSheet(Activity activity, DatabaseHelper helper, String owner, String buyer,
                               List<BuyerPayPlan.Open> open, Runnable onSaved) {
@@ -58,6 +60,15 @@ public final class BuyerPaymentSheet {
 
     /** Açık borç yoksa açılmaz (false). */
     public static boolean show(Activity activity, DatabaseHelper helper, long buyerId, String buyerName, Runnable onSaved) {
+        return show(activity, helper, buyerId, buyerName, 0, onSaved);
+    }
+
+    /**
+     * Asistandan tahsilat (eğitim turu 1): pencere söylenen tutarla dolu açılır; kayıt yine çiftçinin Kaydet'iyle.
+     * Tutar borçtan büyükse alan uyarıyla açılır (daha fazlası zaten yazılamaz). Açık borç yoksa açılmaz (false).
+     */
+    public static boolean show(Activity activity, DatabaseHelper helper, long buyerId, String buyerName, double amount,
+                               Runnable onSaved) {
         String owner = helper.getActiveOwnerUid();
         if (owner == null) owner = "";
         List<BuyerPayPlan.Open> open;
@@ -67,7 +78,9 @@ public final class BuyerPaymentSheet {
             return false;
         }
         if (BuyerPayPlan.total(open) <= 0.009) return false;
-        new BuyerPaymentSheet(activity, helper, owner, buyerName, open, onSaved).open();
+        BuyerPaymentSheet sheet = new BuyerPaymentSheet(activity, helper, owner, buyerName, open, onSaved);
+        sheet.prefill = amount;
+        sheet.open();
         return true;
     }
 
@@ -129,7 +142,7 @@ public final class BuyerPaymentSheet {
         field.setBackground(round(bg, green, 14));
         amount = new EditText(activity);
         amount.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        amount.setText(SalePayStatus.plain(total));
+        amount.setText(SalePayStatus.plain(prefill > 0 ? prefill : total));
         amount.setTextSize(24);
         amount.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         amount.setTextColor(text);
@@ -197,6 +210,11 @@ public final class BuyerPaymentSheet {
             w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
         sheet.show();
+        String warning = CollectionEntry.warning(prefill, total);
+        if (prefill > 0 && !warning.isEmpty()) {
+            amount.setError(warning);
+            amount.requestFocus();
+        }
     }
 
     private void addQuick(LinearLayout row, String text, double value, boolean first) {

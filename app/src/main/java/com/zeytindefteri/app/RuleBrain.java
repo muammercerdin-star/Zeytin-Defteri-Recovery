@@ -149,6 +149,12 @@ final class RuleBrain implements Brain {
         if (one != null) {
             return found(ActionCatalog.SATIS, one.fields(), ActionPlan.SINGLE, "Alıcı, kilo ve 'sattım': satış", one);
         }
+        // Eğitim turu 1: tahsilat ("Ali Usta'dan 2000 lira aldım", "Hasan borcunun yarısını ödedi"). Para / borç sözüne
+        // bağlıdır; "yağ aldık", "ilaç aldık" gibi masraf cümleleri buraya düşmez.
+        CollectionEntry collection = CollectionEntry.parse(raw);
+        if (collection != null) {
+            return found(ActionCatalog.TAHSILAT, collection.fields(), "", "Alıcıdan para alındı: tahsilat", collection);
+        }
         return question(raw, cmd);
     }
 

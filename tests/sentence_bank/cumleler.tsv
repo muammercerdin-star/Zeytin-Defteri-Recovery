@@ -307,8 +307,8 @@ fabrikaya 40 kasa götürdük	YAGHANE	kasa=40	beklenen_hata	egitim_turu_1
 yağhaneden 120 kilo yağ aldık	YAGHANE	yag=120	beklenen_hata	egitim_turu_1
 yarın Girelli'yi sulayacağız	HATIRLATMA	tur=Sulama;gun=1	beklenen_hata	egitim_turu_1
 ağaçların altını temizledik	ISLEM	tur=Diğer;not=Temizlik	beklenen_hata	egitim_turu_1
-Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000	beklenen_hata	egitim_turu_1
-Hasan borcunun yarısını ödedi	TAHSILAT	alici=Hasan;oran=yarim	beklenen_hata	egitim_turu_1
+Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000	dogru	egitim_turu_1
+Hasan borcunun yarısını ödedi	TAHSILAT	alici=Hasan;oran=yarim	dogru	egitim_turu_1
 zeytinleri salamuraya yatırdık	KAYIT_BRINE	-	beklenen_hata	egitim_turu_1
 ağaçlara kireç attık	ISLEM	tur=Diğer;not=Kireç	beklenen_hata	egitim_turu_1
 Karşıyaka'da piç sürgünleri aldık	ISLEM	tur=Budama	beklenen_hata	egitim_turu_1
@@ -329,3 +329,7 @@ sürdük	ISLEM	tur=Toprak İşleme	dogru	egitim_turu_1_koruma
 salamura ne zaman hazır olur	SORU_BRINE	-	dogru	egitim_turu_1_koruma
 Hasan'dan ne kadar alacağım var	ALACAK_SORU	-	dogru	egitim_turu_1_koruma
 kaç kasa zeytin topladık	SORU_HARVEST	-	dogru	egitim_turu_1_koruma
+Hasan Abi 500 lira verdi	TAHSILAT	alici=Hasan Abi;tutar=500	dogru	egitim_turu_1
+Ali Usta'dan iki bin lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000	dogru	egitim_turu_1
+Bayi'den 500 liralık gübre aldım	ISLEM	tur=Gübre;tutar=500	dogru	egitim_turu_1_koruma
+Ali Usta'dan 2000 lira aldım mı	ANLASILMADI	-	dogru	egitim_turu_1_koruma
