@@ -240,7 +240,7 @@ public final class TurkishText {
         if (w.matches("(gun\\p{L}*)")) {
             return "gün";
         }
-        if (w.matches("(kisi\\p{L}*|isci\\p{L}*)")) {
+        if (w.matches("(kisi\\p{L}*|isci\\p{L}*|amele\\p{L}*)")) {
             return PERSON;
         }
         if (w.matches("(agac\\p{L}*)")) {

@@ -7342,7 +7342,7 @@ public class ProducerFeedActivity extends Activity {
                                     intent.putExtra(NewOperationActivity.EXTRA_VOICE_QUANTITY, entry.quantity);
                                     intent.putExtra(NewOperationActivity.EXTRA_VOICE_UNIT, entry.unit);
                                     intent.putExtra(NewOperationActivity.EXTRA_VOICE_COST, entry.cost);
-                                    intent.putExtra(NewOperationActivity.EXTRA_VOICE_NOTE, entry.note);
+                                    intent.putExtra(NewOperationActivity.EXTRA_VOICE_NOTE, entry.formNote());
                                     startActivity(intent);
                                 }
 

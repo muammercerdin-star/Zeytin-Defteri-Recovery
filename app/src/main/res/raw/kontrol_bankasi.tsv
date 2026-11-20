@@ -286,6 +286,7 @@ yarın Kuyu dibini silkeleyeceğiz	HASAT	-
 zeytin nasıl silkelenir	SOHBET	-
 silkeleme mi sırık mı daha iyi	SOHBET	-
 Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS
+iki amele tuttum günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=3000
 fabrikaya 40 kasa götürdük	YAGHANE	kasa=40
 yağhaneden 120 kilo yağ aldık	YAGHANE	yag=120
 Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000
@@ -314,3 +315,6 @@ yağhaneden 80 litre yağ aldık	YAGHANE	yag=80;birim=litre
 Akhisar yağhanesine 900 kilo zeytin verdik	YAGHANE	zeytin=900;yaghane=Akhisar
 yağhaneye ne zaman gideceğiz	ANLASILMADI	-
 fabrikadan gübre aldık	ISLEM	tur=Gübre
+iki amele tuttum toplam 3000	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=3000
+iki amele tuttum 3 gün günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=9000
+üç işçi çalıştı yevmiyesi 1200	ISLEM	tur=İşçilik;miktar=3;birim=kişi;tutar=3600

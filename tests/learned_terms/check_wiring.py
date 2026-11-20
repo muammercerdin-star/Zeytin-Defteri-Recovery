@@ -56,8 +56,8 @@ checks = [
      "ScrollView scroll=new ScrollView(activity);" in c and "heightPixels*45/100" in c and "answer.setTextSize(24);" in c
      and "new LinearLayout.LayoutParams(0,dp(64),1)" in c),
     ("sıklık yalnız okunur (kayıt yazılmaz)", "insert" not in wc and "update(" not in wc and "delete(" not in wc and "execSQL" not in wc),
-    ("Diğer işinin notu forma ve kayda gider",
-     "intent.putExtra(NewOperationActivity.EXTRA_VOICE_NOTE, entry.note);" in pf and "getStringExtra(EXTRA_VOICE_NOTE)" in no
+    ("Diğer işinin notu (eğitim turu 1: + tutarın hesabı) forma ve kayda gider",
+     "intent.putExtra(NewOperationActivity.EXTRA_VOICE_NOTE, entry.formNote());" in pf and "getStringExtra(EXTRA_VOICE_NOTE)" in no
      and "entry.note" in dlg),
     ("sözlük dosyasında not sütunu (sürüm 2, eski sözler korunur)",
      "VERSION = 2" in db and "ALTER TABLE learned_terms ADD COLUMN note" in db and 'v.put("note", t.note);' in db),

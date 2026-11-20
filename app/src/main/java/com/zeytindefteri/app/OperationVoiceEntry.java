@@ -23,6 +23,11 @@ public final class OperationVoiceEntry {
      * Listede tür olarak olmayan bu işler kararla "Diğer" + not olarak kaydedilir.
      */
     public String note = "";
+    /**
+     * Tutarın nasıl hesaplandığı (eğitim turu 1): "2 kişi × 1.500 TL". Kararın alanı değildir; formun notuna ve okunan
+     * özete yazılır, çiftçi yanlışı görüp düzeltebilsin. Kişi başı söylenmediyse boş.
+     */
+    public String detail = "";
 
     /** "Diğer" türünün sırası (OperationKinds.TYPES). */
     static final int OTHER = 9;
@@ -101,7 +106,7 @@ public final class OperationVoiceEntry {
         // "Sinek tuzağı astık": "tuzağı" sadeleşince "tuzagi"; yalnız tuzak işi fiiliyle ("tuzağı kaydı" soru kalır).
         if (s.matches(".*\\btuzag\\p{L}*\\b.*") && s.matches(TRAP_VERB)) return 4;
         if (s.matches(".*\\b(surdum|surduk|surduruldu|capala\\p{L}*|freze\\p{L}*|toprak isle\\p{L}*|toprak islemesi|diskaro\\p{L}*|kultivator\\p{L}*)\\b.*")) return 5;
-        if (s.matches(".*\\b(isci\\p{L}*|yevmiye\\p{L}*|iscilik)\\b.*")) return 6;
+        if (s.matches(".*\\b(isci\\p{L}*|amele\\p{L}*|yevmiye\\p{L}*|iscilik)\\b.*")) return 6;
         if (s.matches(".*\\b(mazot\\p{L}*|yakit\\p{L}*|motorin\\p{L}*)\\b.*")) return 7;
         if (s.matches(".*\\b(nakliye\\p{L}*|tasidim|tasidik|tasittim|kamyon\\p{L}*|traktorle tasi\\p{L}*)\\b.*")) return 8;
         if (!noteOf(s).isEmpty()) return OTHER;
@@ -119,9 +124,16 @@ public final class OperationVoiceEntry {
         return "";
     }
 
+    /** Kişi başı ücret sözü (eğitim turu 1): "günlüğü 1500", "yevmiyesi 1200", "tanesi 1000". */
+    private static final String PER_HEAD = "gunlugu|gunlugune|gunlukleri|yevmiyesi|yevmiyesine|yevmiyeleri|tanesi|tanesine";
+    /** Toplam tutar sözü: "toplam 3000", "hepsine 3000" (kişi başı sayılmaz). */
+    private static final String TOTAL = "toplam|toplamda|hepsine|hepsi|ikisine|ucune|hepsini";
+
     /** "2 saat", "18 kilo", "500 ml", "25 litre", "3 işçi", "500 lira". */
     private static void amounts(String[] t, OperationVoiceEntry e) {
         double perHead = 0;
+        double days = 0;
+        boolean total = false;
         for (int i = 0; i < t.length; i++) {
             int[] end = new int[1];
             double v = TurkishText.number(t, i, end);
@@ -134,12 +146,36 @@ public final class OperationVoiceEntry {
             }
             // "yevmiye kişi başı 1200", "adam başına 1000 lira": işçi sayısıyla çarpılır
             if (i >= 1 && t[i - 1].matches("basi|basina|basindan") && i >= 2 && t[i - 2].matches("kisi|adam|isci|nefer")) { perHead = v; i = Math.max(i, end[0] - 1); continue; }
+            // Eğitim turu 1: "günlüğü 1500" kişi başıdır; "toplam / hepsine 3000" toplamdır.
+            if (i >= 1 && t[i - 1].matches(PER_HEAD) && !u.equals("kisi") && !u.equals("kişi")) {
+                perHead = v;
+                i = Math.max(i, end[0] - 1);
+                continue;
+            }
+            if (i >= 1 && t[i - 1].matches(TOTAL) && (u.isEmpty() || u.equals("lira"))) {
+                e.cost = v;
+                total = true;
+                i = Math.max(i, end[0] - 1);
+                continue;
+            }
+            if (u.equals("gün") && e.quantity > 0) {
+                days = v;
+            }
             if (u.equals("lira")) { if (e.cost <= 0) e.cost = v; }
             else if (!u.isEmpty() && e.quantity <= 0) { e.quantity = v; e.unit = u; }
             else if (u.isEmpty() && e.cost <= 0 && costBySpeech(t, i, end[0])) e.cost = v;   // "elektrik 350 tuttu"
             i = Math.max(i, end[0] - 1);
         }
-        if (perHead > 0 && e.cost <= 0) e.cost = e.quantity > 0 && e.unit.equals("kişi") ? perHead * e.quantity : perHead;
+        if (perHead > 0 && e.cost <= 0 && !total) {
+            boolean persons = e.quantity > 0 && e.unit.equals("kişi");
+            double times = persons ? e.quantity : 1;
+            double dayCount = days > 0 ? days : 1;
+            e.cost = perHead * times * dayCount;
+            if (persons) {
+                String perDay = days > 0 ? " × " + ElekVoiceDialog.num(days) + " gün" : "";
+                e.detail = ElekVoiceDialog.num(e.quantity) + " kişi" + perDay + " × " + lira(perHead);
+            }
+        }
     }
 
     /** "Lira" denmeden söylenen tutar: "350 tuttu", "350'ye patladı", "elektrik de 350", "mazot parası 500". */
@@ -155,6 +191,21 @@ public final class OperationVoiceEntry {
         return false;
     }
 
+    /** "1500" → "1.500 TL". */
+    private static String lira(double v) {
+        java.text.NumberFormat nf = java.text.NumberFormat.getNumberInstance(new java.util.Locale("tr", "TR"));
+        nf.setMaximumFractionDigits(2);
+        return nf.format(v) + " TL";
+    }
+
+    /** Formun notu: "Diğer" işinin adı ve tutarın hesabı ("Ot biçme", "2 kişi × 1.500 TL"). */
+    public String formNote() {
+        if (detail.isEmpty()) {
+            return note;
+        }
+        return note.isEmpty() ? detail : note + ", " + detail;
+    }
+
     /** Okuma: "ilaçlama, bugün, 500 ml, 300 lira". */
     public String summary() {
         String name = note.isEmpty() ? OperationKinds.TYPES[type] : note;
@@ -162,6 +213,9 @@ public final class OperationVoiceEntry {
         b.append(", ").append(dayOffset == 0 ? "bugün" : dayOffset == -1 ? "dün" : "evvelsi gün");
         if (quantity > 0) b.append(", ").append(ElekVoiceDialog.num(quantity)).append(' ').append(unit);
         if (cost > 0) b.append(", ").append(ElekVoiceDialog.num(cost)).append(" lira");
+        if (!detail.isEmpty()) {
+            b.append(" (").append(detail).append(')');
+        }
         return b.toString();
     }
 }

@@ -342,6 +342,11 @@ public final class OperationVoiceDialog {
         if (!entry.note.isEmpty()) {
             b.insert(0, b.length() > 0 ? entry.note + ", " : entry.note);
         }
+        // Eğitim turu 1: tutarın hesabı ("2 kişi × 1.500 TL") nota yazılır; çiftçi yanlışı görüp düzeltebilir.
+        if (!entry.detail.isEmpty()) {
+            if (b.length() > 0) b.append(", ");
+            b.append(entry.detail);
+        }
         boolean fits = false;
         for (String u : OperationKinds.form(type()).units) if (u.equalsIgnoreCase(entry.unit)) fits = true;
         if (entry.quantity > 0 && !fits) { if (b.length() > 0) b.append(", "); b.append(ElekVoiceDialog.num(entry.quantity)).append(' ').append(entry.unit); }

@@ -66,6 +66,24 @@ public class OperationVoiceEntryTest {
         check(e != null && e.type == 7, "yalnız mazot alımı yine mazot");
         OperationVoiceEntry a2 = OperationVoiceEntry.parseAnswer("500 verdik");
         check(a2.cost == 500 && a2.quantity == 0, "500 verdik → tutar, miktar değil");
+        // Eğitim turu 1: "günlüğü / yevmiyesi / tanesi" kişi başı (× kişi × gün); "toplam / hepsine" ve sade tutar toplam.
+        e = p("iki amele tuttum günlüğü 1500");
+        check(e != null && e.type == 6 && e.quantity == 2 && "kişi".equals(e.unit) && e.cost == 3000, "amele + günlüğü: 2 × 1500");
+        check(e != null && "2 kişi × 1.500 TL".equals(e.detail), "hesap nota: " + (e == null ? "" : e.detail));
+        check(e != null && "2 kişi × 1.500 TL".equals(e.formNote()), "formun notu: " + (e == null ? "" : e.formNote()));
+        check(e != null && e.summary().endsWith("3000 lira (2 kişi × 1.500 TL)"), "okunan özette hesap: " + (e == null ? "" : e.summary()));
+        e = p("iki amele tuttum toplam 3000");
+        check(e != null && e.cost == 3000 && e.detail.isEmpty(), "toplam: çarpılmaz");
+        e = p("iki amele tuttum hepsine 3000");
+        check(e != null && e.cost == 3000 && e.detail.isEmpty(), "hepsine: çarpılmaz");
+        e = p("iki amele tuttum 3000 lira");
+        check(e != null && e.cost == 3000 && e.detail.isEmpty(), "sade tutar toplam");
+        e = p("iki amele tuttum 3 gün günlüğü 1500");
+        check(e != null && e.cost == 9000 && "2 kişi × 3 gün × 1.500 TL".equals(e.detail), "gün söylenince çarpılır: " + (e == null ? "" : e.detail));
+        e = p("üç işçi çalıştı yevmiyesi 1200");
+        check(e != null && e.cost == 3600, "yevmiyesi kişi başı");
+        e = p("3 işçi çalıştı 1500 lira");
+        check(e != null && e.cost == 1500 && e.detail.isEmpty(), "eskisi gibi: sade tutar toplam");
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " OperationVoiceEntry");
         if (bad > 0) System.exit(1);
     }

@@ -24,3 +24,12 @@ fabrikaya 40 kasa götürdük	bahçeli	OIL_FORM · YAGHANE kasa=40
 fabrikaya 40 kasa götürdük	bahçesiz	OIL_FORM · YAGHANE kasa=40
 yağhaneden 120 kilo yağ aldık	bahçeli	OIL_FORM · YAGHANE yag=120
 yağhaneden 120 kilo yağ aldık	bahçesiz	OIL_FORM · YAGHANE yag=120
+# Eğitim turu 1 — madde 4: işçilik ('amele' = işçi; 'günlüğü / yevmiyesi / tanesi' kişi başı); okunan özete tutarın hesabı ('2 kişi × 1.500 TL') eklendi.
+Dün Girelli'de 3 işçi çalıştı, yevmiye kişi başı 1200.	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;gun=-1;miktar=3;birim=kişi;tutar=3600 · işçilik, dün, 3 kişi, 3600 lira (3 kişi × 1.200 TL)
+Dün Girelli'de 3 işçi çalıştı, yevmiye kişi başı 1200.	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;gun=-1;miktar=3;birim=kişi;tutar=3600 · işçilik, dün, 3 kişi, 3600 lira (3 kişi × 1.200 TL)
+Bugün amele tuttuk 300 lira verdik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;tutar=300 · işçilik, bugün, 300 lira
+Bugün amele tuttuk 300 lira verdik	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;tutar=300 · işçilik, bugün, 300 lira
+Dün Girelli'de ağaçların altını temizledik, iki amele tuttuk 2400 verdik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;gun=-1;miktar=2;birim=kişi;tutar=2400 · işçilik, dün, 2 kişi, 2400 lira
+Dün Girelli'de ağaçların altını temizledik, iki amele tuttuk 2400 verdik	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;gun=-1;miktar=2;birim=kişi;tutar=2400 · işçilik, dün, 2 kişi, 2400 lira
+iki amele tuttum günlüğü 1500	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;miktar=2;birim=kişi;tutar=3000 · işçilik, bugün, 2 kişi, 3000 lira (2 kişi × 1.500 TL)
+iki amele tuttum günlüğü 1500	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;miktar=2;birim=kişi;tutar=3000 · işçilik, bugün, 2 kişi, 3000 lira (2 kişi × 1.500 TL)
