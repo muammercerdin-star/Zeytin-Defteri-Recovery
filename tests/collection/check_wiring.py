@@ -12,7 +12,8 @@ checks = [
     ("kayıt yalnız pencerenin Kaydet'iyle: asistan ödeme yazmaz",
      "recordPlan" not in body and "SalePayments" not in body and "BuyerPaymentSheet.show(activity,db,buyer.id,buyer.name,amount,null);" in body),
     ("alıcı yoksa hiçbir şey kaydedilmez", "Hiçbir şey kaydetmedim." in body and "if(found.isEmpty()){" in body),
-    ("aynı adda birden çok alıcı: sorulur", '.setTitle("Hangi "+entry.buyer+"?")' in body),
+    ("aynı adda birden çok alıcı: panelde sorulur (standart pencere yok)",
+     '"Hangi "+entry.buyer+"?"' in body and "choice(buyer.name," in body and "AlertDialog" not in body),
     ("açık borç yoksa pencere açılmaz", "if(amount<=0){" in body and "açık borç görünmüyor" in body),
     ("pencere söylenen tutarla açılır, fazlası uyarılır, borçtan fazlası yine yazılamaz",
      "amount.setText(SalePayStatus.plain(prefill > 0 ? prefill : total));" in sheet

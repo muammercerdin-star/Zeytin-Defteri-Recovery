@@ -1409,61 +1409,64 @@ public final class ZeytinAssistantController {
                 openCollection(entry,found.get(0),token,owner,season,active,cmd);
                 return;
             }
-            String[] labels=new String[found.size()];
-            for(int i=0;i<labels.length;i++)labels[i]=found.get(i).name;
-            new android.app.AlertDialog.Builder(activity)
-                    .setTitle("Hangi "+entry.buyer+"?")
-                    .setItems(labels,(d,which)->openCollection(entry,found.get(which),token,owner,season,active,cmd))
-                    .setNegativeButton("Vazgeç",null)
-                    .show();
+            postDialog(new OperationVoiceDialog.Reply("Hangi "+entry.buyer+"?",OperationVoiceDialog.Action.CANCEL),"Alıcılar · tahsilat");
+            for(int i=0;i<found.size();i++){
+                final BuyerDirectory.Summary buyer=found.get(i);
+                choice(buyer.name,i==0,v->openCollection(entry,buyer,token,owner,season,active,cmd));
+            }
+            choice("Vazgeç",false,v->postDialog(new OperationVoiceDialog.Reply("Tamam, hiçbir şey kaydetmedim.",OperationVoiceDialog.Action.CANCEL),"Alıcılar · tahsilat"));
         });
     }
     /**
-     * Gelecek zamanlı iş (eğitim turu 1): "Yarın 09:00'da Sulama · Girelli hatırlatayım mı?" diye sorulur; gün
+     * Gelecek zamanlı iş (eğitim turu 1): "Yarın 09:00 · Sulama · Girelli. Hatırlatayım mı?" diye panelde sorulur; gün
      * söylenmediyse önce gün sorulur. Sormadan kurulmaz; geçmiş ya da gece saatine kurulmaz; kurulunca Geri al çıkar.
      */
     private void askReminder(TaskReminderEntry task,long gardenId,String garden,int token,String owner,int season,long active,ZeytinAssistantCommand cmd){
         long at=task.when(Calendar.getInstance());
         if(at<0){
+            postDialog(new OperationVoiceDialog.Reply(task.title(garden)+": ne zaman hatırlatayım?",OperationVoiceDialog.Action.CANCEL),"Hatırlatma");
             String[] days={"Yarın sabah","3 gün sonra","1 hafta sonra"};
             int[] offsets={1,3,7};
-            new android.app.AlertDialog.Builder(activity)
-                    .setTitle(task.title(garden)+" · ne zaman hatırlatayım?")
-                    .setItems(days,(d,which)->confirmReminder(task,gardenId,garden,TaskReminderEntry.at(Calendar.getInstance(),offsets[which],task.hour),token,owner,season,active,cmd))
-                    .setNegativeButton("Vazgeç",null)
-                    .show();
+            for(int i=0;i<days.length;i++){
+                final int offset=offsets[i];
+                choice(days[i],i==0,v->confirmReminder(task,gardenId,garden,TaskReminderEntry.at(Calendar.getInstance(),offset,task.hour)));
+            }
+            choice("Vazgeç",false,v->postDialog(new OperationVoiceDialog.Reply("Tamam, hatırlatma kurmadım.",OperationVoiceDialog.Action.CANCEL),"Hatırlatma"));
             return;
         }
-        confirmReminder(task,gardenId,garden,at,token,owner,season,active,cmd);
+        confirmReminder(task,gardenId,garden,at);
     }
-    private void confirmReminder(TaskReminderEntry task,long gardenId,String garden,long at,int token,String owner,int season,long active,ZeytinAssistantCommand cmd){
+    private void confirmReminder(TaskReminderEntry task,long gardenId,String garden,long at){
         if(!TaskReminderEntry.allowed(at,System.currentTimeMillis())){
-            post(token,owner,season,active,cmd,true,"","Hatırlatma","O saat geçmiş ya da gece; hatırlatma kurmadım.");
+            postDialog(new OperationVoiceDialog.Reply("O saat geçmiş ya da gece; hatırlatma kurmadım.",OperationVoiceDialog.Action.CANCEL),"Hatırlatma");
             return;
         }
         String when=TaskReminderEntry.spoken(at,Calendar.getInstance());
         String title=task.title(garden);
-        new android.app.AlertDialog.Builder(activity)
-                .setTitle("Hatırlatayım mı?")
-                .setMessage(when+" · "+title)
-                .setPositiveButton("Evet, hatırlat",(d,x)->{
-                    long id=TaskReminders.add(activity,owner,gardenId,title,"Asistanla kuruldu.",at);
-                    if(id<=0){
-                        post(token,owner,season,active,cmd,true,"","Hatırlatma","Hatırlatma kurulamadı.");
-                        return;
-                    }
-                    post(token,owner,season,active,cmd,true,"","Hatırlatma","Kuruldu: "+when+" · "+title+".");
-                    new android.app.AlertDialog.Builder(activity)
-                            .setMessage("Hatırlatma kuruldu: "+when+" · "+title)
-                            .setPositiveButton("Tamam",null)
-                            .setNegativeButton("Geri al",(d2,y)->{
-                                boolean ok=TaskReminders.remove(activity,id);
-                                Toast.makeText(activity,ok?"Geri alındı: hatırlatma silindi.":"Geri alınamadı; Hatırlatmalar'dan sil.",Toast.LENGTH_LONG).show();
-                            })
-                            .show();
-                })
-                .setNegativeButton("Hayır",null)
-                .show();
+        postDialog(new OperationVoiceDialog.Reply(when+" · "+title+". Hatırlatayım mı?",OperationVoiceDialog.Action.CANCEL),"Hatırlatma");
+        choice("Evet, hatırlat",true,v->{
+            long id=TaskReminders.add(activity,host.owner(),gardenId,title,"Asistanla kuruldu.",at);
+            if(id<=0){
+                postDialog(new OperationVoiceDialog.Reply("Hatırlatma kurulamadı.",OperationVoiceDialog.Action.CANCEL),"Hatırlatma");
+                return;
+            }
+            postDialog(new OperationVoiceDialog.Reply("Kuruldu: "+when+" · "+title+". Yanlışsa Geri al.",OperationVoiceDialog.Action.CANCEL),"Hatırlatma");
+            choice("Geri al",false,u->{
+                boolean ok=TaskReminders.remove(activity,id);
+                String text=ok?"Geri alındı: hatırlatma silindi.":"Geri alınamadı; Hatırlatmalar'dan sil.";
+                postDialog(new OperationVoiceDialog.Reply(text,OperationVoiceDialog.Action.CANCEL),"Hatırlatma");
+            });
+        });
+        choice("Hayır",false,v->postDialog(new OperationVoiceDialog.Reply("Tamam, hatırlatma kurmadım.",OperationVoiceDialog.Action.CANCEL),"Hatırlatma"));
+    }
+    /** Panelin cevap kartının altına büyük seçim düğmesi (eğitim turu 1: tahsilat ve hatırlatma soruları). */
+    private void choice(String text,boolean primary,View.OnClickListener click){
+        TextView b=label(text,16,primary?green:soft,true);
+        b.setGravity(Gravity.CENTER);
+        b.setBackground(round(primary?bg:surface,primary?green:border,16));
+        b.setContentDescription(text);
+        b.setOnClickListener(v->{stopTts();click.onClick(v);});
+        hintBox.addView(b,margins(-1,dp(52),dp(10),0));
     }
     /** Seçilen alıcının "Ödeme aldım" penceresi; açık borç yoksa açılmaz ve hiçbir şey kaydedilmez. */
     private void openCollection(CollectionEntry entry,BuyerDirectory.Summary buyer,int token,String owner,int season,long active,ZeytinAssistantCommand cmd){
