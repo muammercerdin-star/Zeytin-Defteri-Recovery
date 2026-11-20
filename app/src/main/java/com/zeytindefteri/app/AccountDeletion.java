@@ -184,6 +184,7 @@ public final class AccountDeletion {
                         LearnedTermsDb.clear(activity, uid);   // asistanın öğrendiği sözler (ayrı dosya)
                         HabitDb.clear(activity, uid);   // "Bu yanlış" düzeltmeleri (ayrı dosya, İP5)
                         CommunityDb.clear(activity, uid);   // ortak döngü kuyruğu ve izni (ayrı dosya, İP8)
+                        PackDb.clear(activity, uid);   // kapattığı paket sözleri (ayrı dosya, İP8)
                         TezgahRescue.wipe(activity, uid);
                         progress.dismiss();
                         finishSignedOut(activity, "Hesabın ve verilerin silindi.");

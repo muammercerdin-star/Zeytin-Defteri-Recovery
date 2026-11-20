@@ -95,7 +95,44 @@ final class LearnedScreen {
 
     /** Asistan bu sözü gerçekten kullanır mı: anlamı bir öğretme seçimine karşılık gelir. */
     static boolean usable(LearnedTerms.Term t) {
-        return t != null && !t.term.isEmpty() && LearnedTerms.choiceOf(t) != null;
+        return t != null && !t.term.isEmpty() && LearnedTerms.TAUGHT.equals(t.kind) && LearnedTerms.choiceOf(t) != null;
+    }
+
+    static final String FROM_ALL = "Herkesten öğrendiklerim";
+    static final String FROM_ALL_EMPTY = "Başka çiftçilerden gelen söz yok.";
+
+    /** Herkesten öğrendiklerim satırı: "Bakırladık = ilaçlama" / "Herkesten · açık" ya da "kapattın". */
+    static final class PackRow {
+        final String root;
+        final String title;
+        final String detail;
+        final boolean on;
+        /** Çiftçi aynı sözü kendisi öğretti: onunki geçerli, burada açılıp kapatılmaz. */
+        final boolean overridden;
+
+        PackRow(String root, String title, String detail, boolean on, boolean overridden) {
+            this.root = root;
+            this.title = title;
+            this.detail = detail;
+            this.on = on;
+            this.overridden = overridden;
+        }
+    }
+
+    /** Paket sözlerinin satırları (kapatılanlar da, açılabilsin diye). */
+    static List<PackRow> fromAll(List<LearnedTerms.Term> pack, LearnedTerms.Store taught, PackedStore.Disabled disabled) {
+        List<PackRow> rows = new ArrayList<>();
+        for (LearnedTerms.Term t : pack) {
+            String title = LearnedTerms.capital(t.word) + " = " + t.meaning();
+            LearnedTerms.Term own = taught.get(t.term);
+            if (own != null) {
+                rows.add(new PackRow(t.term, title, "Senin öğrettiğin geçerli: " + own.meaning(), false, true));
+                continue;
+            }
+            boolean on = !disabled.is(t.term);
+            rows.add(new PackRow(t.term, title, on ? "Herkesten · açık" : "Herkesten · kapattın", on, false));
+        }
+        return rows;
     }
 
     /** Fark ettiklerimin satırları: "Alıcı: Ali Usta" / "son 6 satışın 4'ü · eminim". */

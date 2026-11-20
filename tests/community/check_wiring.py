@@ -56,6 +56,20 @@ checks = [
      "secret" not in sender and "CommunityDb.secret(context)" in sync),
     ("temizleyici dışında katkı alanı yok (yalnız yedi alan + takma ad + silme özeti)",
      'field(b, "takma_ad", pseudonym);' in sender and 'field(b, "silme_ozeti", CommunityQueue.digest(i.token));' in sender),
+    ("paket: kontrolcü öğrenilenleri paketle birlikte okur (öğretilen önce)",
+     "new LearnedBrain(PackDb.store(activity,owner),rules);" in ctrl and "PackDb.warm(activity);" in ctrl),
+    ("paket: indirme yok, açık anahtar yuvaları boş",
+     'static final String[] PUBLIC_KEYS = {"", ""};' in java("KnowledgePack.java")
+     and "URL" not in java("PackDb.java") and "HttpsURLConnection" not in java("PackDb.java")),
+    ("paket: Herkesten öğrendiklerim bölümü kapat/aç düğmesiyle",
+     "Herkesten öğrendiklerim" in java("LearnedScreen.java") and "fromAllSection()" in learned
+     and "PackDb.setDisabled(" in learned),
+    ("paket: kapatılan sözler Google yedeğinden, aktarımdan ve Yedekle dosyasından hariç",
+     'path="zd_pack.db"' in backup and extract.count('path="zd_pack.db"') == 2 and "zd_pack" not in tezgah
+     and "PackDb" not in tezgah),
+    ("paket: hesap silinince kapatılan sözler silinir", "PackDb.clear(activity, uid);" in acc),
+    ("paket: gömülü paket res/raw'da, doğrulama arka planda", "R.raw.bilgi_paketi" in java("PackDb.java")
+     and "new Thread(" in java("PackDb.java")),
 ]
 bad = 0
 for name, ok in checks:

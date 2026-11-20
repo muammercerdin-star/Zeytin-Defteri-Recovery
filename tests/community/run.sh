@@ -10,8 +10,11 @@ trap 'rm -rf "$T"' EXIT
 source "$ROOT/tests/sentence_bank/brain_build.sh"
 EXTRA=()
 for f in "$DIR"/*Test.java; do EXTRA+=("$f"); done
+python3 "$ROOT/tools/make_control_bank.py" --check
 brain_build "$T" "$A/ContributionCleaner.java" "$A/CommunityQueue.java" "$A/CommunitySender.java" \
-  "$A/MarketBackendConfig.java" "${EXTRA[@]}"
+  "$A/MarketBackendConfig.java" "$A/KnowledgePack.java" "$A/PackedStore.java" "$A/PackGate.java" "$A/LearnedScreen.java" \
+  "$ROOT/tools/pack/PackTool.java" "$ROOT/tests/brain_equivalence/LegacyRouter.java" \
+  "$ROOT/tests/brain_equivalence/BrainEquivalenceTest.java" "${EXTRA[@]}"
 for f in "$DIR"/*Test.java; do
   cls=$(basename "$f" .java)
   java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp "$BRAIN_CP" "com.zeytindefteri.app.$cls" "$ROOT"

@@ -81,6 +81,16 @@ public final class LearnedActivity extends Activity {
         super.onResume();
         if (body != null) {
             render();
+            // Paket arka planda doğrulanır (ilk açılışta); hazır olunca bölüm dolar.
+            final android.content.Context app = getApplicationContext();
+            new Thread(() -> {
+                PackDb.pack(app);
+                runOnUiThread(() -> {
+                    if (!isFinishing()) {
+                        render();
+                    }
+                });
+            }, "zd-paket-ekran").start();
         }
     }
 
@@ -106,6 +116,7 @@ public final class LearnedActivity extends Activity {
         }
         body.addView(SettingsView.section(this, LearnedScreen.TAUGHT.toUpperCase(new java.util.Locale("tr", "TR")),
                 taughtViews.toArray(new View[0])));
+        body.addView(fromAllSection());
         List<View> noticedViews = new ArrayList<>();
         if (noticed.isEmpty()) {
             noticedViews.add(note(LearnedScreen.NOTICED_EMPTY));
@@ -121,6 +132,54 @@ public final class LearnedActivity extends Activity {
         if (!terms.isEmpty()) {
             body.addView(forgetAllButton());
         }
+    }
+
+    /** Herkesten öğrendiklerim (İP8): bilgi paketinin sözleri; her biri tek tek kapatılıp açılır. */
+    private View fromAllSection() {
+        final android.content.Context app = getApplicationContext();
+        List<LearnedScreen.PackRow> rows = LearnedScreen.fromAll(PackDb.terms(app), store,
+                root -> PackDb.disabled(app, owner, root));
+        List<View> views = new ArrayList<>();
+        if (rows.isEmpty()) {
+            views.add(note(LearnedScreen.FROM_ALL_EMPTY));
+        }
+        for (int i = 0; i < rows.size(); i++) {
+            if (i > 0) {
+                views.add(SettingsView.separator(this));
+            }
+            views.add(packRow(rows.get(i)));
+        }
+        return SettingsView.section(this, LearnedScreen.FROM_ALL.toUpperCase(new java.util.Locale("tr", "TR")),
+                views.toArray(new View[0]));
+    }
+
+    private View packRow(LearnedScreen.PackRow r) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(dp(72));
+        row.setPadding(dp(14), dp(10), dp(8), dp(10));
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        copy.addView(label(r.title, 19, r.on || r.overridden ? text : muted, true));
+        TextView detail = label(r.detail, 15, muted, false);
+        detail.setPadding(0, dp(3), 0, 0);
+        copy.addView(detail);
+        row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+        if (r.overridden) {
+            return row;
+        }
+        TextView toggle = label(r.on ? "Kapat" : "Aç", 17, r.on ? danger : text, true);
+        toggle.setGravity(Gravity.CENTER);
+        toggle.setMinWidth(dp(64));
+        toggle.setMinHeight(dp(48));
+        toggle.setContentDescription((r.on ? "Kapat: " : "Aç: ") + r.title);
+        toggle.setOnClickListener(v -> {
+            PackDb.setDisabled(this, owner, r.root, r.on);
+            Toast.makeText(this, r.on ? "Bu sözü artık kullanmayacağım." : "Bu sözü yeniden kullanacağım.", Toast.LENGTH_SHORT).show();
+            render();
+        });
+        row.addView(toggle, new LinearLayout.LayoutParams(-2, -2));
+        return row;
     }
 
     private View header() {

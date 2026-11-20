@@ -682,7 +682,9 @@ public final class ZeytinAssistantController {
     private LearnedBrain learned(){
         String owner=host.owner();
         if(learned==null||!owner.equals(learnedOwner)){
-            learned=new LearnedBrain(LearnedTermsDb.store(activity,owner),rules);
+            // İP8: önce çiftçinin öğrettikleri, sonra bilgi paketinin açık sözleri (paket arka planda doğrulanır).
+            learned=new LearnedBrain(PackDb.store(activity,owner),rules);
+            PackDb.warm(activity);
             learnedOwner=owner;
         }
         return learned;
@@ -797,7 +799,9 @@ public final class ZeytinAssistantController {
                 final OperationVoiceEntry op=LearnedBrain.payload(decision,OperationVoiceEntry.class);
                 if(op!=null)meter(token,raw,owner,decision.action);
                 final LearnedTerms.Term taught=LearnedBrain.term(decision);
-                final String told=taught!=null&&taught.uses<LearnedTerms.TELL_USES?LearnedTerms.told(taught)+" ":"";
+                // Paketten gelen söz için "öğrendim" denmez (çiftçi öğretmedi); yalnız öğretilen sözde.
+                final boolean own=taught!=null&&LearnedTerms.TAUGHT.equals(taught.kind);
+                final String told=own&&taught.uses<LearnedTerms.TELL_USES?LearnedTerms.told(taught)+" ":"";
                 if(path==AssistantOutcome.Kind.OPERATION_QUESTIONS){
                     // Karşısında insan varmış gibi: eksikleri tek tek sorar ("Hangi bahçeyi?", "Ne attın?"), "evet"le kaydeder.
                     final List<String> names=new java.util.ArrayList<>();for(Garden g:gardens)names.add(g.name);
@@ -1311,6 +1315,12 @@ public final class ZeytinAssistantController {
     private void forget(String word){
         String root=LearnedTerms.verbRoot(word==null?"":word);
         LearnedTerms.Term t=root.isEmpty()?null:learned().store().get(root);
+        if(t!=null&&KnowledgePack.KIND.equals(t.kind)){
+            // Paket sözü: çiftçi için kapatılır (Öğrendiklerim'de "Herkesten öğrendiklerim"den yeniden açılabilir).
+            PackDb.setDisabled(activity,learnedOwner,t.term,true);
+            postDialog(new OperationVoiceDialog.Reply("Tamam, “"+t.word+"” sözünü artık kullanmayacağım.",OperationVoiceDialog.Action.CANCEL),"Zeytin · öğrendiklerim");
+            return;
+        }
         if(t==null){
             postDialog(new OperationVoiceDialog.Reply("Öyle bir söz öğrenmemiştim.",OperationVoiceDialog.Action.ASK),"Zeytin · öğrendiklerim");
             return;

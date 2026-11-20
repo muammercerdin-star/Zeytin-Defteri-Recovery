@@ -1,0 +1,4 @@
+# Uygulamaya gömülecek kontrol bankasına GİRMEYECEK gerçek kişi adları (küçük harf, satır başına bir ad).
+# Bu adları içeren cümleler kontrol bankasına alınmaz (cümle bankasında, yalnız geliştirici testinde kalır).
+muammer
+çerdin

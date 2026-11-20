@@ -1,0 +1,287 @@
+# Kontrol bankası (İP8): bilgi paketi bu cümlelerin sonucunu değiştirirse uygulanmaz.
+# tests/sentence_bank/cumleler.tsv'nin 'dogru' satırlarından üretilir (tools/make_control_bank.py); elle düzenleme.
+# Uydurma örnek cümlelerdir; gerçek kişi adı ya da kişisel veri yoktur (testle denetlenir).
+Elek aç	EKRAN_AC	ekran=ELEK
+Piyasayı aç	EKRAN_AC	ekran=MARKET
+Girelli’yi en son ne zaman suladım?	SORU_IRRIGATION	-
+Son gübreleme ne zaman?	SORU_FERTILIZER	-
+Bu sezon kaç kilo hasat yaptım?	SORU_HARVEST	-
+Bu sezon masrafım kaç?	SORU_EXPENSE	-
+Satış gelirim kaç?	SORU_REVENUE	-
+2 numara kaç kilo?	SORU_ELEK	boy=2
+Girelli’nin havası nasıl?	SORU_WEATHER	-
+Yarın yağmur var mı?	SORU_WEATHER	-
+Şu an hangi bahçe seçili?	SORU_ACTIVE	-
+Bana bir şarkı söyle	SOHBET	-
+Girelli’de kaç ağaç var?	SORU_TREES	-
+Girelli’nin çeşidi ne?	SORU_VARIETY	-
+En son ne zaman gübre attım?	SORU_FERTILIZER	-
+En son ne zaman ilaçlama yaptım?	SORU_SPRAY	-
+Kaç kilo sattım?	SORU_SOLD	-
+Toplam satışım ne kadar?	SORU_REVENUE	-
+Yağlık kaç kilo?	SORU_ELEK	boy=YAGLIK
+Elek dağılımım nasıl?	SORU_ELEK	-
+Salamurada kaç kilo ürün var?	SORU_BRINE	-
+Hazır ürün kaç kilo?	SORU_READY	-
+Piyasa nasıl?	SORU_MARKET	-
+Akhisar’da 2 numara kaç para?	SORU_MARKET	boy=2
+Nem kaç?	SORU_WEATHER	-
+Rüzgâr kaç?	SORU_WEATHER	-
+Bana sezon özeti ver	SORU_SUMMARY	-
+Bu sezon durumum nasıl?	SORU_SUMMARY	-
+Yarın ilaç atayım mı?	SORU_WEATHER	-
+Gübre dozu kaç gram?	OZEL_CEVAP	-
+iki numara kaç kilo	SORU_ELEK	boy=2
+Toplam hasadım kaç	SORU_HARVEST	-
+Bu sezon kaç kilo hasat yaptım	SORU_HARVEST	-
+Yarın yağmur var mı	SORU_WEATHER	-
+Nem kaç	SORU_WEATHER	-
+Yarın ilaç atayım mı	SORU_WEATHER	-
+Hava nasıl	SORU_WEATHER	-
+Yarın yağmur yağacak mı?	SORU_WEATHER	-
+Bugün yağacak mı	SORU_WEATHER	-
+Önemli bir şey var mı	SORU_TODAY	-
+Havale ne zaman gelecek	ANLASILMADI	-
+Kaç ağaç var	SORU_TREES	-
+Sinek tuzağı astık mı	SORU_OPERATION	islem=Sinek tuzağı
+Gübre masrafım ne kadar	SORU_EXPENSE	islem=Gübre
+Kar zarar ne durumda	SORU_SUMMARY	-
+Son sulama ne zaman?	SORU_IRRIGATION	-
+Toplam hasat kaç?	SORU_HARVEST	-
+Hangi bahçe daha çok verdi	SORU_HARVEST	-
+Elek sonucu ne	SORU_ELEK	-
+Dün ne yaptık	SORU_OPERATION	-
+Girelli ile Afşar karşılaştır	SORU_COMPARISON	-
+Girelli’ye suyu en son ne vakit verdik ya	ANLASILMADI	-
+Bu ay damlaya kaç para gitti	SORU_MARKET	-
+Damlaya ne kadar para verdik	ANLASILMADI	-
+Ne sorabilirim?	ANLASILMADI	-
+Traktörün radyosunu aç	ANLASILMADI	-
+Suyu ne vakit verdik	ANLASILMADI	-
+Dışarısı soğuk mu	ANLASILMADI	-
+Bu ay Girelli’yi kaç kere suladık	SORU_IRRIGATION	-
+Hava nasıl?	SORU_WEATHER	-
+Hangi bahçe daha çok verdi?	SORU_HARVEST	-
+Toplam sulama kaç kez?	SORU_IRRIGATION	-
+Toplam son satış ne zaman?	SORU_REVENUE	-
+Mazot masrafı	SORU_EXPENSE	islem=Mazot
+Kaç ağaç var?	SORU_TREES	-
+Bugün bahçede ne var?	SORU_TODAY	-
+Girelli ile Afşar’ı karşılaştır.	SORU_COMPARISON	-
+Son satış ne zaman?	SORU_REVENUE	-
+Son alıcı kim?	SORU_REVENUE	-
+Bu ay masrafım kaç?	SORU_EXPENSE	-
+Bu hafta ne yaptık?	SORU_OPERATION	-
+Geçen ay kaç kilo hasat yaptım?	SORU_HARVEST	-
+1 numara kaç para?	SORU_MARKET	boy=1
+Alaşehir'de double fiyatı ne?	SORU_MARKET	boy=DOUBLE
+Anlamadığın cümleleri göster	ANLAMADIKLARI_GOSTER	-
+neleri anlamadın	ANLAMADIKLARI_GOSTER	-
+anlamadıklarını sil	ANLAMADIKLARI_SIL	-
+anlamıyorsun sen	SOHBET	-
+ben anlamadım	ANLASILMADI	-
+Girelli'den 300 kilo topladık	HASAT	toplam=300
+Dün 3 numara 120, 2 numara 80 hasat ettik	HASAT	2no=80;3no=120;toplam=200;gun=-1
+Bugün 1,5 ton topladık	HASAT	toplam=1500
+Bugün beş yüz kilo zeytin çırptık	HASAT	toplam=500
+Bu sezon kaç kilo topladım?	SORU_HARVEST	-
+bu sezon kac kilo topladim	SORU_HARVEST	-
+3 numara 120 kilo sattım	ELEK	3no=120;satis=evet
+topladık	HASAT	-
+Ahmet'ten ne kadar alacağım var?	ALACAK_SORU	-
+Kim bana borçlu?	ALACAK_SORU	-
+Bu sezon satışım ne?	SORU_REVENUE	-
+Kime borcum var?	ANLASILMADI	-
+Merhaba	SOHBET	-
+adım ne	SOHBET	-
+nasılsın	SOHBET	-
+hahaha	SOHBET	-
+fıkra anlat	SOHBET	-
+adın ne	SOHBET	-
+Bugün ilaçladım	ISLEM	tur=İlaçlama
+selam	SOHBET	-
+bu sezon masrafım ne kadar oldu acaba	SORU_EXPENSE	-
+bana Mehmet abi de	SOHBET	-
+adımı unut	SOHBET	-
+Sen zekisin maşallah	SOHBET	-
+120 kilo 45 liradan kaç eder	SOHBET	-
+300 çarpı 40	SOHBET	-
+50.000 x 50.000	SOHBET	-
+elli bin bölü dört	SOHBET	-
+12,5 kere 8	SOHBET	-
+1000 eksi 250	SOHBET	-
+5000'in yüzde 10'u kaç	SOHBET	-
+3 numara 120 kilo 2 numara 80	ELEK	2no=80;3no=120
+canım sıkkın	SOHBET	-
+bu sene zeytin az	SOHBET	-
+kolay gelsin	SOHBET	-
+robot musun	SOHBET	-
+zeytin ne zaman toplanır	SOHBET	-
+salak mısın sen	SOHBET	-
+toplam ne kadar hasat ettim	SORU_HARVEST	-
+Beni artık Mehmet abi diye çağır	SOHBET	-
+Benim adım Ali Rıza	SOHBET	-
+Bana abi de	SOHBET	-
+Bana bir türkü söyle de	SOHBET	-
+merhaba	SOHBET	-
+nerelisin	SOHBET	-
+nereliyim	SOHBET	-
+Ben Edremitliyim	SOHBET	-
+iyiyim sen	SOHBET	-
+naber	SOHBET	-
+pek iyi değilim	SOHBET	-
+oğlum askere gitti özledim	SOHBET	-
+iyi akşamlar	SOHBET	-
+budama ne zaman yapılır	SOHBET	-
+zeytin sineği nedir	SOHBET	-
+kaç kilo zeytinden bir kilo yağ çıkar	SOHBET	-
+sızma ne demek	SOHBET	-
+asit neden yükselir	SOHBET	-
+Memecik nasıl bir zeytin	SOHBET	-
+zeytin çeşitleri neler	SOHBET	-
+son gübre ne zaman verdim	SORU_FERTILIZER	-
+zeytin sineği için hangi ilaç	SORU_SPRAY	-
+Meydan'a yaz: yağmur yağdı	KAYIT_POST	-
+1 numara 40 kilo daha 20 kilo	ELEK	1no=40
+bu ay ne yapılır	SOHBET	-
+saat kaç	SOHBET	-
+bilmece sor	SOHBET	-
+bir atasözü söyle	SOHBET	-
+şarkı söyle	SOHBET	-
+100 artı 200 artı 300	SOHBET	-
+2 artı 3 çarpı 4	SOHBET	-
+göğsüm ağrıyor	SOHBET	-
+seçim kim kazanır sence	SOHBET	-
+3 numara 120	ELEK	3no=120
+2 numara 50	ELEK	2no=50
+1 numara 10	ELEK	1no=10
+3 numara 40 kilo Özer'e sattım bitti	ELEK	3no=40;satis=evet;alici=Özer
+3 numara 120 kilo	ELEK	3no=120
+2 numara 80, double 20	ELEK	double=20;2no=80
+3 numara yanlış 100 olacak	ELEK	3no=100
+3 numara kaç	SORU_ELEK	boy=3
+4 numara 10	ELEK	4no=10
+1 numara 50	ELEK	1no=50
+3 numara 30	ELEK	3no=30
+2 numara 20	ELEK	2no=20
+3 numarayı sil	OZEL_CEVAP	-
+2 numara 10	ELEK	2no=10
+3 numaradan 120 kilo	ELEK	3no=120
+2 numarayı 80 yap	ELEK	2no=80
+3 numara 100	ELEK	3no=100
+Bugün 3 numara 120 kilo	ELEK	3no=120
+Bugün 3 numara 120 kilo, 2 numara 80 kilo sattım	ELEK	2no=80;3no=120;satis=evet
+3 numara 120 kilo satmadım	ELEK	3no=120;satis=hayir
+üç numara yüz yirmi kilo	ELEK	3no=120
+bir numara elli kilo iki numara otuz beş	ELEK	1no=50;2no=35
+120 kilo 3 numara, 80 kilo 2 numara	ELEK	2no=80;3no=120
+duble yirmi kilo yağlık otuz beş buçuk	ELEK	double=20;yaglik=35.5
+Double 13 kilo 1 numara 82 2 numara 235 3 numara 352 4 numara 195 yağlık 72	ELEK	double=13;1no=82;2no=235;3no=352;4no=195;yaglik=72
+3. numara 40 kg	ELEK	3no=40
+3numara 40kg	ELEK	3no=40
+birinci 60 kilo ikinci 40 kilo	ELEK	1no=60;2no=40
+3 numara 1.200 kilo	ELEK	3no=1200
+2 numara bin iki yüz elli kilo	ELEK	2no=1250
+3 numara 12,5 kilo	ELEK	3no=12.5
+3 numara 120 kilo Ahmet'e sattım	ELEK	3no=120;satis=evet;alici=Ahmet
+2 numara 50 kilo Mehmet Yılmaz'a sattım	ELEK	2no=50;satis=evet;alici=Mehmet Yılmaz
+Bugün 3 numara kaç kilo?	SORU_ELEK	boy=3
+3 numara 120 kilo mu	SORU_ELEK	boy=3
+Bu sezon 3 numara ne kadar	SORU_ELEK	boy=3
+Bugün elek kaydı ekle	ELEK_AC	-
+3 numara	SORU_ELEK	boy=3
+120 kilo	ANLASILMADI	-
+3 numara 120 kilo sil	OZEL_CEVAP	-
+Yarın yağmur yağacak mı	SORU_WEATHER	-
+1 numara 10 kilo 2 numara 5	ELEK	1no=10;2no=5
+Bugün yağmur var mı?	SORU_WEATHER	-
+Bugün en düşük kaç?	SORU_WEATHER	-
+5 günlük hava nasıl?	SORU_WEATHER	-
+Dün 2 saat su verdim 150 lira	ISLEM	tur=Sulama;gun=-1;miktar=2;birim=saat;tutar=150
+Gübre attık	ISLEM	tur=Gübre
+Dün Girelli'ye üç saat su verdik, elektrik de 350 lira.	ISLEM	tur=Sulama;gun=-1;miktar=3;birim=saat;tutar=350
+Dün Girelliyi ilaçladık 2 litre 2000 tuttu	ISLEM	tur=İlaçlama;gun=-1;miktar=2;birim=L;tutar=2000
+Dün Girelli'de sulama yaptık 2 saat elektrik 200	ISLEM	tur=Sulama;gun=-1;miktar=2;birim=saat;tutar=200
+Dün Kuyu dibinde damlamayı açtık 4 saat	ISLEM	tur=Sulama;gun=-1;miktar=4;birim=saat
+Bugün Girelli'yi suladım 2 saat	ISLEM	tur=Sulama;miktar=2;birim=saat
+Bugün 40 ağaç budadım	ISLEM	tur=Budama;miktar=40;birim=ağaç
+Bugün suladım	ISLEM	tur=Sulama
+Bugün Girelli'yi ilaçladım	ISLEM	tur=İlaçlama
+Dün 2 saat su verdim	ISLEM	tur=Sulama;gun=-1;miktar=2;birim=saat
+Hacılar'ı suladık	ISLEM	tur=Sulama
+18 kilo gübre attık	ISLEM	tur=Gübre;miktar=18;birim=kg
+20 tane tuzak astım	ISLEM	tur=Sinek tuzağı;miktar=20;birim=adet
+Bahçeyi sürdüm	ISLEM	tur=Toprak İşleme
+Bugün çapaladık	ISLEM	tur=Toprak İşleme
+3 işçi çalıştı 1500 lira	ISLEM	tur=İşçilik;miktar=3;birim=kişi;tutar=1500
+Mazot aldım 500 lira	ISLEM	tur=Mazot;tutar=500
+Bugün nakliye yaptım 800 lira	ISLEM	tur=Nakliye;tutar=800
+Son ilaçlama ne zaman?	SORU_SPRAY	-
+son sulama ne zaman	SORU_IRRIGATION	-
+Bu sezon masrafım kaç	SORU_EXPENSE	-
+Dün suladım	ISLEM	tur=Sulama;gun=-1
+Evvelsi gün gübre attım	ISLEM	tur=Gübre;gun=-2
+18 kilo gübre attık 900 lira	ISLEM	tur=Gübre;miktar=18;birim=kg;tutar=900
+Mazot aldım 25 litre 1000 lira	ISLEM	tur=Mazot;miktar=25;birim=L;tutar=1000
+500 ml ilaç attım	ISLEM	tur=İlaçlama;miktar=500;birim=ml
+Bugün iki yüz ağaç budadık	ISLEM	tur=Budama;miktar=200;birim=ağaç
+Bugün Girelli'yi ilaçladım 500 ml 300 lira	ISLEM	tur=İlaçlama;miktar=500;birim=ml;tutar=300
+Dün Girelliye 3 saat su saldık elektrik 350 tuttu	ISLEM	tur=Sulama;gun=-1;miktar=3;birim=saat;tutar=350
+Bugün gübre serptik 50 kilo 1500'e patladı	ISLEM	tur=Gübre;miktar=50;birim=kg;tutar=1500
+Dün mazot aldık mazot parası 500	ISLEM	tur=Mazot;gun=-1;tutar=500
+Bugün kükürt attık	ISLEM	tur=İlaçlama
+Dün Girelli'de 3 işçi çalıştı, yevmiye kişi başı 1200.	ISLEM	tur=İşçilik;gun=-1;miktar=3;birim=kişi;tutar=3600
+Bugün Kuyu dibine 10 tuzak astık	ISLEM	tur=Sinek tuzağı;miktar=10;birim=adet
+evelsi gün kuyudibine gübre attık 20 kilo	ISLEM	tur=Gübre;gun=-2;miktar=20;birim=kg
+Dün akşam Girelli'de motoru çalıştırıp hortumla zeytinlere can suyu verdik, mazotu 300 tuttu	ISLEM	tur=Sulama;gun=-1;tutar=300
+Bugün ağaçlara suyu açtık 3 saat	ISLEM	tur=Sulama;miktar=3;birim=saat
+Hasat gireceğim	HASAT	-
+50 kilo salamura bastım	KAYIT_BRINE	-
+Yeni bahçe ekle	KAYIT_GARDEN	-
+Meydan'a yaz: yağmur başladı	KAYIT_POST	-
+Salamura stoğum	SORU_BRINE	-
+3 numara 120, 2 numara 80	ELEK	2no=80;3no=120
+on iki işçi çalıştı bin beş yüz lira	ISLEM	tur=İşçilik;miktar=12;birim=kişi;tutar=1500
+bugun ilacladik	ISLEM	tur=İlaçlama
+İzmit'ten gübre aldık 50 TL	ISLEM	tur=Gübre;tutar=50
+dabıl dört kilo bir numara on beş kilo iki numara yirmi beş kilo üç numara on dört kilo dört numara beş kilo yağlık yok	ELEK	double=4;1no=15;2no=25;3no=14;4no=5
+karneni göster	KARNE_GOSTER	-
+karnen nasıl	KARNE_GOSTER	-
+double 2 kilo 220 lira	ELEK	double=2;double_fiyat=110
+3 numara 120 kilo 110 liradan sattım	ELEK	3no=120;3no_fiyat=110;satis=evet
+Double iki kilo iki yüz yirmi TL	ELEK	double=2;double_fiyat=110
+double 2 kilo 220 lira 1 numara 3 kilo 300 lira	ELEK	double=2;double_fiyat=110;1no=3;1no_fiyat=100
+İzmit'ten gübre aldık 50 kilo	ISLEM	tur=Gübre;miktar=50;birim=kg
+3 çuval gübre attık	ISLEM	tur=Gübre;miktar=3;birim=çuval
+3 numara 120 kilo 110 lira	ELEK	3no=120;3no_fiyat=110
+Double 150 kilo 140 lira	ELEK	double=150;double_fiyat=140
+Double 50 kilo kilosu 140 lira	ELEK	double=50;double_fiyat=140
+Double 50 kilo 140 lira kilosu	ELEK	double=50;double_fiyat=140
+1 numara 200 kilo 25 bin lira	ELEK	1no=200;1no_fiyat=125
+Yağlık 300 kilo 40 lira	ELEK	yaglik=300;yaglik_fiyat=40
+sinek tuzağı astık	ISLEM	tur=Sinek tuzağı
+Girelli'ye 15 sinek tuzağı astık	ISLEM	tur=Sinek tuzağı;miktar=15;birim=adet
+bugün tuzağı değiştirdik	ISLEM	tur=Sinek tuzağı
+ot biçtik	ISLEM	tur=Diğer;not=Ot biçme
+bugün Girelli'de otları biçtik 2 saat	ISLEM	tur=Diğer;not=Ot biçme;miktar=2;birim=saat
+kalem aşısı yaptık	ISLEM	tur=Diğer;not=Aşılama
+dün 30 ağaca aşı yaptık	ISLEM	tur=Diğer;not=Aşılama;gun=-1;miktar=30;birim=ağaç
+kultivatör çektik	ISLEM	tur=Toprak İşleme
+bugün işçi çalıştı	ISLEM	tur=İşçilik
+Ali Usta'ya 300 kilo sattım, parasını haftaya verecek	SATIS	alici=Ali Usta;kilo=300;odeme=alinmadi;vade=haftaya;adimlar=SATIS,ALACAK,HATIRLATMA
+Hasan Abi'ye 3 numaradan 250 kilo sattık, kilosu 70 liradan, parasını cuma verecek	ELEK	3no=250;3no_fiyat=70;satis=evet;alici=Hasan Abi
+Kemal'e 1 numara 120 kilo sattım parası sonra	ELEK	1no=120;satis=evet;alici=Kemal
+Ayşe Hanım'a double 80 kilo sattım, parasını ayın 15'inde verecek	ELEK	double=80;satis=evet;alici=Ayşe Hanım
+Kooperatif'e 500 kilo yağlık sattık, ödemesini 10 gün sonra yapacak	ELEK	yaglik=500;satis=evet;alici=Kooperatif
+Mustafa'ya 200 kilo veresiye sattım	SATIS	alici=Mustafa;kilo=200;odeme=alinmadi;adimlar=SATIS,ALACAK
+Ali Usta'ya 300 kilo sattım, parasını yarın getirecek	SATIS	alici=Ali Usta;kilo=300;odeme=alinmadi;vade=yarin;adimlar=SATIS,ALACAK,HATIRLATMA
+Ayşe Hanım'a 80 kilo sattım, parasını ayın 15'inde verecek	SATIS	alici=Ayşe Hanım;kilo=80;odeme=alinmadi;vade=ayin 15;adimlar=SATIS,ALACAK,HATIRLATMA
+Kooperatif'e 500 kilo sattık, ödemesini 10 gün sonra yapacak	SATIS	alici=Kooperatif;kilo=500;odeme=alinmadi;vade=10 gun sonra;adimlar=SATIS,ALACAK,HATIRLATMA
+Hasan Abi'ye 250 kilo sattık, kilosu 70 lira, parasını cuma verecek	SATIS	alici=Hasan Abi;kilo=250;fiyat=70;odeme=alinmadi;vade=cuma;adimlar=SATIS,ALACAK,HATIRLATMA
+Ali Usta'ya 300 kilo sattım, parasını peşin aldım	SORU_SOLD	-
+bugün silkeledik	HASAT	-
+Girelli'yi 300 kilo silkeledik	HASAT	toplam=300
+bugün silkeliyoruz	HASAT	-
+yarın Kuyu dibini silkeleyeceğiz	HASAT	-
+zeytin nasıl silkelenir	SOHBET	-
+silkeleme mi sırık mı daha iyi	SOHBET	-

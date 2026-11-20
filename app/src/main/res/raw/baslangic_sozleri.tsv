@@ -1,0 +1,16 @@
+# Başlangıç sözlüğü (İP8): uygulamanın içinde gelen ilk bilgi paketi. Satır başına: söz<TAB>anlam.
+# Anlam, öğretme düğmesinin adıdır: ilaçlama, gübre, budama, sulama, hasat, toprak işleme, sinek tuzağı, işçilik,
+# ot biçme, aşılama. Yeni söz ekleyince: bash tools/make_pack.sh (paketi üretir, cümle bankasından geçirir).
+# sürüm: 1
+# tarih: 2026-11-20
+bakırladık	ilaçlama
+göztaşıladık	ilaçlama
+bordoladık	ilaçlama
+suvardık	sulama
+silktik	hasat
+sırıkladık	hasat
+devşirdik	hasat
+diskaradık	toprak işleme
+belledik	toprak işleme
+seyrelttik	budama
+kalemledik	aşılama
