@@ -144,6 +144,7 @@ public final class BuyersActivity extends Activity {
         cols.addView(stat("Alacağın", ElekSaleModel.tl(open), openCount == 0 ? "açık alacak yok" : openCount + " alıcıda",
                 GreenTheme.color(R.color.zd_warning)), new LinearLayout.LayoutParams(0, -2, 1));
         summary.addView(cols);
+        summary.setTag(TanecikScenes.TAG_RECEIVABLES);   // Tanecik "alacaklarımı göster" sahnesi burayı parlatır
         body.addView(summary, gap(14));
 
         if (sales > 0) body.addView(reportEntry(), gap(12));

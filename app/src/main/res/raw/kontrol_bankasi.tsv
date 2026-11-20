@@ -346,3 +346,14 @@ bugün topluyoruz	HASAT	-
 Karşıyaka'dan 8 çuval zeytin geldi	HASAT	-
 3 numara 120 kilo kilosu 110'dan	ELEK	3no=120;3no_fiyat=110
 Ali Usta'ya 300 kilo sattım kilosu 140'tan	SATIS	alici=Ali Usta;kilo=300;fiyat=140;adimlar=SATIS
+Tanecik, alacaklarımı göster	GOSTER	sahne=alacaklar
+bu ayki masraflarım	GOSTER	sahne=masraflar
+ödeme hatırlatmalarım	GOSTER	sahne=odeme_hatirlatmalari
+hasat raporunu aç	GOSTER	sahne=hasat_raporu
+piyasa fiyatına bak	GOSTER	sahne=piyasa
+Elek nasıl girilir?	OGRET	sahne=elek_ogret
+Satış nasıl yapılır?	OGRET	sahne=satis_ogret
+Ne kadar alacağım var?	ALACAK_SORU	-
+bu ay ne kadar masraf yaptım	SORU_EXPENSE	-
+piyasa fiyatı ne	SORU_MARKET	-
+Benim satış fiyatlarım ne	SORU_MARKET	-

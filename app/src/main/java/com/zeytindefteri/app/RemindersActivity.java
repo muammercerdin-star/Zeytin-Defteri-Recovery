@@ -51,7 +51,7 @@ public final class RemindersActivity extends Activity {
         TextView back=label("‹  Hatırlatmalar",24,true);root.addView(back);back.setOnClickListener(v->finish());
         TextView hint=label("İnternet gerekmez. Android güç tasarrufu bildirimi geciktirebilir. Hatırlatmalar seçili rapor sezonundan bağımsızdır.",13,false);root.addView(hint);
         root.addView(button("+ Yeni hatırlatma",()->{if(loaded)edit(null);}));
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));list=column();scroll.addView(list);
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));list=column();list.setTag(TanecikScenes.TAG_REMINDERS);scroll.addView(list);
         readIntent(getIntent());
     }
     private void readIntent(Intent i){openId=i.getLongExtra("reminder_id",-1);openOwner=i.getStringExtra("reminder_owner");}

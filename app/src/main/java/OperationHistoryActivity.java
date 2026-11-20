@@ -127,6 +127,7 @@ public class OperationHistoryActivity extends Activity {
         tvFilteredCost = label("0 TL", 18, text, true);
         stats.addView(statBox("İşlem sayısı", tvRecordCount), weight(0));
         stats.addView(statBox("Toplam masraf", tvFilteredCost), weight(8));
+        stats.setTag(TanecikScenes.TAG_EXPENSES);   // Tanecik "masraflarım" sahnesi burayı parlatır
         body.addView(stats);
 
         btnGardenFilter = label("", 13, text, true);

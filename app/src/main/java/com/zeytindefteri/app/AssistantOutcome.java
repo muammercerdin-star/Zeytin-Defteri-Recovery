@@ -36,6 +36,8 @@ final class AssistantOutcome {
         OIL_FORM,
         /** Gelecek zamanlı iş (eğitim turu 1): "hatırlatayım mı?" diye sorulur; kurulursa Geri al ile silinir. */
         REMINDER,
+        /** Tanecik sahnesi (yönlendiren asistan): ekranı açar, parlatır, okur ya da adım adım öğretir; kayıt yapmaz. */
+        SCENE,
         /** Kayıt yolu yok: internet yardımcısı denenir, sonra rest(). */
         LATER,
         /** Selam, teşekkür, ilaç dozu gibi hazır cevap. */
@@ -92,6 +94,9 @@ final class AssistantOutcome {
         }
         if (LearnedBrain.payload(d, TaskReminderEntry.class) != null) {
             return Kind.REMINDER;
+        }
+        if (LearnedBrain.payload(d, TanecikScenes.Scene.class) != null) {
+            return Kind.SCENE;
         }
         return Kind.LATER;
     }

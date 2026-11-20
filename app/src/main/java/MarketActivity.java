@@ -520,6 +520,7 @@ public class MarketActivity extends Activity {
                         GreenTheme.color(R.color.zd_green),
                         true
                 );
+        tvMedianPrice.setTag(TanecikScenes.TAG_MARKET);   // Tanecik "piyasa fiyatına bak" sahnesi burayı parlatır
 
         medianBox.addView(
                 tvMedianPrice

@@ -332,6 +332,7 @@ public class ReportActivity extends Activity {
                 createStatBox(
                         "Toplam Hasat"
                 );
+        harvestBox.setTag(TanecikScenes.TAG_HARVEST_REPORT);   // Tanecik "hasat raporunu aç" sahnesi burayı parlatır
 
         tvTotalHarvest =
                 createText(

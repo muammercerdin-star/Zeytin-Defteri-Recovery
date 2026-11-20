@@ -88,3 +88,6 @@ Muammer'in bahçesinde 1,5 ton silktik	bahçesiz	HARVEST_FORM · HASAT toplam=15
 # Eğitim turu 1 — madde 9: 'kilosu 140'tan' (lira denmeden) kilo fiyatı okunur.
 Hasan'a 200 kilo double sattım kilosu 140'tan	bahçeli	ELEK_FORM · ELEK double=200;double_fiyat=140;satis=evet;alici=Hasan · Double 200 kg (140 TL/kg)
 Hasan'a 200 kilo double sattım kilosu 140'tan	bahçesiz	ELEK_FORM · ELEK double=200;double_fiyat=140;satis=evet;alici=Hasan · Double 200 kg (140 TL/kg)
+# Yönlendiren asistan: 'Alacaklarım' (iyelikli istek, soru sözü yok) Tanecik sahnesi: Alıcılarım açılır, en büyük alacak parlatılır ve alacak cevabı okunur.
+Alacaklarım	bahçeli	SCENE · GOSTER sahne=alacaklar
+Alacaklarım	bahçesiz	SCENE · GOSTER sahne=alacaklar

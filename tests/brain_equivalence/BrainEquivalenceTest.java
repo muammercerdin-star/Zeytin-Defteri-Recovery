@@ -131,6 +131,14 @@ public class BrainEquivalenceTest {
         if (!wasRecord && newAction) {
             return true;
         }
+        // Yönlendiren asistan: kayıt olmayan cümle Tanecik sahnesi oldu ("alacaklarımı göster", "Elek nasıl girilir?").
+        if (!wasRecord && (got.is(ActionCatalog.GOSTER) || got.is(ActionCatalog.OGRET))) {
+            return true;
+        }
+        // "alacaklarımı göster": alacak cevabı sahnede de okunur (Alıcılar açılır, en büyük alacak parlatılır).
+        if (want[0].equals(ActionCatalog.ALACAK_SORU) && got.is(ActionCatalog.GOSTER) && "alacaklar".equals(got.fields.get("sahne"))) {
+            return true;
+        }
         // Eğitim turu 1 (madde 5): gelecek zamanlı iş cümlesi kayıt değil hatırlatmadır ("yarın … silkeleyeceğiz" eskiden hasattı).
         return want[0].equals(ActionCatalog.HASAT) && got.is(ActionCatalog.HATIRLATMA)
                 && LearnedBrain.payload(got, TaskReminderEntry.class) != null;

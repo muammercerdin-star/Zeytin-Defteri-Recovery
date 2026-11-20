@@ -357,3 +357,14 @@ bugün topluyoruz	HASAT	-	dogru	egitim_turu_1
 Karşıyaka'dan 8 çuval zeytin geldi	HASAT	-	dogru	egitim_turu_1
 3 numara 120 kilo kilosu 110'dan	ELEK	3no=120;3no_fiyat=110	dogru	egitim_turu_1
 Ali Usta'ya 300 kilo sattım kilosu 140'tan	SATIS	alici=Ali Usta;kilo=300;fiyat=140;adimlar=SATIS	dogru	egitim_turu_1
+Tanecik, alacaklarımı göster	GOSTER	sahne=alacaklar	dogru	yonlendiren_sahne
+bu ayki masraflarım	GOSTER	sahne=masraflar	dogru	yonlendiren_sahne
+ödeme hatırlatmalarım	GOSTER	sahne=odeme_hatirlatmalari	dogru	yonlendiren_sahne
+hasat raporunu aç	GOSTER	sahne=hasat_raporu	dogru	yonlendiren_sahne
+piyasa fiyatına bak	GOSTER	sahne=piyasa	dogru	yonlendiren_sahne
+Elek nasıl girilir?	OGRET	sahne=elek_ogret	dogru	yonlendiren_sahne
+Satış nasıl yapılır?	OGRET	sahne=satis_ogret	dogru	yonlendiren_sahne
+Ne kadar alacağım var?	ALACAK_SORU	-	dogru	yonlendiren_koruma
+bu ay ne kadar masraf yaptım	SORU_EXPENSE	-	dogru	yonlendiren_koruma
+piyasa fiyatı ne	SORU_MARKET	-	dogru	yonlendiren_koruma
+Benim satış fiyatlarım ne	SORU_MARKET	-	dogru	yonlendiren_koruma

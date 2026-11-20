@@ -91,6 +91,9 @@ final class ActionCatalog {
     static final String HATIRLATMA = "HATIRLATMA";
     static final String KAYIT_BRINE = "KAYIT_BRINE";
     static final String YAGHANE = "YAGHANE";
+    /** Tanecik sahneleri (yönlendiren asistan): GÖSTER sormadan yapılır; ÖĞRET kayıt yapmaz. */
+    static final String GOSTER = "GOSTER";
+    static final String OGRET = "OGRET";
     static final String KAYIT_GARDEN = "KAYIT_GARDEN";
     static final String KAYIT_POST = "KAYIT_POST";
     static final String TEZGAH_TARTI = "TEZGAH_TARTI";
@@ -154,6 +157,9 @@ final class ActionCatalog {
         add(new Action(EKRAN_AC, "Ekran aç", Kind.OKUMA, "Hangi ekranı açayım?", Level.IZINLE_KENDISI, true, "", "ekran"));
         add(new Action(SORU, "Kayıtlardan soru", Kind.OKUMA, "", Level.IZINLE_KENDISI, true, SORU, "boy", "islem"));
         add(new Action(ALACAK_SORU, "Alacak sorusu", Kind.OKUMA, "", Level.IZINLE_KENDISI, true, ""));
+        // Yönlendiren asistan: Tanecik ekranı açar, parlatır, okur (GÖSTER, sormadan) ya da adım adım öğretir (ÖĞRET).
+        add(new Action(GOSTER, "Tanecik gösterir", Kind.OKUMA, "Neyi göstereyim?", Level.IZINLE_KENDISI, true, "", "sahne"));
+        add(new Action(OGRET, "Tanecik öğretir", Kind.OKUMA, "Neyi öğreteyim?", Level.IZINLE_KENDISI, true, "", "sahne"));
         add(new Action(OZEL_CEVAP, "Hazır cevap", Kind.SOHBET, "", Level.IZINLE_KENDISI, true, ""));
         add(new Action(SOHBET, "Sohbet", Kind.SOHBET, "", Level.IZINLE_KENDISI, true, ""));
         add(new Action(KAPAT, "Kapat", Kind.SOHBET, "", Level.IZINLE_KENDISI, true, ""));

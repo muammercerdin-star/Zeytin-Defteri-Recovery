@@ -111,6 +111,18 @@ final class RuleBrain implements Brain {
     /** Kayıt aşaması (kayıtlar okunduktan sonra). cmd: cümlenin soru çözümü (asistan zaten ayrıştırdıysa aynı nesne). */
     Decision recordStage(Input in, BrainContext c, ZeytinAssistantCommand cmd) {
         String raw = in.raw;
+        // Yönlendiren asistan: "Tanecik, alacaklarımı göster", "Elek nasıl girilir?" sahnedir. "Ne kadar alacağım var?",
+        // "Kim bana borçlu?" soru kalır (TanecikScenes.match).
+        TanecikScenes.Scene scene = TanecikScenes.match(raw);
+        // Bugün bir bölümü açan gezinme komutu ("Piyasayı aç", "Elek aç") olduğu gibi kalır; "hasat raporunu aç" bugün
+        // hasat formunu açıyordu: rapor sahnesine gider.
+        boolean navigation = cmd.kind == ZeytinAssistantCommand.Kind.NAVIGATION && scene != null && !"hasat_raporu".equals(scene.id);
+        if (scene != null && !navigation) {
+            String action = scene.level == TanecikScenes.Level.OGRET ? ActionCatalog.OGRET : ActionCatalog.GOSTER;
+            Map<String, String> f = new LinkedHashMap<>();
+            f.put("sahne", scene.id);
+            return found(action, f, "", "Tanecik sahnesi: " + scene.title, scene);
+        }
         // Eğitim turu 1: gelecek zamanlı iş cümlesi kayıt değil, hatırlatmadır ("yarın Girelli'yi sulayacağız").
         // Soru sözü varsa soru kalır; "hasat gireceğim" gibi kayıt açma sözleri buraya düşmez. Her zaman sorulur.
         TaskReminderEntry reminder = TaskReminderEntry.parse(raw);
