@@ -10,7 +10,8 @@ trap 'rm -rf "$T"' EXIT
 source "$ROOT/tests/sentence_bank/brain_build.sh"
 EXTRA=()
 for f in "$DIR"/*Test.java; do EXTRA+=("$f"); done
-brain_build "$T" "$A/ContributionCleaner.java" "${EXTRA[@]}"
+brain_build "$T" "$A/ContributionCleaner.java" "$A/CommunityQueue.java" "$A/CommunitySender.java" \
+  "$A/MarketBackendConfig.java" "${EXTRA[@]}"
 for f in "$DIR"/*Test.java; do
   cls=$(basename "$f" .java)
   java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -cp "$BRAIN_CP" "com.zeytindefteri.app.$cls" "$ROOT"

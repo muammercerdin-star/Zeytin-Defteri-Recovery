@@ -32,6 +32,7 @@ public final class LearnedActivity extends Activity {
     private int danger;
     private LinearLayout body;
     private LearnedTerms.Store store;
+    private String owner = "";
 
     /** Asistandan ya da Ayarlar'dan açar. */
     static void open(Context context) {
@@ -55,14 +56,14 @@ public final class LearnedActivity extends Activity {
         muted = GreenTheme.color(R.color.zd_muted);
         danger = GreenTheme.color(R.color.zd_danger);
         DatabaseHelper db = new DatabaseHelper(this);
-        String owner;
         try {
-            owner = db.getActiveOwnerUid();
+            String active = db.getActiveOwnerUid();
+            owner = active == null ? "" : active;
         } finally {
             db.close();
         }
         // Asistanla aynı sözlük (ZeytinAssistantController.learned: aynı hesap).
-        store = LearnedTermsDb.store(this, owner == null ? "" : owner);
+        store = LearnedTermsDb.store(this, owner);
         getWindow().setStatusBarColor(bg);
         getWindow().setNavigationBarColor(bg);
         ScrollView scroll = new ScrollView(this);
@@ -174,6 +175,7 @@ public final class LearnedActivity extends Activity {
             return;
         }
         store.remove(key);
+        CommunitySync.forgot(this, owner, key);   // İP8: kuyruktan düşer ya da geri çekilir
         Toast.makeText(this, LearnedScreen.forgotten(t.word), Toast.LENGTH_SHORT).show();
         render();
     }
@@ -202,6 +204,7 @@ public final class LearnedActivity extends Activity {
     private void forgetAll() {
         for (LearnedTerms.Term t : store.all()) {
             store.remove(t.term);
+            CommunitySync.forgot(this, owner, t.term);
         }
         Toast.makeText(this, "Tamam, hepsini unuttum.", Toast.LENGTH_SHORT).show();
         render();

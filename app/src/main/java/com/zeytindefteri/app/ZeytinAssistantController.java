@@ -1277,7 +1277,10 @@ public final class ZeytinAssistantController {
         String a=TurkishText.normalize(answerText);
         LearnedTerms.Choice c=LearnedTerms.choiceFor(answerText);
         if(c!=null){
-            learned().store().put(LearnedTerms.teach(p[1],c,p[2],System.currentTimeMillis()));
+            LearnedTerms.Term taught=LearnedTerms.teach(p[1],c,p[2],System.currentTimeMillis());
+            learned().store().put(taught);
+            // İP8: izin açıksa temizlenmiş katkı kuyruğa (izin varsayılan kapalı; adres yokken hiçbir şey gönderilmez).
+            CommunitySync.taught(activity,learnedOwner,taught);
             lastRaw=p[0];
             meterAgain=true;   // aynı cümle: karnede ikinci kez sayılmaz
             if(ActionCatalog.ISLEM.equals(c.action))teachOpenForm=true;
@@ -1313,6 +1316,7 @@ public final class ZeytinAssistantController {
             return;
         }
         learned().store().remove(t.term);
+        CommunitySync.forgot(activity,learnedOwner,t.term);   // İP8: kuyruktan düşer ya da geri çekilir
         postDialog(new OperationVoiceDialog.Reply("Tamam, “"+t.word+"” sözünü unuttum.",OperationVoiceDialog.Action.CANCEL),"Zeytin · öğrendiklerim");
     }
     /** İnternet yardımcısının çözdüğü ve çiftçinin "evet"le kaydettiği iş: söz yerel sözlüğe (bulut-onaylı). */
@@ -1323,7 +1327,11 @@ public final class ZeytinAssistantController {
         for(LearnedTerms.Choice c:LearnedTerms.CHOICES){
             if(!c.value.equals(type)||!c.note.equals(entry.note))continue;
             LearnedTerms.Store store=learned().store();
-            if(store.get(LearnedTerms.verbRoot(word))==null)store.put(LearnedTerms.teach(word,c,LearnedTerms.SOURCE_CLOUD,System.currentTimeMillis()));
+            if(store.get(LearnedTerms.verbRoot(word))==null){
+                LearnedTerms.Term cloudTaught=LearnedTerms.teach(word,c,LearnedTerms.SOURCE_CLOUD,System.currentTimeMillis());
+                store.put(cloudTaught);
+                CommunitySync.taught(activity,learnedOwner,cloudTaught);
+            }
             return;
         }
     }
