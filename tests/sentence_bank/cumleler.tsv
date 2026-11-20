@@ -297,3 +297,19 @@ bugün silkeliyoruz	HASAT	-	dogru	ip8_silkele
 yarın Kuyu dibini silkeleyeceğiz	HASAT	-	dogru	ip8_silkele
 zeytin nasıl silkelenir	SOHBET	-	dogru	ip8_silkele
 silkeleme mi sırık mı daha iyi	SOHBET	-	dogru	ip8_silkele
+# Eğitim turu 1 (20 Kasım 2026): doğal karışık cümlelerden bulunan eksikler. YAGHANE yeni eylem (yağhane/fabrika kaydı), henüz katalogda yok.
+Hasan'a 200 kilo double sattım kilosu 140'tan	ELEK	double=200;double_fiyat=140;satis=evet;alici=Hasan	beklenen_hata	egitim_turu_1
+dün silktik bugün topluyoruz	HASAT	-	beklenen_hata	egitim_turu_1
+Girelli'den on iki kasa zeytin çıktı	HASAT	-	beklenen_hata	egitim_turu_1
+Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS	beklenen_hata	egitim_turu_1
+iki amele tuttum günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=3000	beklenen_hata	egitim_turu_1
+fabrikaya 40 kasa götürdük	YAGHANE	kasa=40	beklenen_hata	egitim_turu_1
+yağhaneden 120 kilo yağ aldık	YAGHANE	yag=120	beklenen_hata	egitim_turu_1
+yarın Girelli'yi sulayacağız	HATIRLATMA	tur=Sulama;gun=1	beklenen_hata	egitim_turu_1
+ağaçların altını temizledik	ISLEM	tur=Diğer;not=Temizlik	beklenen_hata	egitim_turu_1
+Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000	beklenen_hata	egitim_turu_1
+Hasan borcunun yarısını ödedi	TAHSILAT	alici=Hasan;oran=yarim	beklenen_hata	egitim_turu_1
+zeytinleri salamuraya yatırdık	KAYIT_BRINE	-	beklenen_hata	egitim_turu_1
+ağaçlara kireç attık	ISLEM	tur=Diğer;not=Kireç	beklenen_hata	egitim_turu_1
+Karşıyaka'da piç sürgünleri aldık	ISLEM	tur=Budama	beklenen_hata	egitim_turu_1
+akşama kadar tırmık çektik	ISLEM	tur=Toprak İşleme	beklenen_hata	egitim_turu_1
