@@ -256,8 +256,8 @@ karneni göster	KARNE_GOSTER	-	dogru	ip1_karne
 karnen nasıl	KARNE_GOSTER	-	dogru	ip1_karne
 bugün bakırladık	ISLEM	tur=İlaçlama	beklenen_hata	is_emri_18_kasim
 double 2 kilo 220 lira	ELEK	double=2;double_fiyat=110	dogru	is_emri_18_kasim
-bugün bakır attık	ISLEM	tur=İlaçlama	beklenen_hata	ip1_bilinen_hata
-Bakır attım	ISLEM	tur=İlaçlama	beklenen_hata	operation_voice/OperationVoiceDialogTest.java
+bugün bakır attık	ISLEM	tur=İlaçlama	dogru	ip1_bilinen_hata
+Bakır attım	ISLEM	tur=İlaçlama	dogru	operation_voice/OperationVoiceDialogTest.java
 Deltametrin attım 250 ml	ISLEM	tur=İlaçlama;miktar=250;birim=ml	beklenen_hata	operation_voice/OperationVoiceDialogTest.java
 Girelli kaç yaşında?	SORU_AGE	-	beklenen_hata	assistant/AssistantCommandTest.java
 3 numara 120 kilo 110 liradan sattım	ELEK	3no=120;3no_fiyat=110;satis=evet	dogru	ip2_lira
@@ -306,13 +306,13 @@ iki amele tuttum günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tuta
 fabrikaya 40 kasa götürdük	YAGHANE	kasa=40	dogru	egitim_turu_1
 yağhaneden 120 kilo yağ aldık	YAGHANE	yag=120	dogru	egitim_turu_1
 yarın Girelli'yi sulayacağız	HATIRLATMA	tur=Sulama;gun=1	dogru	egitim_turu_1
-ağaçların altını temizledik	ISLEM	tur=Diğer;not=Temizlik	beklenen_hata	egitim_turu_1
+ağaçların altını temizledik	ISLEM	tur=Diğer;not=Temizlik	dogru	egitim_turu_1
 Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000	dogru	egitim_turu_1
 Hasan borcunun yarısını ödedi	TAHSILAT	alici=Hasan;oran=yarim	dogru	egitim_turu_1
 zeytinleri salamuraya yatırdık	KAYIT_BRINE	-	beklenen_hata	egitim_turu_1
-ağaçlara kireç attık	ISLEM	tur=Diğer;not=Kireç	beklenen_hata	egitim_turu_1
-Karşıyaka'da piç sürgünleri aldık	ISLEM	tur=Budama	beklenen_hata	egitim_turu_1
-akşama kadar tırmık çektik	ISLEM	tur=Toprak İşleme	beklenen_hata	egitim_turu_1
+ağaçlara kireç attık	ISLEM	tur=Diğer;not=Kireç	dogru	egitim_turu_1
+Karşıyaka'da piç sürgünleri aldık	ISLEM	tur=Budama	dogru	egitim_turu_1
+akşama kadar tırmık çektik	ISLEM	tur=Toprak İşleme	dogru	egitim_turu_1
 bu sene kaç kilo sattım	SORU_SOLD	-	dogru	egitim_turu_1_koruma
 ne kadar sattım	SORU_SOLD	-	dogru	egitim_turu_1_koruma
 ne zaman ilaçlayacağız?	SORU_SPRAY	-	dogru	egitim_turu_1_koruma
@@ -345,3 +345,8 @@ yarın akşam budayacağız	HATIRLATMA	tur=Budama;gun=1;saat=18	dogru	egitim_tur
 cuma günü gübre atacağız	HATIRLATMA	tur=Gübre;zaman=cuma	dogru	egitim_turu_1
 öbür gün ot biçeceğiz	HATIRLATMA	tur=Diğer;not=Ot biçme;gun=2	dogru	egitim_turu_1
 yarın tırpanlayacağız	ANLASILMADI	-	dogru	egitim_turu_1_koruma
+kireç sürdük	ISLEM	tur=Diğer;not=Kireç	dogru	egitim_turu_1
+sürgün aldık	ISLEM	tur=Budama	dogru	egitim_turu_1
+bugün göztaşı attık	ISLEM	tur=İlaçlama	dogru	egitim_turu_1
+yarın bakır atacağız	HATIRLATMA	tur=İlaçlama;gun=1	dogru	egitim_turu_1
+ağaçlar sürgün verdi	SORU_TREES	-	dogru	egitim_turu_1_koruma

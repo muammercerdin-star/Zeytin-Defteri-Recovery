@@ -70,6 +70,15 @@ final class LearnedBrain implements Brain {
         if (t == null) {
             return rules.recordStage(in, c, cmd);
         }
+        // Eğitim turu 1: öğretilen sözün gelecek zamanı ("yarın bakırlayacağız") kayıt değil hatırlatmadır.
+        String job = ActionCatalog.HASAT.equals(t.action) ? TaskReminderEntry.HARVEST : t.value;
+        TaskReminderEntry later = TaskReminderEntry.taught(in.raw, job, t.note);
+        if (later != null) {
+            store.used(t.term);
+            String why = "Öğrendiğim söz, gelecek zaman: " + t.word + " = " + t.meaning();
+            return new Decision(ActionCatalog.HATIRLATMA, later.fields(), 1, why, "", ActionCatalog.get(ActionCatalog.HATIRLATMA).level,
+                    new Taught(later, t), NAME);
+        }
         Input taught = new Input(LearnedTerms.rewrite(in.raw, t));
         Decision d = rules.recordStage(taught, c, ZeytinAssistantCommand.parse(taught.raw));
         if (!means(d, t)) {

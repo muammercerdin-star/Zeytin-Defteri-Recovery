@@ -84,6 +84,23 @@ public class OperationVoiceEntryTest {
         check(e != null && e.cost == 3600, "yevmiyesi kişi başı");
         e = p("3 işçi çalıştı 1500 lira");
         check(e != null && e.cost == 1500 && e.detail.isEmpty(), "eskisi gibi: sade tutar toplam");
+        // Eğitim turu 1: iş anlamı taşıyan isim + genel fiil; genel fiil tek başına ve satın alma iş değildir.
+        check("İlaçlama".equals(type("bugün bakır attık")), "bakır attık");
+        check("Budama".equals(type("Karşıyaka'da piç sürgünleri aldık")), "piç sürgünleri aldık");
+        check("Budama".equals(type("sürgünleri kestik")), "sürgünleri kestik");
+        check("Toprak İşleme".equals(type("akşama kadar tırmık çektik")), "tırmık çektik");
+        e = p("ağaçların altını temizledik");
+        check(e != null && e.type == OperationVoiceEntry.OTHER && "Temizlik".equals(e.note), "altını temizledik: Diğer + Temizlik");
+        e = p("ağaçlara kireç attık");
+        check(e != null && e.type == OperationVoiceEntry.OTHER && "Kireç".equals(e.note), "kireç attık: Diğer + Kireç");
+        e = p("kireç sürdük");
+        check(e != null && e.type == OperationVoiceEntry.OTHER && "Kireç".equals(e.note), "kireç sürdük: Diğer + Kireç");
+        check("Toprak İşleme".equals(type("toprağı sürdük")), "toprağı sürdük yine toprak işleme");
+        check("Toprak İşleme".equals(type("sürdük")), "sürdük yine toprak işleme");
+        for (String s : new String[]{"attık", "aldık", "bakır aldık", "fidan aldık", "fidan diktik sürgün verdi", "çektik"}) {
+            check(type(s) == null, "iş sayılmaz: " + s);
+        }
+        check("İlaçlama".equals(type("ilaç aldık")), "ilaç aldık bugünkü gibi (ilaç masrafı)");
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " OperationVoiceEntry");
         if (bad > 0) System.exit(1);
     }

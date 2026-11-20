@@ -52,6 +52,15 @@ public class TaskReminderTest {
         for (String[] x : stay) {
             eq(decide(x[0]).action, x[1], "olduğu gibi kalır: " + x[0]);
         }
+        LearnedTerms.Memory taughtStore = new LearnedTerms.Memory();
+        taughtStore.put(LearnedTerms.teach("bakırladık", LearnedTerms.choiceFor("ilaçlama"), LearnedTerms.SOURCE_VOICE, 1));
+        Decision later = new LearnedBrain(taughtStore, new RuleBrain()).decide(new Brain.Input("yarın bakırlayacağız"),
+                BrainContext.full(true, AssistantPersona.decode("")::handle));
+        eq(later.action + " " + later.fieldsText(), "HATIRLATMA tur=İlaçlama;gun=1", "öğretilen sözün gelecek zamanı da hatırlatma");
+        Decision past = new LearnedBrain(taughtStore, new RuleBrain()).decide(new Brain.Input("bugün bakırladık"),
+                BrainContext.full(true, AssistantPersona.decode("")::handle));
+        eq(past.action, "ISLEM", "öğretilen sözün geçmiş zamanı kayıt kalır");
+        eq(decide("Bakacağım").action.equals("HATIRLATMA"), false, "bakacağım hatırlatma değil");
         LearnedTerms.Memory empty = new LearnedTerms.Memory();
         check(LearnedTerms.teachable("yarın bakırlayacağız", empty) == null, "gelecek zaman öğretme sorusu açmaz");
         check(LearnedTerms.teachable("yarın Girelli'yi sulayacağız", empty) == null, "bilinen sözün gelecek zamanı sorulmaz");

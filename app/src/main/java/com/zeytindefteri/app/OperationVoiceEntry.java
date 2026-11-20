@@ -94,17 +94,34 @@ public final class OperationVoiceEntry {
     private static final String TRAP_VERB =
             ".*\\b(as(tim|tik|ti|tilar|ildi)|kur(dum|duk|du)|koy(dum|duk|du)|degistir\\p{L}*|yenile\\p{L}*|tak(tim|tik|ti))\\b.*";
 
+    /**
+     * İş anlamı taşıyan isim + genel fiil (eğitim turu 1): "bakır attık" İlaçlama, "piç sürgünleri aldık" Budama,
+     * "tırmık çektik" Toprak İşleme, "kireç attık / sürdük" ve "ağaçların altını temizledik" Diğer. Genel fiil tek başına
+     * ("attık", "aldık") bir şey sayılmaz; "bakır aldık", "fidan aldık" (satın alma) iş değildir.
+     */
+    private static final String THREW = "(attik|attim|atti|attilar|vurduk|vurdum|vurdu|vurdular|atacagiz|atacagim|vuracagiz|vuracagim)";
+    private static final String SPRAY_NOUN = ".*\\b(bakir|bakiri|bakirla|goztasi|goztasini|bordo|bordoyu)\\b.*\\b" + THREW + "\\b.*";
+    private static final String PRUNE_NOUN = ".*\\b(pic|pici|picleri|piclerini|surgun|surgunu|surgunleri|surgunlerini)\\b.*"
+            + "\\b(aldik|aldim|aldilar|kestik|kestim|kestiler)\\b.*";
+    private static final String TILL_NOUN = ".*\\b(tirmik|tirmigi|pulluk|pullugu|diskaro|diskaroyu)\\b.*\\b(cektik|cektim|cekti|attik|attim)\\b.*";
+    private static final String LIME = ".*\\b(kirec|kireci|kirecle)\\b.*\\b(attik|attim|atti|surduk|surdum|surdu|vurduk|vurdum|badanaladik|badanaladim)\\b.*";
+    private static final String CLEAN_UNDER = ".*\\b(altini|altlarini|dibini|diplerini) (temizledik|temizledim|temizlediler)\\b.*";
+
     /** Tür: söz kökünden. Sıra önemli: "ilaç" sulamadan önce ("ilaçlı su"), "mazot" nakliyeden önce. */
     static int typeOf(String s) {
+        if (s.matches(SPRAY_NOUN)) return 2;
         if (s.matches(".*\\b(ilac\\p{L}*|ilacla\\p{L}*|spreyle\\p{L}*|kukurt\\p{L}*|bordo bulamac\\p{L}*|bakir sulfat\\p{L}*|bakirli ilac\\p{L}*)\\b.*")) return 2;
         if (s.matches(".*\\b(gubre\\p{L}*)\\b.*")) return 1;
         // Sulama "mazot"tan önce: "motoru çalıştırıp can suyu verdik, mazotu 300 tuttu" sulamadır (mazot masrafıdır).
         if (s.matches(".*\\b(sula\\p{L}*|damlama\\p{L}*|hortum\\p{L}*|motopomp\\p{L}*|can suyu\\p{L}*|salma su\\p{L}*)\\b.*")
                 || s.matches(".*\\b(su|suyu|suyunu|sulari|suyumuzu) (ver\\p{L}*|sal\\p{L}*|ac\\p{L}*|bas\\p{L}*|akit\\p{L}*|cektik|cektim)\\b.*")) return 0;
-        if (s.matches(".*\\b(buda\\p{L}*)\\b.*")) return 3;
+        if (s.matches(".*\\b(buda\\p{L}*)\\b.*") || s.matches(PRUNE_NOUN)) return 3;
         if (s.matches(".*\\b(tuzak\\p{L}*)\\b.*")) return 4;
         // "Sinek tuzağı astık": "tuzağı" sadeleşince "tuzagi"; yalnız tuzak işi fiiliyle ("tuzağı kaydı" soru kalır).
         if (s.matches(".*\\btuzag\\p{L}*\\b.*") && s.matches(TRAP_VERB)) return 4;
+        // "kireç sürdük" Diğer + Kireç: "sürdük"ten önce bakılır ("toprağı sürdük", "sürdük" Toprak İşleme kalır).
+        if (s.matches(LIME) || s.matches(CLEAN_UNDER)) return OTHER;
+        if (s.matches(TILL_NOUN)) return 5;
         if (s.matches(".*\\b(surdum|surduk|surduruldu|capala\\p{L}*|freze\\p{L}*|toprak isle\\p{L}*|toprak islemesi|diskaro\\p{L}*|kultivator\\p{L}*)\\b.*")) return 5;
         if (s.matches(".*\\b(isci\\p{L}*|amele\\p{L}*|yevmiye\\p{L}*|iscilik)\\b.*")) return 6;
         if (s.matches(".*\\b(mazot\\p{L}*|yakit\\p{L}*|motorin\\p{L}*)\\b.*")) return 7;
@@ -121,6 +138,8 @@ public final class OperationVoiceEntry {
     static String noteOf(String s) {
         if (s.matches(".*\\bot(lar|lari|u)? bic\\p{L}*.*")) return "Ot biçme";
         if (s.matches(".*\\b(asi|asisi|asilari) (yaptim|yaptik|yaptilar|yapildi|vurduk|vurdum)\\b.*")) return "Aşılama";
+        if (s.matches(LIME)) return "Kireç";
+        if (s.matches(CLEAN_UNDER)) return "Temizlik";
         return "";
     }
 

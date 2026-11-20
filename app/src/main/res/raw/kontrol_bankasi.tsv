@@ -248,6 +248,8 @@ dabıl dört kilo bir numara on beş kilo iki numara yirmi beş kilo üç numara
 karneni göster	KARNE_GOSTER	-
 karnen nasıl	KARNE_GOSTER	-
 double 2 kilo 220 lira	ELEK	double=2;double_fiyat=110
+bugün bakır attık	ISLEM	tur=İlaçlama
+Bakır attım	ISLEM	tur=İlaçlama
 3 numara 120 kilo 110 liradan sattım	ELEK	3no=120;3no_fiyat=110;satis=evet
 Double iki kilo iki yüz yirmi TL	ELEK	double=2;double_fiyat=110
 double 2 kilo 220 lira 1 numara 3 kilo 300 lira	ELEK	double=2;double_fiyat=110;1no=3;1no_fiyat=100
@@ -290,8 +292,12 @@ iki amele tuttum günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tuta
 fabrikaya 40 kasa götürdük	YAGHANE	kasa=40
 yağhaneden 120 kilo yağ aldık	YAGHANE	yag=120
 yarın Girelli'yi sulayacağız	HATIRLATMA	tur=Sulama;gun=1
+ağaçların altını temizledik	ISLEM	tur=Diğer;not=Temizlik
 Ali Usta'dan 2000 lira aldım	TAHSILAT	alici=Ali Usta;tutar=2000
 Hasan borcunun yarısını ödedi	TAHSILAT	alici=Hasan;oran=yarim
+ağaçlara kireç attık	ISLEM	tur=Diğer;not=Kireç
+Karşıyaka'da piç sürgünleri aldık	ISLEM	tur=Budama
+akşama kadar tırmık çektik	ISLEM	tur=Toprak İşleme
 bu sene kaç kilo sattım	SORU_SOLD	-
 ne kadar sattım	SORU_SOLD	-
 ne zaman ilaçlayacağız?	SORU_SPRAY	-
@@ -324,3 +330,8 @@ yarın akşam budayacağız	HATIRLATMA	tur=Budama;gun=1;saat=18
 cuma günü gübre atacağız	HATIRLATMA	tur=Gübre;zaman=cuma
 öbür gün ot biçeceğiz	HATIRLATMA	tur=Diğer;not=Ot biçme;gun=2
 yarın tırpanlayacağız	ANLASILMADI	-
+kireç sürdük	ISLEM	tur=Diğer;not=Kireç
+sürgün aldık	ISLEM	tur=Budama
+bugün göztaşı attık	ISLEM	tur=İlaçlama
+yarın bakır atacağız	HATIRLATMA	tur=İlaçlama;gun=1
+ağaçlar sürgün verdi	SORU_TREES	-

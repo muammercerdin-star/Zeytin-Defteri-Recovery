@@ -20,7 +20,8 @@ final class TaskReminderEntry {
 
     private static final String QUESTION = ".*\\b(kac|ne|ne zaman|nasil|hangi|nerede|mi|mu|miyiz|muyuz|miyim|muyum|misin|musun|midir|mudur)\\b.*";
     private static final String FUTURE = "\\p{L}+(acag|eceg)(im|iz|imiz)";
-    private static final String NOT_WORK = "(gir|ol|bak|soyle|sor|yaz|gel|git|gid|de|di|ye|ac|kapat)\\p{L}*";
+    /** Kayıt açma ve konuşma fiilleri ("gireceğim", "bakacağım", "söyleyeceğim"): kök + gelecek eki, hatırlatma değil. */
+    private static final String NOT_WORK = "(gir|ol|bak|soyle|sor|yaz|gel|gid|de|di|ye|ac|kapat)y?(ecek|acak|eceg|acag)\\p{L}*";
 
     /** İşin adı: OperationKinds türü ("Sulama") ya da "Hasat". */
     final String type;
@@ -64,6 +65,26 @@ final class TaskReminderEntry {
         }
         int hour = s.matches(".*\\b(aksam|aksama|aksamleyin|aksamustu)\\b.*") ? EVENING : MORNING;
         return new TaskReminderEntry(type, note, due, hour);
+    }
+
+    /**
+     * Öğretilen sözün gelecek zamanı (eğitim turu 1: "bakırladık" öğretildiyse "yarın bakırlayacağız"): sözün anlamıyla
+     * hatırlatma; gelecek zaman değilse ya da soruysa null. type: işin adı ("İlaçlama", "Hasat"), note: "Diğer" adı.
+     */
+    static TaskReminderEntry taught(String raw, String type, String note) {
+        if (raw == null || raw.contains("?") || type == null || type.isEmpty()) {
+            return null;
+        }
+        String s = TurkishText.normalize(raw);
+        if (s.matches(QUESTION) || !future(s)) {
+            return null;
+        }
+        String due = ActionPlan.due(s);
+        if (due.isEmpty() && s.matches(".*\\bbugun\\b.*")) {
+            due = "bugun";
+        }
+        int hour = s.matches(".*\\b(aksam|aksama|aksamleyin|aksamustu)\\b.*") ? EVENING : MORNING;
+        return new TaskReminderEntry(type, note == null ? "" : note, due, hour);
     }
 
     /** Birinci şahıs gelecek zamanlı bir iş fiili var mı ("sulayacağız", "budayacağım"); kayıt açma sözleri değil. */

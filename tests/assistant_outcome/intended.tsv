@@ -27,8 +27,6 @@ Dün Girelli'de 3 işçi çalıştı, yevmiye kişi başı 1200.	bahçeli	OPERAT
 Dün Girelli'de 3 işçi çalıştı, yevmiye kişi başı 1200.	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;gun=-1;miktar=3;birim=kişi;tutar=3600 · işçilik, dün, 3 kişi, 3600 lira (3 kişi × 1.200 TL)
 Bugün amele tuttuk 300 lira verdik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;tutar=300 · işçilik, bugün, 300 lira
 Bugün amele tuttuk 300 lira verdik	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;tutar=300 · işçilik, bugün, 300 lira
-Dün Girelli'de ağaçların altını temizledik, iki amele tuttuk 2400 verdik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;gun=-1;miktar=2;birim=kişi;tutar=2400 · işçilik, dün, 2 kişi, 2400 lira
-Dün Girelli'de ağaçların altını temizledik, iki amele tuttuk 2400 verdik	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;gun=-1;miktar=2;birim=kişi;tutar=2400 · işçilik, dün, 2 kişi, 2400 lira
 iki amele tuttum günlüğü 1500	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;miktar=2;birim=kişi;tutar=3000 · işçilik, bugün, 2 kişi, 3000 lira (2 kişi × 1.500 TL)
 iki amele tuttum günlüğü 1500	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;miktar=2;birim=kişi;tutar=3000 · işçilik, bugün, 2 kişi, 3000 lira (2 kişi × 1.500 TL)
 # Eğitim turu 1 — madde 5: gelecek zamanlı iş cümlesi hatırlatma ('yarın Girelli'yi sulayacağız'; İP8'deki 'silkeleyeceğiz' hasat değil hatırlatma); gelecek zaman öğretme sorusu açmaz ('çıkacak', 'ödeyecek'... artık sorulmaz).
@@ -52,3 +50,20 @@ yarın Kuyu dibini silkeleyeceğiz	bahçeli	REMINDER · HATIRLATMA tur=Hasat;gun
 yarın Kuyu dibini silkeleyeceğiz	bahçesiz	REMINDER · HATIRLATMA tur=Hasat;gun=1
 yarın Girelli'yi sulayacağız	bahçeli	REMINDER · HATIRLATMA tur=Sulama;gun=1
 yarın Girelli'yi sulayacağız	bahçesiz	REMINDER · HATIRLATMA tur=Sulama;gun=1
+# Eğitim turu 1 — madde 6: iş anlamı taşıyan isim + genel fiil (bakır attık, piç sürgünleri aldık, tırmık çektik, kireç attık, altını temizledik). 'altını temizledik, iki amele tuttuk' artık Diğer + Temizlik (madde 4'te işçilikti).
+bugün bakır attık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+bugün bakır attık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+Bakır attım	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+Bakır attım	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+Dün Girelli'de ağaçların altını temizledik, iki amele tuttuk 2400 verdik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Temizlik;gun=-1;miktar=2;birim=kişi;tutar=2400 · temizlik, dün, 2 kişi, 2400 lira
+Dün Girelli'de ağaçların altını temizledik, iki amele tuttuk 2400 verdik	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Temizlik;gun=-1;miktar=2;birim=kişi;tutar=2400 · temizlik, dün, 2 kişi, 2400 lira
+ağaçların altını temizledik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Temizlik · temizlik, bugün
+ağaçların altını temizledik	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Temizlik · temizlik, bugün
+bakır attık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+bakır attık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+ağaçlara kireç attık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Kireç · kireç, bugün
+ağaçlara kireç attık	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Kireç · kireç, bugün
+Karşıyaka'da piç sürgünleri aldık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Budama · budama, bugün
+Karşıyaka'da piç sürgünleri aldık	bahçesiz	OPERATION_FORM · ISLEM tur=Budama · budama, bugün
+akşama kadar tırmık çektik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Toprak İşleme · toprak işleme, bugün
+akşama kadar tırmık çektik	bahçesiz	OPERATION_FORM · ISLEM tur=Toprak İşleme · toprak işleme, bugün

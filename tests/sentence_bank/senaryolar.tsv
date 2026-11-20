@@ -10,9 +10,9 @@ bos_sozluk	sor	bugün bakırladık	SOR	bakırladık	dogru
 ogret_anla	ogret	bakırladık|İlaçlama	-	-	dogru
 ogret_anla	cumle	bugün bakırladık	ISLEM	tur=İlaçlama	dogru
 ogret_anla	cumle	dün Girelli'yi bakırladık 300 lira	ISLEM	tur=İlaçlama;gun=-1;tutar=300	dogru
-ogret_anla	cumle	yarın bakırlayacağız	ISLEM	tur=İlaçlama	dogru
+ogret_anla	cumle	yarın bakırlayacağız	HATIRLATMA	tur=İlaçlama;gun=1	dogru
 ogret_anla	cumle	şu an bakırlıyoruz	ISLEM	tur=İlaçlama	dogru
-ogret_anla	cumle	bakır attık	ANLASILMADI	-	dogru
+ogret_anla	cumle	bakır attık	ISLEM	tur=İlaçlama	dogru
 ogret_anla	cumle	Bugün 3 numara 120 kilo	ELEK	3no=120	dogru
 ogret_anla	sor	bugün bakırladık	SORMA	-	dogru
 ogret_unut	ogret	bakırladık|İlaçlama	-	-	dogru
