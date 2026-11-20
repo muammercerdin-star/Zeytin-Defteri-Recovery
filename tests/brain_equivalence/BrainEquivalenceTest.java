@@ -127,7 +127,7 @@ public class BrainEquivalenceTest {
             return true;
         }
         // Eğitim turu 1: eskiden kayıt değildi ve şimdi yeni kayıt eylemi (tahsilat, yağhane, hatırlatma).
-        boolean newAction = got.is(ActionCatalog.TAHSILAT) || got.action.equals("YAGHANE") || got.is(ActionCatalog.HATIRLATMA);
+        boolean newAction = got.is(ActionCatalog.TAHSILAT) || got.action.equals(ActionCatalog.YAGHANE) || got.is(ActionCatalog.HATIRLATMA);
         return !wasRecord && newAction;
     }
 

@@ -836,6 +836,21 @@ public final class ZeytinAssistantController {
                     collect(LearnedBrain.payload(decision,CollectionEntry.class),token,owner,season,active,cmd);
                     return;
                 }
+                // Eğitim turu 1: yağhane ("fabrikaya 40 kasa götürdük"): sıkım formu dolu açılır; kasa notta, eksikler
+                // formda sorulur; kayıt Kaydet'le.
+                if(path==AssistantOutcome.Kind.OIL_FORM){
+                    meter(token,raw,owner,decision.action);
+                    final OilVoiceEntry oilEntry=LearnedBrain.payload(decision,OilVoiceEntry.class);
+                    main.post(()->{
+                        if(!current(token,owner,season,active))return;
+                        transition(State.ANSWERING,"Yağhane formunu dolduruyorum…");
+                        haptic();
+                        Toast.makeText(activity,"Sıkım formu açılıyor: "+oilEntry.summary()+". Eksikleri yazıp Kaydet'e bas.",Toast.LENGTH_LONG).show();
+                        dialog.dismiss();
+                        activity.startActivity(new android.content.Intent(activity,OilActivity.class).putExtra(OilActivity.EXTRA_VOICE,raw));
+                    });
+                    return;
+                }
                 // Kuralların anlamadığı iş cümlesi: izin varsa internetteki yardımcıya (Gemma 4) sorulur. Cevap cümleyle
                 // karşılaştırılarak denetlenir (AssistantCloud.accept), okunur, "evet" denmeden kaydedilmez.
                 // Soru kalıbı değil, geçmiş zamanlı bir iş cümlesiyse ("ağaçların altını temizledik, 2 amele tuttuk") kayıt sorusu

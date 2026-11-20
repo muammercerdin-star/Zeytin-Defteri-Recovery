@@ -34,6 +34,8 @@ import java.util.Locale;
  * Kayıtlar telefonda; ileride izinle bölge tablosuna (adsız) katılabilir.
  */
 public final class OilActivity extends Activity {
+    /** Asistandan gelen cümle (eğitim turu 1: "fabrikaya 40 kasa götürdük"): sıkım formu dolu açılır, kayıt Kaydet'le. */
+    public static final String EXTRA_VOICE = "oil_voice";
     private int BG, CARD, BORDER, TEXT, MUTED, GREEN, GREEN_SOFT, AMBER;
     private DatabaseHelper db;
     private String owner = "";
@@ -62,6 +64,28 @@ public final class OilActivity extends Activity {
         scroll.addView(body, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
         render();
+        String voice = state == null && getIntent() != null ? getIntent().getStringExtra(EXTRA_VOICE) : null;
+        OilVoiceEntry entry = voice == null ? null : OilVoiceEntry.parse(voice);
+        if (entry != null) {
+            editFromVoice(entry);
+        }
+    }
+
+    /**
+     * Sesle gelen sıkım (eğitim turu 1): söylenenler forma yazılır, kasa kiloya çevrilmeden notta kalır; zeytin kilosu
+     * ve yağhane adı formda sorulur. Hiçbir şey kendiliğinden kaydedilmez.
+     */
+    private void editFromVoice(OilVoiceEntry entry) {
+        OilPressings.Pressing draft = new OilPressings.Pressing();
+        draft.date = SalePayStatus.ymd(Calendar.getInstance());
+        draft.mill = entry.mill;
+        draft.oliveKg = entry.oliveKg;
+        draft.note = entry.note();
+        if (OilVoiceEntry.LITRE.equals(entry.oilUnit)) {
+            draft.oilLitre = entry.oil;
+        }
+        double oilKg = OilVoiceEntry.LITRE.equals(entry.oilUnit) ? 0 : entry.oil;
+        edit(null, draft, oilKg, entry.waitingOil());
     }
 
     @Override protected void onDestroy() {
@@ -196,8 +220,13 @@ public final class OilActivity extends Activity {
     // ================================================================== kayıt penceresi
 
     private void edit(final OilPressings.Pressing existing) {
-        final OilPressings.Pressing p = existing != null ? existing : new OilPressings.Pressing();
-        if (existing == null) p.date = SalePayStatus.ymd(Calendar.getInstance());
+        edit(existing, null, 0, false);
+    }
+
+    /** draft: sesle gelen yeni sıkım (yoksa null); voiceOilKg: kilo olarak söylenen yağ; offerReminder: yağ henüz çıkmadı. */
+    private void edit(final OilPressings.Pressing existing, OilPressings.Pressing draft, double voiceOilKg, boolean offerReminder) {
+        final OilPressings.Pressing p = existing != null ? existing : (draft != null ? draft : new OilPressings.Pressing());
+        if (existing == null && draft == null) p.date = SalePayStatus.ymd(Calendar.getInstance());
         final Dialog sheet = new Dialog(this);
         sheet.requestWindowFeature(Window.FEATURE_NO_TITLE);
         ScrollView scroll = new ScrollView(this);
@@ -350,7 +379,23 @@ public final class OilActivity extends Activity {
         };
         olive.addTextChangedListener(w);
         oil.addTextChangedListener(w);
+        if (voiceOilKg > 0) {
+            inKg[0] = true;
+            unit.setText("ÇIKAN YAĞ (kilo) ⇄");
+            oil.setText(SalePayStatus.plain(voiceOilKg));
+        }
         calc.run();
+        if (draft != null) {
+            if (p.mill.isEmpty()) {
+                mill.setError("Hangi yağhane?");
+            }
+            if (p.oliveKg <= 0) {
+                olive.setError(p.note.isEmpty() ? "Kaç kilo zeytin?" : p.note + " kaç kilo tuttu?");
+            }
+        }
+        if (offerReminder) {
+            box.addView(reminderOffer(), margins(-1, -2, 12));
+        }
 
         TextView save = text("Kaydet", 18, BG, true);
         save.setGravity(Gravity.CENTER);
@@ -470,6 +515,33 @@ public final class OilActivity extends Activity {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(w, h);
         lp.topMargin = dp(top);
         return lp;
+    }
+
+    /**
+     * "Yağ çıkınca hatırlatayım mı?" (eğitim turu 1): her seferinde sorulur, sormadan kurulmaz. Gün seçilince sabah
+     * 09:00'a genel hatırlatma kurulur; Hatırlatmalar ekranından silinebilir.
+     */
+    private View reminderOffer() {
+        TextView ask = text("⏰  Yağ çıkınca hatırlatayım mı?", 16, GREEN, true);
+        ask.setMinHeight(dp(48));
+        ask.setGravity(Gravity.CENTER_VERTICAL);
+        ask.setOnClickListener(v -> {
+            String[] days = {"Yarın sabah", "3 gün sonra", "1 hafta sonra"};
+            int[] offsets = {1, 3, 7};
+            new AlertDialog.Builder(this).setTitle("Ne zaman hatırlatayım?")
+                    .setItems(days, (d, which) -> {
+                        long at = TaskReminderEntry.at(Calendar.getInstance(), offsets[which], TaskReminderEntry.MORNING);
+                        long id = TaskReminders.add(this, owner, 0, "Yağhane · yağ çıktı mı?", "Sıkım kaydını tamamla.", at);
+                        if (id > 0) {
+                            ask.setText("✓  Hatırlatma kuruldu: " + days[which].toLowerCase(new Locale("tr", "TR")) + ", 09:00");
+                            ask.setOnClickListener(null);
+                        } else {
+                            toast("Hatırlatma kurulamadı.");
+                        }
+                    })
+                    .setNegativeButton("Vazgeç", null).show();
+        });
+        return ask;
     }
 
     private void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }

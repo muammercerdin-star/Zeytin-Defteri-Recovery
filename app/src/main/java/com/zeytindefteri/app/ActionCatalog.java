@@ -90,6 +90,7 @@ final class ActionCatalog {
     static final String HASAT = "HASAT";
     static final String HATIRLATMA = "HATIRLATMA";
     static final String KAYIT_BRINE = "KAYIT_BRINE";
+    static final String YAGHANE = "YAGHANE";
     static final String KAYIT_GARDEN = "KAYIT_GARDEN";
     static final String KAYIT_POST = "KAYIT_POST";
     static final String TEZGAH_TARTI = "TEZGAH_TARTI";
@@ -134,6 +135,9 @@ final class ActionCatalog {
         // Bugün sesle açılan diğer kayıtlar
         add(new Action(KAYIT_BRINE, "Salamura", Kind.KAYIT, "Kaç kilo zeytin, ne kadar tuz?", Level.FORMU_DOLDUR, true, "",
                 "zeytin", "tuz", "su", "cins"));
+        // Eğitim turu 1: yağhane sıkım kaydı (OilActivity). Kasa kiloya çevrilmez (notta kalır); kayıt Kaydet'le.
+        add(new Action(YAGHANE, "Yağhane", Kind.KAYIT, "Hangi yağhane, kaç kilo zeytin, kaç kilo yağ?", Level.FORMU_DOLDUR, true, "",
+                "kasa", "zeytin", "yag", "birim", "yaghane"));
         add(new Action(KAYIT_GARDEN, "Yeni bahçe", Kind.KAYIT, "Bahçenin adı ne, kaç ağaç?", Level.FORMU_DOLDUR, true, "",
                 "ad", "agac", "cins", "alan"));
         add(new Action(KAYIT_POST, "Meydan gönderisi", Kind.KAYIT, "Ne yazayım?", Level.FORMU_DOLDUR, true, "",

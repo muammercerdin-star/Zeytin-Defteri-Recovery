@@ -19,3 +19,8 @@ Ali Usta'dan 2000 lira aldım	bahçeli	COLLECTION · TAHSILAT alici=Ali Usta;tut
 Ali Usta'dan 2000 lira aldım	bahçesiz	COLLECTION · TAHSILAT alici=Ali Usta;tutar=2000
 Hasan borcunun yarısını ödedi	bahçeli	COLLECTION · TAHSILAT alici=Hasan;oran=yarim
 Hasan borcunun yarısını ödedi	bahçesiz	COLLECTION · TAHSILAT alici=Hasan;oran=yarim
+# Eğitim turu 1 — madde 3: yağhane ('fabrikaya 40 kasa götürdük', 'yağhaneden 120 kilo yağ aldık'): sıkım formu dolu açılır.
+fabrikaya 40 kasa götürdük	bahçeli	OIL_FORM · YAGHANE kasa=40
+fabrikaya 40 kasa götürdük	bahçesiz	OIL_FORM · YAGHANE kasa=40
+yağhaneden 120 kilo yağ aldık	bahçeli	OIL_FORM · YAGHANE yag=120
+yağhaneden 120 kilo yağ aldık	bahçesiz	OIL_FORM · YAGHANE yag=120

@@ -32,6 +32,8 @@ final class AssistantOutcome {
         MULTI_STEP,
         /** Tahsilat (eğitim turu 1): alıcının "Ödeme aldım" penceresi söylenen tutarla açılır; kayıt Kaydet'le. */
         COLLECTION,
+        /** Yağhane (eğitim turu 1): sıkım formu dolu açılır; kasa notta, eksikler formda sorulur. */
+        OIL_FORM,
         /** Kayıt yolu yok: internet yardımcısı denenir, sonra rest(). */
         LATER,
         /** Selam, teşekkür, ilaç dozu gibi hazır cevap. */
@@ -82,6 +84,9 @@ final class AssistantOutcome {
         }
         if (LearnedBrain.payload(d, CollectionEntry.class) != null) {
             return Kind.COLLECTION;
+        }
+        if (LearnedBrain.payload(d, OilVoiceEntry.class) != null) {
+            return Kind.OIL_FORM;
         }
         return Kind.LATER;
     }

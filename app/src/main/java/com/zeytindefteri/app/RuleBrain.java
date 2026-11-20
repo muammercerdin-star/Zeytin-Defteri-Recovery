@@ -155,6 +155,11 @@ final class RuleBrain implements Brain {
         if (collection != null) {
             return found(ActionCatalog.TAHSILAT, collection.fields(), "", "Alıcıdan para alındı: tahsilat", collection);
         }
+        // Eğitim turu 1: yağhane ("fabrikaya 40 kasa götürdük", "yağhaneden 120 kilo yağ aldık"): sıkım formu dolu açılır.
+        OilVoiceEntry oil = OilVoiceEntry.parse(raw);
+        if (oil != null) {
+            return found(ActionCatalog.YAGHANE, oil.fields(), "", "Yağhane sözü: sıkım kaydı", oil);
+        }
         return question(raw, cmd);
     }
 
