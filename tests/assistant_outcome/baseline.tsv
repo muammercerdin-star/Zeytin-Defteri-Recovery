@@ -12126,3 +12126,1569 @@ zeytin nasıl silkelenir	bahçeli	KONUŞMA SOHBET
 zeytin nasıl silkelenir	bahçesiz	KONUŞMA SOHBET
 silkeleme mi sırık mı daha iyi	bahçeli	KONUŞMA SOHBET
 silkeleme mi sırık mı daha iyi	bahçesiz	KONUŞMA SOHBET
+sinek tuzağı astık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Sinek tuzağı · sinek tuzağı, bugün
+sinek tuzağı astık	bahçesiz	OPERATION_FORM · ISLEM tur=Sinek tuzağı · sinek tuzağı, bugün
+Girelli'ye 15 sinek tuzağı astık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Sinek tuzağı;miktar=15;birim=adet · sinek tuzağı, bugün, 15 adet
+Girelli'ye 15 sinek tuzağı astık	bahçesiz	OPERATION_FORM · ISLEM tur=Sinek tuzağı;miktar=15;birim=adet · sinek tuzağı, bugün, 15 adet
+bugün tuzağı değiştirdik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Sinek tuzağı · sinek tuzağı, bugün
+bugün tuzağı değiştirdik	bahçesiz	OPERATION_FORM · ISLEM tur=Sinek tuzağı · sinek tuzağı, bugün
+ot biçtik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+ot biçtik	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+bugün Girelli'de otları biçtik 2 saat	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Ot biçme;miktar=2;birim=saat · ot biçme, bugün, 2 saat
+bugün Girelli'de otları biçtik 2 saat	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Ot biçme;miktar=2;birim=saat · ot biçme, bugün, 2 saat
+kalem aşısı yaptık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Aşılama · aşılama, bugün
+kalem aşısı yaptık	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Aşılama · aşılama, bugün
+dün 30 ağaca aşı yaptık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Aşılama;gun=-1;miktar=30;birim=ağaç · aşılama, dün, 30 ağaç
+dün 30 ağaca aşı yaptık	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Aşılama;gun=-1;miktar=30;birim=ağaç · aşılama, dün, 30 ağaç
+kultivatör çektik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Toprak İşleme · toprak işleme, bugün
+kultivatör çektik	bahçesiz	OPERATION_FORM · ISLEM tur=Toprak İşleme · toprak işleme, bugün
+bugün işçi çalıştı	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik · işçilik, bugün
+bugün işçi çalıştı	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik · işçilik, bugün
+Ali Usta'ya 300 kilo sattım, parasını haftaya verecek	bahçeli	MULTI_STEP · SATIS alici=Ali Usta;kilo=300;odeme=alinmadi;vade=haftaya;adimlar=SATIS,ALACAK,HATIRLATMA
+Ali Usta'ya 300 kilo sattım, parasını haftaya verecek	bahçesiz	MULTI_STEP · SATIS alici=Ali Usta;kilo=300;odeme=alinmadi;vade=haftaya;adimlar=SATIS,ALACAK,HATIRLATMA
+Hasan Abi'ye 3 numaradan 250 kilo sattık, kilosu 70 liradan, parasını cuma verecek	bahçeli	ELEK_FORM · ELEK 3no=250;3no_fiyat=70;satis=evet;alici=Hasan Abi · 3 Numara 250 kg (70 TL/kg)
+Hasan Abi'ye 3 numaradan 250 kilo sattık, kilosu 70 liradan, parasını cuma verecek	bahçesiz	ELEK_FORM · ELEK 3no=250;3no_fiyat=70;satis=evet;alici=Hasan Abi · 3 Numara 250 kg (70 TL/kg)
+Kemal'e 1 numara 120 kilo sattım parası sonra	bahçeli	ELEK_FORM · ELEK 1no=120;satis=evet;alici=Kemal · 1 Numara 120 kg
+Kemal'e 1 numara 120 kilo sattım parası sonra	bahçesiz	ELEK_FORM · ELEK 1no=120;satis=evet;alici=Kemal · 1 Numara 120 kg
+Ayşe Hanım'a double 80 kilo sattım, parasını ayın 15'inde verecek	bahçeli	ELEK_FORM · ELEK double=80;satis=evet;alici=Ayşe Hanım · Double 80 kg
+Ayşe Hanım'a double 80 kilo sattım, parasını ayın 15'inde verecek	bahçesiz	ELEK_FORM · ELEK double=80;satis=evet;alici=Ayşe Hanım · Double 80 kg
+Kooperatif'e 500 kilo yağlık sattık, ödemesini 10 gün sonra yapacak	bahçeli	ELEK_FORM · ELEK yaglik=500;satis=evet;alici=Kooperatif · Yağlık 500 kg
+Kooperatif'e 500 kilo yağlık sattık, ödemesini 10 gün sonra yapacak	bahçesiz	ELEK_FORM · ELEK yaglik=500;satis=evet;alici=Kooperatif · Yağlık 500 kg
+Mustafa'ya 200 kilo veresiye sattım	bahçeli	MULTI_STEP · SATIS alici=Mustafa;kilo=200;odeme=alinmadi;adimlar=SATIS,ALACAK
+Mustafa'ya 200 kilo veresiye sattım	bahçesiz	MULTI_STEP · SATIS alici=Mustafa;kilo=200;odeme=alinmadi;adimlar=SATIS,ALACAK
+Ali Usta'ya 300 kilo sattım, parasını yarın getirecek	bahçeli	MULTI_STEP · SATIS alici=Ali Usta;kilo=300;odeme=alinmadi;vade=yarin;adimlar=SATIS,ALACAK,HATIRLATMA
+Ali Usta'ya 300 kilo sattım, parasını yarın getirecek	bahçesiz	MULTI_STEP · SATIS alici=Ali Usta;kilo=300;odeme=alinmadi;vade=yarin;adimlar=SATIS,ALACAK,HATIRLATMA
+Ayşe Hanım'a 80 kilo sattım, parasını ayın 15'inde verecek	bahçeli	MULTI_STEP · SATIS alici=Ayşe Hanım;kilo=80;odeme=alinmadi;vade=ayin 15;adimlar=SATIS,ALACAK,HATIRLATMA
+Ayşe Hanım'a 80 kilo sattım, parasını ayın 15'inde verecek	bahçesiz	MULTI_STEP · SATIS alici=Ayşe Hanım;kilo=80;odeme=alinmadi;vade=ayin 15;adimlar=SATIS,ALACAK,HATIRLATMA
+Kooperatif'e 500 kilo sattık, ödemesini 10 gün sonra yapacak	bahçeli	MULTI_STEP · SATIS alici=Kooperatif;kilo=500;odeme=alinmadi;vade=10 gun sonra;adimlar=SATIS,ALACAK,HATIRLATMA
+Kooperatif'e 500 kilo sattık, ödemesini 10 gün sonra yapacak	bahçesiz	MULTI_STEP · SATIS alici=Kooperatif;kilo=500;odeme=alinmadi;vade=10 gun sonra;adimlar=SATIS,ALACAK,HATIRLATMA
+Hasan Abi'ye 250 kilo sattık, kilosu 70 lira, parasını cuma verecek	bahçeli	MULTI_STEP · SATIS alici=Hasan Abi;kilo=250;fiyat=70;odeme=alinmadi;vade=cuma;adimlar=SATIS,ALACAK,HATIRLATMA
+Hasan Abi'ye 250 kilo sattık, kilosu 70 lira, parasını cuma verecek	bahçesiz	MULTI_STEP · SATIS alici=Hasan Abi;kilo=250;fiyat=70;odeme=alinmadi;vade=cuma;adimlar=SATIS,ALACAK,HATIRLATMA
+Ali Usta'ya 300 kilo sattım, parasını peşin aldım	bahçeli	ANSWER · SORU_SOLD -
+Ali Usta'ya 300 kilo sattım, parasını peşin aldım	bahçesiz	ANSWER · SORU_SOLD -
+Hasan'a 200 kilo double sattım kilosu 140'tan	bahçeli	ELEK_FORM · ELEK double=200;satis=evet;alici=Hasan · Double 200 kg
+Hasan'a 200 kilo double sattım kilosu 140'tan	bahçesiz	ELEK_FORM · ELEK double=200;satis=evet;alici=Hasan · Double 200 kg
+dün silktik bugün topluyoruz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+dün silktik bugün topluyoruz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'den on iki kasa zeytin çıktı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'den on iki kasa zeytin çıktı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'ya 300 kilo sattım	bahçeli	ANSWER · SORU_SOLD -
+Ali Usta'ya 300 kilo sattım	bahçesiz	ANSWER · SORU_SOLD -
+iki amele tuttum günlüğü 1500	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+iki amele tuttum günlüğü 1500	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+fabrikaya 40 kasa götürdük	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+fabrikaya 40 kasa götürdük	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yağhaneden 120 kilo yağ aldık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yağhaneden 120 kilo yağ aldık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yarın Girelli'yi sulayacağız	bahçeli	TEACH · sulayacağız
+yarın Girelli'yi sulayacağız	bahçesiz	TEACH · sulayacağız
+Ali Usta'dan 2000 lira aldım	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “lira” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Ali Usta'dan 2000 lira aldım	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “lira” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Hasan borcunun yarısını ödedi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan borcunun yarısını ödedi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+zeytinleri salamuraya yatırdık	bahçeli	ANSWER · SORU_BRINE -
+zeytinleri salamuraya yatırdık	bahçesiz	ANSWER · SORU_BRINE -
+ağaçlara kireç attık	bahçeli	ANSWER · SORU_TREES -
+ağaçlara kireç attık	bahçesiz	ANSWER · SORU_TREES -
+Karşıyaka'da piç sürgünleri aldık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Karşıyaka'da piç sürgünleri aldık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+akşama kadar tırmık çektik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+akşama kadar tırmık çektik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bu sene kaç kilo sattım	bahçeli	ANSWER · SORU_SOLD -
+bu sene kaç kilo sattım	bahçesiz	ANSWER · SORU_SOLD -
+ne kadar sattım	bahçeli	ANSWER · SORU_SOLD -
+ne kadar sattım	bahçesiz	ANSWER · SORU_SOLD -
+ne zaman ilaçlayacağız?	bahçeli	ANSWER · SORU_SPRAY -
+ne zaman ilaçlayacağız?	bahçesiz	ANSWER · SORU_SPRAY -
+yarın ilaçlayacak mıyız?	bahçeli	ANSWER · SORU_SPRAY -
+yarın ilaçlayacak mıyız?	bahçesiz	ANSWER · SORU_SPRAY -
+attık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+attık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aldık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aldık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yağ aldık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yağ aldık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ilaç aldık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+ilaç aldık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+bakır aldık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bakır aldık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bin beş yüz liralık ilaç aldım	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama;tutar=1500 · ilaçlama, bugün, 1500 lira
+bin beş yüz liralık ilaç aldım	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama;tutar=1500 · ilaçlama, bugün, 1500 lira
+fidan aldık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+fidan aldık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+toprağı sürdük	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Toprak İşleme · toprak işleme, bugün
+toprağı sürdük	bahçesiz	OPERATION_FORM · ISLEM tur=Toprak İşleme · toprak işleme, bugün
+salamura ne zaman hazır olur	bahçeli	ANSWER · SORU_BRINE -
+salamura ne zaman hazır olur	bahçesiz	ANSWER · SORU_BRINE -
+Hasan'dan ne kadar alacağım var	bahçeli	RECEIVABLES · ALACAK_SORU -
+Hasan'dan ne kadar alacağım var	bahçesiz	RECEIVABLES · ALACAK_SORU -
+kaç kasa zeytin topladık	bahçeli	ANSWER · SORU_HARVEST -
+kaç kasa zeytin topladık	bahçesiz	ANSWER · SORU_HARVEST -
+İP7: satış üretilir	bahçeli	TEACH · üretilir
+İP7: satış üretilir	bahçesiz	TEACH · üretilir
+İP7: üretilen satış da hep onaylı	bahçeli	TEACH · üretilen
+İP7: üretilen satış da hep onaylı	bahçesiz	TEACH · üretilen
+TR	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+TR	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ ActionRunner (İP7)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ ActionRunner (İP7)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+örnek cümle çok adımlı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+örnek cümle çok adımlı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+[SATIS, ALACAK, HATIRLATMA]	bahçeli	RECEIVABLES · ALACAK_SORU -
+[SATIS, ALACAK, HATIRLATMA]	bahçesiz	RECEIVABLES · ALACAK_SORU -
+sıralı eylemler	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sıralı eylemler	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+300 kilo	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+300 kilo	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+haftaya	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+haftaya	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ödeme günü sözü	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ödeme günü sözü	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+söylenmeyen fiyat ve sınıf uydurulmaz	bahçeli	MARKET · SORU_MARKET -
+söylenmeyen fiyat ve sınıf uydurulmaz	bahçesiz	MARKET · SORU_MARKET -
+beyin: çok adımlı satış 	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+beyin: çok adımlı satış 	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+beyin: plan yükte	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+beyin: plan yükte	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+asistan: görünür uygulayıcı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+asistan: görünür uygulayıcı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+satış formu doldurur, kendiliğinden yazmaz	bahçeli	TEACH · kendiliğinden
+satış formu doldurur, kendiliğinden yazmaz	bahçesiz	TEACH · kendiliğinden
+Kemal'e 120 kilo sattım parası sonra	bahçeli	MULTI_STEP · SATIS alici=Kemal;kilo=120;odeme=alinmadi;adimlar=SATIS,ALACAK
+Kemal'e 120 kilo sattım parası sonra	bahçesiz	MULTI_STEP · SATIS alici=Kemal;kilo=120;odeme=alinmadi;adimlar=SATIS,ALACAK
+[SATIS, ALACAK]	bahçeli	RECEIVABLES · ALACAK_SORU -
+[SATIS, ALACAK]	bahçesiz	RECEIVABLES · ALACAK_SORU -
+ödeme günü yoksa hatırlatma yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ödeme günü yoksa hatırlatma yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+cuma	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+cuma	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan Abi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan Abi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kilosu 70 lira, cuma	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “lira” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+kilosu 70 lira, cuma	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “lira” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Mehmet'e 100 kilo sattım 68 liradan parasını yarın getirecek	bahçeli	MULTI_STEP · SATIS alici=Mehmet;kilo=100;fiyat=68;odeme=alinmadi;vade=yarin;adimlar=SATIS,ALACAK,HATIRLATMA
+Mehmet'e 100 kilo sattım 68 liradan parasını yarın getirecek	bahçesiz	MULTI_STEP · SATIS alici=Mehmet;kilo=100;fiyat=68;odeme=alinmadi;vade=yarin;adimlar=SATIS,ALACAK,HATIRLATMA
+68 liradan	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “liradan” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+68 liradan	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “liradan” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+ali usta'ya 300 kilo sattım parasını haftaya verecek	bahçeli	MULTI_STEP · SATIS kilo=300;odeme=alinmadi;vade=haftaya;adimlar=SATIS,ALACAK,HATIRLATMA
+ali usta'ya 300 kilo sattım parasını haftaya verecek	bahçesiz	MULTI_STEP · SATIS kilo=300;odeme=alinmadi;vade=haftaya;adimlar=SATIS,ALACAK,HATIRLATMA
+küçük harfli addan alıcı uydurulmaz	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+küçük harfli addan alıcı uydurulmaz	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+veresiye	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+veresiye	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta parasını cuma verecek	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “parasını” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Ali Usta parasını cuma verecek	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “parasını” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+300 kilo sattım	bahçeli	ANSWER · SORU_SOLD -
+300 kilo sattım	bahçesiz	ANSWER · SORU_SOLD -
+bugün ne kadar sattım	bahçeli	ANSWER · SORU_SOLD -
+bugün ne kadar sattım	bahçesiz	ANSWER · SORU_SOLD -
+Ali Usta'ya ne kadar sattım	bahçeli	ANSWER · SORU_SOLD -
+Ali Usta'ya ne kadar sattım	bahçesiz	ANSWER · SORU_SOLD -
+çok adımlı değil: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çok adımlı değil: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+beyin çok adımlı yapmaz: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+beyin çok adımlı yapmaz: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+elek satışı cümlesi elekte kalır: 	bahçeli	ANSWER · SORU_ELEK -
+elek satışı cümlesi elekte kalır: 	bahçesiz	ANSWER · SORU_ELEK -
+bugün Girelli'yi ilaçladık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+bugün Girelli'yi ilaçladık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+işlem cümlesi değişmez	bahçeli	ANSWER · SORU_OPERATION -
+işlem cümlesi değişmez	bahçesiz	ANSWER · SORU_OPERATION -
+2026-11-26	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-26	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yarin	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yarin	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-20	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-20	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+obur gun	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+obur gun	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+persembe	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+persembe	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+pazartesi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+pazartesi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-23	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-23	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayin 15	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayin 15	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-12-15	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-12-15	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayin 25	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayin 25	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-25	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-25	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ay sonu	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ay sonu	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-30	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-30	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+10 gun sonra	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+10 gun sonra	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-29	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-11-29	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'ya 300 kilo sattım, parasını 	bahçeli	ANSWER · SORU_SOLD -
+Ali Usta'ya 300 kilo sattım, parasını 	bahçesiz	ANSWER · SORU_SOLD -
+ verecek	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ verecek	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+plan: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+plan: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+söz: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+söz: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gün: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gün: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+26 Kasım'da	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+26 Kasım'da	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+okunan gün	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+okunan gün	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Eylül'de	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Eylül'de	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eylül	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eylül	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öbür gün	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öbür gün	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+perşembe	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+perşembe	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayın 15'inde	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayın 15'inde	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayın 25'inde	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayın 25'inde	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ay sonunda	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ay sonunda	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+10 gün sonra	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+10 gün sonra	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+writeSale	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+writeSale	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+buyer	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+buyer	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sale:	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sale:	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+receivable:	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+receivable:	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+writeReminder	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+writeReminder	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+reminder:	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+reminder:	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+deleteSale	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+deleteSale	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+deleteReminder	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+deleteReminder	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+deleteNewBuyer	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+deleteNewBuyer	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+doldururken onay yok: yazılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+doldururken onay yok: yazılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+doldururken hiçbir şey yazılmadı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+doldururken hiçbir şey yazılmadı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+soru sorulurken de yazılmadı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+soru sorulurken de yazılmadı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+katalog: hep onaylı 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+katalog: hep onaylı 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tek onay	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tek onay	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kaydedildi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kaydedildi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+[writeSale, writeReminder]	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+[writeSale, writeReminder]	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sıra: satış (alacağıyla), sonra hatırlatma	bahçeli	RECEIVABLES · ALACAK_SORU -
+sıra: satış (alacağıyla), sonra hatırlatma	bahçesiz	RECEIVABLES · ALACAK_SORU -
+sale:100	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sale:100	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+receivable:100	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+receivable:100	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+reminder:101	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+reminder:101	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+üç kayıt: satış, alacak, hatırlatma 	bahçeli	RECEIVABLES · ALACAK_SORU -
+üç kayıt: satış, alacak, hatırlatma 	bahçesiz	RECEIVABLES · ALACAK_SORU -
+geri al kuyruğunda üç adım	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+geri al kuyruğunda üç adım	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ikinci onay ikinci kez yazmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ikinci onay ikinci kez yazmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çift kayıt yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çift kayıt yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ödeme günü yoksa hatırlatma yazılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ödeme günü yoksa hatırlatma yazılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+form eksikse hiçbir şey yazılmaz, soru sürer	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+form eksikse hiçbir şey yazılmaz, soru sürer	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+düzeltince aynı onayla yazılır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+düzeltince aynı onayla yazılır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Geri al	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Geri al	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+[deleteReminder, deleteSale, deleteNewBuyer]	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+[deleteReminder, deleteSale, deleteNewBuyer]	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ters sırayla, hepsi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ters sırayla, hepsi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hiçbiri kalmadı (yeni alıcı da) 	bahçeli	TEACH · kalmadı
+hiçbiri kalmadı (yeni alıcı da) 	bahçesiz	TEACH · kalmadı
+geri alındı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+geri alındı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ikinci Geri al yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ikinci Geri al yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+buyer-eski	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+buyer-eski	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+rehberde önceden olan alıcıya dokunulmaz	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcıya” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+rehberde önceden olan alıcıya dokunulmaz	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcıya” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+onaysız akışta geri alınacak bir şey yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+onaysız akışta geri alınacak bir şey yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+doldururken durduruldu	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+doldururken durduruldu	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+vazgeçilen akış sonradan onaylanamaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+vazgeçilen akış sonradan onaylanamaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hayır: yazma da geri alma da yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hayır: yazma da geri alma da yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yarım akış iz bırakmadı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yarım akış iz bırakmadı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hatırlatma yazılamadı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hatırlatma yazılamadı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+başarısız	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+başarısız	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+satış ve alacak da geri alındı: ya hepsi ya hiçbiri 	bahçeli	RECEIVABLES · ALACAK_SORU -
+satış ve alacak da geri alındı: ya hepsi ya hiçbiri 	bahçesiz	RECEIVABLES · ALACAK_SORU -
+satış yazılamazsa hiçbir şey kalmaz	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+satış yazılamazsa hiçbir şey kalmaz	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+SIL	bahçeli	SPECIAL · Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.
+SIL	bahçesiz	SPECIAL · Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.
+KAYIT_BAHCE	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+KAYIT_BAHCE	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izinle bile onaysız değil: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izinle bile onaysız değil: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin verildiyse hatırlatma sormadan	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin verildiyse hatırlatma sormadan	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin yoksa hatırlatma da sorulur	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin yoksa hatırlatma da sorulur	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+haber	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+haber	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kurdum	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kurdum	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sormadan yapılınca haber verilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sormadan yapılınca haber verilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+katalog: hatırlatma izinle kendisi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+katalog: hatırlatma izinle kendisi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'ya 300 kilo 3 No, kilosu 68 liradan (20.400 TL) satış. Para alınmadı. 26 Kasım'da ödeme günü hatırlatması.	bahçeli	ELEK_FORM · ELEK 3no=300;3no_fiyat=68;alici=Ali Usta · 3 Numara 300 kg (68 TL/kg)
+Ali Usta'ya 300 kilo 3 No, kilosu 68 liradan (20.400 TL) satış. Para alınmadı. 26 Kasım'da ödeme günü hatırlatması.	bahçesiz	ELEK_FORM · ELEK 3no=300;3no_fiyat=68;alici=Ali Usta · 3 Numara 300 kg (68 TL/kg)
+Ali Usta'dan	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'dan	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayrılma	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayrılma	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Mehmet'ten	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Mehmet'ten	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayrılma sert	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayrılma sert	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ayşe'den	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ayşe'den	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayrılma ünlü	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ayrılma ünlü	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+karne satırı	bahçeli	KONUŞMA KARNE_GOSTER
+karne satırı	bahçesiz	KONUŞMA KARNE_GOSTER
+Çok adımlı iş	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Çok adımlı iş	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+karnede görünür	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+karnede görünür	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hiç yoksa satır yok	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+hiç yoksa satır yok	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+version 2.5	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+version 2.5	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kayıtlardan çıkarılan öneriler	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kayıtlardan çıkarılan öneriler	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+KVKK: öneriler kategoride ve hukuki sebepte	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+KVKK: öneriler kategoride ve hukuki sebepte	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+uygulamayı kolaylaştırmaktaki meşru menfaat (KVKK m. 5/2-f). İşleme yalnızca telefonunda yapılır	bahçeli	ANSWER · SORU_OPERATION -
+uygulamayı kolaylaştırmaktaki meşru menfaat (KVKK m. 5/2-f). İşleme yalnızca telefonunda yapılır	bahçesiz	ANSWER · SORU_OPERATION -
+KVKK: öneriler m. 5/2-f, yalnız telefonda	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+KVKK: öneriler m. 5/2-f, yalnız telefonda	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+nereye dokunduğun izlenmez	bahçeli	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+nereye dokunduğun izlenmez	bahçesiz	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+KVKK: gizli izleme yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+KVKK: gizli izleme yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Gizlilik: öneriler paragrafı ve saklama maddesi	bahçeli	TEACH · saklama
+Gizlilik: öneriler paragrafı ve saklama maddesi	bahçesiz	TEACH · saklama
+Gizlilik saklama: Bu yanlış kayıtları	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Gizlilik saklama: Bu yanlış kayıtları	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Unut	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Unut	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1.7.0	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1.7.0	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+suvardık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+suvardık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sulama	bahçeli	ANSWER · SORU_IRRIGATION -
+sulama	bahçesiz	ANSWER · SORU_IRRIGATION -
+ CommunityQueue	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ CommunityQueue	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin kapalı: kuyruğa girmez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin kapalı: kuyruğa girmez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin açık: girer	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin açık: girer	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aynı söz-anlam ikinci kez girmez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aynı söz-anlam ikinci kez girmez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aynı söz başka anlam ayrı katkı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aynı söz başka anlam ayrı katkı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+temizlenemeyen söz girmez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+temizlenemeyen söz girmez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+iki katkı bekliyor	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+iki katkı bekliyor	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gönderilmemiş söz unutulunca düşer	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+gönderilmemiş söz unutulunca düşer	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+gönderilmemişse geri çekme isteği gerekmez	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+gönderilmemişse geri çekme isteği gerekmez	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+gönderilmiş söz unutulunca geri çekme isteği	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+gönderilmiş söz unutulunca geri çekme isteği	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+izin kapandı: bekleyenler düştü	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin kapandı: bekleyenler düştü	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin kapandı: gönderilmiş olan geri çekilecek	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+izin kapandı: gönderilmiş olan geri çekilecek	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+devşirdik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+devşirdik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin kapalıyken yeni gönderim yok	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+izin kapalıyken yeni gönderim yok	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+2025	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2025	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+31 Temmuz: önceki sezon	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+31 Temmuz: önceki sezon	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Ağustos: yeni sezon	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Ağustos: yeni sezon	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ocak: aynı sezon	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ocak: aynı sezon	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aynı sezonda aynı takma ad	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aynı sezonda aynı takma ad	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2027	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2027	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Ağustos'ta döner	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Ağustos'ta döner	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+başka telefon başka takma ad	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+başka telefon başka takma ad	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+32 onaltılık hane	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+32 onaltılık hane	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gizli anahtar takma adda görünmez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gizli anahtar takma adda görünmez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gönderilen katkı: yalnız bu alanlar	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+gönderilen katkı: yalnız bu alanlar	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+silme belgesinin kendisi gitmez, yalnız özeti	bahçeli	ANSWER · SORU_SUMMARY -
+silme belgesinin kendisi gitmez, yalnız özeti	bahçesiz	ANSWER · SORU_SUMMARY -
+geri çekme: yalnız silme belgesi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+geri çekme: yalnız silme belgesi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+rastgele 16 bayt belge	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+rastgele 16 bayt belge	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+İP8-A: adres yok (BuildConfig alanı tanımlı değil)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+İP8-A: adres yok (BuildConfig alanı tanımlı değil)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+adres boşken yapılandırılmamış	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+adres boşken yapılandırılmamış	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+http://ornek.invalid	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+http://ornek.invalid	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+https://REPLACE_ME	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+https://REPLACE_ME	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ftp://x	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ftp://x	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+https://	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+https://	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gönderim yok: «	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+gönderim yok: «	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+AĞ KAPALI: izin açık ve kuyruk doluyken bile hiçbir ağ çağrısı yapılmadı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+AĞ KAPALI: izin açık ve kuyruk doluyken bile hiçbir ağ çağrısı yapılmadı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kuyruk olduğu gibi bekliyor	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kuyruk olduğu gibi bekliyor	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+https://ornek.invalid	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+https://ornek.invalid	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bir geri çekme + iki gönderim	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+bir geri çekme + iki gönderim	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+önce geri çekme	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+önce geri çekme	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sonra gönderim	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+sonra gönderim	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+kuyruk boşaldı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kuyruk boşaldı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aynı katkı ikinci kez gönderilmez	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+aynı katkı ikinci kez gönderilmez	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+izin kapalı: yalnız geri çekme	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izin kapalı: yalnız geri çekme	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+geri çekme isteği	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+geri çekme isteği	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sunucu reddederse	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sunucu reddederse	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+reddedilen katkı kuyrukta bekler	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+reddedilen katkı kuyrukta bekler	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kök + söz + anlam + il + sürüm	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+kök + söz + anlam + il + sürüm	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+Söz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Söz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kooperatif	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kooperatif	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan abiyle Girelli'yi 300 liraya bakırladık	bahçeli	TEACH · bakırladık
+Hasan abiyle Girelli'yi 300 liraya bakırladık	bahçesiz	TEACH · bakırladık
+dün Kuyu dibini 2 bin liralık ilaçla bakırladık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama;gun=-1;tutar=2000 · ilaçlama, dün, 2000 lira
+dün Kuyu dibini 2 bin liralık ilaçla bakırladık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama;gun=-1;tutar=2000 · ilaçlama, dün, 2000 lira
+Ali Usta geldi 15 dönümü göztaşıladık	bahçeli	ANSWER · SORU_AREA -
+Ali Usta geldi 15 dönümü göztaşıladık	bahçesiz	ANSWER · SORU_AREA -
+12 Ocak'ta Alt bahçeyi göztaşıladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+12 Ocak'ta Alt bahçeyi göztaşıladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Mehmet'in traktörüyle 40 ağacı bordoladık	bahçeli	ANSWER · SORU_TREES -
+Mehmet'in traktörüyle 40 ağacı bordoladık	bahçesiz	ANSWER · SORU_TREES -
+Kemal 500 TL aldı biz bordoladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kemal 500 TL aldı biz bordoladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'yi 3 saat suvardık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'yi 3 saat suvardık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ayşe teyzenin kuyusundan 20 ton su verip suvardık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Sulama;miktar=20;birim=ton · sulama, bugün, 20 ton
+Ayşe teyzenin kuyusundan 20 ton su verip suvardık	bahçesiz	OPERATION_FORM · ISLEM tur=Sulama;miktar=20;birim=ton · sulama, bugün, 20 ton
+bu sabah 06:30'da Kuyu dibini suvardık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bu sabah 06:30'da Kuyu dibini suvardık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kooperatif'ten 1200 liralık mazotla suvardık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Mazot;tutar=1200 · mazot, bugün, 1200 lira
+Kooperatif'ten 1200 liralık mazotla suvardık	bahçesiz	OPERATION_FORM · ISLEM tur=Mazot;tutar=1200 · mazot, bugün, 1200 lira
+Hasan Abi'nin bahçesini 4 kişi silktik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan Abi'nin bahçesini 4 kişi silktik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'den 800 kilo silktik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'den 800 kilo silktik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+dün 3 numara 120 kilo silktik	bahçeli	ELEK_FORM · ELEK 3no=120 · 3 Numara 120 kg
+dün 3 numara 120 kilo silktik	bahçesiz	ELEK_FORM · ELEK 3no=120 · 3 Numara 120 kg
+Muammer'le birlikte 2 ton sırıkladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Muammer'le birlikte 2 ton sırıkladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Alt bahçede 15 ağaç sırıkladık 900 lira yevmiye	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;miktar=15;birim=ağaç;tutar=900 · işçilik, bugün, 15 ağaç, 900 lira
+Alt bahçede 15 ağaç sırıkladık 900 lira yevmiye	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;miktar=15;birim=ağaç;tutar=900 · işçilik, bugün, 15 ağaç, 900 lira
+Ali Usta'nın işçileriyle 600 kilo devşirdik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;miktar=600;birim=kg · işçilik, bugün, 600 kg
+Ali Usta'nın işçileriyle 600 kilo devşirdik	bahçesiz	HARVEST_FORM · HASAT toplam=600
+5 Kasım 2026 günü Girelli'de devşirdik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+5 Kasım 2026 günü Girelli'de devşirdik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kemal'in diskarosuyla 8 dönüm diskaradık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Toprak İşleme;miktar=8;birim=dekar · toprak işleme, bugün, 8 dekar
+Kemal'in diskarosuyla 8 dönüm diskaradık	bahçesiz	OPERATION_FORM · ISLEM tur=Toprak İşleme;miktar=8;birim=dekar · toprak işleme, bugün, 8 dekar
+toprak işleme	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+toprak işleme	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+Kuyu dibini 1500 liraya diskaradık	bahçeli	TEACH · diskaradık
+Kuyu dibini 1500 liraya diskaradık	bahçesiz	TEACH · diskaradık
+Hasan'ın traktörüyle 2 kez belledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan'ın traktörüyle 2 kez belledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'nin alt tarafını 3 günde belledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'nin alt tarafını 3 günde belledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Mehmet usta 70 ağacı seyrelttik dedi biz de seyrelttik	bahçeli	ANSWER · SORU_TREES -
+Mehmet usta 70 ağacı seyrelttik dedi biz de seyrelttik	bahçesiz	ANSWER · SORU_TREES -
+budama	bahçeli	ANSWER · SORU_OPERATION islem=Budama
+budama	bahçesiz	ANSWER · SORU_OPERATION islem=Budama
+Alt bahçede 25 ağacı seyrelttik	bahçeli	ANSWER · SORU_TREES -
+Alt bahçede 25 ağacı seyrelttik	bahçesiz	ANSWER · SORU_TREES -
+Ayşe Hanım'ın fidanlarını 40 tane kalemledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ayşe Hanım'ın fidanlarını 40 tane kalemledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aşılama	bahçeli	KONUŞMA SOHBET
+aşılama	bahçesiz	KONUŞMA SOHBET
+Kuyu dibinde 300 liraya 12 ağaç kalemledik	bahçeli	ANSWER · SORU_TREES -
+Kuyu dibinde 300 liraya 12 ağaç kalemledik	bahçesiz	ANSWER · SORU_TREES -
+Ali Usta'yla Girelli'yi 2 saatte tırpanladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'yla Girelli'yi 2 saatte tırpanladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ot biçme	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ot biçme	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün 4 işçiyle 1600 liraya tırpanladık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İşçilik;miktar=4;birim=kişi;tutar=1600 · işçilik, bugün, 4 kişi, 1600 lira
+bugün 4 işçiyle 1600 liraya tırpanladık	bahçesiz	OPERATION_FORM · ISLEM tur=İşçilik;miktar=4;birim=kişi;tutar=1600 · işçilik, bugün, 4 kişi, 1600 lira
+Hasan abi 0532 555 44 33 aradı sonra bakırladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan abi 0532 555 44 33 aradı sonra bakırladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kooperatif'e 3500 TL borçla göztaşıladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kooperatif'e 3500 TL borçla göztaşıladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Muammer 2. kez bordoladık dedi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Muammer 2. kez bordoladık dedi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+%30 indirimli ilaçla bakırladık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+%30 indirimli ilaçla bakırladık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+Girelli 1. parseli suvardık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli 1. parseli suvardık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kuyu dibi 7 nolu kuyudan suvardık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kuyu dibi 7 nolu kuyudan suvardık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali'nin 250 kilosunu silktik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali'nin 250 kilosunu silktik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan Abi'ye 120 kilo sırıkladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan Abi'ye 120 kilo sırıkladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kemal 10 kişiyle devşirdik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kemal 10 kişiyle devşirdik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3 dönüm 1. sınıf toprağı diskaradık	bahçeli	ANSWER · SORU_AREA -
+3 dönüm 1. sınıf toprağı diskaradık	bahçesiz	ANSWER · SORU_AREA -
+Mehmet'e 600 lira verip belledik	bahçeli	TEACH · belledik
+Mehmet'e 600 lira verip belledik	bahçesiz	TEACH · belledik
+Ayşe'nin 18 ağacını seyrelttik	bahçeli	ANSWER · SORU_TREES -
+Ayşe'nin 18 ağacını seyrelttik	bahçesiz	ANSWER · SORU_TREES -
+Fatma hanımın 9 fidanını kalemledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Fatma hanımın 9 fidanını kalemledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli ve Kuyu dibi 2 bahçeyi tırpanladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli ve Kuyu dibi 2 bahçeyi tırpanladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+saat 17'de Alt bahçeyi bakırladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+saat 17'de Alt bahçeyi bakırladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta 45 litre ilaçla göztaşıladık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama;miktar=45;birim=L · ilaçlama, bugün, 45 L
+Ali Usta 45 litre ilaçla göztaşıladık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama;miktar=45;birim=L · ilaçlama, bugün, 45 L
+Hasan'ın oğlu Emre'yle bordoladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan'ın oğlu Emre'yle bordoladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kooperatif suyuyla 6 saat suvardık	bahçeli	TEACH · suvardık
+Kooperatif suyuyla 6 saat suvardık	bahçesiz	TEACH · suvardık
+Muammer'in bahçesinde 1,5 ton silktik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Muammer'in bahçesinde 1,5 ton silktik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kemal'le 22 çuval sırıkladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kemal'le 22 çuval sırıkladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'nin 2. tarlasını devşirdik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli'nin 2. tarlasını devşirdik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan Abi 4000 lira istedi diskaradık	bahçeli	TEACH · diskaradık
+Hasan Abi 4000 lira istedi diskaradık	bahçesiz	TEACH · diskaradık
+Kuyu dibinde 12 sıra belledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kuyu dibinde 12 sıra belledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali'yle 33 ağacı seyrelttik	bahçeli	ANSWER · SORU_TREES -
+Ali'yle 33 ağacı seyrelttik	bahçesiz	ANSWER · SORU_TREES -
+Mustafa'nın 5 ağacını kalemledik	bahçeli	ANSWER · SORU_TREES -
+Mustafa'nın 5 ağacını kalemledik	bahçesiz	ANSWER · SORU_TREES -
+Alt bahçe ile Girelli'yi 900 TL'ye tırpanladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Alt bahçe ile Girelli'yi 900 TL'ye tırpanladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ayşe Hanım 20.11.2026 tarihinde bakırladık dedi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ayşe Hanım 20.11.2026 tarihinde bakırladık dedi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kemal ağabey 150 kilo ilaçla göztaşıladık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama;miktar=150;birim=kg · ilaçlama, bugün, 150 kg
+Kemal ağabey 150 kilo ilaçla göztaşıladık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama;miktar=150;birim=kg · ilaçlama, bugün, 150 kg
+Hasan 7 bidonla suvardık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan 7 bidonla suvardık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ ContributionCleaner	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ ContributionCleaner	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+en az 50 örnek cümle (	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+en az 50 örnek cümle (	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretilecek söz var: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretilecek söz var: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gönderilebilir: 	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+gönderilebilir: 	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+[kok, soz, eylem, tur, not, il, surum]	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+[kok, soz, eylem, tur, not, il, surum]	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+yalnız yedi alan	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yalnız yedi alan	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+soz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+soz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+il	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+il	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sözde ve ilde rakam yok: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sözde ve ilde rakam yok: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+[^a-z0-9]+	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+[^a-z0-9]+	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+cümleden başka kelime çıkmadı «	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+cümleden başka kelime çıkmadı «	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+»: 	bahçeli	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+»: 	bahçesiz	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+ad çıkmadı «	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ad çıkmadı «	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+söz küçük harf, tek kelime	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+söz küçük harf, tek kelime	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+il (ilçe/köy değil)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+il (ilçe/köy değil)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sürüm	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+sürüm	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+1763640000000	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1763640000000	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tarih / kaynak / kullanım çıkmadı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tarih / kaynak / kullanım çıkmadı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hepsi temizlendi: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hepsi temizlendi: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tırpanladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tırpanladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+{kok=tirpanl, soz=tırpanladık, eylem=ISLEM, tur=Diğer, not=Ot biçme, il=, surum=1.7.0}	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+{kok=tirpanl, soz=tırpanladık, eylem=ISLEM, tur=Diğer, not=Ot biçme, il=, surum=1.7.0}	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+Diğer işi: not etiketiyle; il boşsa ilsiz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer işi: not etiketiyle; il boşsa ilsiz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+silk|HASAT||	bahçeli	ANSWER · SORU_HARVEST -
+silk|HASAT||	bahçesiz	ANSWER · SORU_HARVEST -
+söz-anlam anahtarı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+söz-anlam anahtarı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bakırladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bakırladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+küçük harf	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+küçük harf	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+BAKIRLADIK	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+BAKIRLADIK	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+büyük harf (Türkçe ı)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+büyük harf (Türkçe ı)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+İlaçladık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+İlaçladık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+ilaçladık	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+ilaçladık	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+Türkçe İ	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Türkçe İ	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bakırladık'ı	bahçeli	TEACH · bakırladık
+bakırladık'ı	bahçesiz	TEACH · bakırladık
+kesme işareti ve sonrası atılır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kesme işareti ve sonrası atılır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+suvardık’mış	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+suvardık’mış	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kıvrık kesme işareti	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kıvrık kesme işareti	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+  silktik  	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+  silktik  	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çekimli fiil değil (ad)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çekimli fiil değil (ad)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çekimli fiil değil (bahçe adı)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çekimli fiil değil (bahçe adı)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tek kelime değil	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tek kelime değil	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3kez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3kez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bak1rladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bak1rladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+rakam içinde	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+rakam içinde	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bakırlayıverdiklerimizdenmişsiniz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bakırlayıverdiklerimizdenmişsiniz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çok uzun	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çok uzun	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bakır-ladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bakır-ladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+harf dışı işaret	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+harf dışı işaret	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hasanladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hasanladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yaygın kişi adı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yaygın kişi adı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+mehmetledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+mehmetledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+girelliledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+girelliledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kemalledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kemalledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+alıcı adı	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+alıcı adı	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+muammerledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+muammerledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kullanıcı adı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kullanıcı adı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kooperatifledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kooperatifledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ustaladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ustaladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hitap	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hitap	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gönderilmez (	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+gönderilmez (	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+att	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+att	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+genel fiil gönderilmez	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+genel fiil gönderilmez	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+paket	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paket	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketten gelen söz gönderilmez	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+paketten gelen söz gönderilmez	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+anlamı seçime karşılık gelmeyen gönderilmez	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+anlamı seçime karşılık gelmeyen gönderilmez	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+suvar	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+suvar	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kök sözle tutmuyorsa gönderilmez	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+kök sözle tutmuyorsa gönderilmez	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+81 il	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+81 il	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izmir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izmir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+il yazımı düzelir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+il yazımı düzelir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+MANİSA	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+MANİSA	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ilçe gönderilmez	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+ilçe gönderilmez	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+Girelli köyü	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Girelli köyü	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+köy gönderilmez	bahçeli	RECORD_QUESTIONS · KAYIT_POST - · POST
+köy gönderilmez	bahçesiz	RECORD_QUESTIONS · KAYIT_POST - · POST
+il boşsa ilsiz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+il boşsa ilsiz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1.7.0-debug Muammer	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1.7.0-debug Muammer	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sürüm alanına başka bir şey girmez	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+sürüm alanına başka bir şey girmez	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+ KnowledgePack	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ KnowledgePack	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+app/src/main/res/raw/bilgi_paketi.json	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+app/src/main/res/raw/bilgi_paketi.json	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+app/src/main/res/raw/baslangic_sozleri.tsv	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+app/src/main/res/raw/baslangic_sozleri.tsv	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gömülü paket başlangıç listesinden üretilmiş (özet üzerinden)	bahçeli	ANSWER · SORU_SUMMARY -
+gömülü paket başlangıç listesinden üretilmiş (özet üzerinden)	bahçesiz	ANSWER · SORU_SUMMARY -
+yazım biçimi (boşluk, satır) sonucu değiştirmez	bahçeli	TEACH · değiştirmez
+yazım biçimi (boşluk, satır) sonucu değiştirmez	bahçesiz	TEACH · değiştirmez
+farklı içerik farklı paket	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+farklı içerik farklı paket	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gömülü paket okunur (özet tutuyor)	bahçeli	ANSWER · SORU_SUMMARY -
+gömülü paket okunur (özet tutuyor)	bahçesiz	ANSWER · SORU_SUMMARY -
+onaylanan 11 söz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+onaylanan 11 söz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gömülü	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gömülü	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tür=paket: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tür=paket: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aşıladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aşıladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+İP5 öğretme sözleri pakette yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+İP5 öğretme sözleri pakette yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+app/src/main/res/raw/kontrol_bankasi.tsv	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+app/src/main/res/raw/kontrol_bankasi.tsv	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gömülü paket kontrol bankasından geçer	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gömülü paket kontrol bankasından geçer	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+göztaşıladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+göztaşıladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bordoladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bordoladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sırıkladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sırıkladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+diskaradık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+diskaradık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+belledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+belledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+seyrelttik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+seyrelttik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kalemledik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kalemledik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketsiz anlaşılmaz: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketsiz anlaşılmaz: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketle anlaşılır: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketle anlaşılır: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+anlam: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+anlam: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketteki söz için öğretme sorusu çıkmaz: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketteki söz için öğretme sorusu çıkmaz: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün kalemledik	bahçeli	TEACH · kalemledik
+bugün kalemledik	bahçesiz	TEACH · kalemledik
+Aşılama	bahçeli	KONUŞMA SOHBET
+Aşılama	bahçesiz	KONUŞMA SOHBET
+kalemledik: Diğer + Aşılama	bahçeli	KONUŞMA SOHBET
+kalemledik: Diğer + Aşılama	bahçesiz	KONUŞMA SOHBET
+   paket sözü olmadan değişti: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+   paket sözü olmadan değişti: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paket boşken 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paket boşken 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ cümlenin hepsi aynı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ cümlenin hepsi aynı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketle değişen 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketle değişen 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ cümlenin hepsinde paket sözü var	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ cümlenin hepsinde paket sözü var	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Paket: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Paket: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ cümle · paket boşken 0 fark · paketle 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ cümle · paket boşken 0 fark · paketle 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ cümle değişti (hepsi paket sözlü)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ cümle değişti (hepsi paket sözlü)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketten	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+paketten	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çiftçinin öğrettiği kazanır	bahçeli	TEACH · öğrettiği
+çiftçinin öğrettiği kazanır	bahçesiz	TEACH · öğrettiği
+öğretilenle çakışan paket sözü etkisiz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretilenle çakışan paket sözü etkisiz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretilen unutulunca paket yeniden	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretilen unutulunca paket yeniden	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün suvardık	bahçeli	TEACH · suvardık
+bugün suvardık	bahçesiz	TEACH · suvardık
+kapatılan söz kullanılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kapatılan söz kullanılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kapatılan söz yeniden öğretilebilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kapatılan söz yeniden öğretilebilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yeniden açılınca kullanılır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yeniden açılınca kullanılır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Herkesten öğrendiklerim: 11 satır	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Herkesten öğrendiklerim: 11 satır	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Bakırladık = ilaçlama	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+Bakırladık = ilaçlama	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+satır başlığı	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+satır başlığı	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Herkesten · açık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Herkesten · açık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+açık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+açık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kapatılan satır kapalı görünür (açılabilsin)	bahçeli	TEACH · kapatılan
+kapatılan satır kapalı görünür (açılabilsin)	bahçesiz	TEACH · kapatılan
+Senin öğrettiğin geçerli	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Senin öğrettiğin geçerli	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kendi öğrettiği: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kendi öğrettiği: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Senin öğrettiklerin'de paket sözü yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Senin öğrettiklerin'de paket sözü yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yazma yalnız öğretilene	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yazma yalnız öğretilene	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+özeti tutmayan paket	bahçeli	ANSWER · SORU_SUMMARY -
+özeti tutmayan paket	bahçesiz	ANSWER · SORU_SUMMARY -
+{bozuk	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+{bozuk	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bozuk paket	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bozuk paket	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bilinmeyen biçim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bilinmeyen biçim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yanlis	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yanlis	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gomulu	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gomulu	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kök sözle tutmuyor	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kök sözle tutmuyor	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+anlam bir seçim değil	bahçeli	KONUŞMA SOHBET
+anlam bir seçim değil	bahçesiz	KONUŞMA SOHBET
+indirilen	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+indirilen	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+imzasız indirilen paket	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+imzasız indirilen paket	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bankayı bozan paket yakalanır (topladık = ilaçlama)	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+bankayı bozan paket yakalanır (topladık = ilaçlama)	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+bankayı bozan paket uygulanmaz: bir öncekiyle devam	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bankayı bozan paket uygulanmaz: bir öncekiyle devam	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+okunamayan paket: bir öncekiyle devam	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+okunamayan paket: bir öncekiyle devam	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+önceki yoksa paketsiz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+önceki yoksa paketsiz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-01-01	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-01-01	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eski ya da aynı sürüm uygulanmaz	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+eski ya da aynı sürüm uygulanmaz	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+2026-12-01	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2026-12-01	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yeni ve sağlam paket uygulanır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yeni ve sağlam paket uygulanır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+iki açık anahtar yuvası	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+iki açık anahtar yuvası	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+İP8-A: yuvalar boş	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+İP8-A: yuvalar boş	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+secp256r1	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+secp256r1	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ege	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ege	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2027-03-01	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2027-03-01	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+uygulamadaki boş yuvalarla imzalı paket de reddedilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+uygulamadaki boş yuvalarla imzalı paket de reddedilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yeni anahtar (yuva 2) ile imzalı paket kabul	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yeni anahtar (yuva 2) ile imzalı paket kabul	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eski anahtar (yuva 1) değişim süresince geçerli	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eski anahtar (yuva 1) değişim süresince geçerli	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yanlış yuvadaki imza reddedilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yanlış yuvadaki imza reddedilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+imzadan sonra değiştirilen paket reddedilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+imzadan sonra değiştirilen paket reddedilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+olmayan yuva	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+olmayan yuva	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+SHA256withECDSA	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+SHA256withECDSA	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tools/pack/gercek_adlar.txt	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tools/pack/gercek_adlar.txt	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tools/pack/kurgu_adlar.txt	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tools/pack/kurgu_adlar.txt	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gerçek kişi adı yok («	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gerçek kişi adı yok («	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+»): 	bahçeli	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+»): 	bahçesiz	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+ad kurgu listesinde («	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ad kurgu listesinde («	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+telefon numarası yok: 	bahçeli	ANSWER · SORU_ELEK -
+telefon numarası yok: 	bahçesiz	ANSWER · SORU_ELEK -
+kimlik numarası yok: 	bahçeli	ANSWER · SORU_ELEK -
+kimlik numarası yok: 	bahçesiz	ANSWER · SORU_ELEK -
+IBAN / e-posta yok: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+IBAN / e-posta yok: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kontrol bankasında 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kontrol bankasında 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+cümle bankasının doğru satırları (	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satırları” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+cümle bankasının doğru satırları (	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satırları” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+) ile kontrol bankası (	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+) ile kontrol bankası (	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+) eşleşiyor	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+) eşleşiyor	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bu yanlış	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bu yanlış	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ HabitModel	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ HabitModel	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+boş: satış/bahçe yok	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış/bahçe” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+boş: satış/bahçe yok	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış/bahçe” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+boş: fiyat yok	bahçeli	MARKET · SORU_MARKET -
+boş: fiyat yok	bahçesiz	MARKET · SORU_MARKET -
+boş: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+boş: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ot biçme	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ot biçme	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+boş: işçi / ot biçme	bahçeli	ANSWER · SORU_OPERATION islem=İşçilik
+boş: işçi / ot biçme	bahçesiz	ANSWER · SORU_OPERATION islem=İşçilik
+hep farklı alıcı: öneri yok	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+hep farklı alıcı: öneri yok	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+4/6 yüksek	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+4/6 yüksek	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sezilen	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sezilen	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tür sezilen	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tür sezilen	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+son 6 satışın 4'ü Ali Usta	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+son 6 satışın 4'ü Ali Usta	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+kanıt	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kanıt	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3/6 orta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3/6 orta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2/6 kullanılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2/6 kullanılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3 kayıt hepsi aynı: orta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3 kayıt hepsi aynı: orta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+4 kayıt hepsi aynı: yüksek	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+4 kayıt hepsi aynı: yüksek	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yalnız son 6 sayılır (eskiler etkilemez); alıcısız satış önerilmez	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcısız” ve “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+yalnız son 6 sayılır (eskiler etkilemez); alıcısız satış önerilmez	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcısız” ve “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+kayıt yok: bilgi yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kayıt yok: bilgi yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eşitlikte en yeni	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eşitlikte en yeni	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+180 günden eski bilgi kullanılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+180 günden eski bilgi kullanılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+179 gün: kullanılır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+179 gün: kullanılır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+5/6 yüksek	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+5/6 yüksek	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+iki satış silinince orta (yeniden hesap)	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+iki satış silinince orta (yeniden hesap)	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+bir satış daha silinince bilgi düşer	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+bir satış daha silinince bilgi düşer	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+en sık ilaç	bahçeli	ANSWER · SORU_SPRAY -
+en sık ilaç	bahçesiz	ANSWER · SORU_SPRAY -
+ilaçlama kaydı silinince orta	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+ilaçlama kaydı silinince orta	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+önce önerilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+önce önerilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+alici	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alici” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+alici	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alici” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Bu yanlış: bir sonraki kayda kadar önerilmez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bu yanlış: bir sonraki kayda kadar önerilmez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ertesi gün de (kayıt yoksa) önerilmez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ertesi gün de (kayıt yoksa) önerilmez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yeni kayıttan sonra yeniden önerilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yeni kayıttan sonra yeniden önerilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+fiyat:Ali Usta:3	bahçeli	MARKET · SORU_MARKET -
+fiyat:Ali Usta:3	bahçesiz	MARKET · SORU_MARKET -
+68	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+68	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yalnız reddedilen değer kalkar, ötekiler durur	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yalnız reddedilen değer kalkar, ötekiler durur	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+4 red: açık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+4 red: açık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kabul üst üste sayıyı sıfırlar	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kabul üst üste sayıyı sıfırlar	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+5 kez üst üste: tür kapanır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+5 kez üst üste: tür kapanır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kapanan tür yeni kayıtla da açılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kapanan tür yeni kayıtla da açılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+başka tür etkilenmez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+başka tür etkilenmez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çiftçinin/cümlenin değeri varsa sezilen ne doldurur ne önerir	bahçeli	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+çiftçinin/cümlenin değeri varsa sezilen ne doldurur ne önerir	bahçesiz	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+boş alana önerir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+boş alana önerir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ot biçme, 2 saat	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ot biçme, 2 saat	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer + Ot biçme	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer + Ot biçme	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretilen not üstün	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretilen not üstün	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer işinde (ot biçme) miktar işin adına göre	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer işinde (ot biçme) miktar işin adına göre	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Alt	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Alt	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+MKP 0-52-34	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+MKP 0-52-34	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+en sık gübre	bahçeli	ANSWER · SORU_FERTILIZER -
+en sık gübre	bahçesiz	ANSWER · SORU_FERTILIZER -
+Geçen sefer de MKP 0-52-34 · son 6 gübre kaydının 6'sı	bahçeli	ANSWER · SORU_FERTILIZER -
+Geçen sefer de MKP 0-52-34 · son 6 gübre kaydının 6'sı	bahçesiz	ANSWER · SORU_FERTILIZER -
+gerekçe	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gerekçe	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+son 6 gübre kaydının 6'sı MKP 0-52-34	bahçeli	ANSWER · SORU_FERTILIZER -
+son 6 gübre kaydının 6'sı MKP 0-52-34	bahçesiz	ANSWER · SORU_FERTILIZER -
+miktar 18 kg	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+miktar 18 kg	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+en sık bahçe	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+en sık bahçe	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ürün yalnız ilaçlama ve gübrede	bahçeli	ANSWER · SORU_FERTILIZER -
+ürün yalnız ilaçlama ve gübrede	bahçesiz	ANSWER · SORU_FERTILIZER -
+gün	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gün	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+işçi sayısı: yalnız 'kişi' birimiyle girilenler	bahçeli	ANSWER · SORU_OPERATION islem=İşçilik
+işçi sayısı: yalnız 'kişi' birimiyle girilenler	bahçesiz	ANSWER · SORU_OPERATION islem=İşçilik
+gün birimli işçilik sayılmaz	bahçeli	ANSWER · SORU_OPERATION islem=İşçilik
+gün birimli işçilik sayılmaz	bahçesiz	ANSWER · SORU_OPERATION islem=İşçilik
+Üre	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Üre	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eski 'Gübreleme' yazımı gübre sayılır	bahçeli	ANSWER · SORU_FERTILIZER -
+eski 'Gübreleme' yazımı gübre sayılır	bahçesiz	ANSWER · SORU_FERTILIZER -
+bakır 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bakır 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bakır sülfat	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bakır sülfat	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bakır,	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bakır,	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yalnız tıpatıp aynı not sayılır (3/6)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yalnız tıpatıp aynı not sayılır (3/6)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan abiden aldım	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hasan abiden aldım	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aynı not	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aynı not	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kişi adlı not gerekçede yok: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kişi adlı not gerekçede yok: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ama form doldurulabilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ama form doldurulabilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Üre 450 TL	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Üre 450 TL	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tutarlı not gerekçede yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tutarlı not gerekçede yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Mehmet getirdi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Mehmet getirdi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+alıcı adı geçen not gerekçede yok	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+alıcı adı geçen not gerekçede yok	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+sıradan not gösterilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sıradan not gösterilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Geçen sefer de Ali Usta · son 6 satışın 4'ü	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Geçen sefer de Ali Usta · son 6 satışın 4'ü	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+kısa gerekçe	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kısa gerekçe	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'ya son 4 satışın 4'ü 68 TL (3 No)	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Ali Usta'ya son 4 satışın 4'ü 68 TL (3 No)	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+fiyat kanıtı	bahçeli	MARKET · SORU_MARKET -
+fiyat kanıtı	bahçesiz	MARKET · SORU_MARKET -
+fiyat sayısı	bahçeli	MARKET · SORU_MARKET -
+fiyat sayısı	bahçesiz	MARKET · SORU_MARKET -
+izled	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+izled	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hep 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hep 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+her zaman	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+her zaman	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+seni 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+seni 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gözl	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gözl	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+takip	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+takip	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ürkütücü dil yok: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ürkütücü dil yok: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kısa: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kısa: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'ya	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'ya	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yönelme a	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yönelme a	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Mehmet'e	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Mehmet'e	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yönelme e	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yönelme e	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ayşe'ye	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ayşe'ye	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yönelme ye	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yönelme ye	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kooperatif'e	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Kooperatif'e	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yönelme	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yönelme	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sınıf adı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sınıf adı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+urun	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+urun	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+oneri_gosterilen.Ali Usta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+oneri_gosterilen.Ali Usta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+uydurma.alici	bahçeli	TEACH · uydurma
+uydurma.alici	bahçesiz	TEACH · uydurma
+oneri_gosterilen.alici	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “oneri_gosterilen.alici” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+oneri_gosterilen.alici	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “oneri_gosterilen.alici” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+gösterilen sayılır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gösterilen sayılır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+oneri_kabul.alici	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “oneri_kabul.alici” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+oneri_kabul.alici	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “oneri_kabul.alici” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+kabul sayılır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kabul sayılır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+oneri_yanlis.urun	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+oneri_yanlis.urun	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bu yanlış sayılır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bu yanlış sayılır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+uydurma	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+uydurma	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+karneye ad / bilinmeyen anahtar girmez: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+karneye ad / bilinmeyen anahtar girmez: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+• Öneri · alıcı: 2 gösterildi, 1 kabul (%50), 0 «Bu yanlış»	bahçeli	TEACH · gösterildi
+• Öneri · alıcı: 2 gösterildi, 1 kabul (%50), 0 «Bu yanlış»	bahçesiz	TEACH · gösterildi
+karnede: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+karnede: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+• Öneri · ilaç / gübre: 1 gösterildi, 0 kabul (%0), 1 «Bu yanlış»	bahçeli	OPERATION_QUESTIONS · ISLEM tur=İlaçlama · ilaçlama, bugün
+• Öneri · ilaç / gübre: 1 gösterildi, 0 kabul (%0), 1 «Bu yanlış»	bahçesiz	OPERATION_FORM · ISLEM tur=İlaçlama · ilaçlama, bugün
+karnede ilaç	bahçeli	ANSWER · SORU_SPRAY -
+karnede ilaç	bahçesiz	ANSWER · SORU_SPRAY -
+Öneri	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Öneri	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öneri yoksa satır yok	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+öneri yoksa satır yok	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+oneri_kabul	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+oneri_kabul	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'ya satış · 3 No · 68 TL hazır	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Ali Usta'ya satış · 3 No · 68 TL hazır	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+yüksek güven: alıcı, sınıf, fiyat	bahçeli	MARKET · SORU_MARKET -
+yüksek güven: alıcı, sınıf, fiyat	bahçesiz	MARKET · SORU_MARKET -
+orta güven: bugünkü yazı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+orta güven: bugünkü yazı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+veri yok: bugünkü yazı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+veri yok: bugünkü yazı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ali Usta'ya satış · 3 No hazır	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Ali Usta'ya satış · 3 No hazır	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satış” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+fiyat değişkense fiyatsız	bahçeli	MARKET · SORU_MARKET -
+fiyat değişkense fiyatsız	bahçesiz	MARKET · SORU_MARKET -
+ Öğrendiklerim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ Öğrendiklerim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sözlük boş: satır yok	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+sözlük boş: satır yok	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Henüz bir şey öğrenmedim. Anlamadığım bir sözü bana öğrettiğinde burada görünür.	bahçeli	KONUŞMA ANLAMADIKLARI_GOSTER
+Henüz bir şey öğrenmedim. Anlamadığım bir sözü bana öğrettiğinde burada görünür.	bahçesiz	KONUŞMA ANLAMADIKLARI_GOSTER
+boş açıklama	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+boş açıklama	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+fark ettiklerim: İP5 yokken boş, uydurma satır yok	bahçeli	TEACH · uydurma
+fark ettiklerim: İP5 yokken boş, uydurma satır yok	bahçesiz	TEACH · uydurma
+asistan: boşken nazik açıklama	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+asistan: boşken nazik açıklama	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretmeden anlaşılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretmeden anlaşılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretilen söz ekranda	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+öğretilen söz ekranda	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+12 Ocak'ta öğrendim · henüz kullanmadım	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+12 Ocak'ta öğrendim · henüz kullanmadım	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+açıklama (kullanılmadan)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+açıklama (kullanılmadan)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün Girelli'yi bakırladık	bahçeli	TEACH · bakırladık
+bugün Girelli'yi bakırladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kullanılır 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kullanılır 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+12 Ocak'ta öğrendim · 4 kez kullandım	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+12 Ocak'ta öğrendim · 4 kez kullandım	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ekrandaki sayı gerçek kullanım	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ekrandaki sayı gerçek kullanım	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bakırladık sözünü sil	bahçeli	SPECIAL · Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.
+Bakırladık sözünü sil	bahçesiz	SPECIAL · Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.
+Sil düğmesinin okunuşu	bahçeli	SPECIAL · Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.
+Sil düğmesinin okunuşu	bahçesiz	SPECIAL · Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.
+Sil: satırın anahtarıyla silinir	bahçeli	SPECIAL · Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.
+Sil: satırın anahtarıyla silinir	bahçesiz	SPECIAL · Asistan kayıtları silmez ya da değiştirmez. Bunu ilgili ekrandan yapabilirsin; örneğin “Sulama aç” de.
+silinince ekrandan kalkar	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+silinince ekrandan kalkar	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+silinen söz bir daha kullanılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+silinen söz bir daha kullanılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+silinen söz yeniden sorulabilir (öğretilebilir)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+silinen söz yeniden sorulabilir (öğretilebilir)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Tamam, “Bakırladık” sözünü unuttum.	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Tamam, “Bakırladık” sözünü unuttum.	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+silince söylenen	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+silince söylenen	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kestik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kestik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+zurnal	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+zurnal	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+zurnaladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+zurnaladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kullanılamayan söz ekranda yok (	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kullanılamayan söz ekranda yok (	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ satır)	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+ satır)	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satır” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+satırın sözü sözlükte: 	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satırın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+satırın sözü sözlükte: 	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satırın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+satır gerçekten kullanılıyor: 	bahçeli	TEACH · kullanılıyor
+satır gerçekten kullanılıyor: 	bahçesiz	TEACH · kullanılıyor
+bugün zurnaladık	bahçeli	TEACH · zurnaladık
+bugün zurnaladık	bahçesiz	TEACH · zurnaladık
+gösterilmeyen söz kullanılmıyor da: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+gösterilmeyen söz kullanılmıyor da: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+en yeni üstte	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+en yeni üstte	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bugün öğrendim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Bugün öğrendim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Dün öğrendim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Dün öğrendim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+dün (yıl başı)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+dün (yıl başı)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+dün (yıl dönümü)	bahçeli	ANSWER · SORU_AREA -
+dün (yıl dönümü)	bahçesiz	ANSWER · SORU_AREA -
+1 Ocak'ta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Ocak'ta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Şubat'ta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Şubat'ta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Mart'ta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Mart'ta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Nisan'da	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Nisan'da	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Mayıs'ta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Mayıs'ta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Haziran'da	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Haziran'da	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Temmuz'da	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Temmuz'da	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Ağustos'ta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Ağustos'ta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Ekim'de	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Ekim'de	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Kasım'da	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Kasım'da	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Aralık'ta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 Aralık'ta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ öğrendim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ öğrendim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ay eki 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ay eki 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3 Mart 2026'da öğrendim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3 Mart 2026'da öğrendim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+geçen yıl	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+geçen yıl	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+'te	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+'te	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2025'te	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2025'te	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+'de	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+'de	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2027'de	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2027'de	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+'da	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+'da	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2029'da	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2029'da	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2030'da	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2030'da	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+'ta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+'ta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2040'ta	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2040'ta	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2070'te	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2070'te	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2000'de	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+2000'de	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Öğrendim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Öğrendim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tarihi bilinmeyen söz için uydurma tarih yok	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tarihi bilinmeyen söz için uydurma tarih yok	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+henüz kullanmadım	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+henüz kullanmadım	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kullanılmadı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kullanılmadı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 kez kullandım	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 kez kullandım	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 kez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+1 kez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3 söz öğrendim. Hepsini Öğrendiklerim sayfasında açtım; istediğini oradan silebilirsin.	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+3 söz öğrendim. Hepsini Öğrendiklerim sayfasında açtım; istediğini oradan silebilirsin.	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+asistan özeti	bahçeli	ANSWER · SORU_SUMMARY -
+asistan özeti	bahçesiz	ANSWER · SORU_SUMMARY -
+son 6 satışın 4'ü	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+son 6 satışın 4'ü	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+bahce	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bahce	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+son 6 işlemin 3'ü	bahçeli	ANSWER · SORU_OPERATION -
+son 6 işlemin 3'ü	bahçesiz	ANSWER · SORU_OPERATION -
+Alıcı: Ali Usta	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “Alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+Alıcı: Ali Usta	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “Alıcı” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+fark edilen başlık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+fark edilen başlık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+son 6 satışın 4'ü · eminim	bahçeli	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+son 6 satışın 4'ü · eminim	bahçesiz	HINT · false · BUNU MU DEMEK İSTEDİN? · Sorunda “satışın” geçiyor ama henüz masraf ya da satış kaydın yok. “Satış aç” dersen ekleyebilirsin. · [Satış aç] · [MONEY]
+yüksek güven = eminim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yüksek güven = eminim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+son 6 işlemin 3'ü · pek emin değilim	bahçeli	ANSWER · SORU_OPERATION -
+son 6 işlemin 3'ü · pek emin değilim	bahçesiz	ANSWER · SORU_OPERATION -
+orta güven = pek emin değilim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+orta güven = pek emin değilim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+güven	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+güven	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+puan	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+puan	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+veri	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+veri	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+algoritma	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+algoritma	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kayıt tablosu	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kayıt tablosu	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+teknik terim yok: «	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+teknik terim yok: «	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+» in 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+» in 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+geri alamazsın	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+geri alamazsın	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hepsini unut uyarısı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hepsini unut uyarısı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hepsini unut: ekran boş	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hepsini unut: ekran boş	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hepsini unut: hiçbiri kullanılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Hepsini unut: hiçbiri kullanılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ NewJobs (İP5 Adım 0)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ NewJobs (İP5 Adım 0)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+10 iş düğmesi (Başka ve Vazgeç ayrıca)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+10 iş düğmesi (Başka ve Vazgeç ayrıca)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sinek tuzağı	bahçeli	ANSWER · SORU_OPERATION islem=Sinek tuzağı
+sinek tuzağı	bahçesiz	ANSWER · SORU_OPERATION islem=Sinek tuzağı
+Ot biçme / Temizlik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ot biçme / Temizlik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+temizlik	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+temizlik	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sesli cevap «	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sesli cevap «	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+başka	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+başka	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Vazgeç / Başka seçim değil	bahçeli	KONUŞMA SOHBET
+Vazgeç / Başka seçim değil	bahçesiz	KONUŞMA SOHBET
+Ot biçme: Diğer + not	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ot biçme: Diğer + not	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Aşılama: Diğer + not	bahçeli	KONUŞMA SOHBET
+Aşılama: Diğer + not	bahçesiz	KONUŞMA SOHBET
+düğmenin türü listede: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+düğmenin türü listede: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün diskaradık	bahçeli	TEACH · diskaradık
+bugün diskaradık	bahçesiz	TEACH · diskaradık
+feromonladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+feromonladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün Girelli'yi feromonladık	bahçeli	TEACH · feromonladık
+bugün Girelli'yi feromonladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ırgatladık	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ırgatladık	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+dün ırgatladık 1500 lira	bahçeli	TEACH · ırgatladık
+dün ırgatladık 1500 lira	bahçesiz	TEACH · ırgatladık
+bugün tırpanladık	bahçeli	TEACH · tırpanladık
+bugün tırpanladık	bahçesiz	TEACH · tırpanladık
+bugün aşıladık	bahçeli	TEACH · aşıladık
+bugün aşıladık	bahçesiz	TEACH · aşıladık
+: sözlük boşken anlaşılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: sözlük boşken anlaşılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: öğretme sorusu açılır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: öğretme sorusu açılır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: öğretilince işlem	bahçeli	ANSWER · SORU_OPERATION -
+: öğretilince işlem	bahçesiz	ANSWER · SORU_OPERATION -
+: form türü	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: form türü	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: not	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: not	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: form girdisi	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: form girdisi	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: öğretme penceresinden form dolu açılır	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: öğretme penceresinden form dolu açılır	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: gerekçede öğrenilen söz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: gerekçede öğrenilen söz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ diye öğrendim.	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ diye öğrendim.	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: geri bildirim	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: geri bildirim	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+k$	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+k$	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ğı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ğı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ unut	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ unut	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: unut komutu	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: unut komutu	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: unutunca anlaşılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+: unutunca anlaşılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+ot biçme kendi notuyla	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+ot biçme kendi notuyla	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+aşılama kendi notuyla	bahçeli	KONUŞMA SOHBET
+aşılama kendi notuyla	bahçesiz	KONUŞMA SOHBET
+choiceOf ot biçme	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+choiceOf ot biçme	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+choiceOf aşılama	bahçeli	KONUŞMA SOHBET
+choiceOf aşılama	bahçesiz	KONUŞMA SOHBET
+anlamı okunur	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+anlamı okunur	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aşılama kararı ot biçme sözüyle eşleşmez	bahçeli	KONUŞMA SOHBET
+aşılama kararı ot biçme sözüyle eşleşmez	bahçesiz	KONUŞMA SOHBET
+Tırpanladık → ot biçme	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+Tırpanladık → ot biçme	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+Aşıladık → aşılama	bahçeli	KONUŞMA SOHBET
+Aşıladık → aşılama	bahçesiz	KONUŞMA SOHBET
+kurallar anlar: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kurallar anlar: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kalem aşısı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kalem aşısı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+otları biçtik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+otları biçtik	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+tırpanladık kurallarda yok (öğretilir)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+tırpanladık kurallarda yok (öğretilir)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aşıladık kurallarda yok (öğretilir)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+aşıladık kurallarda yok (öğretilir)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün otları biçtik 3 saat	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Ot biçme;miktar=3;birim=saat · ot biçme, bugün, 3 saat
+bugün otları biçtik 3 saat	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Ot biçme;miktar=3;birim=saat · ot biçme, bugün, 3 saat
+ot biçme, bugün, 3 saat	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Ot biçme;miktar=3;birim=saat · ot biçme, bugün, 3 saat
+ot biçme, bugün, 3 saat	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Ot biçme;miktar=3;birim=saat · ot biçme, bugün, 3 saat
+okunan özet işin adıyla	bahçeli	ANSWER · SORU_SUMMARY -
+okunan özet işin adıyla	bahçesiz	ANSWER · SORU_SUMMARY -
+ot biçme ne zaman	bahçeli	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+ot biçme ne zaman	bahçesiz	CHAT · Hehe, onu tam bilemedim. Ama elek, ilaçlama, sulama, satış, ne istersen söyle, ben yazarım.
+soru kayıt sayılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+soru kayıt sayılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+15 sinek tuzağı	bahçeli	ANSWER · SORU_OPERATION islem=Sinek tuzağı
+15 sinek tuzağı	bahçesiz	ANSWER · SORU_OPERATION islem=Sinek tuzağı
+sinek tuzağı kaydı soru kalır	bahçeli	ANSWER · SORU_OPERATION islem=Sinek tuzağı
+sinek tuzağı kaydı soru kalır	bahçesiz	ANSWER · SORU_OPERATION islem=Sinek tuzağı
+dört söz yazıldı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+dört söz yazıldı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+notsuz söz 9 sütun (eskisi gibi)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+notsuz söz 9 sütun (eskisi gibi)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer işi 10 sütun (not)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer işi 10 sütun (not)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+not yedekte	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+not yedekte	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yeni sürüm dördünü de alır	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+yeni sürüm dördünü de alır	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+not geri gelir (ot biçme)	bahçeli	TEACH · biçme
+not geri gelir (ot biçme)	bahçesiz	TEACH · biçme
+not geri gelir (aşılama)	bahçeli	KONUŞMA SOHBET
+not geri gelir (aşılama)	bahçesiz	KONUŞMA SOHBET
+yedek → geri yükle → yedek aynı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+yedek → geri yükle → yedek aynı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+uydurma not / notsuz Diğer / yanlış eşleşme alınmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+uydurma not / notsuz Diğer / yanlış eşleşme alınmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eski sürüm hata vermeden yalnız tanıdığı sözü alır	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+eski sürüm hata vermeden yalnız tanıdığı sözü alır	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+eski sürüm: bakırladık alındı	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+eski sürüm: bakırladık alındı	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+eski sürüm: Diğer işleri sessizce atlandı	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+eski sürüm: Diğer işleri sessizce atlandı	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+eski sürüm: tanımadığı yeni iş (Toprak İşleme) atlandı	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Toprak İşleme · toprak işleme, bugün
+eski sürüm: tanımadığı yeni iş (Toprak İşleme) atlandı	bahçesiz	OPERATION_FORM · ISLEM tur=Toprak İşleme · toprak işleme, bugün
+eski yedek yeni sürüme girer	bahçeli	ANSWER · SORU_OPERATION islem=Toprak İşleme
+eski yedek yeni sürüme girer	bahçesiz	ANSWER · SORU_OPERATION islem=Toprak İşleme
+kayıt yokken sabit sıra	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kayıt yokken sabit sıra	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kayıt yokken son düğme	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kayıt yokken son düğme	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+en sık iş üstte	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+en sık iş üstte	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eşitlikte sabit sıra (Hasat, Ot biçme'den önce)	bahçeli	ANSWER · SORU_HARVEST -
+eşitlikte sabit sıra (Hasat, Ot biçme'den önce)	bahçesiz	ANSWER · SORU_HARVEST -
+eşit ikinci	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eşit ikinci	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sonra Budama	bahçeli	ANSWER · SORU_OPERATION islem=Budama
+sonra Budama	bahçesiz	ANSWER · SORU_OPERATION islem=Budama
+kaydı olmayanlar sabit sırada	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kaydı olmayanlar sabit sırada	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hiçbir düğme kaybolmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+hiçbir düğme kaybolmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ot biçme, 2 saat (sesle)	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Ot biçme, 2 saat (sesle)	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer + not → iş	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer + not → iş	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+Diğer + aşılama	bahçeli	KONUŞMA SOHBET
+Diğer + aşılama	bahçesiz	KONUŞMA SOHBET
+çit tamiri	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+çit tamiri	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+düğmesi olmayan Diğer işi sayılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+düğmesi olmayan Diğer işi sayılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eski gübreleme yazımı	bahçeli	ANSWER · SORU_FERTILIZER -
+eski gübreleme yazımı	bahçesiz	ANSWER · SORU_FERTILIZER -
+düğmesi olmayan tür sayılmaz	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+düğmesi olmayan tür sayılmaz	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün otları biçtik	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+bugün otları biçtik	bahçesiz	OPERATION_FORM · ISLEM tur=Diğer;not=Ot biçme · ot biçme, bugün
+diğer	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+diğer	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+okunan özet: 	bahçeli	ANSWER · SORU_SUMMARY -
+okunan özet: 	bahçesiz	ANSWER · SORU_SUMMARY -
+kayıtta tür Diğer	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kayıtta tür Diğer	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+not işin adıyla başlar: 	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+not işin adıyla başlar: 	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bugün Girelli'yi suladık 2 saat	bahçeli	OPERATION_QUESTIONS · ISLEM tur=Sulama;miktar=2;birim=saat · sulama, bugün, 2 saat
+bugün Girelli'yi suladık 2 saat	bahçesiz	OPERATION_FORM · ISLEM tur=Sulama;miktar=2;birim=saat · sulama, bugün, 2 saat
+diğer türlerde not eklenmez	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+diğer türlerde not eklenmez	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sozler	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sozler	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eylem	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+eylem	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bolge	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+bolge	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sunucu paketi: 2 onaylı söz (	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+sunucu paketi: 2 onaylı söz (	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+imzalanacak	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+imzalanacak	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+imzalanacak metin telefondaki canonical() ile aynı	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+imzalanacak metin telefondaki canonical() ile aynı	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+SQL'in SHA-256 özeti telefonunkiyle aynı	bahçeli	ANSWER · SORU_SUMMARY -
+SQL'in SHA-256 özeti telefonunkiyle aynı	bahçesiz	ANSWER · SORU_SUMMARY -
+imzasız sunucu paketi telefonda reddedilir	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+imzasız sunucu paketi telefonda reddedilir	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+test anahtarıyla imzalanan sunucu paketi telefonda okunur	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+test anahtarıyla imzalanan sunucu paketi telefonda okunur	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kaynak: indirilen	bahçeli	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
+kaynak: indirilen	bahçesiz	CHAT · Hıı, öyle mi? Anlat bakalım, dinliyorum.
