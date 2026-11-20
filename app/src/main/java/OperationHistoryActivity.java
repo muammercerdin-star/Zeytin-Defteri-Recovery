@@ -66,6 +66,7 @@ public class OperationHistoryActivity extends Activity {
             selectedType = state.getString("history_type", OperationHistoryModel.ALL);
         }
         setContentView(createScreen());
+        ScenePlayer.playIfAsked(this);   // Tanecik sahnesi istendiyse (yönlendiren asistan)
     }
 
     @Override

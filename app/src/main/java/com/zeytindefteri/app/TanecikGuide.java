@@ -28,6 +28,11 @@ import java.util.List;
  * yine BASMAZ; bitince onDone. Adım türü "@tap" ise hedefi dokunmak için doldurucuya verir (tapper; turda yok, Tanecik
  * kendisi hiçbir düğmeye basmaz). Hızlı modda uçmaz,
  * anında yazar ve alan alan konuşmaz. Gece (22:00–05:00) Tanecik konuşmaz.
+ *
+ * Sahne kipi (yönlendiren asistan): TanecikScenes'teki bir sahneyi oynatır. Ne yaptığını söyler, adımı gösterir
+ * ("Adım 3 / 4"), hedefi bir kaplamayla parlatır (ekranın iskeleti değişmez), büyük "Dur" düğmesi hep vardır. Sahne
+ * oynatılmadan önce SceneCheck'ten geçer; Kaydet / Sil / ödeme düğmelerine dokunmaz. Bitince ekran açık kalır; yarıda
+ * kalırsa yazdığını siler (iz bırakmaz). Gece konuşmaz, yalnız ekranda gösterir; hızlı modda animasyonsuz oynar.
  */
 final class TanecikGuide {
     static final String EXTRA = "tanecik_tour";
@@ -51,12 +56,110 @@ final class TanecikGuide {
     /** Doldurma kipi: çiftçi "Durdur" dedi. */
     private final Runnable onStop;
     private final boolean fast;
-    private final boolean quiet;
+    /** Gece sessiz: doldurma kipinde (İP7) ve sahne kipinde (scene() ayarlar); turda bugünkü gibi değil. */
+    private boolean quiet;
     /** Doldurma kipi: "@tap" adımında hedefi kime vereceği (izinli düğmeler orada seçilir); turda null. */
     private final java.util.function.Consumer<View> tapper;
+    /** Sahne kipi: oynatılan sahne (diğer kiplerde null), adım yazısı ve parlatma kaplaması. */
+    private TanecikScenes.Scene scene;
+    private TextView progress;
+    /** Sahne kipi: Tanecik'in o an söylediği söz, büyük yazıyla (gece yalnız bu görünür; ses yok). */
+    private TextView line;
+    private View glow;
+    /** Sahne kipi: bitti (true: sonuna kadar izlendi, false: Dur). */
+    private java.util.function.Consumer<Boolean> onSceneEnd;
 
     TanecikGuide(Activity activity, List<TanecikTour.GuideStep> steps) {
         this(activity, steps, false, null, null, null);
+    }
+
+    /**
+     * Sahne kipi. Sahne SceneCheck'ten geçmiyorsa ya da ZARARSIZ İŞ izinsizse null döner (oynatılmaz). answer: sahnede
+     * okunacak bugünkü cevap ({cevap} yerine). onEnd: sahne bitince (true) ya da Dur denince (false).
+     */
+    static TanecikGuide scene(Activity activity, TanecikScenes.Scene scene, String answer, boolean permitted, boolean fast,
+                              java.util.function.Consumer<Boolean> onEnd) {
+        if (!SceneCheck.allowed(scene, permitted)) {
+            return null;
+        }
+        List<TanecikTour.GuideStep> steps = new ArrayList<>();
+        boolean opened = false;
+        for (TanecikScenes.Step st : scene.steps) {
+            if (st.kind == TanecikScenes.Kind.OPEN) {
+                opened = true;
+                continue;
+            }
+            if (!opened || st.kind == TanecikScenes.Kind.STOP) {
+                continue;   // açılıştan önceki söz asistan panelinde söylenir; STOP sahnenin sonu
+            }
+            String text = st.text.replace(TanecikScenes.ANSWER, answer == null || answer.isEmpty() ? scene.title : answer);
+            steps.add(new TanecikTour.GuideStep(st.target, text, sceneType(st)));
+        }
+        TanecikGuide g = new TanecikGuide(activity, steps, fast, null, null, null);
+        g.scene = scene;
+        g.onSceneEnd = onEnd;
+        g.quiet = !SceneCheck.speaks(java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY));
+        g.sceneLayer();
+        // Ekran kapanınca (sahne yarıda kalsa da) Tanecik'in sesi bırakılır.
+        g.layer.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override public void onViewAttachedToWindow(View v) { }
+            @Override public void onViewDetachedFromWindow(View v) { g.release(); }
+        });
+        return g;
+    }
+
+    private static String sceneType(TanecikScenes.Step st) {
+        switch (st.kind) {
+            case TYPE: return st.value;
+            case SELECT: return "@tap";
+            case HIGHLIGHT: return "@glow";
+            default: return "";
+        }
+    }
+
+    /** Sahne kipinin büyük "Dur" düğmesi ve adım yazısı (yaşlı kullanıcı: en az 60 dp, 19 sp). */
+    private void sceneLayer() {
+        TextView stop = (TextView) layer.getChildAt(layer.getChildCount() - 1);
+        stop.setText("■ Dur");
+        stop.setTextSize(TypedValue.COMPLEX_UNIT_SP, GuideSettings.BUTTON_SP);
+        stop.setTextColor(0xFFFFFFFF);
+        stop.setMinHeight(dp(GuideSettings.BUTTON_DP));
+        stop.setGravity(Gravity.CENTER);
+        stop.setPadding(dp(24), dp(8), dp(24), dp(8));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(0xFF8A3B12);
+        bg.setCornerRadius(dp(30));
+        stop.setBackground(bg);
+        stop.setContentDescription("Dur: Tanecik göstermeyi bıraksın");
+        progress = new TextView(activity);
+        progress.setTextSize(TypedValue.COMPLEX_UNIT_SP, GuideSettings.REASON_SP);
+        progress.setTypeface(Typeface.DEFAULT_BOLD);
+        progress.setTextColor(0xFF24341A);
+        progress.setPadding(dp(12), dp(6), dp(12), dp(6));
+        GradientDrawable pb = new GradientDrawable();
+        pb.setColor(0xE6EEF3E8);
+        pb.setCornerRadius(dp(16));
+        progress.setBackground(pb);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.START);
+        lp.bottomMargin = dp(30);
+        lp.leftMargin = dp(14);
+        layer.addView(progress, lp);
+        line = new TextView(activity);
+        line.setTextSize(TypedValue.COMPLEX_UNIT_SP, GuideSettings.BUTTON_SP);
+        line.setTypeface(Typeface.DEFAULT_BOLD);
+        line.setTextColor(0xFF1F2414);
+        line.setPadding(dp(16), dp(12), dp(16), dp(12));
+        line.setVisibility(View.GONE);
+        line.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        GradientDrawable lb = new GradientDrawable();
+        lb.setColor(0xF2FFFFFF);
+        lb.setCornerRadius(dp(18));
+        line.setBackground(lb);
+        FrameLayout.LayoutParams ll = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
+        ll.bottomMargin = dp(GuideSettings.BUTTON_DP + 48);
+        ll.leftMargin = dp(14);
+        ll.rightMargin = dp(14);
+        layer.addView(line, ll);
     }
 
     /** Doldurma kipi (onDone dolu) ya da tur kipi (onDone null). fast: animasyonsuz, alan alan konuşmadan. */
@@ -102,6 +205,10 @@ final class TanecikGuide {
     }
 
     private void stopPressed() {
+        if (scene != null) {
+            endScene(false);
+            return;
+        }
         if (onDone == null) {
             TanecikTour.cancelRequested = true;
             finish();
@@ -142,8 +249,22 @@ final class TanecikGuide {
         if (done || activity.isFinishing()) return;
         if (i >= steps.size()) { handler.postDelayed(this::finish, 300); return; }
         TanecikTour.GuideStep st = steps.get(i);
+        if (progress != null) progress.setText("Adım " + (i + 1) + " / " + steps.size());
+        if (scene != null && st.view.isEmpty()) {
+            // Sahnede hedefsiz söz: Tanecik yerinde durup söyler (gece yalnız altyazı).
+            sceneSay(st.text, () -> handler.postDelayed(() -> step(i + 1), 120));
+            return;
+        }
         View v = target(st.view);
-        if (v == null || !v.isShown()) { step(i + 1); return; }
+        if (v == null || !v.isShown()) {
+            if (scene != null) {
+                // Sahnede hedef henüz yoksa (veri yükleniyor): söz yine söylenir, cevap kaybolmaz.
+                sceneSay(st.text, () -> handler.postDelayed(() -> step(i + 1), 120));
+                return;
+            }
+            step(i + 1);
+            return;
+        }
         if (fast) {
             fastStep(v, st, i);
             return;
@@ -168,6 +289,11 @@ final class TanecikGuide {
             say.run();
             return;
         }
+        if ("@glow".equals(st.type)) {
+            glowOn(v);
+            sceneSay(st.text, next);
+            return;
+        }
         if (!st.type.isEmpty() && v instanceof EditText) type((EditText) v, st.type, 0, say);
         else say.run();
     }
@@ -178,8 +304,13 @@ final class TanecikGuide {
         }
     }
 
-    /** Hızlı mod: uçmadan, anında yazar ya da dokunur; alan alan konuşmaz. */
+    /** Hızlı mod: uçmadan, anında yazar ya da dokunur; alan alan konuşmaz. Sahnede parlatır ve altyazıyı gösterir. */
     private void fastStep(View v, TanecikTour.GuideStep st, int i) {
+        if ("@glow".equals(st.type)) {
+            glowOn(v);
+            sceneSay(st.text, () -> handler.post(() -> step(i + 1)));
+            return;
+        }
         if ("@tap".equals(st.type)) {
             tap(v);
         } else if (!st.type.isEmpty() && v instanceof EditText) {
@@ -188,9 +319,9 @@ final class TanecikGuide {
         handler.post(() -> step(i + 1));
     }
 
-    /** Hedef: "tur:" ile başlıyorsa etiket (programla kurulan ekranlar, ör. Tezgâh), değilse görünüm adı (R.id). */
+    /** Hedef: "tur:" / "sahne:" ile başlıyorsa etiket (programla kurulan ekranlar), değilse görünüm adı (R.id). */
     private View target(String name) {
-        if (name.startsWith("tur:")) return activity.getWindow().getDecorView().findViewWithTag(name);
+        if (name.startsWith("tur:") || name.startsWith("sahne:")) return activity.getWindow().getDecorView().findViewWithTag(name);
         int id = activity.getResources().getIdentifier(name, "id", activity.getPackageName());
         return id == 0 ? null : activity.findViewById(id);
     }
@@ -233,7 +364,54 @@ final class TanecikGuide {
         }
     };
 
+    /** Sahnede söz: büyük yazıyla gösterilir; gündüz okunur, gece yalnız yazı (okuma süresi kadar bekler). */
+    private void sceneSay(String text, Runnable next) {
+        if (line != null) {
+            line.setText(text);
+            line.setVisibility(View.VISIBLE);
+        }
+        if (quiet) {
+            handler.postDelayed(next, TanecikTour.readMs(text));
+            return;
+        }
+        voice.say(text, next);
+    }
+
+    /** Parlatma: hedefin çevresine kalın bir çerçeve kaplaması (ekranın kendisine dokunulmaz). */
+    private void glowOn(View v) {
+        if (glow != null) layer.removeView(glow);
+        int[] a = new int[2], b = new int[2];
+        v.getLocationInWindow(a);
+        layer.getLocationInWindow(b);
+        glow = new View(activity);
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(0x22E0A33A);
+        d.setStroke(dp(4), 0xFFE0A33A);
+        d.setCornerRadius(dp(16));
+        glow.setBackground(d);
+        glow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(v.getWidth() + dp(12), v.getHeight() + dp(12));
+        lp.leftMargin = a[0] - b[0] - dp(6);
+        lp.topMargin = a[1] - b[1] - dp(6);
+        layer.addView(glow, 0, lp);
+    }
+
+    /** Sahne bitti ya da durduruldu: kaplama kalkar, yazılan silinir, ekran açık kalır. */
+    private void endScene(boolean completed) {
+        if (done) return;
+        done = true;
+        handler.removeCallbacksAndMessages(null);
+        voice.stop();
+        for (EditText e : typed) e.setText("");
+        removeLayer();
+        if (onSceneEnd != null) onSceneEnd.accept(completed);
+    }
+
     private void finish() {
+        if (scene != null) {
+            endScene(true);
+            return;
+        }
         if (done) return;
         if (onDone != null) {
             // Doldurma kipi: yazılanlar formda kalır, ekran açık kalır (kaydetmek çiftçinin onayıyla).

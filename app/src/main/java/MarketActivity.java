@@ -151,6 +151,7 @@ public class MarketActivity extends Activity {
         setContentView(
                 createScreen()
         );
+        ScenePlayer.playIfAsked(this);   // Tanecik sahnesi istendiyse (yönlendiren asistan)
 
         // Eski 5 öğeli alt menü (ZdNav) kaldırıldı; geri tuşu bir önceki ekrana döner.
 

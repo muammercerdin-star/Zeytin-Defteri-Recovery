@@ -85,6 +85,7 @@ public final class BuyersActivity extends Activity {
         body.setPadding(dp(16), dp(12), dp(16), dp(24));
         scroll.addView(body, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
+        ScenePlayer.playIfAsked(this);   // Tanecik sahnesi istendiyse (yönlendiren asistan)
     }
 
     @Override protected void onResume() {

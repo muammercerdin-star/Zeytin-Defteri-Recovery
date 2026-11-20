@@ -106,6 +106,7 @@ public class ReportActivity extends Activity {
         setContentView(
                 createScreen()
         );
+        ScenePlayer.playIfAsked(this);   // Tanecik sahnesi istendiyse (yönlendiren asistan)
 
     }
 

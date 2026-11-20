@@ -320,6 +320,7 @@ public class ElekActivity extends Activity {
         setContentView(
                 R.layout.activity_elek
         );
+        ScenePlayer.playIfAsked(this);   // Tanecik sahnesi istendiyse (yönlendiren asistan)
 
 
         databaseHelper =

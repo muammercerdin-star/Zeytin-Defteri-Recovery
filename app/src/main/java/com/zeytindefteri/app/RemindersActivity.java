@@ -48,6 +48,7 @@ public final class RemindersActivity extends Activity {
         if(!new SessionManager(this).hasSession()){finish();return;}
         getWindow().setStatusBarColor(GreenTheme.color(R.color.zd_bg));getWindow().setNavigationBarColor(GreenTheme.color(R.color.zd_bg));
         LinearLayout root=column();root.setBackgroundColor(GreenTheme.color(R.color.zd_bg));root.setPadding(dp(18),dp(16),dp(18),0);setContentView(root);
+        ScenePlayer.playIfAsked(this);   // Tanecik sahnesi istendiyse (yönlendiren asistan)
         TextView back=label("‹  Hatırlatmalar",24,true);root.addView(back);back.setOnClickListener(v->finish());
         TextView hint=label("İnternet gerekmez. Android güç tasarrufu bildirimi geciktirebilir. Hatırlatmalar seçili rapor sezonundan bağımsızdır.",13,false);root.addView(hint);
         root.addView(button("+ Yeni hatırlatma",()->{if(loaded)edit(null);}));

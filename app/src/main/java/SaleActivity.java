@@ -83,6 +83,7 @@ public class SaleActivity extends Activity {
         getWindow().setNavigationBarColor(GreenTheme.color(R.color.zd_bg));
         getWindow().getDecorView().setSystemUiVisibility(0);
         setContentView(R.layout.activity_sale);
+        ScenePlayer.playIfAsked(this);   // Tanecik sahnesi istendiyse (yönlendiren asistan)
 
         databaseHelper = new DatabaseHelper(this);
         saleRepository = new SaleRepository(databaseHelper);
