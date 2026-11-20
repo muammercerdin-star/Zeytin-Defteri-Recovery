@@ -32,7 +32,7 @@ checks = [
      and "if (v.getId() == R.id.chipPayNone || v.getId() == R.id.chipPayFull) {\n            v.performClick();" in runner),
     ("tek adımlı satış: ödeme söylenmediyse onaydan önce sorulur, varsayılmaz",
      "if (payment.isEmpty()) {\n            askPayment();\n            return;\n        }" in runner
-     and 'text("Parasını aldın mı?", 22, true)' in runner and "ActionPlan.parseAny(planText)" in sale),
+     and 'text(ActionCatalog.question(ActionCatalog.SATIS, "odeme", ""), 22, true)' in runner and "ActionPlan.parseAny(planText)" in sale),
     ("tur kipi eskisi gibi (yazılanı siler, ekranı kapatır)",
      "for (EditText e : typed) e.setText(\"\");" in guide and "this(activity, steps, false, null, null, null);" in guide),
     ("gece (22:00–05:00) Tanecik konuşmaz",

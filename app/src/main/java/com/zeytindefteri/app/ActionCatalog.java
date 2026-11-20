@@ -116,6 +116,8 @@ final class ActionCatalog {
     static final String SOZ_OGRET = "SOZ_OGRET";
 
     private static final Map<String, Action> ALL = new LinkedHashMap<>();
+    /** Alan alan eksik alan soruları: "EYLEM|alan|değişke" → soru. Değişke yoksa "". Tek yer: sesli diyaloglar da buradan. */
+    private static final Map<String, String> ASKS = new LinkedHashMap<>();
 
     static {
         // İlk eylemler (iş emri): ElekGir, Satış, Tahsilat, İşlem, Hasat, Hatırlatma
@@ -129,7 +131,7 @@ final class ActionCatalog {
         add(new Action(ISLEM, "Bahçe işi", Kind.KAYIT, "Hangi bahçede ne yaptın?", Level.FORMU_DOLDUR, true, "",
                 "tur", "gun", "miktar", "birim", "tutar", "bahce", "not"));   // not: "Diğer" işinin adı (İP5)
         add(new Action(HASAT, "Hasat", Kind.KAYIT, "Hangi bahçeden kaç kilo topladın?", Level.FORMU_DOLDUR, true, "",
-                "double", "1no", "2no", "3no", "4no", "yaglik", "toplam", "gun", "bahce"));
+                "double", "1no", "2no", "3no", "4no", "yaglik", "toplam", "gun", "bahce", "iscilik", "nakliye"));
         // Eğitim turu 1: gelecek zamanlı iş cümlesinden üretilir. Basamak İP7'deki gibi (ödeme hatırlatması izinle
         // kendiliğinden kurulabilir); asistanın iş hatırlatması ise her zaman sorulur (ZeytinAssistantController.askReminder).
         add(new Action(HATIRLATMA, "Hatırlatma", Kind.HATIRLATMA, "Neyi, ne zaman hatırlatayım?", Level.IZINLE_KENDISI, true, "",
@@ -158,6 +160,7 @@ final class ActionCatalog {
         // Asistanın kendi notları ve ayarları (yalnız bu telefonda; çiftçinin kaydı değil)
         add(new Action(ANLAMADIKLARI_GOSTER, "Anlamadıklarımı göster", Kind.AYAR, "", Level.IZINLE_KENDISI, true, ""));
         add(new Action(ANLAMADIKLARI_SIL, "Anlamadıklarımı sil", Kind.AYAR, "", Level.IZINLE_KENDISI, true, ""));
+        fieldQuestions();
         add(new Action(KARNE_GOSTER, "Karneyi göster", Kind.AYAR, "", Level.IZINLE_KENDISI, true, ""));
         add(new Action(KONUSMA_KAYDI_SIL, "Konuşma kaydını sil", Kind.AYAR, "", Level.IZINLE_KENDISI, true, ""));
         add(new Action(BULUT_DURUM, "İnternet yardımcısı durumu", Kind.AYAR, "", Level.IZINLE_KENDISI, true, ""));
@@ -173,6 +176,76 @@ final class ActionCatalog {
     }
 
     private ActionCatalog() {
+    }
+
+    /**
+     * Yönlendiren asistan: alan alan eksik alan soruları. Bugünkü sesli diyalogların (OperationVoiceDialog,
+     * VoiceRecordDialog) ve uygulayıcının (ActionRunner) soruları birebir buradan okunur; metinleri değişmedi.
+     */
+    private static void fieldQuestions() {
+        ask(ISLEM, "tur", "", "Ne yaptın?");
+        ask(ISLEM, "tur", "masraf", "Ne için harcadın?");
+        ask(ISLEM, "bahce", "", "Hangi bahçe için?");
+        ask(ISLEM, "bahce", "Sulama", "Hangi bahçeyi suladın?");
+        ask(ISLEM, "bahce", "Gübre", "Hangi bahçeye gübre attın?");
+        ask(ISLEM, "bahce", "İlaçlama", "Hangi bahçeyi ilaçladın?");
+        ask(ISLEM, "bahce", "Budama", "Hangi bahçeyi budadın?");
+        ask(ISLEM, "bahce", "Sinek tuzağı", "Hangi bahçeye tuzak astın?");
+        ask(ISLEM, "bahce", "Toprak İşleme", "Hangi bahçeyi sürdün?");
+        ask(ISLEM, "bahce", "İşçilik", "Hangi bahçede çalıştılar?");
+        ask(ISLEM, "not", "", "Ne attın? İlacın adını söyle.");
+        ask(ISLEM, "not", "Gübre", "Hangi gübreyi attın?");
+        ask(ISLEM, "miktar", "", "Ne kadar?");
+        ask(ISLEM, "miktar", "Sulama", "Kaç saat suladın?");
+        ask(ISLEM, "miktar", "Gübre", "Ne kadar attın?");
+        ask(ISLEM, "miktar", "İlaçlama", "Ne kadar kullandın?");
+        ask(ISLEM, "miktar", "Budama", "Kaç ağaç budadın?");
+        ask(ISLEM, "miktar", "Sinek tuzağı", "Kaç tuzak astın?");
+        ask(ISLEM, "miktar", "Toprak İşleme", "Kaç dekar sürdün?");
+        ask(ISLEM, "miktar", "İşçilik", "Kaç işçi çalıştı?");
+        ask(ISLEM, "miktar", "Mazot", "Kaç litre aldın?");
+        ask(ISLEM, "miktar", "Nakliye", "Kaç sefer yaptın?");
+        ask(ISLEM, "tutar", "", "Masrafı ne kadar tuttu?");
+        ask(ISLEM, "tutar", "İşçilik", "Kaç lira yevmiye verdin?");
+        ask(HASAT, "bahce", "", "Hangi bahçeden topladın?");
+        ask(HASAT, "toplam", "", "Kaç kilo topladın?");
+        ask(HASAT, "iscilik", "", "İşçilik masrafı oldu mu? Kaç lira?");
+        ask(HASAT, "nakliye", "", "Nakliye tuttu mu? Kaç lira?");
+        ask(KAYIT_BRINE, "zeytin", "", "Kaç kilo zeytin bastın?");
+        ask(KAYIT_BRINE, "cins", "", "Hangi zeytin? Gemlik mi, Domat mı?");
+        ask(KAYIT_BRINE, "tuz", "", "Kaç kilo tuz attın?");
+        ask(KAYIT_BRINE, "su", "", "Kaç litre su koydun?");
+        ask(KAYIT_GARDEN, "ad", "", "Bahçenin adı ne olsun?");
+        ask(KAYIT_GARDEN, "agac", "", "Kaç ağaç var?");
+        ask(KAYIT_GARDEN, "cins", "", "Hangi zeytin? Gemlik, Domat, Ayvalık?");
+        ask(KAYIT_GARDEN, "alan", "", "Kaç dönüm?");
+        ask(KAYIT_POST, "metin", "", "Ne yazayım? Söyle, ben yazayım.");
+        ask(SATIS, "alici", "", "Kime sattın?");
+        ask(SATIS, "kilo", "", "Kaç kilo sattın?");
+        ask(SATIS, "fiyat", "", "Kilosu kaçtan?");
+        ask(SATIS, "odeme", "", "Parasını aldın mı?");
+    }
+
+    private static void ask(String action, String field, String variant, String question) {
+        if (!ALL.get(action).fields.contains(field)) {
+            throw new IllegalStateException("katalogda olmayan alan: " + action + "|" + field);
+        }
+        ASKS.put(action + "|" + field + "|" + variant, question);
+    }
+
+    /** Alanın eksik alan sorusu; değişkeye özel yoksa genel; hiç yoksa "". */
+    static String question(String action, String field, String variant) {
+        String q = ASKS.get(action + "|" + field + "|" + (variant == null ? "" : variant));
+        if (q != null) {
+            return q;
+        }
+        q = ASKS.get(action + "|" + field + "|");
+        return q == null ? "" : q;
+    }
+
+    /** Soru tablosunun anahtarları (test için). */
+    static java.util.Set<String> questionKeys() {
+        return Collections.unmodifiableSet(ASKS.keySet());
     }
 
     private static void add(Action a) {

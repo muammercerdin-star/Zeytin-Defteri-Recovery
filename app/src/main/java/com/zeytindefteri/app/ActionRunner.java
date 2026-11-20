@@ -239,7 +239,7 @@ final class ActionRunner {
      * formdaki ödeme düğmesini seçer; kayıt yine "Kaydedeyim mi?" onayıyla yapılır.
      */
     private void askPayment() {
-        card.addView(text("Parasını aldın mı?", 22, true));
+        card.addView(text(ActionCatalog.question(ActionCatalog.SATIS, "odeme", ""), 22, true));
         String summary = ActionPlan.summary(form.buyerName(), form.kilos(), form.gradeLabel(), form.price(), dueIso, "");
         TextView body = text(summary, 18, false);
         body.setPadding(0, dp(6), 0, dp(4));

@@ -43,25 +43,25 @@ public final class VoiceRecordDialog {
         this.gardens = gardens;
         switch (kind) {
             case HARVEST: slots = new Slot[]{
-                    new Slot("garden", SlotType.GARDEN, "Hangi bahçeden topladın?", "", false),
-                    new Slot("kg", SlotType.NUMBER, "Kaç kilo topladın?", "kilo", false),
-                    new Slot("labor", SlotType.NUMBER, "İşçilik masrafı oldu mu? Kaç lira?", "lira", true),
-                    new Slot("transport", SlotType.NUMBER, "Nakliye tuttu mu? Kaç lira?", "lira", true)};
+                    new Slot("garden", SlotType.GARDEN, q(ActionCatalog.HASAT, "bahce"), "", false),
+                    new Slot("kg", SlotType.NUMBER, q(ActionCatalog.HASAT, "toplam"), "kilo", false),
+                    new Slot("labor", SlotType.NUMBER, q(ActionCatalog.HASAT, "iscilik"), "lira", true),
+                    new Slot("transport", SlotType.NUMBER, q(ActionCatalog.HASAT, "nakliye"), "lira", true)};
                 break;
             case BRINE: slots = new Slot[]{
-                    new Slot("olive", SlotType.NUMBER, "Kaç kilo zeytin bastın?", "kilo", false),
-                    new Slot("variety", SlotType.TEXT, "Hangi zeytin? Gemlik mi, Domat mı?", "", true),
-                    new Slot("salt", SlotType.NUMBER, "Kaç kilo tuz attın?", "kilo tuz", true),
-                    new Slot("water", SlotType.NUMBER, "Kaç litre su koydun?", "litre su", true)};
+                    new Slot("olive", SlotType.NUMBER, q(ActionCatalog.KAYIT_BRINE, "zeytin"), "kilo", false),
+                    new Slot("variety", SlotType.TEXT, q(ActionCatalog.KAYIT_BRINE, "cins"), "", true),
+                    new Slot("salt", SlotType.NUMBER, q(ActionCatalog.KAYIT_BRINE, "tuz"), "kilo tuz", true),
+                    new Slot("water", SlotType.NUMBER, q(ActionCatalog.KAYIT_BRINE, "su"), "litre su", true)};
                 break;
             case GARDEN: slots = new Slot[]{
-                    new Slot("name", SlotType.TEXT, "Bahçenin adı ne olsun?", "", false),
-                    new Slot("trees", SlotType.NUMBER, "Kaç ağaç var?", "ağaç", true),
-                    new Slot("variety", SlotType.TEXT, "Hangi zeytin? Gemlik, Domat, Ayvalık?", "", true),
-                    new Slot("area", SlotType.NUMBER, "Kaç dönüm?", "dönüm", true)};
+                    new Slot("name", SlotType.TEXT, q(ActionCatalog.KAYIT_GARDEN, "ad"), "", false),
+                    new Slot("trees", SlotType.NUMBER, q(ActionCatalog.KAYIT_GARDEN, "agac"), "ağaç", true),
+                    new Slot("variety", SlotType.TEXT, q(ActionCatalog.KAYIT_GARDEN, "cins"), "", true),
+                    new Slot("area", SlotType.NUMBER, q(ActionCatalog.KAYIT_GARDEN, "alan"), "dönüm", true)};
                 break;
             default: slots = new Slot[]{
-                    new Slot("text", SlotType.TEXT, "Ne yazayım? Söyle, ben yazayım.", "", false)};
+                    new Slot("text", SlotType.TEXT, q(ActionCatalog.KAYIT_POST, "metin"), "", false)};
         }
         if (gardens != null && gardens.size() == 1) values.put("garden", 0);
     }
@@ -115,6 +115,11 @@ public final class VoiceRecordDialog {
             if (e.quantity > 0 && "ağaç".equals(e.unit)) values.put("trees", e.quantity);
         }
         if (s.isEmpty()) return;
+    }
+
+    /** Alanın sorusu katalogdan (ActionCatalog.question; yönlendiren asistan ile aynı tek yer). */
+    private static String q(String action, String field) {
+        return ActionCatalog.question(action, field, "");
     }
 
     /** Söylenen kasa sayısı ("on iki kasa zeytin"); yoksa 0. */

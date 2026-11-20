@@ -283,35 +283,14 @@ public final class OperationVoiceDialog {
 
     private boolean wantsWhat() { return type().equals("İlaçlama") || type().equals("Gübre"); }
 
+    /** Adımın sorusu: katalogdaki alan sorusundan (ActionCatalog.question), işin türüne göre. */
     String question(Step st) {
         String t = type();
         switch (st) {
-            case GARDEN:
-                switch (t) {
-                    case "Sulama": return "Hangi bahçeyi suladın?";
-                    case "Gübre": return "Hangi bahçeye gübre attın?";
-                    case "İlaçlama": return "Hangi bahçeyi ilaçladın?";
-                    case "Budama": return "Hangi bahçeyi budadın?";
-                    case "Sinek tuzağı": return "Hangi bahçeye tuzak astın?";
-                    case "Toprak İşleme": return "Hangi bahçeyi sürdün?";
-                    case "İşçilik": return "Hangi bahçede çalıştılar?";
-                    default: return "Hangi bahçe için?";
-                }
-            case WHAT: return t.equals("Gübre") ? "Hangi gübreyi attın?" : "Ne attın? İlacın adını söyle.";
-            case QUANTITY:
-                switch (t) {
-                    case "Sulama": return "Kaç saat suladın?";
-                    case "Gübre": return "Ne kadar attın?";
-                    case "İlaçlama": return "Ne kadar kullandın?";
-                    case "Budama": return "Kaç ağaç budadın?";
-                    case "Sinek tuzağı": return "Kaç tuzak astın?";
-                    case "Toprak İşleme": return "Kaç dekar sürdün?";
-                    case "İşçilik": return "Kaç işçi çalıştı?";
-                    case "Mazot": return "Kaç litre aldın?";
-                    case "Nakliye": return "Kaç sefer yaptın?";
-                    default: return "Ne kadar?";
-                }
-            case COST: return t.equals("İşçilik") ? "Kaç lira yevmiye verdin?" : "Masrafı ne kadar tuttu?";
+            case GARDEN: return ActionCatalog.question(ActionCatalog.ISLEM, "bahce", t);
+            case WHAT: return ActionCatalog.question(ActionCatalog.ISLEM, "not", t);
+            case QUANTITY: return ActionCatalog.question(ActionCatalog.ISLEM, "miktar", t);
+            case COST: return ActionCatalog.question(ActionCatalog.ISLEM, "tutar", t);
             case CONFIRM: return "Kaydedeyim mi?";
             default: return "";
         }
