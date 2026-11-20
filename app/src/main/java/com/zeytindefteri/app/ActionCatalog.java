@@ -224,6 +224,8 @@ final class ActionCatalog {
         ask(SATIS, "kilo", "", "Kaç kilo sattın?");
         ask(SATIS, "fiyat", "", "Kilosu kaçtan?");
         ask(SATIS, "odeme", "", "Parasını aldın mı?");
+        ask(TAHSILAT, "alici", "", "Kimden para aldın?");
+        ask(TAHSILAT, "tutar", "", "Kaç lira aldın?");
     }
 
     private static void ask(String action, String field, String variant, String question) {
