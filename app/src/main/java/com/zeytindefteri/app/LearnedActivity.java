@@ -129,9 +129,53 @@ public final class LearnedActivity extends Activity {
         }
         body.addView(SettingsView.section(this, LearnedScreen.NOTICED.toUpperCase(new java.util.Locale("tr", "TR")),
                 noticedViews.toArray(new View[0])));
+        View closedCards = closedCardsSection();
+        if (closedCards != null) {
+            body.addView(closedCards);
+        }
         if (!terms.isEmpty()) {
             body.addView(forgetAllButton());
         }
+    }
+
+    /**
+     * Kapattığın kartlar (yönlendiren asistan): "Bu yanlış" ile kapanan soru kartı türleri; "Aç" ile yeniden açılır.
+     * Kapalı kart yoksa bölüm hiç görünmez.
+     */
+    private View closedCardsSection() {
+        java.util.Map<String, GuideCards.State> states = GuideDb.states(this, owner);
+        List<String> closed = GuideCards.closed(states);
+        if (closed.isEmpty()) {
+            return null;
+        }
+        List<View> views = new ArrayList<>();
+        for (int i = 0; i < closed.size(); i++) {
+            if (i > 0) {
+                views.add(SettingsView.separator(this));
+            }
+            views.add(closedCardRow(closed.get(i)));
+        }
+        return SettingsView.section(this, "KAPATTIĞIN KARTLAR", views.toArray(new View[0]));
+    }
+
+    private View closedCardRow(String type) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(dp(72));
+        row.setPadding(dp(14), dp(10), dp(8), dp(10));
+        row.addView(label(GuideCards.label(type), 19, muted, true), new LinearLayout.LayoutParams(0, -2, 1));
+        TextView open = label("Aç", 17, text, true);
+        open.setGravity(Gravity.CENTER);
+        open.setMinWidth(dp(64));
+        open.setMinHeight(dp(48));
+        open.setContentDescription("Aç: " + GuideCards.label(type));
+        open.setOnClickListener(v -> {
+            GuideDb.save(this, owner, type, GuideCards.reopened());
+            Toast.makeText(this, "Bu kartı yeniden göstereceğim.", Toast.LENGTH_SHORT).show();
+            render();
+        });
+        row.addView(open, new LinearLayout.LayoutParams(-2, -2));
+        return row;
     }
 
     /** Herkesten öğrendiklerim (İP8): bilgi paketinin sözleri; her biri tek tek kapatılıp açılır. */

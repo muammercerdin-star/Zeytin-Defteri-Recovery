@@ -183,6 +183,7 @@ public final class AccountDeletion {
                         clearPreferences(activity, uid);
                         LearnedTermsDb.clear(activity, uid);   // asistanın öğrendiği sözler (ayrı dosya)
                         HabitDb.clear(activity, uid);   // "Bu yanlış" düzeltmeleri (ayrı dosya, İP5)
+                        GuideDb.clear(activity, uid);   // yönlendiren asistanın kart ve kısa yol sayıları
                         CommunityDb.clear(activity, uid);   // ortak döngü kuyruğu ve izni (ayrı dosya, İP8)
                         PackDb.clear(activity, uid);   // kapattığı paket sözleri (ayrı dosya, İP8)
                         TezgahRescue.wipe(activity, uid);
