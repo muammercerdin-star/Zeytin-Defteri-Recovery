@@ -299,8 +299,8 @@ zeytin nasıl silkelenir	SOHBET	-	dogru	ip8_silkele
 silkeleme mi sırık mı daha iyi	SOHBET	-	dogru	ip8_silkele
 # Eğitim turu 1 (20 Kasım 2026): doğal karışık cümlelerden bulunan eksikler. YAGHANE yeni eylem (yağhane/fabrika kaydı), henüz katalogda yok.
 Hasan'a 200 kilo double sattım kilosu 140'tan	ELEK	double=200;double_fiyat=140;satis=evet;alici=Hasan	beklenen_hata	egitim_turu_1
-dün silktik bugün topluyoruz	HASAT	-	beklenen_hata	egitim_turu_1
-Girelli'den on iki kasa zeytin çıktı	HASAT	-	beklenen_hata	egitim_turu_1
+dün silktik bugün topluyoruz	HASAT	-	dogru	egitim_turu_1
+Girelli'den on iki kasa zeytin çıktı	HASAT	-	dogru	egitim_turu_1
 Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS	dogru	egitim_turu_1
 iki amele tuttum günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=3000	dogru	egitim_turu_1
 fabrikaya 40 kasa götürdük	YAGHANE	kasa=40	dogru	egitim_turu_1
@@ -353,3 +353,5 @@ ağaçlar sürgün verdi	SORU_TREES	-	dogru	egitim_turu_1_koruma
 dün 40 kilo zeytini salamuraya attık	KAYIT_BRINE	-	dogru	egitim_turu_1
 kavanozları doldurduk	KAYIT_BRINE	-	dogru	egitim_turu_1
 salamuraya ne zaman yatıralım	SORU_BRINE	-	dogru	egitim_turu_1_koruma
+bugün topluyoruz	HASAT	-	dogru	egitim_turu_1
+Karşıyaka'dan 8 çuval zeytin geldi	HASAT	-	dogru	egitim_turu_1

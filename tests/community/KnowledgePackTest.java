@@ -88,7 +88,10 @@ public class KnowledgePackTest {
                 {"kalemledik", "ISLEM", "Diğer"}};
         PackedStore store = new PackedStore(new LearnedTerms.Memory(), p.terms, PackedStore.NONE);
         for (String[] w : words) {
-            check(!decide(new LearnedTerms.Memory(), "bugün " + w[0]).understood(), "paketsiz anlaşılmaz: " + w[0]);
+            // Eğitim turu 1: "silktik" artık kurallarla da hasat (paket sözü olarak da kalır).
+            if (!w[0].equals("silktik")) {
+                check(!decide(new LearnedTerms.Memory(), "bugün " + w[0]).understood(), "paketsiz anlaşılmaz: " + w[0]);
+            }
             Decision d = decide(store, "bugün " + w[0]);
             check(d.is(w[1]), "paketle anlaşılır: " + w[0] + " → " + d);
             if (!w[2].isEmpty()) {

@@ -287,6 +287,8 @@ bugün silkeliyoruz	HASAT	-
 yarın Kuyu dibini silkeleyeceğiz	HATIRLATMA	tur=Hasat;gun=1
 zeytin nasıl silkelenir	SOHBET	-
 silkeleme mi sırık mı daha iyi	SOHBET	-
+dün silktik bugün topluyoruz	HASAT	-
+Girelli'den on iki kasa zeytin çıktı	HASAT	-
 Ali Usta'ya 300 kilo sattım	SATIS	alici=Ali Usta;kilo=300;adimlar=SATIS
 iki amele tuttum günlüğü 1500	ISLEM	tur=İşçilik;miktar=2;birim=kişi;tutar=3000
 fabrikaya 40 kasa götürdük	YAGHANE	kasa=40
@@ -339,3 +341,5 @@ ağaçlar sürgün verdi	SORU_TREES	-
 dün 40 kilo zeytini salamuraya attık	KAYIT_BRINE	-
 kavanozları doldurduk	KAYIT_BRINE	-
 salamuraya ne zaman yatıralım	SORU_BRINE	-
+bugün topluyoruz	HASAT	-
+Karşıyaka'dan 8 çuval zeytin geldi	HASAT	-

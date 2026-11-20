@@ -15,13 +15,14 @@ public final class HarvestVoiceEntry {
     public static HarvestVoiceEntry parse(String raw) {
         if (raw == null || raw.contains("?")) return null;
         String s = TurkishText.normalize(raw);
-        if (!s.matches(".*\\b(topla\\p{L}*|hasat\\p{L}*|cirp\\p{L}*|silkele\\p{L}*|devsir\\p{L}*)\\b.*")) return null;
+        // Eğitim turu 1: "silktik", "topluyoruz" da hasat sözü.
+        if (!s.matches(".*\\b(topla\\p{L}*|toplu(yoruz|yorum|yor)|hasat\\p{L}*|cirp\\p{L}*|silkele\\p{L}*|silk(tik|tim|ti)|devsir\\p{L}*)\\b.*")) return null;
         if (s.matches(".*(^|\\s)(kac|ne|nedir|nasil|hangi|hangisi|mi|mu|zaman)(\\s|$).*")) return null;
         if (s.matches(".*\\b(sattim|sattik|satildi|verdim)\\b.*")) return null;   // satış: elek/satış formu
         HarvestVoiceEntry h = new HarvestVoiceEntry();
         if (s.matches(".*\\b(evvelsi|evvelki|onceki gun)\\b.*")) h.dayOffset = -2;
         else if (s.matches(".*\\bdun\\b.*")) h.dayOffset = -1;
-        ElekVoiceEntry graded = ElekVoiceEntry.parse(raw.replaceAll("(?iu)\\b(topla|hasat|çırp|cirp|silkele|devşir)\\p{L}*", " "));
+        ElekVoiceEntry graded = ElekVoiceEntry.parse(raw.replaceAll("(?iu)\\b(topla|toplu|hasat|çırp|cirp|silkele|silkt|devşir)\\p{L}*", " "));
         if (graded != null) {
             for (int i = 0; i < 6; i++) { h.kg[i] = graded.kg[i]; h.total += graded.kg[i]; }
             return h.total > 0 ? h : null;

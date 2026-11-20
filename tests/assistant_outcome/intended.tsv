@@ -70,3 +70,18 @@ akşama kadar tırmık çektik	bahçesiz	OPERATION_FORM · ISLEM tur=Toprak İş
 # Eğitim turu 1 — madde 7: 'zeytinleri salamuraya yatırdık' salamura kaydı (eskiden salamura sorusu sanılıyordu).
 zeytinleri salamuraya yatırdık	bahçeli	RECORD_QUESTIONS · KAYIT_BRINE - · BRINE
 zeytinleri salamuraya yatırdık	bahçesiz	RECORD_QUESTIONS · KAYIT_BRINE - · BRINE
+# Eğitim turu 1 — madde 8: 'silktik', 'topluyoruz', 'N kasa zeytin çıktı' hasat (kasa kiloya çevrilmez, kilo kasayla sorulur). 'dün 3 numara 120 kilo silktik' Elek'ten hasada geçti (topladık gibi: boy söylense de hasat).
+silktik	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+bugün Girelli'de silktik	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+dün silktik bugün topluyoruz	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+Girelli'den on iki kasa zeytin çıktı	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+Hasan Abi'nin bahçesini 4 kişi silktik	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST
+Girelli'den 800 kilo silktik	bahçeli	HARVEST_QUESTIONS · HASAT toplam=800 · HARVEST
+Girelli'den 800 kilo silktik	bahçesiz	HARVEST_FORM · HASAT toplam=800
+dün 3 numara 120 kilo silktik	bahçeli	HARVEST_QUESTIONS · HASAT 3no=120;toplam=120;gun=-1 · HARVEST
+dün 3 numara 120 kilo silktik	bahçesiz	HARVEST_FORM · HASAT 3no=120;toplam=120;gun=-1
+Ali'nin 250 kilosunu silktik	bahçeli	HARVEST_QUESTIONS · HASAT toplam=250 · HARVEST
+Ali'nin 250 kilosunu silktik	bahçesiz	HARVEST_FORM · HASAT toplam=250
+Muammer'in bahçesinde 1,5 ton silktik	bahçeli	HARVEST_QUESTIONS · HASAT toplam=1500 · HARVEST
+Muammer'in bahçesinde 1,5 ton silktik	bahçesiz	HARVEST_FORM · HASAT toplam=1500
+  silktik  	bahçeli	HARVEST_QUESTIONS · HASAT - · HARVEST

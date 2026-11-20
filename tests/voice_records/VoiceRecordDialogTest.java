@@ -83,6 +83,17 @@ public class VoiceRecordDialogTest {
         check(VoiceRecordDialog.detect("kavanozları doldurduk") == VoiceRecordDialog.Kind.BRINE, "kavanozları doldurduk");
         check(VoiceRecordDialog.detect("salamuraya ne zaman yatıralım") == null, "salamura sorusu kayıt değil");
         check(VoiceRecordDialog.detect("salamuraya kaç kilo yatırdık") == null, "kaç kilo sorusu kayıt değil");
+        // Eğitim turu 1: "kasa zeytin çıktı", "silktik", "topluyoruz" hasat; kasa kiloya çevrilmez, kilo kasayla sorulur.
+        check(VoiceRecordDialog.detect("Girelli'den on iki kasa zeytin çıktı") == VoiceRecordDialog.Kind.HARVEST, "kasa zeytin çıktı");
+        check(VoiceRecordDialog.detect("dün silktik bugün topluyoruz") == VoiceRecordDialog.Kind.HARVEST, "silktik / topluyoruz");
+        check(VoiceRecordDialog.detect("kaç kasa zeytin çıktı") == null, "soru hasat kaydı değil");
+        VoiceRecordDialog crates = new VoiceRecordDialog(VoiceRecordDialog.Kind.HARVEST, G);
+        crates.prefill("Girelli'den on iki kasa zeytin çıktı", 0);
+        check("12 kasa kaç kilo geldi?".equals(crates.question("kg")), "kilo kasayla sorulur: " + crates.question("kg"));
+        check(crates.start().speech.contains("12 kasa kaç kilo geldi?"), "ilk soru kasa sorusu: " + crates.start().speech);
+        VoiceRecordDialog kilos = new VoiceRecordDialog(VoiceRecordDialog.Kind.HARVEST, G);
+        kilos.prefill("Girelli'den 300 kilo topladık", 0);
+        check("Kaç kilo topladın?".equals(kilos.question("kg")), "kilo söylenince eski soru");
         System.out.println((bad == 0 ? "PASS " : "FAIL ") + (n - bad) + "/" + n + " VoiceRecordDialog");
         if (bad > 0) System.exit(1);
     }

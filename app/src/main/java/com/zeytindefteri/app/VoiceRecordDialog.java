@@ -81,7 +81,10 @@ public final class VoiceRecordDialog {
                         // Eğitim turu 1: "zeytinleri salamuraya yatırdık / attık / doldurduk"
                         + "|yatirdim|yatirdik|yatirdilar|attim|attik|doldurdum|doldurduk)\\b.*")) return Kind.BRINE;
         // İP8: "silkeledik / silkeliyoruz / silkeleyeceğiz" yaygın hasat sözü (bilgi sorusu "nasıl silkelenir" değil).
-        String shake = "silkeledik|silkeledim|silkeliyoruz|silkeliyorum|silkeleyecegiz|silkeleyecegim";
+        // Eğitim turu 1: "silktik", "topluyoruz" da hasat sözü ("dün silktik bugün topluyoruz").
+        String shake = "silkeledik|silkeledim|silkeliyoruz|silkeliyorum|silkeleyecegiz|silkeleyecegim|silktik|silktim|topluyoruz|topluyorum";
+        // Eğitim turu 1: "Girelli'den on iki kasa zeytin çıktı": miktarla "zeytin çıktı / geldi" hasattır.
+        if (s.matches(".*\\b(kasa|kasalik|kilo|ton|cuval)\\p{L}* zeytin (cikti|geldi)\\b.*")) return Kind.HARVEST;
         if (s.matches(".*\\b(hasat\\p{L}*|topladik|topladim|cirptik|cirptim|" + shake + ")\\b.*")
                 && s.matches(".*\\b(gir\\p{L}*|kaydet\\p{L}*|ekle\\p{L}*|yaz\\p{L}*|topladik|topladim|cirptik|cirptim|" + shake
                 + "|ettik|yaptik)\\b.*")) return Kind.HARVEST;
@@ -95,6 +98,11 @@ public final class VoiceRecordDialog {
         if (kind == Kind.HARVEST) {
             HarvestVoiceEntry h = HarvestVoiceEntry.parse(raw);
             if (h != null) { values.put("kg", h.total); if (h.graded()) values.put("grades", h.kg.clone()); values.put("day", h.dayOffset); }
+            // Eğitim turu 1: kasa söylendiyse kiloya çevrilmez, kilo sorusu kasayla sorulur ("12 kasa kaç kilo geldi?").
+            double crates = crates(raw);
+            if (h == null && crates > 0) {
+                slots[1] = new Slot("kg", SlotType.NUMBER, ElekVoiceDialog.num(crates) + " kasa kaç kilo geldi?", "kilo", false);
+            }
         } else if (kind == Kind.BRINE) {
             OperationVoiceEntry e = OperationVoiceEntry.parseAnswer(raw);
             if (e.quantity > 0 && (e.unit.isEmpty() || e.unit.equals("kg"))) values.put("olive", e.quantity);
@@ -107,6 +115,26 @@ public final class VoiceRecordDialog {
             if (e.quantity > 0 && "ağaç".equals(e.unit)) values.put("trees", e.quantity);
         }
         if (s.isEmpty()) return;
+    }
+
+    /** Söylenen kasa sayısı ("on iki kasa zeytin"); yoksa 0. */
+    static double crates(String raw) {
+        for (TurkishText.Quantity q : TurkishText.quantities(raw == null ? "" : raw)) {
+            if (TurkishText.CRATE.equals(q.unit)) {
+                return q.value;
+            }
+        }
+        return 0;
+    }
+
+    /** Sorulacak ilk sorunun metni (test için). */
+    String question(String key) {
+        for (Slot x : slots) {
+            if (x.key.equals(key)) {
+                return x.question;
+            }
+        }
+        return "";
     }
 
     // ------------------------------------------------------------ sohbet
