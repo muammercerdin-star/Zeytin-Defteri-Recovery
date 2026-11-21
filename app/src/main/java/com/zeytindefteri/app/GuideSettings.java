@@ -42,11 +42,18 @@ final class GuideSettings {
     static final int NIGHT_FROM = 22;
     static final int NIGHT_TO = 5;
 
-    /** Yaşlı kullanıcı için yeni ekranlarda yazı (sp) ve düğme (dp) boyutları. */
-    static final int QUESTION_SP = 28;
-    static final int BUTTON_SP = 19;
-    static final int BUTTON_DP = 60;
-    static final int REASON_SP = 15;
+    /**
+     * Yeni ekranlarda yazı (sp) ve düğme (dp) boyutları. Cihaz denemesinde (21 Kasım) 28/19/60 panele sığmadı;
+     * karşılama tek ekranda, kaydırmadan görünsün diye sıkılaştırıldı. Dokunma alanı 48 dp'nin altına inmez.
+     */
+    static final int QUESTION_SP = 22;
+    static final int BUTTON_SP = 17;
+    static final int BUTTON_DP = 52;
+    static final int REASON_SP = 13;
+
+    /** İkincil küçük düğmeler (Bu yanlış, Sonra, Başka bir iş, Neler yapabilirsin?). */
+    static final int SMALL_SP = 15;
+    static final int SMALL_DP = 48;
 
     /** Gece mi (22:00–05:00). */
     static boolean night(int hour) {
