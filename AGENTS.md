@@ -102,10 +102,9 @@ Her akıllı özellik şu döngüye uyar: **topla → iyileştir → ölç → g
 - Yasal metin sürümü değiştiyse site aynı gün güncellenir; uygulama çıkmadan önce `work/site`'a birleştirilmez.
   Metin değişirse site dalı yeniden üretilir: raw metinler + LegalDocuments kopyalanır,
   `python3 -B site/tools/build_legal.py`, `python3 -B tests/site/check_site.py`.
-- Sürüm sırası (yasal metin sürümü yayın sırasını izler):
-  - **Ocak sürümü (1.6.0):** `release/1.6.0` dalı **work/ip6-ogrendiklerim**'den açılır (İP1–İP4 + İP6).
-    İP5, İP7 ve İP8 bu sürüme GİRMEZ; release dalı work/ip5-*, work/ip7-* ya da work/ip8-* dallarından açılmaz.
-    Yasal metin 2.4 (İP6 metni), site dalı `work/site-2.4`.
-  - **Sonraki sürüm (İP5 + İP7):** yasal metin **2.5**. İP6'nın 2.4 metnindeki değişiklikler (Öğrendiklerim ekranı,
-    Sil / Hepsini unut) bu metne de birleştirilir; site dalı `work/site-2.5` o zaman üretilir.
+- Tek paket kararı (21 Kasım 2026): Ocak/bahar ayrımı kaldırıldı. **1.6.0 tek pakettir**: İP1–İP7, İP8-A
+  (topluluk izni gizli, ağ kapalı), Eğitim turu 1 ve Yönlendiren asistan + Tanecik sahneleri birlikte çıkar.
+  `release/1.6.0` dalı `work/yonlendiren`'in son hâlinden açılır. Yasal metin **2.5** (21 Kasım 2026);
+  site dalı `work/site-2.5`, Play'e yüklendiği gün `work/site`'a birleştirilir.
+- Sonraki sürümde İP8-B (Türkiye sunucusu) açılırsa yasal metin yeni sürüm alır, site dalı yeniden üretilir.
 - Sitede "Sürüm" yazısı uygulamadaki LegalDocuments.VERSION ile aynı olmalı.
