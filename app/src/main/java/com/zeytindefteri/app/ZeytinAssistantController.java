@@ -1361,24 +1361,28 @@ public final class ZeytinAssistantController {
             GuidedFlow.Job a=home.get(i);
             GuidedFlow.Job b=home.get(i+1);
             LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,-2,1);
-            left.rightMargin=dp(10);
+            left.rightMargin=dp(8);
             line.addView(bigButton(a.label,"",true,v->startJob(a)),left);
             line.addView(bigButton(b.label,"",true,v->startJob(b)),new LinearLayout.LayoutParams(0,-2,1));
-            box.addView(line,margins(-1,-2,dp(10),0));
+            box.addView(line,margins(-1,-2,dp(8),0));
         }
-        box.addView(bigButton("Başka bir iş","",false,v->showOthers(home)),margins(-1,-2,dp(10),0));
+        LinearLayout more=row();
+        LinearLayout.LayoutParams moreLeft=new LinearLayout.LayoutParams(0,-2,1);
+        moreLeft.rightMargin=dp(8);
+        more.addView(smallButton("Başka bir iş",v->showOthers(home)),moreLeft);
+        more.addView(smallButton("Neler yapabilirsin?",v->showExamples()),new LinearLayout.LayoutParams(0,-2,1));
+        box.addView(more,margins(-1,-2,0,0));
         Calendar now=Calendar.getInstance();
         int today=now.get(Calendar.YEAR)*10000+(now.get(Calendar.MONTH)+1)*100+now.get(Calendar.DAY_OF_MONTH);
         GuideCards.Card card=GuideCards.pick(snap.cards,GuideDb.states(activity,host.owner()),now.get(Calendar.HOUR_OF_DAY),now.get(Calendar.MONTH)+1,today,snap.harvestToday);
         if(card!=null){
             GuideDb.add(activity,host.owner(),"kart_goster:"+card.type);
-            box.addView(cardView(card,today),margins(-1,-2,dp(14),0));
+            box.addView(cardView(card,today),margins(-1,-2,dp(12),0));
         }
-        box.addView(bigButton("Neler yapabilirsin?","",false,v->showExamples()),margins(-1,-2,dp(14),0));
         List<String> ex=GuidedFlow.examples(snap.gardens,snap.buyers);
-        exampleLine=label("ya da konuş: “"+ex.get(0)+"”",GuideSettings.REASON_SP+1,soft,false);
+        exampleLine=label("ya da konuş: “"+ex.get(0)+"”",GuideSettings.REASON_SP,soft,false);
         exampleLine.setGravity(Gravity.CENTER);
-        exampleLine.setPadding(0,dp(12),0,dp(4));
+        exampleLine.setPadding(0,dp(10),0,dp(2));
         box.addView(exampleLine);
         main.removeCallbacks(exampleTick);
         main.postDelayed(exampleTick,4000);
@@ -1387,11 +1391,17 @@ public final class ZeytinAssistantController {
     /** Yönlendirmenin içeriği: panel tam boy olur, iri yazıda kendi içinde kayar (taşmaz). */
     private LinearLayout guideBox(){
         LinearLayout box=column();
-        ScrollView scroll=new ScrollView(activity);
+        final int most=activity.getResources().getDisplayMetrics().heightPixels*60/100;
+        // İçerik kadar yer kaplar (boş alan bırakmaz); iri yazıda en çok ekranın %60'ı olur ve kendi içinde kayar.
+        ScrollView scroll=new ScrollView(activity){
+            @Override
+            protected void onMeasure(int widthSpec,int heightSpec){
+                super.onMeasure(widthSpec,View.MeasureSpec.makeMeasureSpec(most,View.MeasureSpec.AT_MOST));
+            }
+        };
         scroll.setFillViewport(false);
         scroll.addView(box);
-        int most=activity.getResources().getDisplayMetrics().heightPixels*55/100;
-        hintBox.addView(scroll,new LinearLayout.LayoutParams(-1,most));
+        hintBox.addView(scroll,new LinearLayout.LayoutParams(-1,-2));
         return box;
     }
 
@@ -1400,8 +1410,8 @@ public final class ZeytinAssistantController {
         LinearLayout b=column();
         b.setGravity(Gravity.CENTER_VERTICAL);
         b.setMinimumHeight(dp(GuideSettings.BUTTON_DP));
-        b.setPadding(dp(16),dp(10),dp(16),dp(10));
-        b.setBackground(round(primary?green:surface,primary?green:border,16));
+        b.setPadding(dp(14),dp(8),dp(14),dp(8));
+        b.setBackground(round(primary?green:surface,primary?green:border,14));
         TextView t=label(title,GuideSettings.BUTTON_SP,primary?bg:text,true);
         b.addView(t);
         if(!reason.isEmpty()){
@@ -1421,7 +1431,26 @@ public final class ZeytinAssistantController {
         return b;
     }
 
-    /** Ekranda soru (en az 28 sp); gece okunmaz ve dinlenmez. ask: okununca dinle (sesle cevap). */
+    /** İkincil küçük düğme: ortalı yazı, en az 48 dp dokunma alanı. */
+    private View smallButton(String title,View.OnClickListener click){
+        TextView b=label(title,GuideSettings.SMALL_SP,text,true);
+        b.setGravity(Gravity.CENTER);
+        b.setMinimumHeight(dp(GuideSettings.SMALL_DP));
+        b.setPadding(dp(10),dp(6),dp(10),dp(6));
+        b.setBackground(round(surface,border,14));
+        b.setContentDescription(title);
+        b.setOnClickListener(v->{
+            stopTts();
+            if(conversation.state()==State.LISTENING){
+                conversation.nextTurn();
+                stopRecognizer();
+            }
+            click.onClick(v);
+        });
+        return b;
+    }
+
+    /** Ekranda soru (en az 22 sp); gece okunmaz ve dinlenmez. ask: okununca dinle (sesle cevap). */
     private void guidePost(String question,String label,boolean ask){
         guideSay(question,question,label,ask);
     }
@@ -1656,30 +1685,37 @@ public final class ZeytinAssistantController {
     /** Duruma göre soru kartı: gerekçe, ana düğme, "Bu yanlış", "Sonra". */
     private View cardView(GuideCards.Card card,int today){
         LinearLayout c=column();
-        c.setPadding(dp(16),dp(14),dp(16),dp(14));
-        c.setBackground(round(surface,warning,16));
-        TextView title=label(card.title.toUpperCase(new Locale("tr","TR")),GuideSettings.REASON_SP,warning,true);
+        c.setPadding(dp(14),dp(12),dp(14),dp(12));
+        c.setBackground(round(surface,warning,14));
+        TextView title=label(card.title.toUpperCase(new Locale("tr","TR")),GuideSettings.REASON_SP-1,warning,true);
+        title.setLetterSpacing(0.06f);
         c.addView(title);
         TextView q=label(card.text,GuideSettings.BUTTON_SP,text,true);
-        q.setPadding(0,dp(6),0,dp(4));
+        q.setPadding(0,dp(4),0,dp(2));
         c.addView(q);
         c.addView(label(card.reason,GuideSettings.REASON_SP,soft,false));
         String owner=host.owner();
-        c.addView(bigButton(card.action,"",true,v->{
+        // Tek satır: [Söyleyeyim] [Sonra] [Bu yanlış]; kart kısa kalır, panel kaydırmadan sığar.
+        LinearLayout line=row();
+        LinearLayout.LayoutParams first=new LinearLayout.LayoutParams(0,-2,1.4f);
+        first.rightMargin=dp(8);
+        View accept=smallButton(card.action,v->{
             GuideDb.add(activity,owner,"kart_kabul:"+card.type);
             GuideDb.save(activity,owner,card.type,GuideCards.accepted(GuideDb.states(activity,owner).get(card.type)));
             cardAccepted(card);
-        }),margins(-1,-2,dp(10),0));
-        LinearLayout line=row();
+        });
+        accept.setBackground(round(green,green,14));
+        ((TextView)accept).setTextColor(bg);
+        line.addView(accept,first);
         LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,-2,1);
-        left.rightMargin=dp(10);
-        line.addView(bigButton("Bu yanlış","",false,v->{
-            GuideDb.add(activity,owner,"kart_red:"+card.type);
-            GuideDb.save(activity,owner,card.type,GuideCards.rejected(GuideDb.states(activity,owner).get(card.type)));
+        left.rightMargin=dp(8);
+        line.addView(smallButton("Sonra",v->{
+            GuideDb.save(activity,owner,card.type,GuideCards.later(GuideDb.states(activity,owner).get(card.type),today));
             welcome();
         }),left);
-        line.addView(bigButton("Sonra","",false,v->{
-            GuideDb.save(activity,owner,card.type,GuideCards.later(GuideDb.states(activity,owner).get(card.type),today));
+        line.addView(smallButton("Bu yanlış",v->{
+            GuideDb.add(activity,owner,"kart_red:"+card.type);
+            GuideDb.save(activity,owner,card.type,GuideCards.rejected(GuideDb.states(activity,owner).get(card.type)));
             welcome();
         }),new LinearLayout.LayoutParams(0,-2,1));
         c.addView(line,margins(-1,-2,dp(10),0));
