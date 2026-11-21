@@ -55,16 +55,16 @@
       </section>
       <section id="ledger" hidden>
         <div id="stale" class="offline" role="alert" hidden>Telefon bağlantısı koptu · Son alınan veriler gösteriliyor.</div>
+        <div id="workspace" class="workspace solo">
+        <div class="side">
         <section id="live-weighing" class="card live-weighing" aria-live="polite" hidden></section>
+        <button id="new-purchase" class="new-purchase" type="button" aria-expanded="false" aria-controls="quick-entry">+ Yeni alım</button>
+        <aside id="quick-entry" class="quick-entry" aria-label="Yeni alım" hidden></aside>
         <div class="stats">
           <article class="card stat"><p>Alınan zeytin</p><strong id="weight">—</strong><small><span id="count">—</span> alım · dara düşülmüş</small></article>
           <article class="card stat"><p>Alım tutarı</p><strong id="amount">—</strong><small>Ödenen <span id="paid">—</span></small></article>
           <article class="card stat remaining"><p>Ödenecek borç</p><strong id="remaining">—</strong><small>Henüz ödenmemiş tutar</small></article>
         </div>
-        <div id="workspace" class="workspace solo">
-        <div class="side">
-        <button id="new-purchase" class="new-purchase" type="button" aria-expanded="false" aria-controls="quick-entry">+ Yeni alım</button>
-        <aside id="quick-entry" class="quick-entry" aria-label="Yeni alım" hidden></aside>
         </div>
         <div class="board">
         <section class="card purchases">

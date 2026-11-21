@@ -33,7 +33,7 @@ button:disabled { opacity: .45; cursor: default; }
 
 /* Üst şerit */
 .shell { min-height: 100vh; display: flex; flex-direction: column; }
-.topbar { background: var(--navy); color: #FFFFFF; display: flex; justify-content: space-between; align-items: center; padding: 14px max(3vw, 16px); gap: 16px; flex-wrap: wrap; }
+.topbar { background: var(--navy); color: #FFFFFF; display: flex; justify-content: space-between; align-items: center; padding: 10px max(2.5vw, 16px); gap: 16px; flex-wrap: wrap; }
 .brand { display: flex; gap: 12px; align-items: center; color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 800; letter-spacing: .5px; }
 .brand small { display: block; color: #C9D6D2; font-size: 11px; margin-top: 4px; font-weight: 500; letter-spacing: 1.5px; }
 .brand-mark { width: 40px; height: 40px; border-radius: 10px; color: var(--navy); background: var(--leaf); display: grid; place-items: center; font-size: 22px; font-weight: 800; }
@@ -43,20 +43,20 @@ button:disabled { opacity: .45; cursor: default; }
 .status::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #E8A33D; margin-right: 8px; }
 .status[data-state="bagli"]::before, .status[data-state="yeniden"]::before { background: var(--leaf); }
 
-main { flex: 1; width: min(1280px, 100%); margin: 0 auto; padding: 28px max(3vw, 16px) 48px; }
+main { flex: 1; width: min(1360px, 100%); margin: 0 auto; padding: 18px max(2.5vw, 16px) 40px; }
 .heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
 .eyebrow, .step-label { color: var(--green); letter-spacing: 1.5px; font-size: 13px; font-weight: 700; margin: 0; }
-h1 { font-size: clamp(26px, 2.6vw, 36px); letter-spacing: -.5px; margin: 8px 0; font-weight: 800; }
+h1 { font-size: clamp(24px, 2.2vw, 32px); letter-spacing: -.5px; margin: 4px 0; font-weight: 800; }
 h1 #period { font-weight: 500; color: var(--muted); }
 .separator { color: var(--leaf); padding: 0 4px; }
 .subtitle, .footnote, .privacy, .qr-note { color: var(--muted); line-height: 1.6; }
-.subtitle { font-size: 16px; margin: 0; }
+.subtitle { font-size: 14px; margin: 0; }
 .filters { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .filters label { color: var(--muted); font-size: 14px; font-weight: 600; }
 input { display: block; color: var(--ink); background: var(--card); border: 1px solid var(--field); border-radius: 12px; padding: 11px 13px; margin-top: 6px; min-height: 46px; }
 input::placeholder { color: #6B7A80; }
 .message { color: var(--debt); font-size: 16px; font-weight: 600; line-height: 1.6; min-height: 4px; }
-.message:empty { margin: 14px 0; }
+.message:empty { margin: 10px 0; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
 
 /* Eşleşme (QR) */
@@ -73,62 +73,60 @@ canvas { width: min(100%, 420px); min-width: 320px; height: auto; image-renderin
 .qr-note { font-size: 14px; }
 #remember { display: inline-block; margin: 0 8px 0 0; padding: 0; min-height: 0; accent-color: var(--green); width: 20px; height: 20px; vertical-align: -4px; }
 
-/* Üç büyük kutu */
-.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
-.stat { padding: 20px 22px; }
-.stat p { color: var(--muted); font-size: 16px; margin: 0 0 8px; font-weight: 600; }
-.stat strong { display: block; font-size: clamp(28px, 3vw, 40px); letter-spacing: -1px; overflow-wrap: anywhere; font-weight: 800; font-variant-numeric: tabular-nums; }
-.stat small { display: block; color: var(--muted); font-size: 15px; margin-top: 6px; }
-.remaining { background: var(--debt-soft); border: 2px solid var(--debt-line); }
+/* Özet kutuları: sağ sütunda alt alta, borç en üstte */
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.stat { padding: 10px 14px; }
+.stat p { white-space: nowrap; }
+.stat p { color: var(--muted); font-size: 14px; margin: 0 0 2px; font-weight: 600; }
+.stat strong { display: block; font-size: 22px; letter-spacing: -.5px; overflow-wrap: anywhere; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.stat small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.remaining { order: -1; grid-column: 1 / -1; background: var(--debt-soft); border: 2px solid var(--debt-line); }
+.remaining strong { font-size: 32px; }
 .remaining p, .remaining small { color: #7A4A00; }
 .remaining strong { color: var(--debt); }
 
-/* Yerleşim: liste solda geniş, yeni alım ve canlı tartım sağda */
-.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 400px); gap: 22px; align-items: start; }
-.workspace.solo { grid-template-columns: minmax(0, 1fr); }
-.workspace.solo .side { display: contents; }
-.workspace.solo .new-purchase { display: none; }
-.side { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 16px; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+/* Yerleşim: alımlar solda geniş; canlı tartım, yeni alım ve özet sağ sütunda (yapışkan) */
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 360px); gap: 20px; align-items: start; }
+.side { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; scrollbar-width: thin; }
 .board { grid-column: 1; grid-row: 1; min-width: 0; }
-.workspace.solo .board { grid-column: 1; }
-.new-purchase { font-size: 22px; font-weight: 800; background: var(--leaf); color: var(--navy); border: 0; border-radius: 16px; padding: 20px; min-height: 64px; }
+.workspace.solo .new-purchase { display: none; }
+.new-purchase { font-size: 20px; font-weight: 800; background: var(--leaf); color: var(--navy); border: 0; border-radius: 14px; padding: 14px; min-height: 54px; }
 .new-purchase:hover { background: #69B84E; }
 .workspace:not(.entry-open) .quick-entry { display: none; }
 .quick-entry .write-fields { display: block; border: 0; padding: 0; margin: 0; min-width: 0; }
 
 /* Alımlar: tablo yerine kart */
 .purchases { background: transparent; border: 0; }
-.table-heading, .pagination { display: flex; justify-content: space-between; align-items: center; padding: 0 0 12px; gap: 14px; flex-wrap: wrap; }
-.table-heading h2 { font-size: 24px; margin: 0 0 4px; }
+.table-heading, .pagination { display: flex; justify-content: space-between; align-items: center; padding: 0 0 8px; gap: 14px; flex-wrap: wrap; }
+.table-heading h2 { font-size: 22px; margin: 0; }
 .table-heading p { font-size: 14px; color: var(--muted); margin: 0; }
 .table-actions { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 15px; }
 .table-scroll { overflow: visible; }
 table, tbody { display: block; width: 100%; }
 thead { display: none; }
-tbody { display: flex; flex-direction: column; gap: 10px; }
-tr { display: grid; grid-template-columns: auto auto auto auto minmax(0, 1fr) auto auto; grid-template-areas: "name name name name name money pay" "date kg kasa tutar . money pay"; align-items: center; gap: 4px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px; }
-td { display: block; padding: 0; border: 0; text-align: left; font-variant-numeric: tabular-nums; font-size: 16px; color: var(--muted); white-space: nowrap; }
+tbody { display: flex; flex-direction: column; gap: 6px; }
+tr { display: grid; grid-template-columns: minmax(120px, 1fr) 86px 70px 54px 92px 140px 196px; grid-template-areas: "name date kg kasa tutar money pay"; align-items: center; gap: 4px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px 8px 8px 16px; }
+td { display: block; padding: 0; border: 0; text-align: left; font-variant-numeric: tabular-nums; font-size: 15px; color: var(--muted); white-space: nowrap; }
 td:nth-child(1) { grid-area: date; }
-td:nth-child(2) { grid-area: name; color: var(--ink); font-size: 20px; font-weight: 800; overflow-wrap: anywhere; white-space: normal; }
+td:nth-child(2) { grid-area: name; color: var(--ink); font-size: 18px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; }
 td:nth-child(3) { grid-area: kg; }
-td:nth-child(3)::before, td:nth-child(4)::before, td:nth-child(5)::before { content: '· '; }
 td:nth-child(3)::after { content: ' kg'; }
 td:nth-child(4) { grid-area: kasa; }
 td:nth-child(4)::after { content: ' kasa'; }
 td:nth-child(5) { grid-area: tutar; }
 td:nth-child(6) { display: none; }
-td:nth-child(7) { grid-area: money; text-align: right; font-size: 18px; }
-td:nth-child(7)::before { content: 'Borç '; }
-td:nth-child(8) { grid-area: pay; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+td:nth-child(7) { grid-area: money; text-align: right; font-size: 17px; }
+td:nth-child(7)::before { content: 'Borç '; font-size: 13px; font-weight: 700; }
+td:nth-child(8) { grid-area: pay; display: flex; gap: 6px; justify-content: flex-end; }
 tr.due { order: -1; border: 2px solid var(--debt-line); }
-tr.due td:nth-child(7) { color: var(--debt); font-weight: 800; font-size: 22px; }
-tr.settled { padding: 12px 20px; }
-tr.settled td:nth-child(2) { font-size: 18px; font-weight: 700; }
+tr.due td:nth-child(7) { color: var(--debt); font-weight: 800; font-size: 18px; }
+
+tr.settled td:nth-child(2) { font-weight: 700; }
 tr.settled td:nth-child(7) { color: var(--green); font-weight: 700; }
 tr.settled td:nth-child(7) { font-size: 0; }
-tr.settled td:nth-child(7)::before { content: '✓ Ödendi'; font-size: 16px; }
-.row-action { font-size: 15px; padding: 9px 14px; margin: 0; min-height: 44px; }
-.row-action.primary { font-size: 18px; font-weight: 800; padding: 12px 26px; }
+tr.settled td:nth-child(7)::before { content: '✓ Ödendi'; font-size: 15px; }
+.row-action { font-size: 14px; padding: 6px 10px; margin: 0; min-height: 38px; border-radius: 10px; }
+.row-action.primary { font-size: 16px; font-weight: 800; padding: 6px 16px; }
 .table-hint { font-weight: 600; }
 .pagination { font-size: 15px; color: var(--muted); padding-top: 14px; }
 .pagination button + button { margin-left: 8px; }
@@ -137,22 +135,21 @@ tr.settled td:nth-child(7)::before { content: '✓ Ödendi'; font-size: 16px; }
 .offline { border: 2px solid var(--debt-line); background: var(--debt-soft); color: var(--debt); font-weight: 600; padding: 14px 16px; margin-bottom: 18px; border-radius: 12px; }
 .stale .stats, .stale .purchases { opacity: .5; }
 
-/* Şu an telefonda tartılan alım: üstte, enine şerit. Dizüstü ekranda kaydırmadan görünür. */
-.live-weighing { border: 2px solid var(--leaf); background: var(--leaf-soft); padding: 14px 20px; margin-bottom: 16px;
-  display: grid; grid-template-columns: minmax(170px, auto) minmax(0, 1fr) auto; grid-template-areas: "head grades sum" "head grades note"; align-items: center; gap: 4px 22px; }
-.live-head { grid-area: head; max-width: 220px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-.live-tag { color: #FFFFFF; background: var(--green); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; }
-.live-tag::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF; margin-right: 6px; vertical-align: 1px; animation: canli 1.4s ease-in-out infinite; }
+/* Şu an telefonda tartılan alım: sağ sütunun en üstünde */
+.live-weighing { border: 2px solid var(--leaf); background: var(--leaf-soft); padding: 12px 14px; }
+.live-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.live-tag { color: #FFFFFF; background: var(--green); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+.live-tag::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #FFFFFF; margin-right: 6px; vertical-align: 1px; animation: canli 1.4s ease-in-out infinite; }
 @keyframes canli { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .live-tag::before { animation: none; } }
-.live-seller { font-size: 20px; line-height: 1.25; }
-.live-grades { grid-area: grades; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; margin: 0; }
-.live-grade { display: grid; grid-template-areas: "name" "kg" "kasa"; justify-items: start; min-width: 0; background: var(--card); border: 1px solid var(--leaf-line); border-radius: 12px; padding: 7px 10px; font-variant-numeric: tabular-nums; }
-.live-grade span:first-child { grid-area: name; color: var(--muted); font-size: 13px; font-weight: 700; }
-.live-grade strong { grid-area: kg; font-size: 20px; color: var(--ink); white-space: nowrap; }
-.live-grade span:nth-child(2) { grid-area: kasa; color: var(--muted); font-size: 13px; }
-.live-sum { grid-area: sum; font-size: 22px; font-weight: 800; color: var(--green); margin: 0; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; align-self: end; }
-.live-note { grid-area: note; color: #3E5A40; font-size: 13px; margin: 0; text-align: right; max-width: 250px; justify-self: end; align-self: start; }
+.live-seller { font-size: 17px; line-height: 1.25; }
+.live-grades { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 10px 0 8px; }
+.live-grade { display: grid; grid-template-areas: "name" "kg" "kasa"; min-width: 0; background: var(--card); border: 1px solid var(--leaf-line); border-radius: 10px; padding: 5px 8px; font-variant-numeric: tabular-nums; }
+.live-grade span:first-child { grid-area: name; color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.live-grade strong { grid-area: kg; font-size: 18px; color: var(--ink); white-space: nowrap; }
+.live-grade span:nth-child(2) { grid-area: kasa; color: var(--muted); font-size: 12px; }
+.live-sum { font-size: 20px; font-weight: 800; color: var(--green); margin: 0; font-variant-numeric: tabular-nums; }
+.live-note { color: #3E5A40; font-size: 12px; margin: 2px 0 0; }
 
 /* Formlar (yeni alım, ödeme, diğer işler) */
 .write-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
@@ -202,36 +199,34 @@ select { display: block; padding: 11px; margin-top: 6px; color: var(--ink); back
 
 footer { border-top: 1px solid var(--line); padding: 20px max(3vw, 16px); display: flex; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 14px; background: var(--card); }
 
-/* Kısa ekran (dizüstü): üst kısım daha az yer kaplasın */
+/* Kısa ekran (dizüstü): başlık daha az yer kaplasın */
 @media (min-width: 1001px) and (max-height: 820px) {
-  .topbar { padding-top: 8px; padding-bottom: 8px; }
-  main { padding-top: 16px; }
-  h1 { font-size: 28px; margin: 4px 0; }
-  .subtitle { font-size: 14px; }
-  .message:empty { margin: 8px 0; }
-  .stats { margin-bottom: 14px; gap: 12px; }
-  .stat { padding: 12px 18px; }
-  .stat p { font-size: 14px; margin-bottom: 4px; }
-  .stat strong { font-size: 30px; }
-  .stat small { font-size: 13px; margin-top: 2px; }
-  .new-purchase { padding: 14px; min-height: 52px; font-size: 20px; }
+  .eyebrow { display: none; }
+  .topbar { padding-top: 6px; padding-bottom: 6px; }
+  .brand-mark { width: 34px; height: 34px; font-size: 19px; }
+  main { padding-top: 12px; }
+  .filters input, .filters button { min-height: 40px; padding-top: 7px; padding-bottom: 7px; }
 }
 
 /* Klavye ipuçları dokunmatik ekranda gereksiz */
 @media (hover: none) { .hint { display: none; } }
 
 @media (max-width: 1000px) {
-  .live-weighing { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "head sum" "grades grades" "note note"; }
-  .live-note { text-align: left; justify-self: start; max-width: none; }
-  .workspace, .workspace.solo { grid-template-columns: minmax(0, 1fr); }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
   .side { grid-column: 1; grid-row: 1; position: static; max-height: none; overflow: visible; }
   .board { grid-column: 1; grid-row: 2; }
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .remaining { order: 0; grid-column: auto; }
+  .stat strong { font-size: 26px; }
+  .live-grades { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  tr { grid-template-columns: auto auto auto minmax(0, 1fr) auto; grid-template-areas: "name name name name money" "date kg kasa tutar pay"; padding: 10px 14px; }
   .pairing { gap: 24px; }
 }
 @media (max-width: 680px) {
-  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .stats .remaining { grid-column: 1 / -1; }
-  .stat { padding: 14px; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .stats .remaining { grid-column: 1 / -1; order: -1; }
+  .stat { padding: 10px 14px; }
+  .live-grades { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pairing { grid-template-columns: 1fr; padding: 22px; }
   .pair-copy h2 { font-size: 27px; }
   .qr-wrap { grid-row: 1; }
@@ -240,11 +235,6 @@ footer { border-top: 1px solid var(--line); padding: 20px max(3vw, 16px); displa
   td:nth-child(3)::before { content: ''; }
   td:nth-child(8) { justify-content: stretch; margin-top: 8px; }
   td:nth-child(8) .row-action { flex: 1; }
-  .side { position: sticky; top: 0; z-index: 2; background: var(--bg); padding-bottom: 8px; }
   .weighing, .operation.quick .weighing { grid-template-columns: 1fr 1fr; }
-  .live-weighing { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "sum" "grades" "note"; padding: 12px 14px; }
-  .live-sum { text-align: left; font-size: 22px; white-space: normal; }
-  .live-grades { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .live-head { max-width: none; }
   footer { flex-direction: column; gap: 6px; }
 }
