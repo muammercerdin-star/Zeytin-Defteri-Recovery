@@ -137,16 +137,22 @@ tr.settled td:nth-child(7)::before { content: '✓ Ödendi'; font-size: 16px; }
 .offline { border: 2px solid var(--debt-line); background: var(--debt-soft); color: var(--debt); font-weight: 600; padding: 14px 16px; margin-bottom: 18px; border-radius: 12px; }
 .stale .stats, .stale .purchases { opacity: .5; }
 
-/* Şu an telefonda tartılan alım */
-.live-weighing { border: 2px solid var(--leaf); background: var(--leaf-soft); padding: 18px 20px; }
-.live-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+/* Şu an telefonda tartılan alım: üstte, enine şerit. Dizüstü ekranda kaydırmadan görünür. */
+.live-weighing { border: 2px solid var(--leaf); background: var(--leaf-soft); padding: 14px 20px; margin-bottom: 16px;
+  display: grid; grid-template-columns: minmax(170px, auto) minmax(0, 1fr) auto; grid-template-areas: "head grades sum" "head grades note"; align-items: center; gap: 4px 22px; }
+.live-head { grid-area: head; max-width: 220px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .live-tag { color: #FFFFFF; background: var(--green); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; }
-.live-seller { font-size: 20px; }
-.live-grades { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 12px 0 6px; }
-.live-grade { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--leaf-line); padding: 6px 0; font-variant-numeric: tabular-nums; font-size: 16px; }
-.live-grade span:first-child { color: var(--ink); font-weight: 600; }
-.live-sum { font-size: 20px; font-weight: 800; color: var(--green); margin: 10px 0 4px; font-variant-numeric: tabular-nums; }
-.live-note { color: #3E5A40; font-size: 14px; margin: 0; }
+.live-tag::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF; margin-right: 6px; vertical-align: 1px; animation: canli 1.4s ease-in-out infinite; }
+@keyframes canli { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .live-tag::before { animation: none; } }
+.live-seller { font-size: 20px; line-height: 1.25; }
+.live-grades { grid-area: grades; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; margin: 0; }
+.live-grade { display: grid; grid-template-areas: "name" "kg" "kasa"; justify-items: start; min-width: 0; background: var(--card); border: 1px solid var(--leaf-line); border-radius: 12px; padding: 7px 10px; font-variant-numeric: tabular-nums; }
+.live-grade span:first-child { grid-area: name; color: var(--muted); font-size: 13px; font-weight: 700; }
+.live-grade strong { grid-area: kg; font-size: 20px; color: var(--ink); white-space: nowrap; }
+.live-grade span:nth-child(2) { grid-area: kasa; color: var(--muted); font-size: 13px; }
+.live-sum { grid-area: sum; font-size: 22px; font-weight: 800; color: var(--green); margin: 0; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; align-self: end; }
+.live-note { grid-area: note; color: #3E5A40; font-size: 13px; margin: 0; text-align: right; max-width: 250px; justify-self: end; align-self: start; }
 
 /* Formlar (yeni alım, ödeme, diğer işler) */
 .write-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
@@ -196,10 +202,27 @@ select { display: block; padding: 11px; margin-top: 6px; color: var(--ink); back
 
 footer { border-top: 1px solid var(--line); padding: 20px max(3vw, 16px); display: flex; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 14px; background: var(--card); }
 
+/* Kısa ekran (dizüstü): üst kısım daha az yer kaplasın */
+@media (min-width: 1001px) and (max-height: 820px) {
+  .topbar { padding-top: 8px; padding-bottom: 8px; }
+  main { padding-top: 16px; }
+  h1 { font-size: 28px; margin: 4px 0; }
+  .subtitle { font-size: 14px; }
+  .message:empty { margin: 8px 0; }
+  .stats { margin-bottom: 14px; gap: 12px; }
+  .stat { padding: 12px 18px; }
+  .stat p { font-size: 14px; margin-bottom: 4px; }
+  .stat strong { font-size: 30px; }
+  .stat small { font-size: 13px; margin-top: 2px; }
+  .new-purchase { padding: 14px; min-height: 52px; font-size: 20px; }
+}
+
 /* Klavye ipuçları dokunmatik ekranda gereksiz */
 @media (hover: none) { .hint { display: none; } }
 
 @media (max-width: 1000px) {
+  .live-weighing { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "head sum" "grades grades" "note note"; }
+  .live-note { text-align: left; justify-self: start; max-width: none; }
   .workspace, .workspace.solo { grid-template-columns: minmax(0, 1fr); }
   .side { grid-column: 1; grid-row: 1; position: static; max-height: none; overflow: visible; }
   .board { grid-column: 1; grid-row: 2; }
@@ -219,5 +242,9 @@ footer { border-top: 1px solid var(--line); padding: 20px max(3vw, 16px); displa
   td:nth-child(8) .row-action { flex: 1; }
   .side { position: sticky; top: 0; z-index: 2; background: var(--bg); padding-bottom: 8px; }
   .weighing, .operation.quick .weighing { grid-template-columns: 1fr 1fr; }
+  .live-weighing { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "sum" "grades" "note"; padding: 12px 14px; }
+  .live-sum { text-align: left; font-size: 22px; white-space: normal; }
+  .live-grades { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .live-head { max-width: none; }
   footer { flex-direction: column; gap: 6px; }
 }
