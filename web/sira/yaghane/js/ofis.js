@@ -1,6 +1,6 @@
 // Ofis paneli (geniş ekran): aynı liste, kapasite ve gün başlangıcı, fabrika anahtarı, TV'ye yansıtma.
 import { adCoz, iz, kisalt, parolaYaz, yeniSir } from "./anahtar.js";
-import { fisYazdir } from "./fis.js";
+import { fisYazdir, qrTuvali } from "./fis.js";
 import { islemKimligi } from "./kuyruk.js";
 import { yeniMusteriGovdesi } from "./musteri.js";
 import { qrcode } from "./vendor/qrcode.js";
@@ -9,7 +9,7 @@ import { anahtariKaydet, api, cihazAnahtari, cikisYap, depo, dugme, el, kg, paro
 const YENILEME_MS = 15000;
 const UCRETSIZ_SINIR = 100000;
 const d = depo();
-const durum = { veri: null, anahtar: null, anahtarDurumu: null, parola: null, adlar: new Map(), acik: null, qr: false };
+const durum = { veri: null, anahtar: null, anahtarDurumu: null, parola: null, adlar: new Map(), acik: null, qr: false, qrBilgi: null };
 const $ = (id) => document.getElementById(id);
 
 function mesajGoster(metin, tur = "bilgilendirme") {
@@ -89,6 +89,23 @@ function fisBas(bilgi) {
   });
 }
 
+/** Büyük QR: çiftçi ofis ekranından kendi telefonuyla okutur; telefon numarası ve yazıcı gerekmez. */
+function qrGoster(bilgi) {
+  const yer = $("qr-yer");
+  yer.textContent = "";
+  yer.append(qrTuvali(window.location.origin + "/" + bilgi.token));
+  $("qr-kod").textContent = "Kod " + bilgi.kod + (bilgi.siraNo ? " · " + bilgi.siraNo + ". sıra" : "");
+  durum.qrBilgi = bilgi;
+  $("qr-panel").classList.remove("gizli");
+  $("qr-panel").scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+function qrKapat() {
+  $("qr-panel").classList.add("gizli");
+  $("qr-yer").textContent = "";
+  durum.qrBilgi = null;
+}
+
 function islemHucresi(s, ilk, son, ad) {
   const td = el("td");
   const kutu = el("div", "islemler");
@@ -110,16 +127,24 @@ function islemHucresi(s, ilk, son, ad) {
       iptal.textContent = "Evet, iptal";
     });
     kutu.append(dugme("Başlat", "ana kucuk", () => islem(yol + "baslat", {}, "Başlat · kod " + s.kod)), yukari, asagi, iptal);
-    kutu.append(dugme("Fiş", "kucuk", () => fisBas({ siraNo: s.sira_no, kod: s.kod, kasa: s.kasa, kg: s.kg, zaman: s.gelis, ad, token: s.token })));
+    const satirBilgi = { siraNo: s.sira_no, kod: s.kod, kasa: s.kasa, kg: s.kg, zaman: s.gelis, ad, token: s.token };
+    kutu.append(dugme("QR", "kucuk", () => qrGoster(satirBilgi)), dugme("Fiş", "kucuk", () => fisBas(satirBilgi)));
   }
   if (s.durum === "isleniyor") {
+    // Tek dokunuş: yağ kilosu bitenler satırından sonra yazılır.
+    kutu.append(dugme("Bitti", "ana kucuk", () => islem(yol + "bitti", {}, "Bitti · kod " + s.kod)));
+  }
+  if (s.durum === "bitti") {
     if (durum.acik === s.id) {
       const form = el("form", "islemler");
       const giris = el("input");
       giris.inputMode = "decimal";
       giris.placeholder = "yağ kg";
-      giris.setAttribute("aria-label", "Çıkan yağ kilosu");
+      giris.setAttribute("aria-label", "Çıkan yağ kilosu, kod " + s.kod);
       giris.style.width = "110px";
+      if (s.yag_kg) {
+        giris.value = String(s.yag_kg).replace(".", ",");
+      }
       const kaydet = el("button", "ana kucuk", "Kaydet");
       kaydet.type = "submit";
       form.append(giris, kaydet, dugme("Vazgeç", "kucuk", () => {
@@ -133,12 +158,12 @@ function islemHucresi(s, ilk, son, ad) {
           mesajGoster("Yağ kilosu 0 ile " + s.kg + " arasında olmalı.", "hata");
           return;
         }
-        islem(yol + "bitti", { yag_kg: yag }, "Bitti · kod " + s.kod);
+        islem(yol + "yag", { yag_kg: yag }, "Yağ · kod " + s.kod);
       });
       kutu.append(form);
       setTimeout(() => giris.focus(), 0);
     } else {
-      kutu.append(dugme("Bitti", "ana kucuk", () => {
+      kutu.append(dugme(s.yag_kg ? "Düzelt" : "Yağ yaz", "kucuk", () => {
         durum.acik = s.id;
         ciz();
       }));
@@ -185,7 +210,7 @@ async function ciz() {
       tahmini = s.tahmini + " biter";
     }
     if (s.durum === "bitti") {
-      tahmini = kg(s.yag_kg) + " yağ · " + randiman(s.kg, s.yag_kg);
+      tahmini = s.yag_kg ? kg(s.yag_kg) + " yağ · " + randiman(s.kg, s.yag_kg) : "yağ yazılmadı";
     }
     const at = sirada.indexOf(s);
     tr.append(
@@ -352,6 +377,7 @@ async function yeniEkle(olay) {
   const bilgi = { siraNo: r.body.sira_no, kod: r.body.kod, kasa: g.govde.kasa, kg: g.govde.kg, zaman: Date.now(), ad, token: r.body.token };
   $("y-sonuc").append(dugme("Fiş yazdır", "kucuk", () => fisBas(bilgi)));
   $("y-sonuc").classList.remove("gizli");
+  qrGoster(bilgi);
   $("y-ad").value = "";
   $("y-kasa").value = "";
   $("y-kg").value = "";
@@ -379,6 +405,12 @@ function basla() {
   });
   $("yeni-vazgec").addEventListener("click", () => $("yeni-form").classList.add("gizli"));
   $("yeni-form").addEventListener("submit", yeniEkle);
+  $("qr-kapat").addEventListener("click", qrKapat);
+  $("qr-fis").addEventListener("click", () => {
+    if (durum.qrBilgi) {
+      fisBas(durum.qrBilgi);
+    }
+  });
   $("ayar-form").addEventListener("submit", ayarKaydet);
   $("cikis").addEventListener("click", () => cikisYap(d, durum.veri ? durum.veri.yaghane.kisa_ad : ""));
   setInterval(() => {

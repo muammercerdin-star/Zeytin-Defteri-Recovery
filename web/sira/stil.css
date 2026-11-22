@@ -53,6 +53,10 @@ input { font: inherit; font-size: 20px; width: 100%; min-height: 48px; padding: 
 /* Telefonda düğmeler bilginin altına iner: isim ve kilolar sıkışmaz. */
 .satir > .islemler { flex: 1 1 100%; justify-content: flex-start; padding-left: 54px; }
 .satir > .islemler > button.ana { flex: 1 1 auto; }
+/* Biten müşteriye sonradan yağ kilosu: satırın altında kısa form. */
+.yag-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 0 12px 54px; }
+.yag-form input { flex: 0 0 130px; width: 130px; }
+.yag-form .hata { flex: 1 1 100%; margin: 0; }
 .durum { display: inline-block; font-size: 14px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
 .durum.sirada { background: #eef0f4; color: #33415c; }
 .durum.isleniyor { background: var(--turuncu-acik); color: var(--turuncu); }
@@ -102,6 +106,10 @@ body.tv main { max-width: none; padding: 3vw; }
 .tv-satir .tv-saat { color: #b9c4a4; }
 .tv-not { font-size: 1.6vw; color: #9aa38a; margin-top: 2vw; }
 /* Fiş: ekranda görünmez; yazdırırken yalnız fiş basılır. 58 mm kâğıt, yaklaşık 48 mm basılabilir alan. */
+/* Ofiste kayıt sonrası büyük QR: çiftçi kendi telefonuyla ekrandan okutur (numara, yazıcı gerekmez). */
+.qr-panel { text-align: center; }
+.qr-yer canvas { width: min(280px, 80vw); height: auto; image-rendering: pixelated; border: 1px solid var(--cizgi); border-radius: 12px; }
+.qr-kod { font-size: 28px; font-weight: 800; letter-spacing: 0.08em; margin: 8px 0 0; }
 .fis-alan { display: none; }
 @media print {
   @page { size: 58mm auto; margin: 0; }

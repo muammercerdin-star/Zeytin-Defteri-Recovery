@@ -114,7 +114,7 @@ export class YedekKodlar {
 
 /**
  * Sunucudan son gelen listeye, henüz gönderilmemiş işlemleri uygular (ekranda hemen görünsün).
- * islem: {tur: "yeni"|"baslat"|"bitti"|"iptal"|"tasi", id, govde}. Sunucu cevabı gelince liste yenilenir.
+ * islem: {tur: "yeni"|"baslat"|"bitti"|"yag"|"iptal"|"tasi", id, govde}. Sunucu cevabı gelince liste yenilenir.
  */
 export function yerelGorunum(sira, islemler, simdi) {
   const l = sira.map((s) => ({ ...s }));
@@ -147,6 +147,8 @@ export function yerelGorunum(sira, islemler, simdi) {
     } else if (is.tur === "bitti" && s.durum === "isleniyor") {
       s.durum = "bitti";
       s.bitis = simdi;
+      s.yag_kg = is.govde.yag_kg ?? null;
+    } else if (is.tur === "yag" && s.durum === "bitti") {
       s.yag_kg = is.govde.yag_kg;
     } else if (is.tur === "iptal" && (s.durum === "sirada" || s.durum === "isleniyor")) {
       s.durum = "iptal";

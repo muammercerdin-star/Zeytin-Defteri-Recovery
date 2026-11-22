@@ -412,6 +412,38 @@ const m = [];
   simdi = T;
 }
 
+// tek dokunuş Bitti: yağ kilosu isteğe bağlı, sonradan "yag" ile yazılır
+{
+  simdi = T + 2 * GUN_MS;
+  const hv = await girisYap("havuz1", "havuz-sifresi-1");
+  const HV = { Cookie: hv.cerez, Origin: SITE };
+  const o2 = await girisYap("ofis2", "ofis-sifresi-2");
+  const OF2 = { Cookie: o2.cerez, Origin: SITE };
+  const yeni = await istek("POST", "/api/yaghane/sira", { op_id: op(), kasa: 5, kg: 300 }, HV);
+  esit(yeni.status, 201, "yeni müşteri (bitti testi)");
+  const id = yeni.body.id;
+  esit((await istek("POST", "/api/yaghane/sira/" + id + "/yag", { op_id: op(), yag_kg: 40 }, HV)).status, 409, "sıradaki müşteriye yağ yazılmaz");
+  await istek("POST", "/api/yaghane/sira/" + id + "/baslat", { op_id: op() }, HV);
+  esit((await istek("POST", "/api/yaghane/sira/" + id + "/bitti", { op_id: op(), yag_kg: "abc" }, HV)).status, 400, "dolu ama geçersiz yağ reddedilir");
+  const tek = await istek("POST", "/api/yaghane/sira/" + id + "/bitti", { op_id: op() }, HV);
+  esit(tek.status, 200, "yağ yazmadan tek dokunuş Bitti");
+  esit(tek.body.yag_kg, null, "yağ boş kalır");
+  const bos = await istek("POST", "/api/yaghane/sira/" + id + "/bitti", { op_id: op(), yag_kg: "" }, HV);
+  esit(bos.status, 409, "biten ikinci kez bitmez (boş yağ alanı da kabul edilir, durum çakışır)");
+  const cf = await istek("GET", "/api/sira/" + yeni.body.token);
+  check(cf.body.durum === "bitti" && cf.body.yag_kg === null, "çiftçi bitti görür, yağ henüz yok");
+  esit((await istek("POST", "/api/yaghane/sira/" + id + "/yag", { op_id: op(), yag_kg: 400 }, HV)).status, 400, "sonradan yağ da zeytinden fazla olamaz");
+  esit((await istek("POST", "/api/yaghane/sira/" + id + "/yag", { op_id: op() }, HV)).status, 400, "yag işleminde kilo şart");
+  const sonra = await istek("POST", "/api/yaghane/sira/" + id + "/yag", { op_id: op(), yag_kg: "48,5".replace(",", ".") }, HV);
+  esit(sonra.status, 200, "yağ sonradan yazılır");
+  esit((await istek("GET", "/api/sira/" + yeni.body.token)).body.yag_kg, 48.5, "çiftçi sonradan yazılan yağı görür");
+  esit((await istek("POST", "/api/yaghane/sira/" + id + "/yag", { op_id: op(), yag_kg: 50 }, HV)).status, 200, "yağ düzeltilebilir");
+  esit((await istek("POST", "/api/yaghane/sira/" + id + "/yag", { op_id: op(), yag_kg: 50 }, OF2)).status, 404, "başka fabrika yağ yazamaz");
+  const gun = await istek("GET", "/api/yaghane/gun", undefined, HV);
+  esit(gun.body.ozet.yag_kg, 50, "günlük yağ toplamı sonradan yazılanı sayar");
+  simdi = T;
+}
+
 // genel
 {
   esit((await istek("GET", "/api/yok")).status, 404, "bilinmeyen uç");

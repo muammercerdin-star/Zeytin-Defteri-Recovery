@@ -121,6 +121,14 @@ function tamSayi(deger, alt, ust) {
   return Number.isInteger(n) && n >= alt && n <= ust ? n : null;
 }
 
+/** Yağ kilosu alanı doldurulmuş mu (boş, null ya da hiç yoksa "yazılmadı" sayılır). */
+function yagGeldi(deger) {
+  if (deger === undefined || deger === null) {
+    return false;
+  }
+  return String(deger).trim() !== "";
+}
+
 function sayi(deger, alt, ust) {
   const n = Number(deger);
   return Number.isFinite(n) && n >= alt && n <= ust ? n : null;
@@ -449,14 +457,31 @@ async function durumIslemi(request, env, simdi, id, islem) {
       return { durum: 200, sonuc: { id, durum: "isleniyor" } };
     }
     if (islem === "bitti") {
+      // Yoğun saatte havuzcu tek dokunuşla bitirir; yağ kilosu isteğe bağlıdır, sonradan "yag" ile yazılır.
       const s = await satirGetir(env.DB, o, id);
-      const yag = s ? sayi(veri.yag_kg, 0.1, Number(s.kg)) : null;
-      if (s && s.durum === "isleniyor" && yag === null) {
+      const yagVar = yagGeldi(veri.yag_kg);
+      const yag = s && yagVar ? sayi(veri.yag_kg, 0.1, Number(s.kg)) : null;
+      if (s && s.durum === "isleniyor" && yagVar && yag === null) {
         throw new Hata(400, "GECERSIZ_ISTEK", "Yağ kilosu 0 ile zeytin kilosu arasında olmalı.");
       }
       const r = await env.DB.prepare(
         "UPDATE sira SET durum = 'bitti', bitis = ?, yag_kg = ? WHERE id = ? AND yaghane_id = ? AND durum = 'isleniyor'"
       ).bind(simdi, yag, id, o.yaghane_id).run();
+      if (r.meta.changes !== 1) {
+        await cakisma(env.DB, o, id);
+      }
+      return { durum: 200, sonuc: { id, durum: "bitti", yag_kg: yag } };
+    }
+    if (islem === "yag") {
+      // Biten müşterinin yağ kilosu sonradan yazılır ya da düzeltilir (yalnız "bitti" satırında).
+      const s = await satirGetir(env.DB, o, id);
+      const yag = s ? sayi(veri.yag_kg, 0.1, Number(s.kg)) : null;
+      if (s && s.durum === "bitti" && yag === null) {
+        throw new Hata(400, "GECERSIZ_ISTEK", "Yağ kilosu 0 ile zeytin kilosu arasında olmalı.");
+      }
+      const r = await env.DB.prepare(
+        "UPDATE sira SET yag_kg = ? WHERE id = ? AND yaghane_id = ? AND durum = 'bitti'"
+      ).bind(yag, id, o.yaghane_id).run();
       if (r.meta.changes !== 1) {
         await cakisma(env.DB, o, id);
       }
@@ -692,7 +717,7 @@ export async function apiIstegi(request, env, ctx, simdi) {
     if (yol === "/api/yaghane/anahtar" && yontem === "PUT") {
       return await anahtarIzi(request, env, simdi);
     }
-    const islem = /^\/api\/yaghane\/sira\/([0-9]{1,12})\/(baslat|bitti|iptal|tasi)$/.exec(yol);
+    const islem = /^\/api\/yaghane\/sira\/([0-9]{1,12})\/(baslat|bitti|yag|iptal|tasi)$/.exec(yol);
     if (islem && yontem === "POST") {
       return await durumIslemi(request, env, simdi, Number(islem[1]), islem[2]);
     }

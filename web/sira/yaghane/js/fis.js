@@ -43,7 +43,8 @@ export function fisSatirlari(b) {
   return satirlar;
 }
 
-function qrTuvali(link) {
+/** Linkin QR kodunu tuvale çizer (fiş ve ofis ekranındaki büyük QR ortak kullanır). */
+export function qrTuvali(link) {
   const qr = qrcode(0, "M");
   qr.addData(link);
   qr.make();

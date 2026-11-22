@@ -1,4 +1,4 @@
-// Havuzcu ekranı (telefon): yeni müşteri, Başlat, Bitti (yağ kg), ↑↓, iptal. İnternet giderse işlemler
+// Havuzcu ekranı (telefon): yeni müşteri, Başlat, tek dokunuş Bitti, sonradan yağ kg, ↑↓, iptal. İnternet giderse işlemler
 // kuyruğa girer, ekranda hemen görünür, bağlantı gelince sırayla gönderilir.
 import { adCoz } from "./anahtar.js";
 import { fisYazdir } from "./fis.js";
@@ -342,35 +342,34 @@ function isleniyorKarti(s, ad) {
   const k = el("div", "kart vurgu");
   k.append(el("div", "ad", (s.sira_no || "–") + " · " + (ad || "Kod " + s.kod)));
   k.append(el("div", "alt", kg(s.kg) + " · " + s.kasa + " kasa · başladı " + saat(s.baslama) + (s.tahmini ? " · tahmini bitiş " + s.tahmini : "")));
-  if (durum.acik !== "bitti-" + s.id) {
-    k.append(el("div", "dugmeler"));
-    k.lastChild.append(
-      dugme("Bitti · yağı yaz", "ana", () => {
-        durum.acik = "bitti-" + s.id;
-        ciz();
-      })
-    );
-    return k;
-  }
-  const form = el("form");
-  const etiket = el("label", null, "Çıkan yağ (kg)");
+  // Yoğun saatte tek dokunuş: yağ kilosu "Biten" listesinden sonra yazılır.
+  k.append(el("div", "dugmeler"));
+  k.lastChild.append(
+    dugme("Bitti", "ana", () => islem("bitti", s.id, "/api/yaghane/sira/" + s.id + "/bitti", {}, "Bitti · kod " + s.kod))
+  );
+  return k;
+}
+
+/** Biten müşterinin yağ kilosunu yazma ya da düzeltme formu (çevrimdışı da kuyruğa girer). */
+function yagFormu(s) {
+  const form = el("form", "yag-form");
   const giris = el("input");
   giris.id = "yag-" + s.id;
-  etiket.htmlFor = giris.id;
   giris.inputMode = "decimal";
   giris.autocomplete = "off";
+  giris.placeholder = "yağ kg";
+  giris.setAttribute("aria-label", "Çıkan yağ kilosu, kod " + s.kod);
+  if (s.yag_kg) {
+    giris.value = String(s.yag_kg).replace(".", ",");
+  }
   const hata = el("div", "hata gizli");
   hata.setAttribute("role", "alert");
-  const kaydet = el("button", "ana", "Kaydet");
+  const kaydet = el("button", "ana kucuk", "Kaydet");
   kaydet.type = "submit";
-  form.append(etiket, giris, hata, el("div", "dugmeler"));
-  form.lastChild.append(
-    dugme("Vazgeç", "", () => {
-      durum.acik = null;
-      ciz();
-    }),
-    kaydet
-  );
+  form.append(giris, kaydet, dugme("Vazgeç", "kucuk", () => {
+    durum.acik = null;
+    ciz();
+  }), hata);
   form.addEventListener("submit", (olay) => {
     olay.preventDefault();
     const yag = Number(giris.value.replace(",", "."));
@@ -379,11 +378,32 @@ function isleniyorKarti(s, ad) {
       hata.classList.remove("gizli");
       return;
     }
-    islem("bitti", s.id, "/api/yaghane/sira/" + s.id + "/bitti", { yag_kg: yag }, "Bitti · kod " + s.kod);
+    islem("yag", s.id, "/api/yaghane/sira/" + s.id + "/yag", { yag_kg: yag }, "Yağ · kod " + s.kod);
   });
-  k.append(form);
   setTimeout(() => giris.focus(), 0);
-  return k;
+  return form;
+}
+
+function bitenSatiri(s, ad) {
+  const satir = el("div", "satir");
+  let alt = "iptal";
+  if (s.durum === "bitti") {
+    alt = s.yag_kg ? kg(s.kg) + " → " + kg(s.yag_kg) + " yağ" : kg(s.kg) + " · yağ yazılmadı";
+  }
+  satir.append(el("div", "no", s.sira_no || "–"), el("div", "bilgi"));
+  satir.lastChild.append(el("div", "ad", ad || "Kod " + s.kod), el("div", "alt", alt));
+  if (s.durum !== "bitti" || s.gecici) {
+    return [satir];
+  }
+  const anahtar = "yag-" + s.id;
+  if (durum.acik === anahtar) {
+    return [satir, yagFormu(s)];
+  }
+  satir.append(dugme(s.yag_kg ? "Düzelt" : "Yağ yaz", "kucuk", () => {
+    durum.acik = anahtar;
+    ciz();
+  }));
+  return [satir];
 }
 
 async function ciz() {
@@ -430,12 +450,7 @@ async function ciz() {
   }
   const bitenler = liste.filter((s) => s.durum === "bitti" || s.durum === "iptal").slice(0, 8);
   for (const s of bitenler) {
-    const ad = adlar[liste.indexOf(s)];
-    const satir = el("div", "satir");
-    const alt = s.durum === "bitti" ? kg(s.kg) + " → " + kg(s.yag_kg) + " yağ" : "iptal";
-    satir.append(el("div", "no", s.sira_no || "–"), el("div", "bilgi"));
-    satir.lastChild.append(el("div", "ad", ad || "Kod " + s.kod), el("div", "alt", alt));
-    biten.append(satir);
+    biten.append(...bitenSatiri(s, adlar[liste.indexOf(s)]));
   }
   if (!bitenler.length) {
     biten.append(el("p", "not", "Bugün biten yok."));

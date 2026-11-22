@@ -236,13 +236,24 @@ try {
 
   // ------------------------------------------------ bitti ve çiftçi görünümü
   const isleniyorKart = hav.locator("#isleniyor .kart").filter({ hasText: "Örnek Üretici" });
-  await isleniyorKart.locator("button", { hasText: "Bitti · yağı yaz" }).click();
-  await hav.fill("#isleniyor input", "64");
-  await hav.click("#isleniyor button[type=submit]");
-  await hav.waitForSelector("#biten >> text=64 kg yağ");
+  // Tek dokunuş Bitti; yağ kilosu sonra "Biten" listesinden yazılır.
+  await isleniyorKart.locator("button", { hasText: /^Bitti$/ }).click();
+  await hav.waitForSelector("#biten >> text=yağ yazılmadı");
   await ciftci.goto(ciftciLink);
   await ciftci.waitForSelector("text=Bitti · yağınız hazır");
-  check((await ciftci.textContent("body")).includes("64 kg yağ"), "çiftçi yağ kilosunu görür");
+  check((await ciftci.textContent("body")).includes("Yağ kilosu birazdan"), "yağ yazılmadan çiftçi bitti görür");
+  const bitenSatir = hav.locator("#biten .satir").filter({ hasText: "Örnek Üretici" });
+  await bitenSatir.locator("button", { hasText: "Yağ yaz" }).click();
+  await hav.fill("#biten .yag-form input", "64");
+  await hav.click("#biten .yag-form button[type=submit]");
+  await hav.waitForSelector("#biten >> text=64 kg yağ");
+  await ciftci.waitForFunction(() => document.body.textContent.includes("64 kg yağ"), null, { timeout: 90000 }).catch(() => null);
+  if (!(await ciftci.textContent("body")).includes("64 kg yağ")) {
+    await ciftci.reload();
+    await ciftci.waitForSelector("text=Bitti · yağınız hazır");
+  }
+  check((await ciftci.textContent("body")).includes("64 kg yağ"), "sonradan yazılan yağ kilosunu çiftçi görür");
+  await hav.screenshot({ path: cikti + "/7-bitti-yag.png", fullPage: true });
 
   // ------------------------------------------------ elle giriş
   await ciftci.goto(SITE + "/bul/?f=ornekyaghane");
@@ -257,6 +268,19 @@ try {
   await ciftci.click("button[type=submit]");
   await ciftci.waitForSelector("#mesaj:not(.gizli)");
   check(true, "yanlış son 2 haneyle bulunmaz");
+
+  // ------------------------------------------------ ofiste kayıt sonrası büyük QR
+  await ofis.click("#yeni-ac");
+  await ofis.fill("#y-kasa", "3");
+  await ofis.fill("#y-kg", "150");
+  await ofis.click("#yeni-form button[type=submit]");
+  await ofis.waitForSelector("#qr-panel:not(.gizli) canvas");
+  const qrKod = await ofis.textContent("#qr-kod");
+  check(/^Kod \d{4}/.test(qrKod), "müşteri eklenince ofis ekranında büyük QR ve kod: " + qrKod);
+  await ofis.screenshot({ path: cikti + "/8-ofis-qr.png", fullPage: true });
+  await ofis.click("#qr-kapat");
+  await ofis.waitForSelector("#qr-panel.gizli", { state: "attached" });
+  check(true, "QR paneli kapanır");
 
   // ------------------------------------------------ çıkış izi bırakmaz
   await hav.click("#cikis");

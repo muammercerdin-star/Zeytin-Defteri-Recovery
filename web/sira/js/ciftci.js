@@ -52,15 +52,20 @@ function ciz(v) {
     $("saat").textContent = v.biter + " civarı";
   } else if (v.durum === "bitti") {
     $("baslik").textContent = "Bitti · yağınız hazır";
-    const yag = Number(v.yag_kg || 0).toLocaleString("tr-TR");
-    $("onunde").textContent = kg + " kg zeytinden " + yag + " kg yağ çıktı.";
+    if (v.yag_kg) {
+      const yag = Number(v.yag_kg).toLocaleString("tr-TR");
+      $("onunde").textContent = kg + " kg zeytinden " + yag + " kg yağ çıktı.";
+    } else {
+      // Havuzcu yoğunken yağ kilosunu sonra yazar; sayfa yazılana kadar yenilenir.
+      $("onunde").textContent = "Yağınızı yağhaneden alabilirsiniz. Yağ kilosu birazdan burada görünür.";
+    }
   } else {
     $("baslik").textContent = "Bu sıra iptal edildi";
     $("onunde").textContent = "Bilgi için yağhaneye sor.";
   }
   adimlar(v.durum);
   $("guncel").textContent = "Son güncelleme " + v.guncel + (v.durum === "sirada" || v.durum === "isleniyor" ? " · sayfa kendiliğinden yenilenir" : "");
-  bitti = v.durum === "bitti" || v.durum === "iptal";
+  bitti = (v.durum === "bitti" && Boolean(v.yag_kg)) || v.durum === "iptal";
 }
 
 async function yukle() {

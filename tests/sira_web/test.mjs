@@ -221,6 +221,48 @@ const SUNUCU_AD_DESENI = /^1\.[A-Za-z0-9_-]{24,150}$/;
   esit(sira[0].durum, "isleniyor", "sunucu listesi değişmez");
 }
 
+// ---------------------------------------------------------------- tek dokunuş Bitti, yağ sonradan
+{
+  const sira = [
+    { id: 4, durum: "isleniyor", konum: 1, kod: "4824", kg: 620, kasa: 9 },
+    { id: 7, durum: "bitti", konum: 0, kod: "4827", kg: 300, kasa: 5, yag_kg: null },
+  ];
+  const l = K.yerelGorunum(
+    sira,
+    [
+      { tur: "bitti", id: 4, govde: {} },
+      { tur: "yag", id: 7, govde: { yag_kg: 48.5 } },
+      { tur: "yag", id: 4, govde: { yag_kg: 90 } },
+    ],
+    1000
+  );
+  const s4 = l.find((s) => s.id === 4);
+  check(s4.durum === "bitti" && s4.yag_kg === 90, "yağsız Bitti sonrası çevrimdışı yazılan yağ ekranda: " + JSON.stringify(s4));
+  esit(l.find((s) => s.id === 7).yag_kg, 48.5, "biten satıra sonradan yağ");
+  const l2 = K.yerelGorunum([{ id: 5, durum: "sirada", konum: 1, kod: "4825", kg: 480, kasa: 7 }], [{ tur: "yag", id: 5, govde: { yag_kg: 10 } }], 1000);
+  check(!l2[0].yag_kg, "sıradakine yağ yazılmaz");
+  const l3 = K.yerelGorunum([{ id: 4, durum: "isleniyor", konum: 1, kod: "4824", kg: 620, kasa: 9 }], [{ tur: "bitti", id: 4, govde: {} }], 1000);
+  esit(l3[0].yag_kg, null, "yağsız Bitti: yağ boş");
+  const hv = readFileSync(join(js, "havuzcu.js"), "utf8");
+  check(!hv.includes("Bitti · yağı yaz"), "havuzcu Bitti tek dokunuş (yağ formu açmaz)");
+  check(hv.includes('"/yag"'), "havuzcu sonradan yağ yazar");
+  const of = readFileSync(join(js, "ofis.js"), "utf8");
+  check(of.includes('yol + "bitti", {}'), "ofis Bitti tek dokunuş");
+  const cf = readFileSync(join(web, "js/ciftci.js"), "utf8");
+  check(cf.includes("Yağ kilosu birazdan"), "çiftçi sayfası yağsız bitişi söyler");
+}
+
+// ---------------------------------------------------------------- ofiste büyük QR
+{
+  const of = readFileSync(join(js, "ofis.js"), "utf8");
+  const html = readFileSync(join(web, "yaghane/ofis.html"), "utf8");
+  check(html.includes('id="qr-panel"') && html.includes('id="qr-yer"') && html.includes('id="qr-kapat"'), "ofis sayfasında QR paneli");
+  check(/qrGoster\(bilgi\)/.test(of), "müşteri eklenince QR kendiliğinden açılır");
+  check(of.includes('dugme("QR"'), "sıradaki satırda QR düğmesi");
+  check(/window\.location\.origin \+ "\/" \+ bilgi\.token/.test(of), "QR çiftçi linkini taşır (ad ya da telefon taşımaz)");
+  check(/export function qrTuvali/.test(readFileSync(join(js, "fis.js"), "utf8")), "QR çizimi fiş ile ortak");
+}
+
 // ---------------------------------------------------------------- yedek kodlar
 {
   const depo = new Depo();

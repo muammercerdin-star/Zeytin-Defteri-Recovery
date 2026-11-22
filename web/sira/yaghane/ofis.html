@@ -32,11 +32,19 @@
       <div><label for="y-kasa">Kasa</label><input id="y-kasa" inputmode="numeric" autocomplete="off"></div>
       <div><label for="y-kg">Kilo (kantar)</label><input id="y-kg" inputmode="decimal" autocomplete="off"></div>
     </div>
-    <p class="not">Telefon numarası ofisten girilmez: sıra linki havuzcunun telefonundan gönderilir. Telefonsuz çiftçiye fiş ver: QR'ı okutur ya da kodu ve kasa sayısıyla sira.zeytindefteri.tr/bul adresinden girer.</p>
+    <p class="not">Sıraya ekleyince ekranda büyük QR çıkar: çiftçi kendi telefonuyla okutur, numara gerekmez. Telefonu yoksa kodu söyle ya da fiş ver; salondaki TV'de de kodu görür.</p>
     <div id="y-hata" class="hata gizli" role="alert"></div>
     <div id="y-sonuc" class="bilgilendirme gizli" aria-live="polite"></div>
     <div class="dugmeler"><button type="button" id="yeni-vazgec">Kapat</button><button class="ana" type="submit">Sıraya ekle</button></div>
   </form>
+
+  <section id="qr-panel" class="kart qr-panel gizli" aria-live="polite" aria-labelledby="qr-baslik">
+    <h2 id="qr-baslik">Çiftçi telefonunun kamerasıyla okutsun</h2>
+    <div id="qr-yer" class="qr-yer"></div>
+    <p class="qr-kod" id="qr-kod"></p>
+    <p class="not">QR açılmazsa: sira.zeytindefteri.tr/bul · kod ve kasa sayısı. Numara girmek gerekmez.</p>
+    <div class="dugmeler"><button type="button" id="qr-kapat">Kapat</button><button type="button" id="qr-fis">Fiş yazdır</button></div>
+  </section>
 
   <div class="ofis-ust">
     <div class="kutu"><div class="etiket">Bekleyen</div><div class="deger" id="bekleyen">–</div></div>
