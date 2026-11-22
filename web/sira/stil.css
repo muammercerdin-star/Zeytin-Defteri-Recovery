@@ -101,3 +101,19 @@ body.tv main { max-width: none; padding: 3vw; }
 .tv-satir { display: flex; justify-content: space-between; font-size: 3.6vw; padding: 1vw 0; border-bottom: 1px solid #333a28; }
 .tv-satir .tv-saat { color: #b9c4a4; }
 .tv-not { font-size: 1.6vw; color: #9aa38a; margin-top: 2vw; }
+/* Fiş: ekranda görünmez; yazdırırken yalnız fiş basılır. 58 mm kâğıt, yaklaşık 48 mm basılabilir alan. */
+.fis-alan { display: none; }
+@media print {
+  @page { size: 58mm auto; margin: 0; }
+  html, body { background: #fff !important; color: #000 !important; margin: 0; }
+  body > main { display: none !important; }
+  .fis-alan { display: block; width: 48mm; margin: 0 auto; padding: 3mm 0 6mm; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #000; text-align: center; }
+  .fis-alan p { margin: 0 0 1.2mm; font-size: 9pt; line-height: 1.25; overflow-wrap: anywhere; }
+  .fis-alan .fis-fabrika { font-size: 11pt; font-weight: 700; padding-bottom: 1.5mm; border-bottom: 0.3mm dashed #000; margin-bottom: 2mm; }
+  .fis-alan .fis-etiket { font-size: 8pt; letter-spacing: 0.1em; }
+  .fis-alan .fis-no { font-size: 30pt; font-weight: 800; line-height: 1; margin-bottom: 1.5mm; }
+  .fis-alan .fis-kod { font-size: 14pt; font-weight: 700; letter-spacing: 0.08em; }
+  .fis-alan .fis-ad { font-size: 10pt; font-weight: 700; }
+  .fis-alan .fis-not { font-size: 7.5pt; }
+  .fis-alan .fis-qr { display: block; width: 32mm; height: 32mm; margin: 2mm auto 1mm; image-rendering: pixelated; }
+}

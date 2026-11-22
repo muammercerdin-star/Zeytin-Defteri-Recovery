@@ -1,6 +1,6 @@
 // Havuzcu ekranı internet yokken yeniden açılabilsin diye yalnız sayfa dosyaları önbellekte tutulur.
 // API (/api/*) hiçbir zaman önbelleğe alınmaz. Sürüm değişince eski önbellek silinir.
-const SURUM = "zs-1";
+const SURUM = "zs-2";
 const DOSYALAR = [
   "/stil.css",
   "/yaghane/",
@@ -12,6 +12,8 @@ const DOSYALAR = [
   "/yaghane/js/kuyruk.js",
   "/yaghane/js/musteri.js",
   "/yaghane/js/telefon.js",
+  "/yaghane/js/fis.js",
+  "/yaghane/js/vendor/qrcode.js",
 ];
 
 self.addEventListener("install", (olay) => {

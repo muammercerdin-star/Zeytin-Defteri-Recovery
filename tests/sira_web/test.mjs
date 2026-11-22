@@ -11,6 +11,8 @@ const A = await import(join(js, "anahtar.js"));
 const Tel = await import(join(js, "telefon.js"));
 const K = await import(join(js, "kuyruk.js"));
 const M = await import(join(js, "musteri.js"));
+globalThis.document = globalThis.document || undefined;
+const F = await import(join(js, "fis.js"));
 
 let n = 0;
 let bad = 0;
@@ -229,6 +231,41 @@ const SUNUCU_AD_DESENI = /^1\.[A-Za-z0-9_-]{24,150}$/;
   esit(y.liste().map((x) => x.kod), ["3333"], "daha eski yedek atılır");
   esit(y.al("2026-11-22", "2026-11-21").kod, "3333", "sonraki");
   esit(y.al("2026-11-22", "2026-11-21"), null, "yedek bitti");
+}
+
+// ---------------------------------------------------------------- fiş (58 mm)
+{
+  const T = Date.parse("2026-11-22T08:00:00Z");
+  esit(F.fisZamani(T), "22.11.2026 11:00", "fiş tarihi Türkiye saatiyle");
+  const link = "https://sira.zeytindefteri.tr/" + "A".repeat(22);
+  const b = { fabrika: "[FABRİKA ADI]", kisaAd: "ornekyaghane", siraNo: 7, kod: "4827", kasa: 6, kg: 390.5, zaman: T, ad: "", link, site: "sira.zeytindefteri.tr" };
+  const satirlar = F.fisSatirlari(b);
+  const metin = satirlar.map((x) => x.metin).join("\n");
+  esit(satirlar[0], { tur: "fabrika", metin: "[FABRİKA ADI]" }, "fişin başında fabrika adı");
+  check(satirlar.some((x) => x.tur === "no" && x.metin === "7"), "sıra no");
+  check(satirlar.some((x) => x.tur === "kod" && x.metin === "Kod 4827"), "kod");
+  check(metin.includes("6 kasa · 390,5 kg"), "kasa ve kg: " + metin);
+  check(metin.includes("22.11.2026 11:00"), "tarih ve saat");
+  esit(satirlar.filter((x) => x.tur === "qr").map((x) => x.metin), [link], "QR çiftçi linkini taşır");
+  check(metin.includes("sira.zeytindefteri.tr/bul") && metin.includes("Yağhane: ornekyaghane · Kod: 4827"), "link açılmazsa elle giriş bilgisi");
+  check(!satirlar.some((x) => x.tur === "ad"), "ad çözülmediyse fişte ad yok");
+  const adli = F.fisSatirlari({ ...b, ad: "Örnek Üretici" });
+  check(adli.some((x) => x.tur === "ad" && x.metin === "Örnek Üretici"), "ad bu cihazda çözüldüyse fişe yazılır");
+  const cevrimdisi = F.fisSatirlari({ ...b, siraNo: null });
+  check(cevrimdisi.some((x) => x.tur === "no" && x.metin === "–") && cevrimdisi.some((x) => /bağlantı gelince/.test(x.metin)), "çevrimdışı fişte sıra no yerine not");
+  const fisKaynak = readFileSync(join(js, "fis.js"), "utf8");
+  check(!/fetch|api\(|XMLHttpRequest|sendBeacon/.test(fisKaynak), "fiş sunucuya bir şey göndermez");
+  check(/from "\.\/vendor\/qrcode\.js"/.test(fisKaynak), "QR yerel kodlayıcıyla (dış servis yok)");
+  const css = readFileSync(join(web, "stil.css"), "utf8");
+  check(/@page \{ size: 58mm auto; margin: 0; \}/.test(css), "58 mm kâğıt");
+  check(/\.fis-alan \{ display: block; width: 48mm;/.test(css), "basılabilir alan 48 mm");
+  check(/body > main \{ display: none !important; \}/.test(css), "yazdırırken yalnız fiş basılır");
+  for (const sayfa of ["yaghane/havuzcu.html", "yaghane/ofis.html"]) {
+    const t = readFileSync(join(web, sayfa), "utf8");
+    check(/<\/main>\n<div id="fis-alan" class="fis-alan"><\/div>/.test(t), "fiş alanı ana içeriğin dışında: " + sayfa);
+  }
+  check(/fisYazdir/.test(readFileSync(join(js, "havuzcu.js"), "utf8")) && /fisYazdir/.test(readFileSync(join(js, "ofis.js"), "utf8")), "fiş havuzcu ve ofis ekranında");
+  check(/\/yaghane\/js\/fis\.js/.test(readFileSync(join(web, "yaghane/sw.js"), "utf8")), "fiş internetsizken de basılır (önbellekte)");
 }
 
 // ---------------------------------------------------------------- statik denetim

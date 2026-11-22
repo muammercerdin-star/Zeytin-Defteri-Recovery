@@ -127,6 +127,7 @@ export function yerelGorunum(sira, islemler, simdi) {
         sira_no: null,
         konum: enBuyuk + 1,
         kod: is.govde.yedek ? is.govde.yedek.kod : "····",
+        token: is.govde.yedek ? is.govde.yedek.token : null,
         ad_sifreli: is.govde.ad_sifreli || null,
         kasa: is.govde.kasa,
         kg: is.govde.kg,

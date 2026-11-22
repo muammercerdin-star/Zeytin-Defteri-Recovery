@@ -133,6 +133,30 @@ try {
   check((await hav.textContent("#sirada")).includes("Deneme Kişi"), "havuzcu isimleri çözerek görür");
   await hav.screenshot({ path: cikti + "/2-havuzcu.png", fullPage: true });
 
+  // ------------------------------------------------ fiş (havuzcu): yazdırma penceresi yerine sayaç
+  await hav.evaluate(() => {
+    window.__yazdir = 0;
+    window.print = () => {
+      window.__yazdir += 1;
+    };
+  });
+  const ilkSatir = hav.locator("#sirada .satir").filter({ hasText: "Örnek Üretici" });
+  await ilkSatir.locator("button[aria-label='Diğer işlemler']").click();
+  await hav.click("#sirada button:has-text(\"Fiş yazdır\")");
+  check((await hav.evaluate(() => window.__yazdir)) === 1, "havuzcu fişi yazdırma penceresini açar");
+  const fisMetni = await hav.textContent("#fis-alan");
+  check(fisMetni.includes("[FABRİKA ADI]") && fisMetni.includes("Kod " + m1.kod) && fisMetni.includes("6 kasa · 390 kg"), "fişte fabrika, kod, kasa ve kg: " + fisMetni);
+  check(fisMetni.includes("Örnek Üretici"), "ad havuzcu cihazında çözülüp fişe yazıldı");
+  check(/\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/.test(fisMetni), "fişte tarih ve saat");
+  check((await hav.locator("#fis-alan canvas.fis-qr").count()) === 1, "fişte QR");
+  await hav.emulateMedia({ media: "print" });
+  const genislik = await hav.evaluate(() => document.getElementById("fis-alan").getBoundingClientRect().width);
+  check(Math.abs(genislik - (48 / 25.4) * 96) < 2, "fiş 48 mm genişlikte basılır: " + genislik);
+  check(await hav.locator("main").isHidden(), "yazdırırken ekranın geri kalanı basılmaz");
+  await hav.screenshot({ path: cikti + "/7-fis.png", clip: { x: 0, y: 0, width: 390, height: 640 } });
+  await hav.emulateMedia({ media: "screen" });
+  await hav.locator("#sirada .satir").filter({ hasText: "Örnek Üretici" }).locator("button[aria-label='Diğer işlemler']").click();
+
   // ------------------------------------------------ çiftçi linki
   const ciftciCtx = await tarayici.newContext({ viewport: { width: 390, height: 844 }, locale: "tr-TR" });
   const ciftci = await ciftciCtx.newPage();
@@ -153,6 +177,16 @@ try {
   await ofis.reload();
   await ofis.waitForSelector("text=Örnek Üretici");
   check((await ofis.textContent("#tablo")).includes("Deneme Kişi"), "ofis isimleri çözer");
+  await ofis.evaluate(() => {
+    window.__yazdir = 0;
+    window.print = () => {
+      window.__yazdir += 1;
+    };
+  });
+  await ofis.locator("#tablo tr").filter({ hasText: "Deneme Kişi" }).locator("button", { hasText: "Fiş" }).click();
+  const ofisFis = await ofis.textContent("#fis-alan");
+  check((await ofis.evaluate(() => window.__yazdir)) === 1 && ofisFis.includes("Deneme Kişi") && ofisFis.includes("Kod " + m3.kod) && ofisFis.includes("16 kasa"), "ofis de fiş basar: " + ofisFis);
+  check((await ofis.locator("#fis-alan canvas.fis-qr").count()) === 1, "ofis fişinde QR");
   const tv = await ofisCtx.newPage();
   izle(tv, "tv");
   await tv.goto(SITE + "/yaghane/tv.html");

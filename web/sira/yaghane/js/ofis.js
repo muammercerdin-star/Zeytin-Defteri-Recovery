@@ -1,5 +1,6 @@
 // Ofis paneli (geniş ekran): aynı liste, kapasite ve gün başlangıcı, fabrika anahtarı, TV'ye yansıtma.
 import { adCoz, iz, kisalt, parolaYaz, yeniSir } from "./anahtar.js";
+import { fisYazdir } from "./fis.js";
 import { islemKimligi } from "./kuyruk.js";
 import { yeniMusteriGovdesi } from "./musteri.js";
 import { qrcode } from "./vendor/qrcode.js";
@@ -71,7 +72,24 @@ function durumEtiketi(s) {
   return el("span", "durum " + s.durum, adlar[s.durum]);
 }
 
-function islemHucresi(s, ilk, son) {
+/** Fiş: ad yalnız bu bilgisayarda çözüldüyse yazılır; fiş sunucuya bir şey göndermez. */
+function fisBas(bilgi) {
+  const v = durum.veri;
+  fisYazdir({
+    fabrika: v.yaghane.ad,
+    kisaAd: v.yaghane.kisa_ad,
+    siraNo: bilgi.siraNo,
+    kod: bilgi.kod,
+    kasa: bilgi.kasa,
+    kg: bilgi.kg,
+    zaman: bilgi.zaman,
+    ad: bilgi.ad,
+    link: window.location.origin + "/" + bilgi.token,
+    site: window.location.host,
+  });
+}
+
+function islemHucresi(s, ilk, son, ad) {
   const td = el("td");
   const kutu = el("div", "islemler");
   td.append(kutu);
@@ -92,6 +110,7 @@ function islemHucresi(s, ilk, son) {
       iptal.textContent = "Evet, iptal";
     });
     kutu.append(dugme("Başlat", "ana kucuk", () => islem(yol + "baslat", {}, "Başlat · kod " + s.kod)), yukari, asagi, iptal);
+    kutu.append(dugme("Fiş", "kucuk", () => fisBas({ siraNo: s.sira_no, kod: s.kod, kasa: s.kasa, kg: s.kg, zaman: s.gelis, ad, token: s.token })));
   }
   if (s.durum === "isleniyor") {
     if (durum.acik === s.id) {
@@ -179,7 +198,7 @@ async function ciz() {
       el("td")
     );
     tr.lastChild.append(durumEtiketi(s));
-    tr.append(islemHucresi(s, at === 0, at === sirada.length - 1));
+    tr.append(islemHucresi(s, at === 0, at === sirada.length - 1, ad));
     tablo.append(tr);
   });
   if (!v.sira.length) {
@@ -329,7 +348,9 @@ async function yeniEkle(olay) {
     return;
   }
   const ad = String(form.ad || "").trim();
-  $("y-sonuc").textContent = "✓ " + r.body.sira_no + ". sıra" + (ad ? " · " + kisalt(ad) : "") + " · kod " + r.body.kod + " — kodu fişe yaz.";
+  $("y-sonuc").textContent = "✓ " + r.body.sira_no + ". sıra" + (ad ? " · " + kisalt(ad) : "") + " · kod " + r.body.kod + " ";
+  const bilgi = { siraNo: r.body.sira_no, kod: r.body.kod, kasa: g.govde.kasa, kg: g.govde.kg, zaman: Date.now(), ad, token: r.body.token };
+  $("y-sonuc").append(dugme("Fiş yazdır", "kucuk", () => fisBas(bilgi)));
   $("y-sonuc").classList.remove("gizli");
   $("y-ad").value = "";
   $("y-kasa").value = "";

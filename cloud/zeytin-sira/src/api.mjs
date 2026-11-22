@@ -195,9 +195,10 @@ function ofisGerekli(o) {
 
 // ===================================================================== GÜN LİSTESİ
 
+/** Panel listesi. token: fişteki QR (çiftçi linki) için; yalnız o fabrikanın oturumu açık çalışanına gider. */
 async function gorunenSatirlar(db, o, gun) {
   const sql =
-    "SELECT id, gun, sira_no, konum, kod, ad_sifreli, kasa, kg, durum, gelis, baslama, bitis, yag_kg FROM sira " +
+    "SELECT id, gun, sira_no, konum, kod, token, ad_sifreli, kasa, kg, durum, gelis, baslama, bitis, yag_kg FROM sira " +
     "WHERE yaghane_id = ? AND (gun = ? OR durum IN " + AKTIF + ")";
   const r = await db.prepare(sql).bind(o.yaghane_id, gun).all();
   return r.results || [];

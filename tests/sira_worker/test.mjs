@@ -245,6 +245,7 @@ const m = [];
   esit(r.body.sira[0].tahmini, "11:00", "ilk sıradakinin tahmini şimdi");
   esit(r.body.sira[1].tahmini, "11:40", "ikinci: 620 kg / 1200 = 31 dk → 11:40");
   esit(r.body.sira[0].ad_sifreli, SIFRELI, "panel şifreli adı alır (tarayıcı çözer)");
+  esit(r.body.sira.map((s) => s.token).sort(), m.map((x) => x.token).sort(), "panel fiş için kendi fabrikasının linklerini alır");
   check(r.body.istek_bugun > 0, "günlük istek sayacı");
   const ikinci = await istek("GET", "/api/yaghane/gun", undefined, O2);
   esit(ikinci.body.sira.length, 0, "başka fabrika bu fabrikanın sırasını görmez");

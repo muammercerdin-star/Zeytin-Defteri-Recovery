@@ -1,6 +1,7 @@
 // Havuzcu ekranı (telefon): yeni müşteri, Başlat, Bitti (yağ kg), ↑↓, iptal. İnternet giderse işlemler
 // kuyruğa girer, ekranda hemen görünür, bağlantı gelince sırayla gönderilir.
 import { adCoz } from "./anahtar.js";
+import { fisYazdir } from "./fis.js";
 import { Kuyruk, YedekKodlar, islemKimligi, yerelGorunum } from "./kuyruk.js";
 import { yeniMusteriGovdesi } from "./musteri.js";
 import { TelefonDefteri, sirraMesaji, smsLinki, whatsappLinki } from "./telefon.js";
@@ -186,7 +187,17 @@ async function yeniEkle(olay) {
     return;
   }
   kuyruk.ekle({ tur: "yeni", id: null, yol: "/api/yaghane/sira", govde: g.govde, ozet: "Yeni müşteri " + form.kasa + " kasa" });
-  durum.sonEklenen = { opId, tel: g.tel, kod: yedek ? yedek.kod : null, link: yedek ? yedek.link : null, siraNo: null };
+  durum.sonEklenen = {
+    opId,
+    tel: g.tel,
+    kod: yedek ? yedek.kod : null,
+    link: yedek ? yedek.link : null,
+    siraNo: null,
+    ad: String(form.ad || "").trim(),
+    kasa: g.govde.kasa,
+    kg: g.govde.kg,
+    zaman: Date.now(),
+  };
   if (g.tel && yedek) {
     defter().kaydet(yedek.kod, { tel: g.tel, link: yedek.link, siraNo: null });
   }
@@ -232,6 +243,7 @@ function eklendiGoster() {
   }
   $("eklendi").classList.remove("gizli");
   $("eklendi-kod").textContent = son.kod || "····";
+  $("eklendi-fis").disabled = !son.kod;
   const baslik = son.siraNo ? "✓ Sıraya eklendi · " + son.siraNo + ". sıra" : "✓ Sıraya alındı · sıra no bağlantı gelince";
   $("eklendi-baslik").textContent = baslik;
   gonderDugmeleri($("eklendi-gonder"), son.tel ? son : null, son.kod);
@@ -283,13 +295,31 @@ function siradaSatiri(s, ad, ilk, son) {
   const kap = el("div");
   kap.append(satir);
   if (durum.acik === s.id) {
-    kap.append(digerIslemler(s));
+    kap.append(digerIslemler(s, ad));
   }
   return kap;
 }
 
-function digerIslemler(s) {
+/** Fiş: ad yalnız bu cihazda çözüldüyse yazılır; fiş sunucuya bir şey göndermez. */
+function fisBas(bilgi) {
+  const v = durum.veri;
+  fisYazdir({
+    fabrika: v.yaghane.ad,
+    kisaAd: v.yaghane.kisa_ad,
+    siraNo: bilgi.siraNo,
+    kod: bilgi.kod,
+    kasa: bilgi.kasa,
+    kg: bilgi.kg,
+    zaman: bilgi.zaman,
+    ad: bilgi.ad,
+    link: bilgi.token ? window.location.origin + "/" + bilgi.token : bilgi.link,
+    site: window.location.host,
+  });
+}
+
+function digerIslemler(s, ad) {
   const kutu = el("div", "dugmeler");
+  kutu.append(dugme("Fiş yazdır", "", () => fisBas({ siraNo: s.sira_no, kod: s.kod, kasa: s.kasa, kg: s.kg, zaman: s.gelis, ad, token: s.token })));
   const kayit = defter().al(s.kod);
   if (kayit) {
     const gonderKutu = el("div", "dugmeler");
@@ -425,6 +455,12 @@ function basla() {
   $("yeni-ac").addEventListener("click", () => formAc(true));
   $("yeni-vazgec").addEventListener("click", () => formAc(false));
   $("yeni-form").addEventListener("submit", yeniEkle);
+  $("eklendi-fis").addEventListener("click", () => {
+    const son = durum.sonEklenen;
+    if (son && son.kod) {
+      fisBas(son);
+    }
+  });
   $("eklendi-kapat").addEventListener("click", () => {
     $("eklendi").classList.add("gizli");
     durum.sonEklenen = null;
