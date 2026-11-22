@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#3d5a1e">
+<title>Yağhane sırası</title>
+<link rel="stylesheet" href="/stil.css">
+<script type="module" src="/js/ciftci.js"></script>
+</head>
+<body>
+<main>
+  <p class="fabrika" id="fabrika">Yağhane sırası</p>
+  <section class="kart" id="durum-kart">
+    <p id="yukleniyor">Sıran yükleniyor…</p>
+    <div id="icerik" class="gizli">
+      <p class="ciftci-ortada"><strong id="baslik"></strong></p>
+      <p class="ciftci-ortada not" id="kod"></p>
+      <div id="sira-kutu">
+        <p class="ciftci-ortada not">Sıranız</p>
+        <p class="ciftci-no" id="no"></p>
+      </div>
+      <p class="ciftci-ortada" id="onunde"></p>
+      <div class="kart vurgu ciftci-ortada" id="saat-kutu">
+        <div class="not" id="saat-etiket">Tahmini işlenme</div>
+        <div class="deger"><strong id="saat"></strong></div>
+      </div>
+      <p class="ciftci-ortada not" id="teslim"></p>
+      <ol class="adimlar" id="adimlar">
+        <li data-adim="teslim">Teslim alındı</li>
+        <li data-adim="sirada">Sırada</li>
+        <li data-adim="isleniyor">İşleniyor</li>
+        <li data-adim="bitti">Bitti · yağ hazır</li>
+      </ol>
+    </div>
+    <div id="yok" class="gizli">
+      <p><strong>Bu sıra bulunamadı ya da süresi doldu.</strong></p>
+      <p>Fişindeki kodla bulabilirsin.</p>
+      <p><a class="dugme ana" href="/bul/">Kodumla bul</a></p>
+    </div>
+  </section>
+  <p class="not" id="guncel"></p>
+  <p class="not">Bu sayfada yalnız senin sıran görünür; adın ve başka müşterilerin bilgisi gösterilmez.
+    Sıra bilgisi yağhanenin kaydıdır; Zeytin Defteri yalnız sistemi sağlar.
+    <a href="https://zeytindefteri.tr/kvkk.html">Kişisel veriler hakkında bilgi</a></p>
+</main>
+</body>
+</html>

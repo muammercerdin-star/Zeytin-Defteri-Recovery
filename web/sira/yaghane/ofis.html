@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Yağhane paneli · ofis</title>
+<link rel="stylesheet" href="/stil.css">
+<script type="module" src="/yaghane/js/ofis.js"></script>
+</head>
+<body>
+<main class="genis">
+  <div class="ust">
+    <div>
+      <p class="fabrika">Zeytin Defteri · Yağhane paneli</p>
+      <h1 id="fabrika">Yağhane</h1>
+      <p class="not" id="tarih"></p>
+    </div>
+    <div class="dugmeler">
+      <a class="dugme" href="/yaghane/tv.html" target="_blank" rel="noopener">Ekrana yansıt (TV)</a>
+      <button type="button" class="ana" id="yeni-ac">+ Yeni müşteri</button>
+      <button type="button" id="cikis">Çıkış</button>
+    </div>
+  </div>
+  <div id="mesajlar" aria-live="polite"></div>
+  <div id="anahtar-uyari" class="uyari gizli"></div>
+
+  <form id="yeni-form" class="kart gizli" novalidate>
+    <h2>Yeni müşteri</h2>
+    <div class="ayarlar">
+      <div><label for="y-ad">İsim (isteğe bağlı, şifreli gider)</label><input id="y-ad" autocomplete="off" maxlength="40"></div>
+      <div><label for="y-kasa">Kasa</label><input id="y-kasa" inputmode="numeric" autocomplete="off"></div>
+      <div><label for="y-kg">Kilo (kantar)</label><input id="y-kg" inputmode="decimal" autocomplete="off"></div>
+    </div>
+    <p class="not">Telefon numarası ofisten girilmez: sıra linki havuzcunun telefonundan gönderilir. Telefonsuz çiftçi kodu ve kasa sayısıyla sira.zeytindefteri.tr/bul adresinden girer.</p>
+    <div id="y-hata" class="hata gizli" role="alert"></div>
+    <div id="y-sonuc" class="bilgilendirme gizli" aria-live="polite"></div>
+    <div class="dugmeler"><button type="button" id="yeni-vazgec">Kapat</button><button class="ana" type="submit">Sıraya ekle</button></div>
+  </form>
+
+  <div class="ofis-ust">
+    <div class="kutu"><div class="etiket">Bekleyen</div><div class="deger" id="bekleyen">–</div></div>
+    <div class="kutu"><div class="etiket">Bekleyen zeytin</div><div class="deger" id="bekleyen-kg">–</div></div>
+    <div class="kutu"><div class="etiket">Bugün işlenen</div><div class="deger" id="islenen">–</div></div>
+    <div class="kutu"><div class="etiket">Sıra biter</div><div class="deger" id="biter">–</div></div>
+  </div>
+
+  <h2>Bugünkü sıra</h2>
+  <div class="tablo-kutu">
+    <table>
+      <thead><tr><th>Sıra</th><th>Müşteri</th><th>Kod</th><th>Kasa · kg</th><th>Geliş</th><th>Tahmini</th><th>Durum</th><th>İşlem</th></tr></thead>
+      <tbody id="tablo"></tbody>
+    </table>
+  </div>
+
+  <h2>Ayarlar</h2>
+  <div class="ayarlar">
+    <form id="ayar-form" class="kart" novalidate>
+      <label for="kapasite">Kapasite (saatte kg)</label>
+      <input id="kapasite" inputmode="numeric" autocomplete="off">
+      <label for="baslangic">Gün başlangıcı (gece mesaisi bir önceki güne yazılır)</label>
+      <input id="baslangic" type="time" step="60">
+      <div class="dugmeler"><button class="ana" type="submit">Kaydet</button></div>
+    </form>
+    <section class="kart" id="anahtar-kart">
+      <h2>Fabrika anahtarı</h2>
+      <p class="not">Müşteri isimleri bu anahtarla bilgisayarında ve havuzcunun telefonunda şifrelenir. Sunucu isimleri okuyamaz. Anahtar giriş şifresinden ayrıdır; kaybolursa o günün isimleri okunamaz, sıra çalışmaya devam eder.</p>
+      <div id="anahtar-icerik"></div>
+    </section>
+    <section class="kart">
+      <h2>Kullanım</h2>
+      <p id="istek">Bugünkü istek sayısı: –</p>
+      <p id="giris-suresi" class="not"></p>
+      <p class="not">Çiftçiler yalnız kendi sırasını görür; isimler ve kilolar başkasına gösterilmez. Tahminler kapasiteye göre hesaplanır. Telefon numaraları sunucuya gitmez; şifreli isimler 24 saat, sıra satırları 90 gün sonra silinir.</p>
+    </section>
+  </div>
+</main>
+</body>
+</html>
