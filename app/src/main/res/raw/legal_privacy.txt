@@ -55,7 +55,7 @@ Uygulama çöktüğünde hatayı bulup düzeltebilmemiz için Google Firebase Cr
 - Google Firebase (Authentication, Cloud Firestore, Cloud Functions, Cloud Messaging, Crashlytics)
 - Google ile giriş (Android Credential Manager)
 - Supabase (anonim piyasa istatistikleri, moderasyon, internet yardımcısı ve bilgisayar bağlantısı için iletim)
-- Cloudflare (zeytindefteri.tr sitesi, Tezgâh bilgisayar ekranı, internet yardımcısı yapay zekâ modeli ve bilgisayar bağlantısı aktarıcısı)
+- Cloudflare (zeytindefteri.tr sitesi, Tezgâh bilgisayar ekranı, internet yardımcısı yapay zekâ modeli, bilgisayar bağlantısı aktarıcısı ve Yağhane sırası web hizmeti)
 - Google QR okuyucu (Google Play hizmetleri; bilgisayar bağlantısı QR kodunu okumak için)
 - Open-Meteo (hava durumu ve konum araması)
 - Türkiye il/ilçe/mahalle veri servisleri
@@ -75,10 +75,19 @@ Kayıtların, hesabın açık olduğu ve sen silmediğin sürece saklanır.
 - Çökme raporları: Firebase Crashlytics panelinde 90 gün tutulur, sonra Google tarafından silinir.
 - Tezgâh bilgisayar bağlantısı: aktarıcı Tezgâh içeriğini saklamaz; kayıtlı bilgisayarlar için tuttuğu cihaz kaydı en fazla 30 gün geçerlidir. Tarayıcıda saklanan bağlantı anahtarı, bilgisayarı telefonundan kaldırana kadar durur.
 - Lig izinleri: "Zeytin Ligi'nde Yer Al" ve "Ligde Adımla Görüneyim" kayıtları, izni geri alana ya da hesabını silene kadar tutulur.
+- Yağhane sırası (web hizmeti): Şifreli ad ve telefonun son iki hanesinin özeti 24 saat, sıra kayıtları 90 gün sonra kendiliğinden silinir; ardından yalnızca adsız günlük toplamlar kalır. Telefon numarası sunucuya hiç gönderilmez.
 Kanunen saklanması zorunlu olan bilgiler ile hizmet sağlayıcıların yedeklerinde kalan kopyalar, ilgili yükümlülük ve sağlayıcı süreçleri çerçevesinde ayrıca değerlendirilir.
 
-# 13. Çocuklar
+# 13. Yağhane sırası (web hizmeti)
+Yağhane sırası, yağhanelerin zeytin sıkım sırasını tuttuğu ve üreticinin yalnızca kendi sırasını gördüğü bir web hizmetidir (sira.zeytindefteri.tr); uygulamayı kullanmayan üreticiler de bu hizmetle karşılaşabilir. Sıraya alınan üreticilerin bilgileri bakımından veri sorumlusu yağhanedir; Zeytin Defteri hizmeti yağhane adına sağlar.
+- Üreticinin isteğe bağlı görünen adı, yağhanenin bilgisayarında ve havuzcunun telefonunda yağhaneye özel bir anahtarla şifrelenir; sunucuda (Cloudflare) yalnızca şifreli hâli durur, Zeytin Defteri ve Cloudflare okuyamaz.
+- Telefon numarası sunucuya gönderilmez; yalnızca havuzcunun telefonunda o gün durur ve sıra linki havuzcunun kendi WhatsApp'ından ya da SMS'inden gönderilir.
+- Sunucuda adsız olarak kod, sıra numarası, kasa, kilo, saatler, durum ve yağ kilosu tutulur. Sıra sayfası çerez, reklam ya da analitik kullanmaz; IP adresi saklanmaz.
+- Üretici sıra linkinde yalnızca kendi sırasını görür; başkasının adı, kodu ya da kilosu gösterilmez.
+Ayrıntılar ve silme süreleri KVKK Aydınlatma Metni'nin 10. bölümünde ve yukarıdaki "Saklama ve silme" bölümündedir.
+
+# 14. Çocuklar
 Zeytin Defteri tarımsal üretim kayıtları için tasarlanmıştır ve çocuklara yönelik değildir.
 
-# 14. Değişiklikler
+# 15. Değişiklikler
 Bu politika güncellendiğinde sürüm numarası ve tarih değişir; önemli değişiklikler uygulama içinde duyurulur.
