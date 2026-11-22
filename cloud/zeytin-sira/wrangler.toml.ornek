@@ -1,0 +1,33 @@
+# Yağhane sırası — örnek Wrangler ayarı. Kopyala: cp wrangler.toml.ornek wrangler.toml
+# Sonra yalnız database_id satırını kendi D1 kimliğinle değiştir (KURULUM.md, adım 2).
+# Bu dosyada gizli bilgi yok. GIZLI_TUZ ayrı bir "secret" olarak girilir, buraya YAZILMAZ.
+name = "zeytin-sira"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+# Yalnız kendi alt alan adı: Web Tezgâh'ın (web.zeytindefteri.tr) Pages projesine dokunulmaz.
+workers_dev = false
+routes = [{ pattern = "sira.zeytindefteri.tr", custom_domain = true }]
+
+# Sayfalar statik dosya: Worker çalışmadan sunulur (ücretsiz ve sınırsız). Yalnız /api/* Worker'a gelir.
+# Bilinmeyen yol (çiftçi linki /<token>) çiftçi sayfasına (index.html) düşer.
+[assets]
+directory = "../../web/sira"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "zeytin-sira"
+database_id = "BURAYA_D1_KIMLIGI"
+
+# Saatlik temizlik: şifreli ad ve elle giriş özeti 24 saat, satırlar 90 gün sonra silinir.
+[triggers]
+crons = ["17 * * * *"]
+
+[vars]
+SITE_ORIGIN = "https://sira.zeytindefteri.tr"
+
+# Kişisel veri loglanmaz: gözlem kayıtları kapalı.
+[observability]
+enabled = false

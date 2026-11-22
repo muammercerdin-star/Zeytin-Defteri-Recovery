@@ -462,8 +462,14 @@ async function durumIslemi(request, env, simdi, id, islem) {
       return { durum: 200, sonuc: { id, durum: "bitti", yag_kg: yag } };
     }
     if (islem === "iptal") {
+      // Çevrimdışı kuyruktan gelen iptal, havuzcunun o an gördüğü durumu taşır ("beklenen"). Bu arada başka
+      // cihaz durumu değiştirdiyse (ör. ofis başlattı) iptal uygulanmaz: sunucu kazanır, havuzcuya söylenir.
+      let kosul = "durum IN " + AKTIF;
+      if (veri.beklenen === "sirada" || veri.beklenen === "isleniyor") {
+        kosul = "durum = '" + veri.beklenen + "'";
+      }
       const r = await env.DB.prepare(
-        "UPDATE sira SET durum = 'iptal', bitis = ? WHERE id = ? AND yaghane_id = ? AND durum IN " + AKTIF
+        "UPDATE sira SET durum = 'iptal', bitis = ? WHERE id = ? AND yaghane_id = ? AND " + kosul
       ).bind(simdi, id, o.yaghane_id).run();
       if (r.meta.changes !== 1) {
         await cakisma(env.DB, o, id);

@@ -321,7 +321,11 @@ const m = [];
   esit((await istek("GET", "/api/sira/" + m[3].token)).body.onunde, 1, "taşınınca önündeki azalır");
   esit((await istek("GET", "/api/sira/" + m[3].token)).body.sira_no, 4, "fiş numarası değişmez");
   esit((await istek("POST", "/api/yaghane/sira/" + m[3].id + "/tasi", { op_id: op(), yon: "yan" }, H)).status, 400, "geçersiz yön");
-  const ipt = await istek("POST", "/api/yaghane/sira/" + m[2].id + "/iptal", { op_id: op() }, O);
+  // çevrimdışı iptal: havuzcu "sırada" görmüştü, bu arada ofis başlattı → iptal uygulanmaz
+  await istek("POST", "/api/yaghane/sira/" + m[2].id + "/baslat", { op_id: op() }, O);
+  const gec = await istek("POST", "/api/yaghane/sira/" + m[2].id + "/iptal", { op_id: op(), beklenen: "sirada" }, H);
+  esit(gec.status, 409, "beklenen durum değiştiyse iptal uygulanmaz (sunucu kazanır)");
+  const ipt = await istek("POST", "/api/yaghane/sira/" + m[2].id + "/iptal", { op_id: op(), beklenen: "isleniyor" }, O);
   esit(ipt.status, 200, "iptal");
   esit((await istek("POST", "/api/yaghane/sira/" + m[2].id + "/baslat", { op_id: op() }, O2)).status, 404, "başka fabrika bu satıra dokunamaz");
   const liste = await istek("GET", "/api/yaghane/gun", undefined, O);
