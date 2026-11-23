@@ -98,6 +98,11 @@ def render():
     play = config['PLAY_URL']
     if play != 'https://play.google.com/store/apps/details?id=com.zeytindefteri.app':
         raise ValueError('PLAY_URL yalnız Zeytin Defteri Play sayfası olabilir')
+    # Yağhane sırası (sira.zeytindefteri.tr) ayrı bir web hizmetidir; yalnız işletmeler sayfası bağlantı verir.
+    sira = config['SIRA_URL'].rstrip('/')
+    parsed_sira = urlsplit(sira)
+    if parsed_sira.scheme != 'https' or not parsed_sira.netloc or parsed_sira.path or parsed_sira.query or parsed_sira.fragment:
+        raise ValueError('SIRA_URL yalnız https://alan-adi biçiminde olmalı')
     esc = html.escape
     email = esc(config['CONTACT_EMAIL'])
     links = [('gizlilik.html', 'Gizlilik'), ('kvkk.html', 'KVKK'), ('kosullar.html', 'Kullanım Koşulları'),
@@ -115,6 +120,10 @@ def render():
         '{{SITE_BASE}}': esc(base),
         '{{WEB_URL}}': esc(web),
         '{{PLAY_URL}}': esc(play),
+        '{{SIRA_URL}}': esc(sira),
+        '{{YAGHANE_MAILTO}}': mailto('Yağhane sırası başvurusu',
+                                     'Merhaba,\nYağhanem için Yağhane sırası hizmetini kullanmak istiyorum.\n\n'
+                                     'Yağhane adı:\nİlçe:\nGünlük ortalama müşteri:\nTelefonum:\n'),
         '{{HABER_MAILTO}}': mailto('Zeytin Defteri erken erişim',
                                    'Merhaba,\nZeytin Defteri erken erişimine katılmak istiyorum.\n\n'
                                    'Adım:\nİlçem:\nGoogle Play e-postam:\n'),

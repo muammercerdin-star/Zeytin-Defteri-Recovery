@@ -102,6 +102,9 @@ public class SiteLegalOracle {
                 if address == web:
                     assert filename in ('index.html', 'isletmeler.html'), (filename, address)
                     continue
+                if address in (config['SIRA_URL'] + '/yaghane/', config['SIRA_URL'] + '/bul/'):
+                    assert filename == 'isletmeler.html', (filename, address)
+                    continue
                 if address == config['PLAY_URL']:
                     assert filename in ('index.html', 'isletmeler.html'), (filename, address)
                     continue

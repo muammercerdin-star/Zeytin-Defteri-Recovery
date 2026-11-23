@@ -104,8 +104,8 @@
  </section>
  <section class="tile tile-light" aria-labelledby="isletme-title">
   <h2 id="isletme-title">İşletmeler için</h2>
-  <p>Zeytin alan tüccarlar için Tezgâh, büyük ekranda.</p>
-  <div class="actions"><a class="btn btn-primary btn-small" href="/isletmeler.html">İşletmeler</a><a class="btn btn-outline btn-small" href="{{WEB_URL}}">Web'i aç</a></div>
+  <p>Tüccarlar için Tezgâh, büyük ekranda. Yağhaneler için Yağhane sırası: üretici sırasını telefonundan görür.</p>
+  <div class="actions"><a class="btn btn-primary btn-small" href="/isletmeler.html">İşletmeler</a><a class="btn btn-outline btn-small" href="/isletmeler.html#yaghane">Yağhane sırası</a></div>
   <div class="laptop" aria-hidden="true"><div class="laptop-screen"><span class="bar w60"></span><span class="bar w80"></span><span class="bar w70"></span><span class="qr"></span></div><div class="laptop-base"></div></div>
  </section>
 </div>

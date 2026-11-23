@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0B1D28">
 <title>İşletmeler için · Zeytin Defteri</title>
-<meta name="description" content="Zeytin alan tüccarlar için Tezgâh: alımları, kasaları ve ödemeleri telefondan kaydedin, bilgisayarda büyük ekranda görün. Yağhaneler için hazırlık sürüyor.">
+<meta name="description" content="Zeytin alan tüccarlar için Tezgâh, yağhaneler için Yağhane sırası: üretici sırasını telefonundan görür, yağhanede kalabalık ve telefon trafiği azalır.">
 <meta property="og:title" content="İşletmeler için · Zeytin Defteri">
 <meta property="og:description" content="Tezgâhınız, büyük ekranda. Zeytin alımlarınızı tek bakışta görün.">
 <meta property="og:type" content="website">
@@ -87,12 +87,17 @@
 </section>
 
 <section class="band" id="yaghane" aria-labelledby="yaghane-title">
- <div class="tile tile-light tile-wide">
-  <p class="chip chip-dark">Hazırlanıyor</p>
-  <h2 id="yaghane-title">Yağhaneler için</h2>
-  <p>Zeytin kabulü, randıman ve sıra takibi için hazırlık yapıyoruz. Yağhaneniz varsa ihtiyaçlarınızı bize yazın; modülü sizinle birlikte şekillendirelim.</p>
-  <div class="actions"><a class="btn btn-primary" href="{{ISLETME_MAILTO}}">Ön kayıt olun</a></div>
+ <p class="eyebrow">YAĞHANELER İÇİN · YAĞHANE SIRASI</p>
+ <h2 id="yaghane-title">Kuyruk telefonda, kalabalık değil.</h2>
+ <p class="sub">Zeytini tartın, sıraya alın; üretici sırasını kendi telefonundan izlesin. Kurulum yok, uygulama yok.</p>
+ <div class="feature-grid">
+  <article><h3>Kayıt 15 saniye</h3><p>Kasa ve kantar kilosunu girin; ekranda çıkan QR'ı üretici kendi telefonuyla okutur. Numara yazmak gerekmez.</p></article>
+  <article><h3>Havuzcuya tek dokunuş</h3><p>Başlat ve Bitti, havuz başındaki telefondan. İnternet kesilse de çalışır, bağlanınca gönderir.</p></article>
+  <article><h3>“Sıram ne zaman?” telefonu biter</h3><p>Üretici sıra numarasını, önündeki kişi sayısını ve tahmini saati görür; yağı hazır olunca da öğrenir.</p></article>
+  <article><h3>İsimler şifreli</h3><p>Üretici adı yalnız yağhanenizin cihazlarında okunur; telefon numarası sunucuya hiç gitmez. Ayrıntılar <a href="/kvkk.html#bolum-10">KVKK</a> sayfasında.</p></article>
  </div>
+ <div class="actions"><a class="btn btn-primary" href="{{SIRA_URL}}/yaghane/">Yağhane girişi</a><a class="btn btn-outline" href="{{SIRA_URL}}/bul/">Sıranı kodla bul</a><a class="btn btn-outline" href="{{YAGHANE_MAILTO}}">Yağhanem için başvur</a></div>
+ <p class="fine">Pilot sezonda ücretsiz. Hesabınızı birlikte açar, kurulumu yağhanenizde yaparız.</p>
 </section>
 
 <section class="band band-soft" aria-labelledby="uretici-title">
