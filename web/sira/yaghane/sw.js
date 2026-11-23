@@ -1,6 +1,6 @@
 // Havuzcu ekranı internet yokken yeniden açılabilsin diye yalnız sayfa dosyaları önbellekte tutulur.
 // API (/api/*) hiçbir zaman önbelleğe alınmaz. Sürüm değişince eski önbellek silinir.
-const SURUM = "zs-4";
+const SURUM = "zs-5";
 const DOSYALAR = [
   "/stil.css",
   "/yaghane/",

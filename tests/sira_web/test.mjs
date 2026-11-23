@@ -296,6 +296,16 @@ const SUNUCU_AD_DESENI = /^1\.[A-Za-z0-9_-]{24,150}$/;
   check(!readFileSync(join(web, "yaghane/havuzcu.html"), "utf8").includes("rapor"), "havuzcu ekranında kayıt yok");
 }
 
+// ---------------------------------------------------------------- ortak tasarım dili (zeytindefteri.tr)
+{
+  const css = readFileSync(join(web, "stil.css"), "utf8");
+  check(css.includes("--lacivert: #0B1D28") && css.includes("--yesil-dolu: #6CC24A"), "site renkleri");
+  check(/button\.ana, \.dugme\.ana \{ background: var\(--yesil-dolu\)/.test(css), "ana düğme sitedeki yeşil");
+  for (const f of ["index.html", "bul/index.html", "yaghane/index.html", "yaghane/havuzcu.html", "yaghane/ofis.html"]) {
+    check(readFileSync(join(web, f), "utf8").includes('class="marka-cubuk"'), "lacivert üst çubuk: " + f);
+  }
+}
+
 // ---------------------------------------------------------------- yedek kodlar
 {
   const depo = new Depo();
@@ -364,7 +374,8 @@ const SUNUCU_AD_DESENI = /^1\.[A-Za-z0-9_-]{24,150}$/;
     const t = readFileSync(h, "utf8");
     check(!/<script(?![^>]*src="\/)/.test(t.replace(/<script type="module" src="\/[^"]+"><\/script>/g, "")), "satır içi script yok: " + h);
     check(!/style="/.test(t), "satır içi stil yok (CSP): " + h);
-    check(!/https?:\/\/(?!zeytindefteri\.tr\/kvkk)/.test(t.replace(/sira\.zeytindefteri\.tr/g, "")), "dış kaynak yok: " + h);
+    // Yalnız iki bağlantıya izin var: KVKK sayfası ve üst çubuktaki marka (zeytindefteri.tr ana sayfası). Kaynak yüklenmez.
+    check(!/https?:\/\/(?!zeytindefteri\.tr\/kvkk|zeytindefteri\.tr\/" rel="noopener")/.test(t.replace(/sira\.zeytindefteri\.tr/g, "")), "dış kaynak yok: " + h);
     check(/<html lang="tr">/.test(t), "Türkçe sayfa: " + h);
   }
   for (const f of jsler) {
