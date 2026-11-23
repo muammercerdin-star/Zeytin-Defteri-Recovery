@@ -441,6 +441,35 @@ const m = [];
   esit((await istek("POST", "/api/yaghane/sira/" + id + "/yag", { op_id: op(), yag_kg: 50 }, OF2)).status, 404, "başka fabrika yağ yazamaz");
   const gun = await istek("GET", "/api/yaghane/gun", undefined, HV);
   esit(gun.body.ozet.yag_kg, 50, "günlük yağ toplamı sonradan yazılanı sayar");
+
+  // kayıtlar (rapor): yalnız ofis, isimsiz gün toplamları; 90 günden eskisi gun_ozet'ten
+  const of1 = await girisYap("ofis1", "ofis-sifresi-1");
+  const OF1 = { Cookie: of1.cerez, Origin: SITE };
+  const iptalEdilen = await istek("POST", "/api/yaghane/sira", { op_id: op(), kasa: 2, kg: 100 }, HV);
+  await istek("POST", "/api/yaghane/sira/" + iptalEdilen.body.id + "/iptal", { op_id: op() }, HV);
+  await istek("POST", "/api/yaghane/sira", { op_id: op(), kasa: 4, kg: 250 }, HV);
+  esit((await istek("GET", "/api/yaghane/rapor", undefined, HV)).status, 403, "havuzcu kayıtları göremez");
+  esit((await istek("GET", "/api/yaghane/rapor")).status, 401, "oturumsuz kayıt yok");
+  const bugun = await istek("GET", "/api/yaghane/rapor", undefined, OF1);
+  esit(bugun.status, 200, "ofis bugünün kaydını alır");
+  esit(bugun.body.gunler.length, 1, "bugün tek gün");
+  const g0 = bugun.body.gunler[0];
+  esit([g0.gelen, g0.iptal, g0.gelen_kg, g0.islenen, g0.islenen_kg, g0.yag_kg, g0.yagli_kg, g0.baslayan], [2, 1, 550, 1, 300, 50, 300, 1], "gün toplamı: gelen, iptal, kilo, işlenen, yağ, bekleme sayısı");
+  check(g0.ozet === false && g0.bekleme_ms >= 0, "canlı gün");
+  const json1 = JSON.stringify(bugun.body);
+  check(!/kod|token|ad_sifreli|bul_/.test(json1), "kayıtta kod, token, ad yok: " + json1.slice(0, 120));
+  const sezon = await istek("GET", "/api/yaghane/rapor?bas=2026-09-01&son=" + bugun.body.bugun, undefined, OF1);
+  esit(sezon.status, 200, "sezon aralığı");
+  const eskiGun = sezon.body.gunler.find((g) => g.gun === "2026-11-22");
+  check(eskiGun && eskiGun.ozet === true && eskiGun.islenen === 1 && eskiGun.islenen_kg === 620 && eskiGun.yag_kg === 102 && eskiGun.gelen === null, "silinen günler isimsiz gün toplamından gelir: " + JSON.stringify(eskiGun));
+  esit(sezon.body.toplam.islenen_kg, 920, "sezon toplamı canlı + eski günler");
+  esit(sezon.body.gunler[0].gun, bugun.body.bugun, "yeni gün üstte");
+  const baska = await istek("GET", "/api/yaghane/rapor?bas=2026-09-01&son=" + bugun.body.bugun, undefined, OF2);
+  check(!baska.body.gunler.some((g) => g.gun === "2026-11-22" && g.islenen_kg === 620), "başka fabrikanın kayıtları görünmez");
+  esit((await istek("GET", "/api/yaghane/rapor?bas=2026-13-01&son=2026-12-01", undefined, OF1)).status, 400, "geçersiz tarih");
+  esit((await istek("GET", "/api/yaghane/rapor?bas=2026-12-01&son=2026-11-01", undefined, OF1)).status, 400, "ters aralık");
+  esit((await istek("GET", "/api/yaghane/rapor?bas=2025-01-01&son=2026-12-01", undefined, OF1)).status, 400, "400 günden uzun aralık");
+  esit((await istek("GET", "/api/yaghane/rapor?bas=2026-11-01'--&son=2026-12-01", undefined, OF1)).status, 400, "biçim dışı tarih reddedilir");
   simdi = T;
 }
 

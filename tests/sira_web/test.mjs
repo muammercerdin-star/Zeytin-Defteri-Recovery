@@ -13,6 +13,7 @@ const K = await import(join(js, "kuyruk.js"));
 const M = await import(join(js, "musteri.js"));
 globalThis.document = globalThis.document || undefined;
 const F = await import(join(js, "fis.js"));
+const R = await import(join(js, "rapor.js"));
 
 let n = 0;
 let bad = 0;
@@ -261,6 +262,38 @@ const SUNUCU_AD_DESENI = /^1\.[A-Za-z0-9_-]{24,150}$/;
   check(of.includes('dugme("QR"'), "sıradaki satırda QR düğmesi");
   check(/window\.location\.origin \+ "\/" \+ bilgi\.token/.test(of), "QR çiftçi linkini taşır (ad ya da telefon taşımaz)");
   check(/export function qrTuvali/.test(readFileSync(join(js, "fis.js"), "utf8")), "QR çizimi fiş ile ortak");
+}
+
+// ---------------------------------------------------------------- ofis kayıtları
+{
+  esit(R.aralikHesapla("2026-11-23", "bugun"), { bas: "2026-11-23", son: "2026-11-23" }, "bugün");
+  esit(R.aralikHesapla("2026-11-23", "hafta"), { bas: "2026-11-17", son: "2026-11-23" }, "son 7 gün");
+  esit(R.aralikHesapla("2026-03-01", "ay"), { bas: "2026-01-31", son: "2026-03-01" }, "son 30 gün ay sınırı");
+  esit(R.aralikHesapla("2026-11-23", "sezon").bas, "2026-09-01", "sezon eylülde başlar");
+  esit(R.aralikHesapla("2027-01-15", "sezon").bas, "2026-09-01", "ocakta önceki yılın sezonu");
+  esit(R.sureYaz(0, 0), "–", "bekleme yok");
+  esit(R.sureYaz(3 * 35 * 60000, 3), "35 dk", "ortalama dakika");
+  esit(R.sureYaz(80 * 60000, 1), "1 sa 20 dk", "saat ve dakika");
+  const veri = {
+    bas: "2026-11-22", son: "2026-11-23",
+    gunler: [
+      { gun: "2026-11-23", ozet: false, gelen: 2, iptal: 1, gelen_kg: 550, islenen: 1, islenen_kg: 300, yag_kg: 50, yagli_kg: 300, baslayan: 1, bekleme_ms: 1800000 },
+      { gun: "2026-11-22", ozet: true, gelen: null, iptal: null, gelen_kg: null, islenen: 1, islenen_kg: 620, yag_kg: 102.5, yagli_kg: 620, baslayan: 0, bekleme_ms: 0 },
+    ],
+    toplam: { gun_sayisi: 2, gelen: 2, iptal: 1, gelen_kg: 550, islenen: 2, islenen_kg: 920, yag_kg: 152.5, yagli_kg: 920, baslayan: 1, bekleme_ms: 1800000 },
+  };
+  const csv = R.csvOlustur(veri);
+  check(csv.startsWith("\ufeffGün;Gelen müşteri;"), "CSV Excel için BOM ve noktalı virgül");
+  const satirlar = csv.trim().split("\r\n");
+  esit(satirlar.length, 4, "başlık + 2 gün + toplam");
+  esit(satirlar[1], "2026-11-23;2;550;1;300;50;6;30;1", "gün satırı");
+  esit(satirlar[2], "2026-11-22;;;1;620;102,5;6;;", "eski gün: gelen ve bekleme boş, ondalık virgül");
+  check(satirlar[3].startsWith("TOPLAM;2;550;2;920;152,5;6"), "toplam satırı: " + satirlar[3]);
+  check(!/kod|token|ad/i.test(satirlar.slice(1).join("")), "CSV'de isim, kod yok");
+  const html = readFileSync(join(web, "yaghane/ofis.html"), "utf8");
+  check(html.includes('id="rapor-aralik"') && html.includes('id="rapor-tablo"') && html.includes('id="rapor-indir"'), "ofis sayfasında Kayıtlar bölümü");
+  check(readFileSync(join(js, "ofis.js"), "utf8").includes("raporKur("), "ofis kayıtları kurar");
+  check(!readFileSync(join(web, "yaghane/havuzcu.html"), "utf8").includes("rapor"), "havuzcu ekranında kayıt yok");
 }
 
 // ---------------------------------------------------------------- yedek kodlar

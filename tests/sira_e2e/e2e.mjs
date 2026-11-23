@@ -269,6 +269,17 @@ try {
   await ciftci.waitForSelector("#mesaj:not(.gizli)");
   check(true, "yanlış son 2 haneyle bulunmaz");
 
+  // ------------------------------------------------ ofis kayıtları
+  await ofis.click("#rapor-aralik button[data-tur=hafta]");
+  await ofis.waitForFunction(() => document.querySelector("#rapor-aralik button[data-tur=hafta]").getAttribute("aria-pressed") === "true" && document.querySelectorAll("#rapor-tablo tr").length >= 1, null, { timeout: 8000 });
+  const ozet = await ofis.textContent("#rapor-ozet");
+  check(ozet.includes("Gelen müşteri") && ozet.includes("64 kg") && ozet.includes("Randıman"), "kayıtlar: gelen, yağ, randıman: " + ozet);
+  const raporMetni = await ofis.textContent("#rapor-tablo");
+  check(!raporMetni.includes("Örnek Üretici"), "kayıtlarda isim yok");
+  const [indirme] = await Promise.all([ofis.waitForEvent("download"), ofis.click("#rapor-indir")]);
+  check(/kayitlar-\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}\.csv$/.test(indirme.suggestedFilename()), "CSV indirilir: " + indirme.suggestedFilename());
+  await ofis.locator(".rapor-kart").screenshot({ path: cikti + "/9-kayitlar.png" });
+
   // ------------------------------------------------ ofiste kayıt sonrası büyük QR
   await ofis.click("#yeni-ac");
   await ofis.fill("#y-kasa", "3");

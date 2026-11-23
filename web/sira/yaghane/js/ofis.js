@@ -1,8 +1,9 @@
-// Ofis paneli (geniş ekran): aynı liste, kapasite ve gün başlangıcı, fabrika anahtarı, TV'ye yansıtma.
+// Ofis paneli (geniş ekran): aynı liste, kayıtlar (gün/hafta/ay/sezon), kapasite ve gün başlangıcı, fabrika anahtarı, TV'ye yansıtma.
 import { adCoz, iz, kisalt, parolaYaz, yeniSir } from "./anahtar.js";
 import { fisYazdir, qrTuvali } from "./fis.js";
 import { islemKimligi } from "./kuyruk.js";
 import { yeniMusteriGovdesi } from "./musteri.js";
+import { raporKur } from "./rapor.js";
 import { qrcode } from "./vendor/qrcode.js";
 import { anahtariKaydet, api, cihazAnahtari, cikisYap, depo, dugme, el, kg, parolaKaydet, qrAnahtariniAl, randiman, saat } from "./ortak.js";
 
@@ -405,6 +406,7 @@ function basla() {
   });
   $("yeni-vazgec").addEventListener("click", () => $("yeni-form").classList.add("gizli"));
   $("yeni-form").addEventListener("submit", yeniEkle);
+  raporKur(() => (durum.veri ? durum.veri.yaghane.kisa_ad : ""));
   $("qr-kapat").addEventListener("click", qrKapat);
   $("qr-fis").addEventListener("click", () => {
     if (durum.qrBilgi) {

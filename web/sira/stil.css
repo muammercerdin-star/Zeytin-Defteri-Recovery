@@ -57,6 +57,11 @@ input { font: inherit; font-size: 20px; width: 100%; min-height: 48px; padding: 
 .yag-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 0 12px 54px; }
 .yag-form input { flex: 0 0 130px; width: 130px; }
 .yag-form .hata { flex: 1 1 100%; margin: 0; }
+/* Ofis kayıtları: aralık düğmeleri ve 6 özet kutusu. */
+.ofis-ust.rapor-ust { grid-template-columns: repeat(6, 1fr); margin: 12px 0; }
+#rapor-aralik button[aria-pressed="true"] { background: var(--yesil); border-color: var(--yesil); color: #fff; }
+@media (max-width: 1000px) { .ofis-ust.rapor-ust { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .ofis-ust.rapor-ust { grid-template-columns: repeat(2, 1fr); } }
 .durum { display: inline-block; font-size: 14px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
 .durum.sirada { background: #eef0f4; color: #33415c; }
 .durum.isleniyor { background: var(--turuncu-acik); color: var(--turuncu); }

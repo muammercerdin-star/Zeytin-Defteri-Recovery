@@ -61,6 +61,20 @@
     </table>
   </div>
 
+  <h2>Kayıtlar</h2>
+  <section class="kart rapor-kart" aria-label="Kayıtlar">
+    <div class="dugmeler" id="rapor-aralik" role="group" aria-label="Kayıt aralığı"></div>
+    <div class="ofis-ust rapor-ust" id="rapor-ozet" aria-live="polite"></div>
+    <div class="tablo-kutu">
+      <table>
+        <thead><tr><th>Gün</th><th>Gelen</th><th>Gelen zeytin</th><th>İşlenen</th><th>Yağ</th><th>Randıman</th><th>Ort. bekleme</th><th>İptal</th></tr></thead>
+        <tbody id="rapor-tablo"></tbody>
+      </table>
+    </div>
+    <p class="not" id="rapor-not"></p>
+    <div class="dugmeler"><button type="button" id="rapor-indir">Excel'e indir (CSV)</button></div>
+  </section>
+
   <h2>Ayarlar</h2>
   <div class="ayarlar">
     <form id="ayar-form" class="kart" novalidate>

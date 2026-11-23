@@ -587,6 +587,73 @@ async function anahtarIzi(request, env, simdi) {
   return json({ anahtar_izi: veri.iz });
 }
 
+// ===================================================================== KAYITLAR (yalnız ofis; isimsiz gün toplamları)
+
+const GUN_DESENI = /^\d{4}-\d{2}-\d{2}$/;
+const RAPOR_EN_COK_GUN = 400;
+
+function gunSayisi(bas, son) {
+  return Math.round((Date.parse(son + "T00:00:00Z") - Date.parse(bas + "T00:00:00Z")) / GUN_MS) + 1;
+}
+
+/** Ofis kayıtları: gün gün gelen, işlenen, kilo, yağ, bekleme. Ad, kod, token yoktur; 90 günden eskisi gun_ozet'ten. */
+async function rapor(request, env, simdi) {
+  const o = await oturumGerekli(request, env, simdi);
+  ofisGerekli(o);
+  const url = new URL(request.url);
+  const bugun = yaghaneGunu(simdi, o.gun_baslangic);
+  const son = url.searchParams.get("son") || bugun;
+  const bas = url.searchParams.get("bas") || son;
+  if (!GUN_DESENI.test(bas) || !GUN_DESENI.test(son) || Number.isNaN(Date.parse(bas)) || Number.isNaN(Date.parse(son))) {
+    throw new Hata(400, "GECERSIZ_ISTEK", "Tarihler YYYY-AA-GG biçiminde olmalı.");
+  }
+  const n = gunSayisi(bas, son);
+  if (n < 1 || n > RAPOR_EN_COK_GUN) {
+    throw new Hata(400, "GECERSIZ_ISTEK", "Aralık 1 ile " + RAPOR_EN_COK_GUN + " gün arasında olmalı.");
+  }
+  const sql =
+    "SELECT gun, " +
+    "SUM(CASE WHEN durum != 'iptal' THEN 1 ELSE 0 END) AS gelen, " +
+    "SUM(CASE WHEN durum = 'iptal' THEN 1 ELSE 0 END) AS iptal, " +
+    "SUM(CASE WHEN durum != 'iptal' THEN kg ELSE 0 END) AS gelen_kg, " +
+    "SUM(CASE WHEN durum = 'bitti' THEN 1 ELSE 0 END) AS islenen, " +
+    "SUM(CASE WHEN durum = 'bitti' THEN kg ELSE 0 END) AS islenen_kg, " +
+    "SUM(CASE WHEN durum = 'bitti' AND yag_kg IS NOT NULL THEN yag_kg ELSE 0 END) AS yag_kg, " +
+    "SUM(CASE WHEN durum = 'bitti' AND yag_kg IS NOT NULL THEN kg ELSE 0 END) AS yagli_kg, " +
+    "SUM(CASE WHEN baslama IS NOT NULL AND durum != 'iptal' THEN 1 ELSE 0 END) AS baslayan, " +
+    "SUM(CASE WHEN baslama IS NOT NULL AND durum != 'iptal' THEN baslama - gelis ELSE 0 END) AS bekleme_ms " +
+    "FROM sira WHERE yaghane_id = ? AND gun >= ? AND gun <= ? GROUP BY gun";
+  const canli = (await env.DB.prepare(sql).bind(o.yaghane_id, bas, son).all()).results || [];
+  const eski = (await env.DB.prepare(
+    "SELECT gun, toplam_kg, toplam_yag_kg, islem_sayisi FROM gun_ozet WHERE yaghane_id = ? AND gun >= ? AND gun <= ?"
+  ).bind(o.yaghane_id, bas, son).all()).results || [];
+  const gunler = new Map();
+  for (const g of eski) {
+    gunler.set(g.gun, {
+      gun: g.gun, ozet: true, gelen: null, iptal: null, gelen_kg: null,
+      islenen: Number(g.islem_sayisi), islenen_kg: Number(g.toplam_kg), yag_kg: Number(g.toplam_yag_kg),
+      yagli_kg: Number(g.toplam_yag_kg) > 0 ? Number(g.toplam_kg) : 0, baslayan: 0, bekleme_ms: 0,
+    });
+  }
+  for (const g of canli) {
+    const satir = { gun: g.gun, ozet: false };
+    for (const k of ["gelen", "iptal", "gelen_kg", "islenen", "islenen_kg", "yag_kg", "yagli_kg", "baslayan", "bekleme_ms"]) {
+      satir[k] = Number(g[k] || 0);
+    }
+    gunler.set(g.gun, satir);
+  }
+  const liste = [...gunler.values()].sort((a, b) => (a.gun < b.gun ? 1 : -1));
+  const toplam = { gun_sayisi: liste.length, gelen: 0, iptal: 0, gelen_kg: 0, islenen: 0, islenen_kg: 0, yag_kg: 0, yagli_kg: 0, baslayan: 0, bekleme_ms: 0 };
+  for (const g of liste) {
+    for (const k of Object.keys(toplam)) {
+      if (k !== "gun_sayisi") {
+        toplam[k] += Number(g[k] || 0);
+      }
+    }
+  }
+  return json({ bas, son, bugun, gunler: liste, toplam });
+}
+
 // ===================================================================== ÇİFTÇİ (yalnız token; başkasının hiçbir bilgisi yok)
 
 async function tokenSatiri(db, token, simdi) {
@@ -710,6 +777,9 @@ export async function apiIstegi(request, env, ctx, simdi) {
     }
     if (yol === "/api/yaghane/yedek" && yontem === "POST") {
       return await kodYedegi(request, env, simdi);
+    }
+    if (yol === "/api/yaghane/rapor" && yontem === "GET") {
+      return await rapor(request, env, simdi);
     }
     if (yol === "/api/yaghane/ayar" && yontem === "PUT") {
       return await ayarDegistir(request, env, simdi);
