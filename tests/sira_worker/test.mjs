@@ -9,7 +9,7 @@ import { D1 } from "./d1.mjs";
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const dir = join(root, "cloud/zeytin-sira");
 const { handle } = await import(join(dir, "worker.js"));
-const { tahminEt, yukariYuvarla, gosterilenSaat, onundekiler, kalanKg } = await import(join(dir, "src/tahmin.mjs"));
+const { tahminEt, yukariYuvarla, gosterilenSaat, gosterilenGun, gunOneki, onundekiler, kalanKg } = await import(join(dir, "src/tahmin.mjs"));
 const { yaghaneGunu, saatDakika, oncekiGun, SAAT, DAKIKA, GUN_MS } = await import(join(dir, "src/zaman.mjs"));
 const { sifreOzeti, sifreDogru, yeniKod, yeniToken, tokenBicimi, PBKDF2_EN_COK } = await import(join(dir, "src/guvenlik.mjs"));
 const { temizle } = await import(join(dir, "src/temizlik.mjs"));
@@ -59,6 +59,17 @@ esit(oncekiGun("2026-03-01"), "2026-02-28", "önceki gün");
   esit(yukariYuvarla(Date.parse("2026-11-22T08:01:00Z")), Date.parse("2026-11-22T08:10:00Z"), "10 dakikaya yukarı");
   esit(yukariYuvarla(Date.parse("2026-11-22T08:10:00Z")), Date.parse("2026-11-22T08:10:00Z"), "tam saat değişmez");
   esit(gosterilenSaat(T + 23 * DAKIKA), "11:30", "çiftçiye gösterilen yuvarlanmış saat");
+  // Çok günlü tahmin: 3 gün biriken sırada "12:00" değil "Perşembe 12:00" demeli (T = 22 Kasım Pazar).
+  esit(gunOneki(T + 2 * SAAT, T), "", "aynı gün: gün eki yok");
+  esit(gunOneki(T + 20 * SAAT, T), "yarın", "ertesi gün: yarın");
+  esit(gunOneki(T + 44 * SAAT, T), "Salı", "iki gün sonra hafta günü");
+  esit(gunOneki(T + 4 * GUN_MS, T), "Perşembe", "dört gün sonra hafta günü");
+  esit(gunOneki(T + 9 * GUN_MS, T), "1 Ara", "bir haftadan uzak: tarih");
+  esit(gosterilenGun(T + 2 * SAAT, T), "13:00", "aynı gün yalnız saat");
+  esit(gosterilenGun(T + 20 * SAAT + 23 * DAKIKA, T), "yarın 07:30", "ertesi gün: gün + saat");
+  // Gece: Pazar 23:00'te tahmin Pazartesi 01:00 ise çiftçiye "yarın" demeli (takvim günü, yağhane günü değil).
+  const gece = Date.parse("2026-11-22T20:00:00Z");
+  esit(gunOneki(Date.parse("2026-11-22T22:00:00Z"), gece), "yarın", "gece yarısını aşan tahmin yarın");
   const gecikmis = [{ id: 9, durum: "isleniyor", konum: 1, kg: 100, baslama: T - 2 * SAAT }];
   esit(kalanKg(gecikmis[0], kap, T), 0, "süresi geçen işlemin kalanı eksiye düşmez");
   esit(tahminEt(gecikmis, 0, T).byId[9].bitis, T, "geçmiş bitiş şimdiye çekilir; kapasite 0 ise varsayılan");

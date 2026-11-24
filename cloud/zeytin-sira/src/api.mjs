@@ -26,7 +26,7 @@ import {
   yeniKod,
   yeniToken,
 } from "./guvenlik.mjs";
-import { gosterilenSaat, onundekiler, tahminEt } from "./tahmin.mjs";
+import { gosterilenGun, gosterilenSaat, onundekiler, tahminEt } from "./tahmin.mjs";
 import { GUN_MS, gecerliSaat, oncekiGun, saatDakika, utcGunu, yaghaneGunu } from "./zaman.mjs";
 
 const GOVDE_SINIRI = 4096;
@@ -246,10 +246,10 @@ async function gunListesi(request, env, simdi) {
     const tah = t.byId[s.id];
     let tahmini = null;
     if (tah && s.durum === "sirada") {
-      tahmini = gosterilenSaat(tah.baslangic);
+      tahmini = gosterilenGun(tah.baslangic, simdi);
     }
     if (tah && s.durum === "isleniyor") {
-      tahmini = gosterilenSaat(tah.bitis);
+      tahmini = gosterilenGun(tah.bitis, simdi);
     }
     return { ...s, tahmini };
   });
@@ -266,7 +266,7 @@ async function gunListesi(request, env, simdi) {
       bekleyen_kg: t.bekleyenKg,
       islenen_kg: islenenKg,
       yag_kg: yagKg,
-      biter: t.bekleyen > 0 || satirlar.some((s) => s.durum === "isleniyor") ? gosterilenSaat(t.kuyrukSonu) : null,
+      biter: t.bekleyen > 0 || satirlar.some((s) => s.durum === "isleniyor") ? gosterilenGun(t.kuyrukSonu, simdi) : null,
     },
     istek_bugun: Number(sayac?.n || 0),
     sira,
@@ -701,10 +701,10 @@ async function ciftciDurumu(env, token, simdi) {
     guncel: saatDakika(simdi),
   };
   if (tah && s.durum === "sirada") {
-    body.tahmini = gosterilenSaat(tah.baslangic);
+    body.tahmini = gosterilenGun(tah.baslangic, simdi);
   }
   if (tah && s.durum === "isleniyor") {
-    body.biter = gosterilenSaat(tah.bitis);
+    body.biter = gosterilenGun(tah.bitis, simdi);
   }
   return json(body);
 }

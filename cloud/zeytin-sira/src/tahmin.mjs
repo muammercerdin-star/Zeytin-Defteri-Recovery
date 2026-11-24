@@ -1,6 +1,9 @@
 // Tahmini saat (İP9 §4): tahmini = şimdi + (işlenen kalan kg + öndekilerin kg toplamı) / kapasite.
 // Saf hesap: veritabanı ve saat dışarıdan gelir. Gerçek saatlerle kendini düzeltme ikinci aşamadır.
-import { SAAT, DAKIKA, saatDakika } from "./zaman.mjs";
+import { DAKIKA, GUN_MS, SAAT, TR_OFFSET_MS, saatDakika } from "./zaman.mjs";
+
+const GUNLER = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+const AYLAR = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
 
 export const YUVARLAMA_MS = 10 * DAKIKA;
 
@@ -70,4 +73,37 @@ export function onundekiler(satirlar, satir) {
 /** Ekranda gösterilecek yuvarlanmış saat. */
 export function gosterilenSaat(ms) {
   return saatDakika(yukariYuvarla(ms));
+}
+
+/** Türkiye takvim gününe göre iki anın gün farkı (bugün 0, yarın 1, dün -1). */
+export function gunFarki(ms, simdi) {
+  const a = new Date(ms + TR_OFFSET_MS).toISOString().slice(0, 10);
+  const b = new Date(simdi + TR_OFFSET_MS).toISOString().slice(0, 10);
+  return Math.round((Date.parse(a + "T00:00:00Z") - Date.parse(b + "T00:00:00Z")) / GUN_MS);
+}
+
+/**
+ * Tahminin gün eki: aynı gün "" (yalnız saat), ertesi gün "yarın", bir hafta içinde hafta günü ("Perşembe"),
+ * daha uzaksa tarih ("1 Ara"). 3 gün biriken sırada "12:00" değil "Perşembe 12:00" demek için.
+ */
+export function gunOneki(ms, simdi) {
+  const fark = gunFarki(ms, simdi);
+  if (fark <= 0) {
+    return "";
+  }
+  if (fark === 1) {
+    return "yarın";
+  }
+  const tr = new Date(ms + TR_OFFSET_MS);
+  if (fark < 7) {
+    return GUNLER[tr.getUTCDay()];
+  }
+  return tr.getUTCDate() + " " + AYLAR[tr.getUTCMonth()];
+}
+
+/** Gün ekiyle birlikte yuvarlanmış saat: "12:00", "yarın 12:00" ya da "Perşembe 12:00". */
+export function gosterilenGun(ms, simdi) {
+  const on = gunOneki(ms, simdi);
+  const saat = gosterilenSaat(ms);
+  return on ? on + " " + saat : saat;
 }
