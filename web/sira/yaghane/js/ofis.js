@@ -68,6 +68,21 @@ async function islem(yol, govde, ozet) {
   await yukle();
 }
 
+/** Tahmin isabeti metni: çiftçiye söylenen başlama ile gerçek başlama farkı. İşaretli pozitif = geç başladı. */
+function isabetMetni(isabet) {
+  if (!isabet || !isabet.n) {
+    return "henüz ölçülmedi (bir müşteri başlayınca ölçülür)";
+  }
+  let metin = isabet.n + " işlemde ort. ±" + isabet.ort_mutlak_dk + " dk sapma";
+  const yon = isabet.ort_isaretli_dk;
+  if (yon >= 5) {
+    metin += "; ortalama " + yon + " dk geç başladı";
+  } else if (yon <= -5) {
+    metin += "; ortalama " + Math.abs(yon) + " dk erken başladı";
+  }
+  return metin;
+}
+
 function durumEtiketi(s) {
   const adlar = { sirada: "Sırada", isleniyor: "İşleniyor", bitti: "Bitti", iptal: "İptal" };
   return el("span", "durum " + s.durum, adlar[s.durum]);
@@ -184,6 +199,7 @@ async function ciz() {
   $("bekleyen-kg").textContent = kg(v.ozet.bekleyen_kg);
   $("islenen").textContent = kg(v.ozet.islenen_kg);
   $("biter").textContent = v.ozet.biter ? "~" + v.ozet.biter : "–";
+  $("isabet-deger").textContent = isabetMetni(v.isabet);
   $("istek").textContent = "Bugünkü API isteği: " + v.istek_bugun.toLocaleString("tr-TR") + " / " + UCRETSIZ_SINIR.toLocaleString("tr-TR") + " (ücretsiz plan, UTC gün)";
   const ms = d.getItem("zs_giris_ms");
   $("giris-suresi").textContent = ms ? "Son giriş süresi (bu tarayıcıda, şifre özeti + ağ): " + ms + " ms" : "";

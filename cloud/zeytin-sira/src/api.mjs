@@ -27,7 +27,7 @@ import {
   yeniToken,
 } from "./guvenlik.mjs";
 import { gosterilenGun, gosterilenSaat, onundekiler, tahminEt } from "./tahmin.mjs";
-import { GUN_MS, gecerliSaat, oncekiGun, saatDakika, utcGunu, yaghaneGunu } from "./zaman.mjs";
+import { GUN_MS, gecerliSaat, gunGeri, oncekiGun, saatDakika, utcGunu, yaghaneGunu } from "./zaman.mjs";
 
 const GOVDE_SINIRI = 4096;
 const AKTIF = "('sirada', 'isleniyor')";
@@ -254,6 +254,7 @@ async function gunListesi(request, env, simdi) {
     return { ...s, tahmini };
   });
   const sayac = await env.DB.prepare("SELECT n FROM sayac WHERE gun = ?").bind(utcGunu(simdi)).first();
+  const isabet = await isabetOzeti(env.DB, o.yaghane_id, gun);
   return json({
     gun,
     simdi,
@@ -269,6 +270,7 @@ async function gunListesi(request, env, simdi) {
       biter: t.bekleyen > 0 || satirlar.some((s) => s.durum === "isleniyor") ? gosterilenGun(t.kuyrukSonu, simdi) : null,
     },
     istek_bugun: Number(sayac?.n || 0),
+    isabet,
     sira,
   });
 }
@@ -348,6 +350,11 @@ async function yeniMusteri(request, env, simdi) {
       son2 = veri.son2;
     }
     const gun = yaghaneGunu(simdi, o.gun_baslangic);
+    // Çiftçiye söylenen tahmini başlama: kuyruğun o anki sonu (bu müşteri eklenmeden önce). İsabet ölçümü için saklanır.
+    const kuyruk = await env.DB.prepare("SELECT id, durum, konum, kg, baslama FROM sira WHERE yaghane_id = ? AND durum IN " + AKTIF)
+      .bind(o.yaghane_id)
+      .all();
+    const tahminBaslama = Math.round(tahminEt(kuyruk.results || [], o.kapasite_kg_saat, simdi).kuyrukSonu);
     let kod = null;
     let token = null;
     let kodDegisti = false;
@@ -391,9 +398,9 @@ async function yeniMusteri(request, env, simdi) {
       ).bind(o.yaghane_id, o.yaghane_id, gun).first();
       try {
         const r = await env.DB.prepare(
-          "INSERT INTO sira (yaghane_id, gun, sira_no, konum, kod, token, ad_sifreli, bul_tuz, bul_ozet, kasa, kg, durum, gelis) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'sirada', ?)"
-        ).bind(o.yaghane_id, gun, ust.no, ust.konum, kod, token, adSifreli, bulTuz, bulOz, kasa, kg, simdi).run();
+          "INSERT INTO sira (yaghane_id, gun, sira_no, konum, kod, token, ad_sifreli, bul_tuz, bul_ozet, kasa, kg, durum, gelis, tahmin_baslama) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'sirada', ?, ?)"
+        ).bind(o.yaghane_id, gun, ust.no, ust.konum, kod, token, adSifreli, bulTuz, bulOz, kasa, kg, simdi, tahminBaslama).run();
         const sonuc = {
           id: r.meta.last_row_id,
           sira_no: ust.no,
@@ -428,6 +435,41 @@ async function yeniMusteri(request, env, simdi) {
   });
 }
 
+/** Tahmin isabeti: gün bazında işlem sayısı, mutlak ve işaretli (gerçek - söylenen) dakika toplamı. */
+async function isabetYaz(db, yaghaneId, gun, farkMs) {
+  const dk = farkMs / 60000;
+  const mutlak = Math.abs(dk);
+  await db
+    .prepare(
+      "INSERT INTO isabet (yaghane_id, gun, n, toplam_mutlak_dk, toplam_isaretli_dk) VALUES (?, ?, 1, ?, ?) " +
+        "ON CONFLICT(yaghane_id, gun) DO UPDATE SET n = n + 1, " +
+        "toplam_mutlak_dk = toplam_mutlak_dk + ?, toplam_isaretli_dk = toplam_isaretli_dk + ?"
+    )
+    .bind(yaghaneId, gun, mutlak, dk, mutlak, dk)
+    .run();
+}
+
+/** Son 7 günün isabet özeti: {n, ort_mutlak_dk, ort_isaretli_dk}. Panelde "tahmin tuttu mu?" yanıtı. */
+async function isabetOzeti(db, yaghaneId, bugun) {
+  const yediOnce = gunGeri(bugun, 7);
+  const r = await db
+    .prepare(
+      "SELECT COALESCE(SUM(n), 0) AS n, COALESCE(SUM(toplam_mutlak_dk), 0) AS m, COALESCE(SUM(toplam_isaretli_dk), 0) AS i " +
+        "FROM isabet WHERE yaghane_id = ? AND gun >= ?"
+    )
+    .bind(yaghaneId, yediOnce)
+    .first();
+  const n = Number(r?.n || 0);
+  if (n === 0) {
+    return { n: 0, ort_mutlak_dk: null, ort_isaretli_dk: null };
+  }
+  return {
+    n,
+    ort_mutlak_dk: Math.round(Number(r.m) / n),
+    ort_isaretli_dk: Math.round(Number(r.i) / n),
+  };
+}
+
 async function satirGetir(db, o, id) {
   return db.prepare("SELECT id, durum, konum, kg FROM sira WHERE id = ? AND yaghane_id = ?").bind(id, o.yaghane_id).first();
 }
@@ -448,11 +490,18 @@ async function durumIslemi(request, env, simdi, id, islem) {
   const veri = await govdeOku(request);
   return tekSefer(env, o, veri, simdi, async () => {
     if (islem === "baslat") {
+      const once = await env.DB.prepare("SELECT gun, tahmin_baslama FROM sira WHERE id = ? AND yaghane_id = ?")
+        .bind(id, o.yaghane_id)
+        .first();
       const r = await env.DB.prepare(
         "UPDATE sira SET durum = 'isleniyor', baslama = ? WHERE id = ? AND yaghane_id = ? AND durum = 'sirada'"
       ).bind(simdi, id, o.yaghane_id).run();
       if (r.meta.changes !== 1) {
         await cakisma(env.DB, o, id);
+      }
+      // İsabet: çiftçiye söylenen başlama ile gerçek başlama farkı (op_id ile korunduğu için iki kez sayılmaz).
+      if (once && once.tahmin_baslama !== null && once.tahmin_baslama !== undefined) {
+        await isabetYaz(env.DB, o.yaghane_id, once.gun, simdi - Number(once.tahmin_baslama));
       }
       return { durum: 200, sonuc: { id, durum: "isleniyor" } };
     }

@@ -24,8 +24,8 @@ gördüğün ad farklıysa en yakın karşılığını seç.
    dışındadır, KVKK metninde yazıyor). **Create**.
 3. Açılan sayfada **Database ID** değerini kopyala (gizli değildir).
 4. **Console** sekmesine geç. `cloud/zeytin-sira/schema.sql` dosyasının **tamamını** yapıştır, **Execute**.
-   Beklenen: hata yok; **Tables** altında `yaghane, kullanici, sira, kod_yedegi, gun_ozet, oturum, giris_deneme,
-   islem_kaydi, sayac`.
+   Beklenen: hata yok; **Tables** altında `yaghane, kullanici, sira, kod_yedegi, isabet, gun_ozet, oturum,
+   giris_deneme, islem_kaydi, sayac`.
 
 ## 2. Wrangler ayar dosyası
 

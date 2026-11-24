@@ -484,6 +484,58 @@ const m = [];
   simdi = T;
 }
 
+// tahmin isabeti: çiftçiye söylenen başlama ile gerçek başlama farkı
+{
+  const db2 = new D1();
+  db2.exec(readFileSync(join(dir, "schema.sql"), "utf8"));
+  const a2 = tohum.argumanlar(["--fabrika", "[F]", "--kisa", "isabetfab", "--ofis", "ofisx", "--havuzcu", "havuzx", "--tekrar", "2000"]);
+  db2.exec(await tohum.tohumSql(a2, { ofis: "ofis-sifresi-x", havuzcu: "havuz-sifresi-x" }, T));
+  const env2 = { DB: db2, GIZLI_TUZ: TUZ, SITE_ORIGIN: SITE };
+  let an = T;
+  async function istek2(yontem, yol, govde, cerez) {
+    const headers = { "CF-Connecting-IP": "203.0.113.50" };
+    if (cerez) {
+      headers.Cookie = cerez;
+      headers.Origin = SITE;
+    }
+    const init = { method: yontem, headers };
+    if (govde !== undefined) {
+      headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(govde);
+    }
+    const res = await handle(new Request(SITE + yol, init), env2, null, an);
+    const txt = await res.text();
+    return { status: res.status, body: txt ? JSON.parse(txt) : null };
+  }
+  const girisRes = await handle(new Request(SITE + "/api/yaghane/giris", { method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.51", Origin: SITE }, body: JSON.stringify({ kullanici_adi: "havuzx", sifre: "havuz-sifresi-x" }) }), env2, null, an);
+  const cerez2 = (girisRes.headers.get("set-cookie") || "").split(";")[0];
+  const bosGun = await istek2("GET", "/api/yaghane/gun", undefined, cerez2);
+  esit(bosGun.body.isabet, { n: 0, ort_mutlak_dk: null, ort_isaretli_dk: null }, "henüz işlem yokken isabet ölçülmemiş");
+  const A = await istek2("POST", "/api/yaghane/sira", { op_id: "is-a-0001", kasa: 10, kg: 600 }, cerez2);
+  const B = await istek2("POST", "/api/yaghane/sira", { op_id: "is-b-0002", kasa: 10, kg: 600 }, cerez2);
+  esit(A.status, 201, "A eklendi");
+  esit(B.status, 201, "B eklendi");
+  const satA = await db2.prepare("SELECT tahmin_baslama FROM sira WHERE id = ?").bind(A.body.id).first();
+  const satB = await db2.prepare("SELECT tahmin_baslama FROM sira WHERE id = ?").bind(B.body.id).first();
+  esit(Number(satA.tahmin_baslama), T, "boş kuyrukta A'nın tahmini başlaması şimdi");
+  esit(Number(satB.tahmin_baslama), T + 30 * DAKIKA, "B'ye önündeki 600 kg / 1200 = 30 dk sonrası söylendi");
+  // A 5 dk geç, B 10 dk geç başladı
+  an = T + 5 * DAKIKA;
+  esit((await istek2("POST", "/api/yaghane/sira/" + A.body.id + "/baslat", { op_id: "is-ba-0001" }, cerez2)).status, 200, "A başladı");
+  an = T + 40 * DAKIKA;
+  esit((await istek2("POST", "/api/yaghane/sira/" + B.body.id + "/baslat", { op_id: "is-bb-0001" }, cerez2)).status, 200, "B başladı");
+  const g2 = await istek2("GET", "/api/yaghane/gun", undefined, cerez2);
+  esit(g2.body.isabet.n, 2, "iki işlem ölçüldü");
+  esit(g2.body.isabet.ort_isaretli_dk, 8, "ortalama 8 dk geç ((5+10)/2 yuvarlanmış)");
+  esit(g2.body.isabet.ort_mutlak_dk, 8, "ortalama mutlak sapma 8 dk");
+  // op_id tekrarı isabeti iki kez saymaz
+  await istek2("POST", "/api/yaghane/sira/" + A.body.id + "/baslat", { op_id: "is-ba-0001" }, cerez2);
+  const g3 = await istek2("GET", "/api/yaghane/gun", undefined, cerez2);
+  esit(g3.body.isabet.n, 2, "aynı işlem kimliği isabeti tekrar saymaz");
+  const kolon = (await db2.prepare("PRAGMA table_info(isabet)").all()).results.map((c) => c.name);
+  check(!kolon.some((c) => /ad|kod|token|telefon|isim/.test(c)), "isabet tablosunda kişisel alan yok");
+}
+
 // genel
 {
   esit((await istek("GET", "/api/yok")).status, 404, "bilinmeyen uç");

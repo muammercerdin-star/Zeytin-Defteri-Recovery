@@ -38,6 +38,12 @@ export function oncekiGun(gun) {
   return isoTarih(ms - GUN_MS);
 }
 
+/** n gün önceki yağhane günü (YYYY-AA-GG). */
+export function gunGeri(gun, n) {
+  const ms = Date.parse(gun + "T00:00:00Z");
+  return isoTarih(ms - n * GUN_MS);
+}
+
 /** Türkiye saatiyle "SS:DD". */
 export function saatDakika(ms) {
   return new Date(ms + TR_OFFSET_MS).toISOString().slice(11, 16);

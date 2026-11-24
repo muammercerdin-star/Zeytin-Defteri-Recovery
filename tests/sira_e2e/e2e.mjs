@@ -293,6 +293,12 @@ try {
   await ofis.waitForSelector("#qr-panel.gizli", { state: "attached" });
   check(true, "QR paneli kapanır");
 
+  // ------------------------------------------------ tahmin isabeti ofis panelinde
+  await ofis.reload();
+  await ofis.waitForSelector("#isabet-deger");
+  const isabetMetni = await ofis.textContent("#isabet-deger");
+  check(/\d+ işlemde ort\. ±\d+ dk/.test(isabetMetni), "başlatılan işlemlerden sonra ofis tahmin isabetini ölçer: " + isabetMetni);
+
   // ------------------------------------------------ çıkış izi bırakmaz
   await hav.click("#cikis");
   await hav.waitForURL("**/yaghane/");

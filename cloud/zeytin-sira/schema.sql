@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS sira (
   baslama INTEGER,
   bitis INTEGER,
   yag_kg REAL CHECK (yag_kg IS NULL OR yag_kg >= 0),
+  -- Müşteri eklenirken çiftçiye söylenen tahmini başlama anı (ms). Gerçek başlama ile farkı pilotta ölçülür.
+  tahmin_baslama INTEGER,
   UNIQUE (yaghane_id, gun, kod),
   UNIQUE (yaghane_id, gun, sira_no)
 );
@@ -57,6 +59,17 @@ CREATE TABLE IF NOT EXISTS kod_yedegi (
   token TEXT NOT NULL UNIQUE,
   ayrilma INTEGER NOT NULL,
   PRIMARY KEY (yaghane_id, gun, kod)
+);
+
+-- Tahmin isabeti (isimsiz): çiftçiye söylenen başlama ile gerçek başlama farkı, gün bazında toplanır.
+-- Pilotta "tahmin tuttu mu?" sorusunu sayıyla yanıtlar. Kişisel veri yok.
+CREATE TABLE IF NOT EXISTS isabet (
+  yaghane_id INTEGER NOT NULL,
+  gun TEXT NOT NULL,
+  n INTEGER NOT NULL,
+  toplam_mutlak_dk REAL NOT NULL,
+  toplam_isaretli_dk REAL NOT NULL,
+  PRIMARY KEY (yaghane_id, gun)
 );
 
 -- Sezon raporu için isimsiz gün toplamları (satırlar 90 gün sonra silinince kalan tek şey).
