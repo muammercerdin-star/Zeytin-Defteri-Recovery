@@ -4,11 +4,12 @@ set -e
 cd "$(dirname "$0")/../.."
 export JAVA_TOOL_OPTIONS=
 D=$(mktemp -d)
-java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" app/src/main/java/com/zeytindefteri/app/TezgahModel.java app/src/main/java/com/zeytindefteri/app/TezgahQr.java app/src/main/java/com/zeytindefteri/app/ElekSaleModel.java app/src/main/java/com/zeytindefteri/app/TezgahWizardFlow.java tests/tezgah/TezgahModelTest.java tests/tezgah/TezgahQrTest.java tests/tezgah/TezgahWizardFlowTest.java app/src/main/java/com/zeytindefteri/app/TezgahPrintFormat.java tests/tezgah/TezgahPrintFormatTest.java
+java -m jdk.compiler/com.sun.tools.javac.Main -nowarn -encoding UTF-8 -d "$D" app/src/main/java/com/zeytindefteri/app/TezgahModel.java app/src/main/java/com/zeytindefteri/app/TezgahQr.java app/src/main/java/com/zeytindefteri/app/ElekSaleModel.java app/src/main/java/com/zeytindefteri/app/TezgahWizardFlow.java tests/tezgah/TezgahModelTest.java tests/tezgah/TezgahQrTest.java tests/tezgah/TezgahWizardFlowTest.java app/src/main/java/com/zeytindefteri/app/TezgahPrintFormat.java tests/tezgah/TezgahPrintFormatTest.java app/src/main/java/com/zeytindefteri/app/TurkishText.java app/src/main/java/com/zeytindefteri/app/TezgahNotebookPage.java tests/tezgah/TezgahNotebookPageTest.java
 java -cp "$D" com.zeytindefteri.app.TezgahModelTest
 java -cp "$D" com.zeytindefteri.app.TezgahQrTest
 java -cp "$D" com.zeytindefteri.app.TezgahWizardFlowTest
 java -cp "$D" com.zeytindefteri.app.TezgahPrintFormatTest
+java -cp "$D" com.zeytindefteri.app.TezgahNotebookPageTest
 # Tüccar alımları: gerçek SQLite dosyasında (alıcı testlerinin Android stub'ları ile).
 python3 - "$D" <<'P'
 import pathlib,subprocess,sys
