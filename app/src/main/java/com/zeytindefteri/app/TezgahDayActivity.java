@@ -107,15 +107,20 @@ public final class TezgahDayActivity extends Activity {
         body.removeAllViews();
         final List<TezgahPurchases.Purchase> list = load();
         body.addView(header(list));
-        // Arama (yalnız ana defterde): bütün geçmişte ad / telefon / tutar; "sadece borçlular".
-        if (zId <= 0) {
+        final boolean notebook = notebookMode();
+        // Arama (yalnız liste görünümünde, ana defterde): bütün geçmişte ad / telefon / tutar; "sadece borçlular".
+        if (zId <= 0 && !notebook) {
             body.addView(searchBar(), margins(-1, -2, 4));
             contentStart = body.getChildCount();
             if (searching()) { renderResults(); return; }
         }
         body.addView(statusBar(list), margins(-1, -2, 6));
+        body.addView(viewToggle(), margins(-1, -2, 8));
         body.addView(summary(list), margins(-1, -2, 10));
-        if (list.isEmpty()) {
+        if (notebook) {
+            body.addView(notebookBlock(list), margins(-1, -2, 12));
+            if (!list.isEmpty()) body.addView(closingCard(list), margins(-1, -2, 16));
+        } else if (list.isEmpty()) {
             TextView empty = text("Açık dönemde alım yok. Tezgahta bir alımı bitirince burada satır olarak görünür.",
                     15, MUTED, false);
             empty.setGravity(Gravity.CENTER);
@@ -130,6 +135,185 @@ public final class TezgahDayActivity extends Activity {
         }
         if (zId <= 0) body.addView(zList(), margins(-1, -2, 18));
         if (zId <= 0) body.addView(backupCard(), margins(-1, -2, 18));
+    }
+
+    // ================================================================== defter görünümü (Liste / Defter)
+
+    private static final String PREF_NOTEBOOK = "notebook_mode";
+    private TezgahNotebookView notebookView;
+    private android.widget.EditText nbSearch;
+    private TextView nbResult, nbPageLabel;
+    private View nbPageBar;
+    private List<TezgahNotebookPage> nbPages;
+    private final java.util.Map<Long, TezgahPurchases.Purchase> nbById = new java.util.HashMap<>();
+
+    private boolean notebookMode() {
+        return getSharedPreferences("zd_tezgah", MODE_PRIVATE).getBoolean(PREF_NOTEBOOK, false);
+    }
+
+    private void setNotebookMode(boolean on) {
+        getSharedPreferences("zd_tezgah", MODE_PRIVATE).edit().putBoolean(PREF_NOTEBOOK, on).apply();
+        render();
+    }
+
+    /** Üstte "Liste / Defter" geçişi; son seçim hatırlanır. */
+    private View viewToggle() {
+        boolean nb = notebookMode();
+        LinearLayout bar = new LinearLayout(this);
+        bar.setBackground(round(CARD, LINE, 20));
+        bar.setPadding(dp(4), dp(4), dp(4), dp(4));
+        TextView liste = segButton("Liste", !nb);
+        liste.setOnClickListener(v -> setNotebookMode(false));
+        TextView defter = segButton("Defter", nb);
+        defter.setOnClickListener(v -> setNotebookMode(true));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(42), 1);
+        bar.addView(liste, lp);
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, dp(42), 1);
+        rp.setMarginStart(dp(4));
+        bar.addView(defter, rp);
+        return bar;
+    }
+
+    private TextView segButton(String label, boolean selected) {
+        TextView t = text(label, 15, selected ? BG : TEXT, true);
+        t.setGravity(Gravity.CENTER);
+        t.setBackground(round(selected ? GREEN : Color.TRANSPARENT, 0, 16));
+        return t;
+    }
+
+    /** Defter görünümü bloğu: arama, sayfa göstergesi, kâğıt defter View'ı ve +/−/sığdır düğmeleri. */
+    private View notebookBlock(final List<TezgahPurchases.Purchase> list) {
+        nbById.clear();
+        for (TezgahPurchases.Purchase p : list) nbById.put(p.id, p);
+        nbPages = TezgahNotebookPage.build(entriesFrom(list), today());
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+
+        LinearLayout srow = new LinearLayout(this);
+        srow.setGravity(Gravity.CENTER_VERTICAL);
+        nbSearch = new android.widget.EditText(this);
+        nbSearch.setHint("Müstahsil ara");
+        nbSearch.setSingleLine(true);
+        nbSearch.setTextColor(TEXT);
+        nbSearch.setHintTextColor(MUTED);
+        nbSearch.setTextSize(15);
+        nbSearch.setPadding(dp(14), dp(10), dp(14), dp(10));
+        nbSearch.setBackground(round(CARD, LINE, 16));
+        nbSearch.addTextChangedListener(watch(this::nbRefreshSearch));
+        srow.addView(nbSearch, new LinearLayout.LayoutParams(0, dp(48), 1));
+        nbResult = text("", 13, MUTED, true);
+        nbResult.setPadding(dp(10), 0, dp(4), 0);
+        srow.addView(nbResult);
+        box.addView(srow, margins(-1, -2, 0));
+
+        android.widget.FrameLayout frame = new android.widget.FrameLayout(this);
+        frame.setBackground(round(Color.parseColor("#FBFAF5"), LINE, 12));
+        notebookView = new TezgahNotebookView(this);
+        notebookView.setListeners(id -> {
+            TezgahPurchases.Purchase p = nbById.get(id);
+            if (p != null) actions(p);
+        }, this::nbOnPage);
+        notebookView.setPages(nbPages, 0);
+        int viewH = Math.round(getResources().getDisplayMetrics().heightPixels * 0.62f);
+        frame.addView(notebookView, new android.widget.FrameLayout.LayoutParams(-1, viewH));
+        frame.addView(zoomControls(), controlParams());
+        box.addView(frame, margins(-1, -2, 8));
+
+        nbPageBar = pageBar();
+        box.addView(nbPageBar, margins(-1, -2, 6));
+        nbOnPage(0, nbPages.size());
+
+        box.addView(text("İki parmakla büyüt/küçült, tek parmakla kaydır, çift dokun. Bir alıma dokun: QR · fiş · borç.",
+                12, MUTED, false), margins(-1, -2, 8));
+        return box;
+    }
+
+    private List<TezgahNotebookPage.Entry> entriesFrom(List<TezgahPurchases.Purchase> list) {
+        List<TezgahNotebookPage.Entry> out = new java.util.ArrayList<>();
+        for (TezgahPurchases.Purchase p : list) {
+            TezgahModel m = TezgahModel.decode(p.data);
+            double[] gradeNet = new double[TezgahNotebookPage.GRADES];
+            double[] gradeAmount = new double[TezgahNotebookPage.GRADES];
+            boolean breakdown = false;
+            for (int g = 0; g < TezgahNotebookPage.GRADES; g++) {
+                gradeNet[g] = m.gradeNet(g);
+                gradeAmount[g] = m.gradeAmount(g);
+                if (gradeNet[g] > 0) breakdown = true;
+            }
+            out.add(new TezgahNotebookPage.Entry(p.id, p.seller, p.date, p.kasa, p.kg, p.gross,
+                    gradeNet, gradeAmount, breakdown, p.zId > 0));
+        }
+        return out;
+    }
+
+    private View zoomControls() {
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.addView(zoomButton("+", () -> notebookView.zoomIn()));
+        col.addView(zoomButton("−", () -> notebookView.zoomOut()), margins(dp(44), dp(44), 8));
+        col.addView(zoomButton("⤢", () -> notebookView.fit()), margins(dp(44), dp(44), 8));
+        return col;
+    }
+
+    private TextView zoomButton(String label, final Runnable action) {
+        TextView t = new TextView(this);
+        t.setText(label);
+        t.setTextColor(Color.parseColor("#1F3A8A"));
+        t.setTextSize(20);
+        t.setTypeface(null, android.graphics.Typeface.BOLD);
+        t.setGravity(Gravity.CENTER);
+        t.setBackground(round(Color.parseColor("#F3F1E8"), Color.parseColor("#C9C2AE"), 22));
+        t.setOnClickListener(v -> action.run());
+        t.setContentDescription(label.equals("+") ? "Yakınlaştır" : label.equals("−") ? "Uzaklaştır" : "Sayfayı sığdır");
+        t.setLayoutParams(new LinearLayout.LayoutParams(dp(44), dp(44)));
+        return t;
+    }
+
+    private android.widget.FrameLayout.LayoutParams controlParams() {
+        android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(-2, -2);
+        lp.gravity = Gravity.END | Gravity.BOTTOM;
+        lp.rightMargin = dp(10);
+        lp.bottomMargin = dp(10);
+        return lp;
+    }
+
+    private View pageBar() {
+        LinearLayout bar = new LinearLayout(this);
+        bar.setGravity(Gravity.CENTER);
+        TextView prev = text("‹ Önceki", 14, GREEN, true);
+        prev.setPadding(dp(12), dp(6), dp(12), dp(6));
+        prev.setOnClickListener(v -> notebookView.prevPage());
+        nbPageLabel = text("Sayfa 1 / 1", 14, TEXT, true);
+        nbPageLabel.setPadding(dp(16), 0, dp(16), 0);
+        TextView next = text("Sonraki ›", 14, GREEN, true);
+        next.setPadding(dp(12), dp(6), dp(12), dp(6));
+        next.setOnClickListener(v -> notebookView.nextPage());
+        bar.addView(prev);
+        bar.addView(nbPageLabel);
+        bar.addView(next);
+        return bar;
+    }
+
+    private void nbOnPage(int index, int total) {
+        if (nbPageLabel != null) nbPageLabel.setText("Sayfa " + (index + 1) + " / " + total);
+        if (nbPageBar != null) nbPageBar.setVisibility(total > 1 ? View.VISIBLE : View.GONE);
+    }
+
+    private void nbRefreshSearch() {
+        if (nbPages == null || notebookView == null) return;
+        String q = nbSearch.getText().toString();
+        List<int[]> hits = TezgahNotebookPage.search(nbPages, q);
+        notebookView.invalidate();
+        if (q.trim().isEmpty()) {
+            nbResult.setText("");
+            notebookView.fit();
+        } else if (hits.isEmpty()) {
+            nbResult.setText("Bulunamadı");
+        } else {
+            nbResult.setText(hits.size() + " sonuç");
+            notebookView.focus(hits.get(0)[0], hits.get(0)[1]);
+        }
     }
 
     // ================================================================== yedek (kısayol; asıl ekran Ayarlar → Yedekle / Geri yükle)
