@@ -536,6 +536,143 @@ const m = [];
   check(!kolon.some((c) => /ad|kod|token|telefon|isim/.test(c)), "isabet tablosunda kişisel alan yok");
 }
 
+// ---------------------------------------------------------------- çiftçi bildirimi (İP9-A-10)
+{
+  const B = await import(join(dir, "src/bildirim.mjs"));
+  const api = await import(join(dir, "src/api.mjs"));
+  const G = await import(join(dir, "src/guvenlik.mjs"));
+
+  // Gece kuralı: TR 22:00–05:00 göndermez (saatler UTC+3).
+  check(B.geceMi(Date.parse("2026-11-22T19:00:00Z")), "22:00 TR gece");
+  check(B.geceMi(Date.parse("2026-11-22T00:00:00Z")), "03:00 TR gece");
+  check(B.geceMi(Date.parse("2026-11-22T01:59:00Z")), "04:59 TR gece");
+  check(!B.geceMi(Date.parse("2026-11-22T02:00:00Z")), "05:00 TR gündüz");
+  check(!B.geceMi(Date.parse("2026-11-22T08:00:00Z")), "11:00 TR gündüz");
+  check(!B.geceMi(Date.parse("2026-11-22T18:59:00Z")), "21:59 TR gündüz");
+
+  // VAPID anahtar çifti + mesaj şifrelemesi doğrulanır (gerçek push servisi gibi).
+  const vk = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  const vpubRaw = new Uint8Array(await crypto.subtle.exportKey("raw", vk.publicKey));
+  const vjwk = await crypto.subtle.exportKey("jwk", vk.privateKey);
+  const benv = { DB: db, GIZLI_TUZ: TUZ, SITE_ORIGIN: SITE, VAPID_ACIK_ANAHTAR: G.b64u(vpubRaw), VAPID_GIZLI_ANAHTAR: vjwk.d, VAPID_KONU: "mailto:x@y.tr" };
+
+  const jwt = await B.vapidJwt(benv, "https://push.example.com/abc", T);
+  const [jh, jp, js] = jwt.split(".");
+  const jpay = JSON.parse(new TextDecoder().decode(G.unb64u(jp)));
+  esit(jpay.aud, "https://push.example.com", "VAPID aud = endpoint origin");
+  esit(jpay.sub, "mailto:x@y.tr", "VAPID sub");
+  const jpub = await crypto.subtle.importKey("raw", vpubRaw, { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+  check(await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, jpub, G.unb64u(js), new TextEncoder().encode(jh + "." + jp)), "VAPID JWT imzası açık anahtarla doğrulanır");
+
+  // Çiftçi telefonu gibi bir abone üretir (gerçek P-256 anahtarı; şifreleme bununla yapılır).
+  async function yeniAbone(endpoint) {
+    const ck = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+    const pub = new Uint8Array(await crypto.subtle.exportKey("raw", ck.publicKey));
+    return { endpoint, p256dh: G.b64u(pub), auth: G.b64u(crypto.getRandomValues(new Uint8Array(16))), priv: ck.privateKey, pub };
+  }
+
+  // Şifreli gövde istemci özel anahtarıyla çözülür (uçtan uca; push servisi okuyamaz).
+  {
+    const ab = await yeniAbone("https://push.example.com/x");
+    const duz = new TextEncoder().encode(JSON.stringify({ baslik: "Sıran yaklaştı", metin: "kod 7532" }));
+    const govde = await B.icerikSifrele(ab.p256dh, ab.auth, duz);
+    const salt = govde.slice(0, 16);
+    const asPub = govde.slice(21, 21 + govde[20]);
+    const ct = govde.slice(21 + govde[20]);
+    const asKey = await crypto.subtle.importKey("raw", asPub, { name: "ECDH", namedCurve: "P-256" }, false, []);
+    const ecdh = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: asKey }, ab.priv, 256));
+    const ecdhKey = await crypto.subtle.importKey("raw", ecdh, "HKDF", false, ["deriveBits"]);
+    const cat = (...a) => { let n = 0; for (const x of a) n += x.length; const o = new Uint8Array(n); let i = 0; for (const x of a) { o.set(x, i); i += x.length; } return o; };
+    const info1 = cat(new TextEncoder().encode("WebPush: info\0"), ab.pub, asPub);
+    const ikm = new Uint8Array(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: ab.auth ? G.unb64u(ab.auth) : new Uint8Array(16), info: info1 }, ecdhKey, 256));
+    const ikmKey = await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
+    const cek = new Uint8Array(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info: new TextEncoder().encode("Content-Encoding: aes128gcm\0") }, ikmKey, 128));
+    const nonce = new Uint8Array(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info: new TextEncoder().encode("Content-Encoding: nonce\0") }, ikmKey, 96));
+    const cekKey = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["decrypt"]);
+    const plain = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: nonce, tagLength: 128 }, cekKey, ct));
+    check(plain[plain.length - 1] === 2, "aes128gcm kayıt sonu 0x02");
+    esit(JSON.parse(new TextDecoder().decode(plain.slice(0, plain.length - 1))).metin, "kod 7532", "şifreli mesaj çözüldü");
+  }
+
+  // Senaryo: 9001 fabrikasında üç sıra; abone C (önünde 2).
+  const gun = yaghaneGunu(T, "05:00");
+  await db.prepare("INSERT INTO yaghane (id, ad, kisa_ad, kapasite_kg_saat, gun_baslangic, olusturma) VALUES (9001, 'Bild Test', 'bildtest', 1200, '05:00', ?)").bind(T).run();
+  const tA = yeniToken(), tB = yeniToken(), tC = yeniToken(), tE = yeniToken();
+  async function sira(id, no, konum, kod, token, durum) {
+    await db.prepare("INSERT INTO sira (id, yaghane_id, gun, sira_no, konum, kod, token, kasa, kg, durum, gelis) VALUES (?, 9001, ?, ?, ?, ?, ?, 10, 500, ?, ?)").bind(id, gun, no, konum, kod, token, durum, T).run();
+  }
+  await sira(9101, 1, 1, "1111", tA, "sirada");
+  await sira(9102, 2, 2, "2222", tB, "sirada");
+  await sira(9103, 3, 3, "3333", tC, "sirada");
+  await sira(9105, 5, 5, "5555", tE, "sirada");
+  const abC = await yeniAbone("https://push.example.com/C");
+  await db.prepare("INSERT INTO bildirim_abone (yaghane_id, token, endpoint, p256dh, auth, esik_durumu, olusturma) VALUES (9001, ?, ?, ?, ?, 0, ?)").bind(tC, abC.endpoint, abC.p256dh, abC.auth, T).run();
+
+  // fetch taklidi: gönderimleri yakalar, gerçek ağa çıkmaz.
+  const cagrilar = [];
+  let olenEndpoint = null;
+  const asilFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opt) => {
+    cagrilar.push({ url, opt });
+    return new Response(null, { status: url === olenEndpoint ? 410 : 201 });
+  };
+  const esik = async () => (await db.prepare("SELECT esik_durumu FROM bildirim_abone WHERE token = ? AND endpoint = ?").bind(tC, abC.endpoint).first())?.esik_durumu;
+
+  try {
+    // Gündüz: C önünde 2 → "yaklaştı" (bit 1), bir kez.
+    await api.bildirimTetikle(benv, 9001, T);
+    esit(cagrilar.length, 1, "yaklaştı eşiğinde bir haber gider");
+    esit(cagrilar[0].url, abC.endpoint, "haber doğru aboneye gider");
+    esit(await esik(), 1, "yaklaştı biti işaretlenir");
+    await api.bildirimTetikle(benv, 9001, T);
+    esit(cagrilar.length, 1, "aynı eşik ikinci kez gönderilmez");
+
+    // İlerleme: önündekiler biter → C önünde 0 → "sıra sende" (bit 2).
+    await db.prepare("UPDATE sira SET durum = 'bitti' WHERE id IN (9101, 9102)").run();
+    await api.bildirimTetikle(benv, 9001, T);
+    esit(cagrilar.length, 2, "sıra sende için ikinci haber gider");
+    esit(await esik(), 3, "yaklaştı + sıra sende bitleri");
+
+    // Gece: yeni abone E (önünde ... aslında 9105 artık tek sırada, önünde 0) → gece göndermez.
+    const abE = await yeniAbone("https://push.example.com/E");
+    await db.prepare("INSERT INTO bildirim_abone (yaghane_id, token, endpoint, p256dh, auth, esik_durumu, olusturma) VALUES (9001, ?, ?, ?, ?, 0, ?)").bind(tE, abE.endpoint, abE.p256dh, abE.auth, T).run();
+    await api.bildirimTetikle(benv, 9001, Date.parse("2026-11-22T20:00:00Z"));
+    esit(cagrilar.length, 2, "gece hiç haber gönderilmez");
+
+    // Ölü abone (410) → silinir.
+    await db.prepare("UPDATE bildirim_abone SET esik_durumu = 0 WHERE token = ?").bind(tE, abE).run().catch(() => {});
+    olenEndpoint = abE.endpoint;
+    await api.bildirimTetikle(benv, 9001, T);
+    const kalanE = await db.prepare("SELECT COUNT(*) AS n FROM bildirim_abone WHERE endpoint = ?").bind(abE.endpoint).first();
+    esit(kalanE.n, 0, "410 dönen abone silinir");
+
+    // VAPID kapalıyken özellik uykuda: abonelik 503.
+    const kapali = await handle(new Request(SITE + "/api/sira/" + tE + "/bildirim", { method: "POST", headers: { "Content-Type": "application/json", Origin: SITE, "CF-Connecting-IP": "203.0.113.9" }, body: JSON.stringify({ endpoint: "https://push.example.com/z", p256dh: abC.p256dh, auth: abC.auth }) }), env, null, T);
+    esit(kapali.status, 503, "VAPID yoksa abonelik 503 KAPALI");
+
+    // Abonelik ucu (VAPID açık): geçerli → 201, satır yalnız token'a bağlı.
+    const ab201 = await yeniAbone("https://push.example.com/new");
+    const r201 = await handle(new Request(SITE + "/api/sira/" + tE + "/bildirim", { method: "POST", headers: { "Content-Type": "application/json", Origin: SITE, "CF-Connecting-IP": "203.0.113.10" }, body: JSON.stringify({ endpoint: ab201.endpoint, p256dh: ab201.p256dh, auth: ab201.auth }) }), benv, null, T);
+    esit(r201.status, 201, "geçerli abonelik 201");
+    const sat = await db.prepare("SELECT token, yaghane_id FROM bildirim_abone WHERE endpoint = ?").bind(ab201.endpoint).first();
+    esit(sat.token, tE, "abonelik yalnız token'a bağlı");
+
+    // Geçersiz endpoint (https değil) → 400.
+    const r400 = await handle(new Request(SITE + "/api/sira/" + tE + "/bildirim", { method: "POST", headers: { "Content-Type": "application/json", Origin: SITE, "CF-Connecting-IP": "203.0.113.11" }, body: JSON.stringify({ endpoint: "http://x", p256dh: ab201.p256dh, auth: ab201.auth }) }), benv, null, T);
+    esit(r400.status, 400, "https olmayan endpoint 400");
+
+    // Bitmiş sıraya abonelik → 409.
+    const r409 = await handle(new Request(SITE + "/api/sira/" + tA + "/bildirim", { method: "POST", headers: { "Content-Type": "application/json", Origin: SITE, "CF-Connecting-IP": "203.0.113.12" }, body: JSON.stringify({ endpoint: "https://push.example.com/q", p256dh: ab201.p256dh, auth: ab201.auth }) }), benv, null, T);
+    esit(r409.status, 409, "bitmiş sıraya abonelik 409");
+
+    // bildirim_abone tablosunda kişisel sütun yok.
+    const bk = (await db.prepare("PRAGMA table_info(bildirim_abone)").all()).results.map((c) => c.name);
+    check(!bk.some((c) => /ad|isim|telefon|kg|kasa/.test(c)), "bildirim_abone'de kişisel alan yok");
+  } finally {
+    globalThis.fetch = asilFetch;
+  }
+}
+
 // genel
 {
   esit((await istek("GET", "/api/yok")).status, 404, "bilinmeyen uç");
@@ -544,7 +681,7 @@ const m = [];
   const bozuk = await handle(new Request(SITE + "/api/yaghane/gun", { headers: { Cookie: "zs_oturum=" + "x".repeat(43) } }), { DB: { prepare() { throw new Error("gizli ayrıntı Ayşe"); } } , GIZLI_TUZ: TUZ }, null, T);
   const metin = await bozuk.text();
   check(bozuk.status === 500 && !metin.includes("Ayşe") && !metin.includes("gizli"), "iç hata ayrıntısı cevaba sızmaz");
-  const kaynak = ["worker.js", "src/api.mjs", "src/guvenlik.mjs", "src/temizlik.mjs", "src/tahmin.mjs"].map((f) => readFileSync(join(dir, f), "utf8")).join("\n");
+  const kaynak = ["worker.js", "src/api.mjs", "src/guvenlik.mjs", "src/temizlik.mjs", "src/tahmin.mjs", "src/bildirim.mjs"].map((f) => readFileSync(join(dir, f), "utf8")).join("\n");
   check(!/console\.(log|error|warn|info)/.test(kaynak), "sunucu koduna log yazılmaz");
   check(!/telefon/i.test(readFileSync(join(dir, "schema.sql"), "utf8").replace(/--.*$/gm, "")), "şemada telefon sütunu yok");
 }
