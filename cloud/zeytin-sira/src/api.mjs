@@ -26,6 +26,7 @@ import {
   yeniKod,
   yeniToken,
 } from "./guvenlik.mjs";
+import { geceMi, mesajGovdesi, webPushGonder } from "./bildirim.mjs";
 import { gosterilenGun, gosterilenSaat, onundekiler, tahminEt } from "./tahmin.mjs";
 import { DAKIKA, GUN_MS, gecerliSaat, gunGeri, oncekiGun, saatDakika, utcGunu, yaghaneGunu } from "./zaman.mjs";
 
@@ -489,10 +490,10 @@ async function cakisma(db, o, id) {
   throw new Hata(409, "CAKISMA", mesaj, { simdiki: { durum: s.durum } });
 }
 
-async function durumIslemi(request, env, simdi, id, islem) {
+async function durumIslemi(request, env, simdi, id, islem, ctx) {
   const o = await oturumGerekli(request, env, simdi);
   const veri = await govdeOku(request);
-  return tekSefer(env, o, veri, simdi, async () => {
+  const cevap = await tekSefer(env, o, veri, simdi, async () => {
     if (islem === "baslat") {
       const once = await env.DB.prepare("SELECT gun, tahmin_baslama FROM sira WHERE id = ? AND yaghane_id = ?")
         .bind(id, o.yaghane_id)
@@ -557,6 +558,11 @@ async function durumIslemi(request, env, simdi, id, islem) {
     }
     return tasi(env, o, veri, id);
   });
+  // Sıra değişti (yağ yazımı hariç): eşiğe inen çiftçilere haber at. Cevabı bloklamaz (waitUntil).
+  if (islem !== "yag") {
+    bildirimTetikleGuvenli(env, ctx, o.yaghane_id, simdi);
+  }
+  return cevap;
 }
 
 async function tasi(env, o, veri, id) {
@@ -877,6 +883,94 @@ async function bildirimVazgec(request, env, simdi, token) {
   return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 }
 
+function ciftciLinki(env, token) {
+  const taban = env.SITE_ORIGIN || "https://sira.zeytindefteri.tr";
+  return taban + "/" + token;
+}
+
+/** Bir satırın hedef eşiği: 2 = sıra sende (başladı ya da önünde 0), 1 = yaklaştı (önünde 1-2), 0 = yok. */
+function hedefEsik(s, satirlar) {
+  if (s.durum === "isleniyor") {
+    return 2;
+  }
+  if (s.durum !== "sirada") {
+    return 0;
+  }
+  const onunde = onundekiler(satirlar, s);
+  if (onunde === 0) {
+    return 2;
+  }
+  if (onunde <= 2) {
+    return 1;
+  }
+  return 0;
+}
+
+/** Tek aboneye gönderim + sonuç kaydı. Hata yutulur: bir çiftçiye ulaşılamaması ötekileri etkilemez. */
+async function aboneyeGonder(env, a, mesaj, bit, simdi) {
+  try {
+    const r = await webPushGonder(env, a, mesaj, simdi);
+    if (r.sil) {
+      await env.DB.prepare("DELETE FROM bildirim_abone WHERE token = ? AND endpoint = ?").bind(a.token, a.endpoint).run().catch(() => {});
+      return;
+    }
+    await env.DB.prepare("UPDATE bildirim_abone SET esik_durumu = esik_durumu | ? WHERE token = ? AND endpoint = ?").bind(bit, a.token, a.endpoint).run().catch(() => {});
+  } catch {
+    // Gönderim hatası sıra işlemini etkilemez; sonraki durum değişiminde yeniden denenir.
+  }
+}
+
+/** Durum değişince eşiğe inen çiftçilere haber atar. Her eşik bir kez (esik_durumu biti). Gece göndermez. */
+export async function bildirimTetikle(env, yaghaneId, simdi) {
+  if (!bildirimAcikMi(env) || geceMi(simdi)) {
+    return;
+  }
+  const abonelerR = await env.DB.prepare("SELECT token, endpoint, p256dh, auth, esik_durumu FROM bildirim_abone WHERE yaghane_id = ?")
+    .bind(yaghaneId)
+    .all()
+    .catch(() => null);
+  const aboneler = abonelerR && abonelerR.results ? abonelerR.results : [];
+  if (!aboneler.length) {
+    return;
+  }
+  const satirlarR = await env.DB.prepare("SELECT id, token, kod, durum, konum FROM sira WHERE yaghane_id = ? AND durum IN " + AKTIF).bind(yaghaneId).all();
+  const satirlar = satirlarR.results || [];
+  const satirByToken = new Map();
+  for (const s of satirlar) {
+    satirByToken.set(s.token, s);
+  }
+  const isler = [];
+  for (const a of aboneler) {
+    const s = satirByToken.get(a.token);
+    if (!s) {
+      continue;
+    }
+    const hedef = hedefEsik(s, satirlar);
+    if (hedef === 0) {
+      continue;
+    }
+    const bit = hedef === 2 ? 2 : 1;
+    if ((a.esik_durumu & bit) !== 0) {
+      continue;
+    }
+    const onunde = s.durum === "sirada" ? onundekiler(satirlar, s) : 0;
+    const mesaj =
+      hedef === 2
+        ? mesajGovdesi("Sıra sende", "Sıra sana geldi. (kod " + s.kod + ")", ciftciLinki(env, s.token))
+        : mesajGovdesi("Sıran yaklaştı", "Önünde " + onunde + " kişi kaldı, yola çıkabilirsin. (kod " + s.kod + ")", ciftciLinki(env, s.token));
+    isler.push(aboneyeGonder(env, a, mesaj, bit, simdi));
+  }
+  await Promise.allSettled(isler);
+}
+
+/** Sıra işlemini bloklamadan tetikle: waitUntil ile cevaptan sonra çalışır, hatası yutulur. */
+function bildirimTetikleGuvenli(env, ctx, yaghaneId, simdi) {
+  const is = bildirimTetikle(env, yaghaneId, simdi).catch(() => {});
+  if (ctx && typeof ctx.waitUntil === "function") {
+    ctx.waitUntil(is);
+  }
+}
+
 // ===================================================================== YÖNLENDİRME
 
 export async function apiIstegi(request, env, ctx, simdi) {
@@ -918,7 +1012,7 @@ export async function apiIstegi(request, env, ctx, simdi) {
     }
     const islem = /^\/api\/yaghane\/sira\/([0-9]{1,12})\/(baslat|bitti|yag|iptal|tasi)$/.exec(yol);
     if (islem && yontem === "POST") {
-      return await durumIslemi(request, env, simdi, Number(islem[1]), islem[2]);
+      return await durumIslemi(request, env, simdi, Number(islem[1]), islem[2], ctx);
     }
     if (yol === "/api/sira/bul" && yontem === "POST") {
       return await ciftciBul(request, env, simdi);
