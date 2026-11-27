@@ -542,14 +542,6 @@ const m = [];
   const api = await import(join(dir, "src/api.mjs"));
   const G = await import(join(dir, "src/guvenlik.mjs"));
 
-  // Gece kuralı: TR 22:00–05:00 göndermez (saatler UTC+3).
-  check(B.geceMi(Date.parse("2026-11-22T19:00:00Z")), "22:00 TR gece");
-  check(B.geceMi(Date.parse("2026-11-22T00:00:00Z")), "03:00 TR gece");
-  check(B.geceMi(Date.parse("2026-11-22T01:59:00Z")), "04:59 TR gece");
-  check(!B.geceMi(Date.parse("2026-11-22T02:00:00Z")), "05:00 TR gündüz");
-  check(!B.geceMi(Date.parse("2026-11-22T08:00:00Z")), "11:00 TR gündüz");
-  check(!B.geceMi(Date.parse("2026-11-22T18:59:00Z")), "21:59 TR gündüz");
-
   // VAPID anahtar çifti + mesaj şifrelemesi doğrulanır (gerçek push servisi gibi).
   const vk = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
   const vpubRaw = new Uint8Array(await crypto.subtle.exportKey("raw", vk.publicKey));
@@ -633,14 +625,14 @@ const m = [];
     esit(cagrilar.length, 2, "sıra sende için ikinci haber gider");
     esit(await esik(), 3, "yaklaştı + sıra sende bitleri");
 
-    // Gece: yeni abone E (önünde ... aslında 9105 artık tek sırada, önünde 0) → gece göndermez.
+    // Gece kuralı YOK: fabrika sezonda gece de çalışır → gece de haber gider. abE (tE) önünde 1 → yaklaştı.
     const abE = await yeniAbone("https://push.example.com/E");
     await db.prepare("INSERT INTO bildirim_abone (yaghane_id, token, endpoint, p256dh, auth, esik_durumu, olusturma) VALUES (9001, ?, ?, ?, ?, 0, ?)").bind(tE, abE.endpoint, abE.p256dh, abE.auth, T).run();
     await api.bildirimTetikle(benv, 9001, Date.parse("2026-11-22T20:00:00Z"));
-    esit(cagrilar.length, 2, "gece hiç haber gönderilmez");
+    esit(cagrilar.length, 3, "gece de haber gider (fabrika gece çalışır)");
 
     // Ölü abone (410) → silinir.
-    await db.prepare("UPDATE bildirim_abone SET esik_durumu = 0 WHERE token = ?").bind(tE, abE).run().catch(() => {});
+    await db.prepare("UPDATE bildirim_abone SET esik_durumu = 0 WHERE token = ?").bind(tE).run().catch(() => {});
     olenEndpoint = abE.endpoint;
     await api.bildirimTetikle(benv, 9001, T);
     const kalanE = await db.prepare("SELECT COUNT(*) AS n FROM bildirim_abone WHERE endpoint = ?").bind(abE.endpoint).first();

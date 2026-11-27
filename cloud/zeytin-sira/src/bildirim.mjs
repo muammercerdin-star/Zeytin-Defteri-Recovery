@@ -2,19 +2,12 @@
 // Yalnız WebCrypto; dış bağımlılık yok. Mesaj içeriği uçtan uca şifrelidir: ileten push servisi okuyamaz.
 // Kişisel veri taşınmaz: mesaj yalnız kod + fabrika içerir.
 import { b64u, rastgele, unb64u } from "./guvenlik.mjs";
-import { TR_OFFSET_MS } from "./zaman.mjs";
 
 const encoder = new TextEncoder();
 
 export const BILDIRIM_TTL_SN = 1800;
 const JWT_OMRU_SN = 12 * 60 * 60;
 const KAYIT_BOYU = 4096;
-
-/** Gece kuralı: Türkiye saatiyle 22:00–05:00 arasında bildirim gönderilmez. */
-export function geceMi(simdi) {
-  const saat = new Date(simdi + TR_OFFSET_MS).getUTCHours();
-  return saat >= 22 || saat < 5;
-}
 
 function diziBirlestir(parcalar) {
   let boy = 0;

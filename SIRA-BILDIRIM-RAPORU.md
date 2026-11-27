@@ -13,7 +13,7 @@ Yalnız **web** tarafıdır; sitede uygulamadan önce yayınlanabilir (yayın g�
 2. **Abonelik uçları** — `POST /api/sira/<token>/bildirim` (haber ver), `DELETE` (vazgeç). Hız sınırlı,
    VAPID yoksa `503 KAPALI`. Çiftçi durum cevabına açık VAPID anahtarı eklendi.
 3. **Gönderim motoru** (`src/bildirim.mjs`) — VAPID JWT (ES256) + RFC 8291/8188 uçtan uca şifreli içerik
-   (aes128gcm). Yalnız WebCrypto, dış bağımlılık yok. Gece kuralı (TR 22:00–05:00).
+   (aes128gcm). Yalnız WebCrypto, dış bağımlılık yok.
 4. **Tetikleme** — Başlat/Bitti/İptal/taşı sonrası eşiğe inen çiftçilere haber. `waitUntil` ile sıra işlemini
    bloklamaz; gönderim hatası yutulur (bir çiftçiye ulaşılamaması ötekini ve sırayı etkilemez).
 5. **Çiftçi sayfası** — "haber ver" düğmesi, izin akışı, aç/kapat, desteklemeyen tarayıcıya "sayfayı açık tut"
@@ -24,14 +24,14 @@ Yalnız **web** tarafıdır; sitede uygulamadan önce yayınlanabilir (yayın g�
 ## Kararlar
 - **Eşik:** önünde 2 kala "yaklaştı" (bit 1) + sıra sende/başladı (bit 2). Her eşik bir kez (`esik_durumu` biti).
 - **Tetikleme:** ayrı zamanlayıcı yok; durum değişince taranır. Yağ yazımı sırayı değiştirmediği için tetiklemez.
-- **Gece:** 22:00–05:00 hiç gönderilmez.
+- **Gece kuralı yok:** fabrika sezonda gece de çalışır, çiftçi gece de sırasını bekler → bildirim 7/24 gider.
 - **Gizlilik (AGENTS şifreli röle istisnası):** push adresi yalnız koda/token'a bağlı, isim/telefonla eşleşmez;
   mesaj kişisel veri taşımaz ("Sıran yaklaştı · kod 7532"); içerik uçtan uca şifreli (ileten push servisi okuyamaz);
   24 saatte silinir. `bildirim_abone` tablosunda ad/telefon/kg/kasa sütunu yoktur (testle doğrulandı).
 
 ## Testler (bu ortamda çalıştırıldı)
-- `tests/sira_worker` — **234/234** (gece sınırı; VAPID JWT imzası açık anahtarla doğrulandı; aes128gcm
-  round-trip çözüldü; tetikleme: yaklaştı bir kez, ilerleyince sıra sende, gece sessiz, 410 → sil; abonelik
+- `tests/sira_worker` — **228/228** (VAPID JWT imzası açık anahtarla doğrulandı; aes128gcm
+  round-trip çözüldü; tetikleme: yaklaştı bir kez, ilerleyince sıra sende, gece de gönderir, 410 → sil; abonelik
   uçları 503/201/400/409, yalnız token'a bağlı).
 - `tests/sira_web` — **213/213** (çiftçi bildirim arayüzü statik kontrolleri).
 - `tests/sira_e2e` — **53/53** (mevcut sıra akışı bozulmadı; bildirim VAPID yokken gizli).

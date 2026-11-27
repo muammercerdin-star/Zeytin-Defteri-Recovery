@@ -88,7 +88,8 @@ uykuda kalır (düğme hiç görünmez), sıra sistemi normal çalışır.
 
 Gizlilik: telefonun "haber adresi" yalnız sıra koduna bağlanır (isim/telefon yok), bildirim metni kişisel veri
 taşımaz, 24 saatte silinir. iPhone'da bildirim yalnız sayfa Ana Ekrana eklenirse ve iOS 16.4+ ile çalışır;
-desteklemeyen telefonda çiftçiye "sayfayı açık tut" denir. Gece (22:00–05:00) bildirim gönderilmez.
+desteklemeyen telefonda çiftçiye "sayfayı açık tut" denir. Fabrikalar gece de çalıştığı için bildirim 7/24 gider
+(gece kuralı yoktur).
 
 ## 5. Pilot fabrika ve iki kullanıcı (tohum)
 

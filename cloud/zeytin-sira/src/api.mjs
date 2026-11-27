@@ -26,7 +26,7 @@ import {
   yeniKod,
   yeniToken,
 } from "./guvenlik.mjs";
-import { geceMi, mesajGovdesi, webPushGonder } from "./bildirim.mjs";
+import { mesajGovdesi, webPushGonder } from "./bildirim.mjs";
 import { gosterilenGun, gosterilenSaat, onundekiler, tahminEt } from "./tahmin.mjs";
 import { DAKIKA, GUN_MS, gecerliSaat, gunGeri, oncekiGun, saatDakika, utcGunu, yaghaneGunu } from "./zaman.mjs";
 
@@ -920,9 +920,10 @@ async function aboneyeGonder(env, a, mesaj, bit, simdi) {
   }
 }
 
-/** Durum değişince eşiğe inen çiftçilere haber atar. Her eşik bir kez (esik_durumu biti). Gece göndermez. */
+/** Durum değişince eşiğe inen çiftçilere haber atar. Her eşik bir kez (esik_durumu biti).
+ *  Gece kuralı yok: fabrikalar sezonda gece de çalışır, çiftçi gece de sırasını bekler. */
 export async function bildirimTetikle(env, yaghaneId, simdi) {
-  if (!bildirimAcikMi(env) || geceMi(simdi)) {
+  if (!bildirimAcikMi(env)) {
     return;
   }
   const abonelerR = await env.DB.prepare("SELECT token, endpoint, p256dh, auth, esik_durumu FROM bildirim_abone WHERE yaghane_id = ?")
