@@ -67,6 +67,29 @@ Elle girişteki "telefonun son 2 hanesi" ve IP özeti bu tuzla HMAC'lenir. Tuz o
    Değer: ürettiğin metin. **Deploy** / **Save**.
 3. Değeri bir yere yazmana gerek yok; değişirse yalnız o günün elle giriş özetleri geçersiz olur.
 
+## 4b. Bildirim anahtarı (VAPID) — "sıram gelince haber ver" için (isteğe bağlı)
+
+Çiftçiye sırası yaklaşınca telefonuna bildirim gitmesini istiyorsan iki secret ekle. **Eklemezsen** bildirim özelliği
+uykuda kalır (düğme hiç görünmez), sıra sistemi normal çalışır.
+
+1. Anahtar çiftini üret (Termux ya da bilgisayar; Node yeter, paket kurulumu gerekmez):
+   ```sh
+   cd cloud/zeytin-sira && node vapid-uret.mjs
+   ```
+   İki satır basar: `VAPID_ACIK_ANAHTAR` ve `VAPID_GIZLI_ANAHTAR`.
+2. **Workers → zeytin-sira → Settings → Variables and Secrets → Add**. İki **Secret** ekle:
+   - Ad `VAPID_ACIK_ANAHTAR`, değer birinci satır (açık anahtar).
+   - Ad `VAPID_GIZLI_ANAHTAR`, değer ikinci satır (**gizli** — kimseyle paylaşma, bir dosyaya yazma).
+   - İstersen Ad `VAPID_KONU`, değer `mailto:destek@zeytindefteri.tr` (boşsa varsayılan kullanılır).
+3. **Göç:** `cloud/zeytin-sira/goc-bildirim.sql` içeriğini **D1 → zeytin-sira → Console**'a yapıştır, **Execute**
+   (yeni `bildirim_abone` tablosu; mevcut veriye dokunmaz). Bu olmadan abonelik kaydedilemez.
+4. Deploy zaten GitHub Actions ile olur. Gizli anahtarı sonradan değiştirirsen o ana kadarki abonelikler
+   geçersizleşir; çiftçiler "haber ver"e yeniden basar.
+
+Gizlilik: telefonun "haber adresi" yalnız sıra koduna bağlanır (isim/telefon yok), bildirim metni kişisel veri
+taşımaz, 24 saatte silinir. iPhone'da bildirim yalnız sayfa Ana Ekrana eklenirse ve iOS 16.4+ ile çalışır;
+desteklemeyen telefonda çiftçiye "sayfayı açık tut" denir. Gece (22:00–05:00) bildirim gönderilmez.
+
 ## 5. Pilot fabrika ve iki kullanıcı (tohum)
 
 Şifre ekrana yazılmadan sorulur, hiçbir dosyaya ve kabuk geçmişine yazılmaz; çıktıda yalnız PBKDF2 özetleri vardır.
