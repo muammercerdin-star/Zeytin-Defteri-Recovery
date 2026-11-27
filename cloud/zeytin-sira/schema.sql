@@ -61,6 +61,22 @@ CREATE TABLE IF NOT EXISTS kod_yedegi (
   PRIMARY KEY (yaghane_id, gun, kod)
 );
 
+-- Çiftçi bildirim aboneliği (İP9-A-10): "sıram gelince haber ver".
+-- KİŞİSEL VERİ YOK: yalnız sıra token'ına bağlanır, isim/telefon ile eşleşmez. endpoint, çiftçinin tarayıcısının
+-- push servisindeki adresidir (bir cihaz tanımlayıcısı), görünen ad değil; bildirim metni kişisel veri taşımaz.
+-- Şifreli ad ile aynı ömür: 24 saat sonra silinir; sıra bitince/iptal olunca da silinir.
+CREATE TABLE IF NOT EXISTS bildirim_abone (
+  yaghane_id INTEGER NOT NULL,
+  token TEXT NOT NULL,
+  endpoint TEXT NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  -- Gönderilen eşiklerin biti: 1 = yaklaştı (2 kala), 2 = sıra sende. Her eşik bir kez gider.
+  esik_durumu INTEGER NOT NULL DEFAULT 0,
+  olusturma INTEGER NOT NULL,
+  PRIMARY KEY (token, endpoint)
+);
+
 -- Tahmin isabeti (isimsiz): çiftçiye söylenen başlama ile gerçek başlama farkı, gün bazında toplanır.
 -- Pilotta "tahmin tuttu mu?" sorusunu sayıyla yanıtlar. Kişisel veri yok.
 CREATE TABLE IF NOT EXISTS isabet (

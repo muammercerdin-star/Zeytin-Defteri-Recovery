@@ -3,6 +3,7 @@
 import { GUN_MS } from "./zaman.mjs";
 
 export const AD_OMRU_MS = GUN_MS;
+export const BILDIRIM_OMRU_MS = GUN_MS;
 export const SATIR_OMRU_MS = 90 * GUN_MS;
 export const ISLEM_KAYDI_OMRU_MS = 3 * GUN_MS;
 export const YEDEK_OMRU_MS = 2 * GUN_MS;
@@ -28,4 +29,10 @@ export async function temizle(db, simdi) {
     db.prepare("DELETE FROM kod_yedegi WHERE ayrilma <= ?").bind(simdi - YEDEK_OMRU_MS),
     db.prepare("DELETE FROM sayac WHERE gun < ?").bind(new Date(simdi - SAYAC_OMRU_GUN * GUN_MS).toISOString().slice(0, 10)),
   ]);
+  // Bildirim aboneleri ayrı silinir: göç henüz uygulanmadıysa (tablo yoksa) yukarıdaki toplu temizlik etkilenmesin.
+  await db
+    .prepare("DELETE FROM bildirim_abone WHERE olusturma <= ?")
+    .bind(simdi - BILDIRIM_OMRU_MS)
+    .run()
+    .catch(() => {});
 }
