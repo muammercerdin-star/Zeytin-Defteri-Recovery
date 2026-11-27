@@ -334,6 +334,24 @@
             <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
         </service>
         <activity android:name=".PushOpenActivity" android:exported="false" android:screenOrientation="portrait" />
+
+        <!-- Yağhane Sıram: ofis QR'ı (sira.zeytindefteri.tr/<token>) uygulama yüklüyse burayı açar (App Link).
+             Sorunsuz açılma için sira.zeytindefteri.tr'de .well-known/assetlinks.json gerekir (KURULUM). Geçersiz
+             yol (ofis/havuzcu linkleri) gelirse ekran kendini kapatır. zeytin-sira:// şeması bildirim tıklaması için. -->
+        <activity android:name=".SiramActivity" android:exported="true" android:label="Sıram"
+            android:screenOrientation="portrait">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="sira.zeytindefteri.tr" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="zeytin-sira" />
+            </intent-filter>
+        </activity>
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="meydan_replies" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_bell_line" />
         <activity android:name=".BlockedUsersActivity" android:exported="false" />
