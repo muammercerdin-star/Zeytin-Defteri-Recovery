@@ -1,6 +1,8 @@
 // Çiftçi sayfası: yalnız linkteki token ile, yalnız kendi sırası. İsim gösterilmez.
 // Sayfa ekrandayken 60 saniyede bir yenilenir; sıkım bitince ya da iptalde durur (bulut kotası korunur).
 
+import { bildirimKur } from "./ciftci-bildirim.js";
+
 const YENILEME_MS = 60000;
 const $ = (id) => document.getElementById(id);
 let zamanlayici = null;
@@ -64,6 +66,7 @@ function ciz(v) {
     $("onunde").textContent = "Bilgi için yağhaneye sor.";
   }
   adimlar(v.durum);
+  bildirimKur(token(), v.bildirim, v.durum);
   $("guncel").textContent = "Son güncelleme " + v.guncel + (v.durum === "sirada" || v.durum === "isleniyor" ? " · sayfa kendiliğinden yenilenir" : "");
   bitti = (v.durum === "bitti" && Boolean(v.yag_kg)) || v.durum === "iptal";
 }
