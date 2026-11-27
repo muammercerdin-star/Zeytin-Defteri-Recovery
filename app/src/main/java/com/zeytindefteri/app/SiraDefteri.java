@@ -11,6 +11,10 @@ import org.json.JSONObject;
  * Sunucuya gitmez; sıra sunucusu çiftçinin kim olduğunu bilmez (anonimlik korunur). Her token için
  * gönderilmiş haber biti tutulur (1 = yaklaştı, 2 = sıra sende) ki aynı haber iki kez gitmesin — web
  * tarafındaki esik_durumu ile aynı mantık. Depo arayüzü Android'den ayrıdır: saf mantık host'ta test edilir.
+ *
+ * Not: org.json'un getJSONObject/put metotları Android'de checked JSONException atar (host kütüphanesinde
+ * atmaz). İki yerde de derlenmesi için JSON dokunan gövdeler catch(Exception) ile sarılır; hata olursa güvenli
+ * varsayılan döner (kayıt bozulmaz).
  */
 public final class SiraDefteri {
 
@@ -51,10 +55,13 @@ public final class SiraDefteri {
     }
 
     private int dizin(JSONArray a, String token) {
-        for (int i = 0; i < a.length(); i++) {
-            if (token.equals(a.getJSONObject(i).optString("t"))) {
-                return i;
+        try {
+            for (int i = 0; i < a.length(); i++) {
+                if (token.equals(a.getJSONObject(i).optString("t"))) {
+                    return i;
+                }
             }
+        } catch (Exception e) {
         }
         return -1;
     }
@@ -64,42 +71,52 @@ public final class SiraDefteri {
         if (!gecerli(token)) {
             return false;
         }
-        JSONArray a = liste();
-        if (dizin(a, token) >= 0) {
+        try {
+            JSONArray a = liste();
+            if (dizin(a, token) >= 0) {
+                return false;
+            }
+            JSONObject o = new JSONObject();
+            o.put("t", token);
+            o.put("e", 0);
+            JSONArray yeni = new JSONArray();
+            yeni.put(o);
+            for (int i = 0; i < a.length() && yeni.length() < EN_COK; i++) {
+                yeni.put(a.getJSONObject(i));
+            }
+            kaydet(yeni);
+            return true;
+        } catch (Exception e) {
             return false;
         }
-        JSONObject o = new JSONObject();
-        o.put("t", token);
-        o.put("e", 0);
-        JSONArray yeni = new JSONArray();
-        yeni.put(o);
-        for (int i = 0; i < a.length() && yeni.length() < EN_COK; i++) {
-            yeni.put(a.getJSONObject(i));
-        }
-        kaydet(yeni);
-        return true;
     }
 
     public void sil(String token) {
-        JSONArray a = liste();
-        int d = dizin(a, token);
-        if (d < 0) {
-            return;
-        }
-        JSONArray yeni = new JSONArray();
-        for (int i = 0; i < a.length(); i++) {
-            if (i != d) {
-                yeni.put(a.getJSONObject(i));
+        try {
+            JSONArray a = liste();
+            int d = dizin(a, token);
+            if (d < 0) {
+                return;
             }
+            JSONArray yeni = new JSONArray();
+            for (int i = 0; i < a.length(); i++) {
+                if (i != d) {
+                    yeni.put(a.getJSONObject(i));
+                }
+            }
+            kaydet(yeni);
+        } catch (Exception e) {
         }
-        kaydet(yeni);
     }
 
     public List<String> tokenlar() {
-        JSONArray a = liste();
         List<String> out = new ArrayList<>();
-        for (int i = 0; i < a.length(); i++) {
-            out.add(a.getJSONObject(i).optString("t"));
+        try {
+            JSONArray a = liste();
+            for (int i = 0; i < a.length(); i++) {
+                out.add(a.getJSONObject(i).optString("t"));
+            }
+        } catch (Exception e) {
         }
         return out;
     }
@@ -110,23 +127,30 @@ public final class SiraDefteri {
 
     /** Bu token için gönderilmiş haber biti (0 = hiç, 1 = yaklaştı, 2 = sıra sende, 3 = ikisi). */
     public int esik(String token) {
-        JSONArray a = liste();
-        int d = dizin(a, token);
-        if (d < 0) {
+        try {
+            JSONArray a = liste();
+            int d = dizin(a, token);
+            if (d < 0) {
+                return 0;
+            }
+            return a.getJSONObject(d).optInt("e", 0);
+        } catch (Exception e) {
             return 0;
         }
-        return a.getJSONObject(d).optInt("e", 0);
     }
 
     /** Gönderilen haber bitini işaretler (OR'lanır): aynı eşik ikinci kez haber vermez. */
     public void esikIsaretle(String token, int bit) {
-        JSONArray a = liste();
-        int d = dizin(a, token);
-        if (d < 0) {
-            return;
+        try {
+            JSONArray a = liste();
+            int d = dizin(a, token);
+            if (d < 0) {
+                return;
+            }
+            JSONObject o = a.getJSONObject(d);
+            o.put("e", o.optInt("e", 0) | bit);
+            kaydet(a);
+        } catch (Exception e) {
         }
-        JSONObject o = a.getJSONObject(d);
-        o.put("e", o.optInt("e", 0) | bit);
-        kaydet(a);
     }
 }

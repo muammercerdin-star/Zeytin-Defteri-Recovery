@@ -51,7 +51,12 @@ public final class SiraDurumu {
     }
 
     public static SiraDurumu coz(String json) {
-        return coz(new JSONObject(json));
+        try {
+            return coz(new JSONObject(json));
+        } catch (Exception e) {
+            // Android'de JSONObject(String) checked JSONException atar; bozuk veri gelirse çağıran (SiraBulut) yutar.
+            throw new IllegalArgumentException("Geçersiz sıra verisi");
+        }
     }
 
     public static SiraDurumu coz(JSONObject o) {
