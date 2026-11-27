@@ -65,6 +65,7 @@ public final class AlertCenter {
     public static void onAppStart(Context context) {
         Context app = context.getApplicationContext();
         createChannel(app);
+        SiraBildirimci.createChannel(app);
         schedule(app);
         ElekReminder.schedule(app);
     }
@@ -108,6 +109,12 @@ public final class AlertCenter {
     public static void runSync(Context context) {
         Context app = context.getApplicationContext();
         if (!new SessionManager(app).hasSession()) return;
+        try {
+            // Yağhane sıram: takip edilen sıra varsa durumu yoklar, eşiğe inince yerel bildirim verir.
+            // Sıra yoksa ağ açmaz. Hatası diğer uyarıları etkilemesin diye ayrı try içinde.
+            SiraTarama.tara(app);
+        } catch (RuntimeException ignored) {
+        }
         DatabaseHelper helper = new DatabaseHelper(app);
         try {
             String owner = helper.getActiveOwnerUid();
