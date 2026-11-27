@@ -1812,6 +1812,54 @@ public class ProducerFeedActivity extends Activity {
     // ANA SAYFA
     // =========================================================
 
+    /**
+     * Yağhane Sıram kartı (ana ekran): takip edilen sıra varsa fabrika + sıra no + önünde/tahmin gösterir;
+     * durumu arka planda SiraBulut'tan çeker. Takip edilen token yoksa null döner (kart hiç çıkmaz).
+     * Sıra bittiyse/ulaşılamazsa kart kendini kaldırır. Dokununca SiramActivity (detay) açılır.
+     */
+    private View siramKart() {
+        final SiraDefteri defteri = new SiraDefteri(new SiraDepo(this));
+        final java.util.List<String> tokenlar = defteri.tokenlar();
+        if (tokenlar.isEmpty()) {
+            return null;
+        }
+        final String token = tokenlar.get(0);
+        final LinearLayout kart = new LinearLayout(this);
+        kart.setOrientation(LinearLayout.VERTICAL);
+        kart.setBackground(round(CARD, 18, BORDER));
+        kart.setPadding(dp(16), dp(14), dp(16), dp(14));
+        kart.setOnClickListener(v -> startActivity(
+                new Intent(this, SiramActivity.class).putExtra(SiramActivity.EXTRA_TOKEN, token)));
+        kart.addView(text("SIRAM", 12, GREEN, true));
+        final TextView satir = text("Sıran yükleniyor…", 16, MUTED, false);
+        satir.setPadding(0, dp(6), 0, 0);
+        kart.addView(satir);
+        new Thread(() -> {
+            final SiraDurumu d = SiraBulut.durum(token);
+            runOnUiThread(() -> {
+                if (d == null || d.tamam()) {
+                    if (kart.getParent() instanceof android.view.ViewGroup) {
+                        ((android.view.ViewGroup) kart.getParent()).removeView(kart);
+                    }
+                    if (d != null && d.tamam()) {
+                        defteri.sil(token);
+                    }
+                    return;
+                }
+                satir.setText(d.fabrika + " · " + d.siraNo + ". sıra");
+                satir.setTextColor(TEXT);
+                String altMetin = d.onundeMetni();
+                if (!d.gosterilenTahmin().isEmpty()) {
+                    altMetin = (altMetin.isEmpty() ? "" : altMetin + " · ") + d.gosterilenTahmin();
+                }
+                TextView alt = text(altMetin, 14, MUTED, false);
+                alt.setPadding(0, dp(3), 0, 0);
+                kart.addView(alt);
+            });
+        }, "zd-siram-kart").start();
+        return kart;
+    }
+
     private View buildHomeSection() {
         ScrollView scroll = scroll();
 
@@ -1854,6 +1902,18 @@ public class ProducerFeedActivity extends Activity {
         }
 
         body.addView(hero);
+
+        // Yağhane Sıram kartı: takip edilen aktif sıra varsa görünür (bağlama-duyarlı). Tamamı korumalı —
+        // hata olursa kart çıkmaz, ana ekran hiç etkilenmez.
+        try {
+            View siram = siramKart();
+            if (siram != null) {
+                LinearLayout.LayoutParams siramP = new LinearLayout.LayoutParams(-1, -2);
+                siramP.setMargins(dp(16), dp(12), dp(16), 0);
+                body.addView(siram, siramP);
+            }
+        } catch (RuntimeException ignored) {
+        }
 
         // "Bugünün eleği" kartı ana ekrandan kaldırıldı (Elek sekmesi aynı işi yapıyor; ana ekran sadeleşti).
 
