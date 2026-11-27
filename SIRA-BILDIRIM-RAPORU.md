@@ -50,6 +50,15 @@ Secret'leri ve göçü eklemezsen özellik uykuda kalır, mevcut sistem normal �
 - Gerçek cihaza push bu ortamda gönderilmedi (ağ/secret yok); kripto round-trip ile doğrulandı. Canlıda ilk
   denemeyi kendi telefonunla yapman iyi olur.
 
+## Ek: "Ara" düğmesi (teknolojiden anlamayan çiftçi için)
+
+Push, çiftçinin bir kez "izin ver"e dokunmasını gerektirir (tarayıcı kuralı). Teknolojiden anlamayan çiftçi
+bununla uğraşmasın diye ikinci yol: ofis panelinde çiftçinin satırında **"Ara"** düğmesi. Ofis yeni müşteri
+eklerken isteğe bağlı telefon girer; numara **yalnız ofis tarayıcısında** (günlük TelefonDefteri) kalır, sunucuya
+gitmez, gün başında silinir — sunucuya yine yalnız son 2 hanenin tuzlu özeti gider. Sırası yaklaşınca ofis "Ara"ya
+dokunur, telefon kendi rehberinden açılır; çiftçi hiçbir şey yapmaz. Ofis **mesaj atmaz** (WhatsApp/SMS yok),
+yalnız arar. Böylece push isteyen çiftçiye otomatik, istemeyene fabrika araması.
+
 ## İP9-B (pilot sonrası, bu işin dışında)
 Uygulamada "Sıram" kartı + yerel bildirim (mevcut FCM) + sıktırılan yağın deftere otomatik kaydı + aynı QR ile
 App Link. Tasarım hazır; inşa pilot geri bildirimine bağlı.

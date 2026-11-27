@@ -4,6 +4,7 @@ import { fisYazdir, qrTuvali } from "./fis.js";
 import { islemKimligi } from "./kuyruk.js";
 import { yeniMusteriGovdesi } from "./musteri.js";
 import { raporKur } from "./rapor.js";
+import { TelefonDefteri } from "./telefon.js";
 import { qrcode } from "./vendor/qrcode.js";
 import { anahtariKaydet, api, cihazAnahtari, cikisYap, depo, dugme, el, kg, parolaKaydet, qrAnahtariniAl, randiman, saat } from "./ortak.js";
 
@@ -17,6 +18,11 @@ function mesajGoster(metin, tur = "bilgilendirme") {
   const kutu = el("div", tur, metin);
   $("mesajlar").appendChild(kutu);
   setTimeout(() => kutu.remove(), 12000);
+}
+
+/** Numara yalnız bu tarayıcıda, o günün defterinde durur; sunucuya gitmez, gün başında silinir. */
+function defter() {
+  return new TelefonDefteri(d, durum.veri ? durum.veri.gun : "bilinmiyor");
 }
 
 async function yukle() {
@@ -35,6 +41,7 @@ async function yukle() {
   }
   const izDegisti = !durum.veri || durum.veri.ayar.anahtar_izi !== r.body.ayar.anahtar_izi;
   durum.veri = r.body;
+  defter().temizle();
   if (izDegisti) {
     const a = await cihazAnahtari(d, r.body.yaghane.kisa_ad, r.body.ayar.anahtar_izi);
     durum.anahtar = a.anahtar;
@@ -122,6 +129,18 @@ function qrKapat() {
   durum.qrBilgi = null;
 }
 
+/** "Ara" düğmesi: numara bu tarayıcıda kayıtlıysa telefonu açar (tel:). Mesaj atmaz; numara sunucuya gitmez. */
+function araDugmesi(s) {
+  const kayit = defter().al(s.kod);
+  if (!kayit || !kayit.tel) {
+    return null;
+  }
+  const ara = el("a", "dugme kucuk", "Ara");
+  ara.href = "tel:+" + kayit.tel;
+  ara.setAttribute("aria-label", "Çiftçiyi ara");
+  return ara;
+}
+
 function islemHucresi(s, ilk, son, ad) {
   const td = el("td");
   const kutu = el("div", "islemler");
@@ -145,10 +164,18 @@ function islemHucresi(s, ilk, son, ad) {
     kutu.append(dugme("Başlat", "ana kucuk", () => islem(yol + "baslat", {}, "Başlat · kod " + s.kod)), yukari, asagi, iptal);
     const satirBilgi = { siraNo: s.sira_no, kod: s.kod, kasa: s.kasa, kg: s.kg, zaman: s.gelis, ad, token: s.token };
     kutu.append(dugme("QR", "kucuk", () => qrGoster(satirBilgi)), dugme("Fiş", "kucuk", () => fisBas(satirBilgi)));
+    const ara = araDugmesi(s);
+    if (ara) {
+      kutu.append(ara);
+    }
   }
   if (s.durum === "isleniyor") {
     // Tek dokunuş: yağ kilosu bitenler satırından sonra yazılır.
     kutu.append(dugme("Bitti", "ana kucuk", () => islem(yol + "bitti", {}, "Bitti · kod " + s.kod)));
+    const ara = araDugmesi(s);
+    if (ara) {
+      kutu.append(ara);
+    }
   }
   if (s.durum === "bitti") {
     if (durum.acik === s.id) {
@@ -374,7 +401,7 @@ function yenileDugmesi() {
 async function yeniEkle(olay) {
   olay.preventDefault();
   const v = durum.veri;
-  const form = { ad: $("y-ad").value, kasa: $("y-kasa").value, kg: $("y-kg").value };
+  const form = { ad: $("y-ad").value, telefon: $("y-tel").value, kasa: $("y-kasa").value, kg: $("y-kg").value };
   const g = await yeniMusteriGovdesi(form, durum.anahtar, v.yaghane.kisa_ad, islemKimligi(), null);
   $("y-hata").classList.add("gizli");
   $("y-sonuc").classList.add("gizli");
@@ -392,12 +419,17 @@ async function yeniEkle(olay) {
   const ad = String(form.ad || "").trim();
   $("y-sonuc").textContent = "✓ " + r.body.sira_no + ". sıra" + (ad ? " · " + kisalt(ad) : "") + " · kod " + r.body.kod + " ";
   const bilgi = { siraNo: r.body.sira_no, kod: r.body.kod, kasa: g.govde.kasa, kg: g.govde.kg, zaman: Date.now(), ad, token: r.body.token };
+  // Numara yalnız bu tarayıcıda: "Ara" düğmesi için koda bağlı deftere yazılır, sunucuya gitmez.
+  if (g.tel) {
+    defter().kaydet(r.body.kod, { tel: g.tel });
+  }
   $("y-sonuc").append(dugme("Fiş yazdır", "kucuk", () => fisBas(bilgi)));
   $("y-sonuc").classList.remove("gizli");
   qrGoster(bilgi);
   $("y-ad").value = "";
   $("y-kasa").value = "";
   $("y-kg").value = "";
+  $("y-tel").value = "";
   await yukle();
 }
 
