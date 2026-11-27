@@ -268,7 +268,7 @@ const m = [];
   esit(r.status, 200, "çiftçi durumu");
   esit(
     Object.keys(r.body).sort(),
-    ["biter", "durum", "fabrika", "gelis", "guncel", "kasa", "kg", "kod", "onunde", "sira_no", "tahmini", "yag_kg"],
+    ["biter", "bildirim", "durum", "fabrika", "gelis", "guncel", "kasa", "kg", "kod", "onunde", "sira_no", "tahmini", "yag_kg"].sort(),
     "çiftçi cevabındaki alanlar"
   );
   esit(r.body.onunde, 3, "önünde 3 kişi");

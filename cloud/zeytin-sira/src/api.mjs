@@ -27,7 +27,7 @@ import {
   yeniToken,
 } from "./guvenlik.mjs";
 import { gosterilenGun, gosterilenSaat, onundekiler, tahminEt } from "./tahmin.mjs";
-import { GUN_MS, gecerliSaat, gunGeri, oncekiGun, saatDakika, utcGunu, yaghaneGunu } from "./zaman.mjs";
+import { DAKIKA, GUN_MS, gecerliSaat, gunGeri, oncekiGun, saatDakika, utcGunu, yaghaneGunu } from "./zaman.mjs";
 
 const GOVDE_SINIRI = 4096;
 const AKTIF = "('sirada', 'isleniyor')";
@@ -37,6 +37,10 @@ const AD_DESENI = /^1\.[A-Za-z0-9_-]{24,150}$/;
 const OP_DESENI = /^[A-Za-z0-9_-]{8,40}$/;
 const KULLANICI_DESENI = /^[a-z0-9._-]{3,40}$/;
 const IZ_DESENI = /^[A-Za-z0-9_-]{11}$/;
+const B64U_DESENI = /^[A-Za-z0-9_-]+={0,2}$/;
+const BILDIRIM_PENCERE_MS = 10 * DAKIKA;
+const BILDIRIM_SINIRI = 20;
+const ENDPOINT_EN_COK = 1024;
 
 export class Hata extends Error {
   constructor(durum, kod, mesaj, ek) {
@@ -755,6 +759,8 @@ async function ciftciDurumu(env, token, simdi) {
   if (tah && s.durum === "isleniyor") {
     body.biter = gosterilenGun(tah.bitis, simdi);
   }
+  // Çiftçi sayfası bildirim düğmesini bununla kurar: açık VAPID anahtarı sır değildir. Kapalıysa düğme gösterilmez.
+  body.bildirim = bildirimAcikMi(env) ? { acik: true, anahtar: env.VAPID_ACIK_ANAHTAR } : { acik: false };
   return json(body);
 }
 
@@ -795,6 +801,80 @@ async function ciftciBul(request, env, simdi) {
     }
   }
   throw bulunamadi;
+}
+
+// ===================================================================== ÇİFTÇİ BİLDİRİMİ
+
+/** Bildirim yalnız açık VAPID anahtarı tanımlıysa çalışır; yoksa özellik uykudadır (düğme gösterilmez). */
+function bildirimAcikMi(env) {
+  return typeof env.VAPID_ACIK_ANAHTAR === "string" && env.VAPID_ACIK_ANAHTAR.length >= 80;
+}
+
+/** Tarayıcının push aboneliğinden gelen üç alan. Kişisel veri değil; endpoint bir cihaz tanımlayıcısıdır. */
+function abonelikOku(veri) {
+  const endpoint = String(veri.endpoint || "");
+  const p256dh = String(veri.p256dh || "");
+  const auth = String(veri.auth || "");
+  if (!/^https:\/\//.test(endpoint) || endpoint.length > ENDPOINT_EN_COK) {
+    return null;
+  }
+  if (!B64U_DESENI.test(p256dh) || p256dh.length < 40 || p256dh.length > 200) {
+    return null;
+  }
+  if (!B64U_DESENI.test(auth) || auth.length < 8 || auth.length > 100) {
+    return null;
+  }
+  return { endpoint, p256dh, auth };
+}
+
+/** "Sıram gelince haber ver": çiftçinin telefonunu bu sıraya (yalnız token'a) bağlar. İsim/telefon istenmez. */
+async function bildirimAbone(request, env, simdi, token) {
+  if (!bildirimAcikMi(env)) {
+    throw new Hata(503, "KAPALI", "Bildirim şu an kapalı.");
+  }
+  const anahtar = "n:" + (await ipOzeti(request, gizliTuz(env), simdi));
+  const d = await denemeSayisi(env.DB, anahtar, simdi, BILDIRIM_PENCERE_MS);
+  if (d.n >= BILDIRIM_SINIRI) {
+    const bekle = Math.max(1, Math.ceil((d.ilk + BILDIRIM_PENCERE_MS - simdi) / 1000));
+    throw new Hata(429, "COK_DENEME", "Çok fazla istek. Biraz bekle.", { bekle_sn: bekle });
+  }
+  await denemeYaz(env.DB, anahtar, simdi);
+  const veri = await govdeOku(request);
+  const ab = abonelikOku(veri);
+  if (!ab) {
+    throw new Hata(400, "GECERSIZ_ISTEK", "Bildirim bilgisi geçersiz.");
+  }
+  const s = await tokenSatiri(env.DB, token, simdi);
+  if (!s) {
+    throw new Hata(404, "YOK", "Bu sıra bulunamadı ya da süresi doldu.");
+  }
+  if (s.durum === "bitti" || s.durum === "iptal") {
+    throw new Hata(409, "BITTI", "Bu sıra tamamlanmış; bildirim gerekmez.");
+  }
+  // Aynı telefon aynı sıraya yeniden abone olursa esik_durumu korunur: gönderilmiş haber tekrar gitmez.
+  await env.DB.prepare(
+    "INSERT INTO bildirim_abone (yaghane_id, token, endpoint, p256dh, auth, esik_durumu, olusturma) " +
+      "VALUES (?, ?, ?, ?, ?, 0, ?) " +
+      "ON CONFLICT(token, endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth, olusturma = excluded.olusturma"
+  )
+    .bind(s.yaghane_id, token, ab.endpoint, ab.p256dh, ab.auth, simdi)
+    .run();
+  return json({ ok: true }, 201);
+}
+
+/** "Vazgeç": bu telefonun (endpoint verilirse) ya da bu sıraya bağlı tüm aboneliklerin silinmesi. */
+async function bildirimVazgec(request, env, simdi, token) {
+  if (!tokenBicimi(token)) {
+    throw new Hata(404, "YOK", "Bulunamadı.");
+  }
+  const veri = await govdeOku(request).catch(() => ({}));
+  const endpoint = String(veri.endpoint || "");
+  if (endpoint && endpoint.length <= ENDPOINT_EN_COK) {
+    await env.DB.prepare("DELETE FROM bildirim_abone WHERE token = ? AND endpoint = ?").bind(token, endpoint).run().catch(() => {});
+  } else {
+    await env.DB.prepare("DELETE FROM bildirim_abone WHERE token = ?").bind(token).run().catch(() => {});
+  }
+  return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 }
 
 // ===================================================================== YÖNLENDİRME
@@ -846,6 +926,13 @@ export async function apiIstegi(request, env, ctx, simdi) {
     const ciftci = /^\/api\/sira\/([A-Za-z0-9_-]{1,64})$/.exec(yol);
     if (ciftci && yontem === "GET") {
       return await ciftciDurumu(env, ciftci[1], simdi);
+    }
+    const bildirim = /^\/api\/sira\/([A-Za-z0-9_-]{1,64})\/bildirim$/.exec(yol);
+    if (bildirim && yontem === "POST") {
+      return await bildirimAbone(request, env, simdi, bildirim[1]);
+    }
+    if (bildirim && yontem === "DELETE") {
+      return await bildirimVazgec(request, env, simdi, bildirim[1]);
     }
     throw new Hata(404, "YOK", "Bulunamadı.");
   } catch (e) {
