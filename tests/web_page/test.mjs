@@ -28,6 +28,7 @@ class Element {
   replaceChildren() {
     this.children = [];
   }
+  addEventListener() {}
   set innerHTML(value) {
     throw new Error('Unsafe DOM write: ' + value);
   }
@@ -40,6 +41,10 @@ renderRows(document, table, [{ tarih: '2026-11-02', uretici: xss, netKg: '1234.5
 equal(table.children[0].children[1].textContent, xss, 'producer is literal text');
 equal(table.children[0].children[1].children.length, 0, 'no img node');
 equal(table.children[0].children.length, 7, 'all columns');
+equal(table.children[0].className, 'due', 'unpaid row highlighted');
+renderRows(document, table, [{ tarih: '2026-11-02', uretici: 'A', netKg: '1', kasa: 1, tutarTL: '5', odenenTL: '5', kalanTL: '0' }], () => {});
+equal(table.children[0].className, 'settled', 'paid row dimmed');
+check(!table.children[0].children[7].children.some(button => button.textContent === 'Öde'), 'no pay button on settled row');
 equal(money('1234.50'), '1.234,50 ₺', 'Turkish money');
 equal(money('-12.03'), '-12,03 ₺', 'negative money');
 equal(money('0'), '0,00 ₺', 'zero money');

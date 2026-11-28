@@ -13,9 +13,20 @@ function origins(env) {
     return Array.isArray(list) ? list.filter(o => typeof o === 'string' && new URL(o).origin === o && new URL(o).protocol === 'https:') : [];
   } catch { return []; }
 }
+function cleanBase(value) {
+  try { const base = new URL(value); return base.protocol === 'https:' && base.pathname === '/' && !base.username && !base.password && !base.search && !base.hash ? base.origin : null; }
+  catch { return null; }
+}
+// Aynı Worker'a ikinci kapı (ör. relay.zeytindefteri.tr): bazı internet sağlayıcıları workers.dev'i engelliyor.
+// Telefon eski adresle, tarayıcı yeni adresle aynı odaya ulaşır. Liste dışındaki host reddedilir.
 function configured(env, url) {
-  try { const base = new URL(env.RELAY_URL); return base.protocol === 'https:' && base.origin === url.origin && base.pathname === '/' && !base.username && !base.password && !base.search && !base.hash; }
-  catch { return false; }
+  const main = cleanBase(env.RELAY_URL);
+  if (!main) return false;
+  if (main === url.origin) return true;
+  try {
+    const list = JSON.parse(env.RELAY_ALIASES || '[]');
+    return Array.isArray(list) && list.some(a => typeof a === 'string' && cleanBase(a) === url.origin);
+  } catch { return false; }
 }
 function b64(a) { let s=''; for(const b of a)s+=String.fromCharCode(b);return btoa(s).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,''); }
 function rand(n) { return b64(crypto.getRandomValues(new Uint8Array(n))); }

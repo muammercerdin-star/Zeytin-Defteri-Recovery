@@ -1,0 +1,6 @@
+{
+  "name": "zeytin-sira",
+  "private": true,
+  "type": "module",
+  "description": "Yağhane sırası: Cloudflare Worker + D1. Bağımlılık yok; testler tests/sira_worker altında."
+}

@@ -1,0 +1,180 @@
+/* Yağhane sırası — yenilenmiş açık tema; telefon öncelikli, büyük yazılı. Dış yazı tipi / CDN yok.
+   Tüm sınıf adları korunur (HTML değişmez); yalnız görünüm: ferah kartlar, yumuşak gölge, iri rakamlar. */
+:root {
+  --lacivert: #0B1D28;
+  --lacivert-2: #13293A;
+  --lacivert-3: #16293A;
+  --cizgi-koyu: #2A4256;
+  --yesil-dolu: #6CC24A;
+  --yesil-dolu-2: #7DD35A;
+  --zemin: #EFF2F5;
+  --kart: #FFFFFF;
+  --cizgi: #E2E8EC;
+  --cizgi-ince: #ECEFF2;
+  --yazi: #0C1E2A;
+  --soluk: #5A6B74;
+  --cok-soluk: #8A98A0;
+  --yesil: #2E7D32;
+  --yesil-acik: #E7F4E2;
+  --turuncu: #9A6400;
+  --turuncu-acik: #FBEFD6;
+  --kehribar: #E3A63B;
+  --kirmizi: #B02A2A;
+  --kirmizi-acik: #FBE8E8;
+  --koyu-yazi: #F4F7F8;
+  --koyu-soluk: #AEBECA;
+  --golge-s: 0 1px 2px rgba(11, 29, 40, 0.05);
+  --golge: 0 4px 18px rgba(11, 29, 40, 0.07);
+  --golge-l: 0 12px 34px rgba(11, 29, 40, 0.10);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
+  color: var(--yazi);
+  background: var(--zemin);
+  -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+  min-height: 100vh;
+  background:
+    radial-gradient(1100px 280px at 50% -140px, #E4ECF2 0%, rgba(228, 236, 242, 0) 72%),
+    var(--zemin);
+}
+main { max-width: 640px; margin: 0 auto; padding: 20px 16px 36px; }
+main.genis { max-width: 1200px; }
+h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.08; margin: 0; }
+h2 { font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--yesil); margin: 30px 0 12px; display: flex; align-items: center; gap: 10px; }
+h2::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--cizgi), transparent); }
+.kart h2 { margin-top: 2px; }
+.kart h2::after { display: none; }
+a { color: var(--yesil); }
+
+/* Üst çubuk: lacivert, hafif degrade */
+.marka-cubuk { background: linear-gradient(180deg, #0E2230, #0B1D28); color: var(--koyu-yazi); box-shadow: var(--golge-s); }
+.marka-ic { max-width: 1200px; margin: 0 auto; padding: 0 16px; min-height: 56px; display: flex; align-items: center; gap: 10px; }
+.marka { display: inline-flex; align-items: center; gap: 10px; color: var(--koyu-yazi); text-decoration: none; font-weight: 700; font-size: 17px; min-height: 44px; }
+.marka:hover { color: var(--koyu-yazi); }
+.isaret { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; background: var(--yesil-dolu); color: #06130C; font-family: Georgia, "Times New Roman", serif; font-weight: 700; font-size: 18px; line-height: 1; box-shadow: 0 2px 8px rgba(108, 194, 74, 0.45); }
+.marka-alt { margin-left: auto; font-size: 14px; color: var(--koyu-soluk); }
+
+.ust { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.fabrika { font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--yesil); margin: 0 0 7px; }
+.kart { background: var(--kart); border: 1px solid var(--cizgi-ince); border-radius: 22px; padding: 20px; margin: 14px 0; box-shadow: var(--golge); }
+.kart.vurgu { border: 1px solid rgba(108, 194, 74, 0.45); background: linear-gradient(180deg, #F2FAEE, var(--yesil-acik)); box-shadow: 0 6px 22px rgba(108, 194, 74, 0.16); }
+.kutular { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.kutu { background: var(--kart); border: 1px solid var(--cizgi-ince); border-radius: 18px; padding: 15px 17px; box-shadow: var(--golge); position: relative; overflow: hidden; }
+.kutu::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px; border-radius: 0 4px 4px 0; background: var(--yesil-dolu); opacity: 0.85; }
+.kutu .etiket { font-size: 13px; color: var(--soluk); font-weight: 600; padding-left: 8px; }
+.kutu .deger { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; padding-left: 8px; margin-top: 3px; }
+button, .dugme {
+  font: inherit; font-size: 16px; font-weight: 600; min-height: 48px; padding: 10px 20px; border-radius: 999px;
+  border: 1.5px solid var(--cizgi); background: var(--kart); color: var(--yazi); cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: var(--golge-s); transition: transform 0.04s ease, border-color 0.1s ease;
+}
+button:hover, .dugme:hover { border-color: var(--yesil); color: var(--yesil); }
+button:active, .dugme:active { transform: translateY(1px); }
+button.ana, .dugme.ana { background: var(--yesil-dolu); border-color: transparent; color: #0B1D28; font-weight: 800; box-shadow: 0 4px 14px rgba(108, 194, 74, 0.38); }
+button.ana:hover, .dugme.ana:hover { background: var(--yesil-dolu-2); border-color: transparent; color: #0B1D28; }
+button.tehlike { color: var(--kirmizi); border-color: #F0C9C9; background: #fff; }
+button.tehlike:hover { background: var(--kirmizi); border-color: var(--kirmizi); color: #fff; }
+button.kucuk { min-height: 42px; min-width: 42px; padding: 6px 15px; font-size: 14px; }
+button:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--kehribar); outline-offset: 3px; }
+.genis-dugme { width: 100%; }
+label { display: block; font-size: 14px; color: var(--soluk); font-weight: 600; margin: 12px 0 5px; }
+input { font: inherit; font-size: 20px; width: 100%; min-height: 48px; padding: 10px 15px; border-radius: 14px; border: 1.5px solid var(--cizgi); background: #fff; color: var(--yazi); }
+input:focus { outline: none; border-color: var(--yesil-dolu); box-shadow: 0 0 0 3px rgba(108, 194, 74, 0.22); }
+.satir { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; padding: 14px 0; border-top: 1px solid var(--cizgi-ince); }
+.satir:first-child { border-top: 0; }
+.no { font-size: 26px; font-weight: 800; min-width: 44px; text-align: center; }
+.bilgi { flex: 1 1 0; min-width: 0; }
+.ad { font-weight: 700; overflow-wrap: anywhere; }
+.alt { font-size: 15px; color: var(--soluk); }
+.islemler { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+/* Telefonda düğmeler bilginin altına iner: isim ve kilolar sıkışmaz. */
+.satir > .islemler { flex: 1 1 100%; justify-content: flex-start; padding-left: 54px; }
+.satir > .islemler > button.ana { flex: 1 1 auto; }
+/* Biten müşteriye sonradan yağ kilosu: satırın altında kısa form. */
+.yag-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 0 12px 54px; }
+.yag-form input { flex: 0 0 130px; width: 130px; }
+.yag-form .hata { flex: 1 1 100%; margin: 0; }
+/* Ofis kayıtları: aralık düğmeleri ve 6 özet kutusu. */
+.ofis-ust.rapor-ust { grid-template-columns: repeat(6, 1fr); margin: 14px 0; }
+#rapor-aralik button[aria-pressed="true"] { background: var(--lacivert); border-color: var(--lacivert); color: var(--koyu-yazi); }
+@media (max-width: 1000px) { .ofis-ust.rapor-ust { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .ofis-ust.rapor-ust { grid-template-columns: repeat(2, 1fr); } }
+.durum { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 999px; }
+.durum::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.durum.sirada { background: #EEF2F5; color: #3C4E57; }
+.durum.isleniyor { background: var(--turuncu-acik); color: var(--turuncu); }
+.durum.bitti { background: var(--yesil-acik); color: var(--yesil); }
+.durum.iptal { background: var(--kirmizi-acik); color: var(--kirmizi); }
+.uyari { background: var(--turuncu-acik); color: var(--turuncu); border-radius: 16px; padding: 13px 16px; margin: 10px 0; }
+.hata { background: var(--kirmizi-acik); color: var(--kirmizi); border-radius: 16px; padding: 13px 16px; margin: 10px 0; }
+.bilgilendirme { background: var(--yesil-acik); color: var(--yesil); border-radius: 16px; padding: 13px 16px; margin: 10px 0; }
+.cevrim { font-size: 14px; font-weight: 700; }
+.cevrim.acik { color: var(--yesil); }
+.cevrim.kapali { color: var(--kirmizi); }
+.kod-buyuk { font-size: 56px; font-weight: 800; letter-spacing: 0.1em; text-align: center; margin: 8px 0; }
+.dugmeler { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.dugmeler > * { flex: 1 1 140px; }
+.ust .dugmeler > * { flex: 0 1 auto; white-space: nowrap; }
+.gizli { display: none !important; }
+.not { font-size: 14px; color: var(--soluk); }
+.parola { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 20px; letter-spacing: 0.04em; overflow-wrap: anywhere; }
+canvas.qr { display: block; margin: 12px auto; image-rendering: pixelated; background: #fff; padding: 8px; border-radius: 10px; box-shadow: var(--golge-s); }
+.tablo-kutu { overflow-x: auto; background: var(--kart); border: 1px solid var(--cizgi-ince); border-radius: 22px; box-shadow: var(--golge); }
+table { width: 100%; border-collapse: collapse; background: transparent; }
+th, td { text-align: left; padding: 15px 16px; border-bottom: 1px solid var(--cizgi-ince); font-size: 16px; vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: #FAFCFB; }
+th { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.09em; color: var(--cok-soluk); background: #FAFBFC; }
+.ofis-ust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.ayarlar { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+@media (max-width: 720px) {
+  .ofis-ust { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 360px) {
+  .kutu .deger { font-size: 20px; }
+}
+/* Çiftçi sayfası */
+.ciftci-no { font-size: 104px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; text-align: center; margin: 8px 0; color: var(--lacivert); }
+.ciftci-ortada { text-align: center; }
+.adimlar { list-style: none; padding: 0; margin: 16px 0 0; }
+.adimlar li { padding: 8px 0 8px 34px; position: relative; color: var(--soluk); }
+.adimlar li::before { content: ""; position: absolute; left: 6px; top: 12px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--cizgi); background: #fff; }
+.adimlar li.tamam { color: var(--yazi); }
+.adimlar li.tamam::before { background: var(--yesil-dolu); border-color: var(--yesil-dolu); }
+.adimlar li.simdi { color: var(--yazi); font-weight: 700; }
+.adimlar li.simdi::before { border-color: var(--turuncu); background: var(--turuncu-acik); }
+/* TV */
+body.tv { background: var(--lacivert); color: var(--koyu-yazi); min-height: 100vh; }
+body.tv main { max-width: none; padding: 3vw; }
+.tv-baslik { font-size: 3vw; font-weight: 800; }
+.tv-isleniyor { font-size: 5vw; font-weight: 800; color: var(--kehribar); margin: 2vw 0; }
+.tv-satir { display: flex; justify-content: space-between; font-size: 3.6vw; padding: 1vw 0; border-bottom: 1px solid var(--cizgi-koyu); }
+.tv-satir .tv-saat { color: var(--koyu-soluk); }
+.tv-not { font-size: 1.6vw; color: var(--koyu-soluk); margin-top: 2vw; }
+/* Ofiste kayıt sonrası büyük QR: çiftçi kendi telefonuyla ekrandan okutur (numara, yazıcı gerekmez). */
+.qr-panel { text-align: center; }
+.qr-yer canvas { width: min(280px, 80vw); height: auto; image-rendering: pixelated; border: 1px solid var(--cizgi); border-radius: 18px; padding: 10px; background: #fff; }
+.qr-kod { font-size: 28px; font-weight: 800; letter-spacing: 0.08em; margin: 8px 0 0; }
+.bildirim-kutu { margin-top: 14px; }
+.bildirim-kutu .dugme { width: 100%; }
+/* Fiş: ekranda görünmez; yazdırırken yalnız fiş basılır. 58 mm kâğıt, yaklaşık 48 mm basılabilir alan. */
+.fis-alan { display: none; }
+@media print {
+  @page { size: 58mm auto; margin: 0; }
+  html, body { background: #fff !important; color: #000 !important; margin: 0; }
+  body > main { display: none !important; }
+  .fis-alan { display: block; width: 48mm; margin: 0 auto; padding: 3mm 0 6mm; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #000; text-align: center; }
+  .fis-alan p { margin: 0 0 1.2mm; font-size: 9pt; line-height: 1.25; overflow-wrap: anywhere; }
+  .fis-alan .fis-fabrika { font-size: 11pt; font-weight: 700; padding-bottom: 1.5mm; border-bottom: 0.3mm dashed #000; margin-bottom: 2mm; }
+  .fis-alan .fis-etiket { font-size: 8pt; letter-spacing: 0.1em; }
+  .fis-alan .fis-no { font-size: 30pt; font-weight: 800; line-height: 1; margin-bottom: 1.5mm; }
+  .fis-alan .fis-kod { font-size: 14pt; font-weight: 700; letter-spacing: 0.08em; }
+  .fis-alan .fis-ad { font-size: 10pt; font-weight: 700; }
+  .fis-alan .fis-not { font-size: 7.5pt; }
+  .fis-alan .fis-qr { display: block; width: 32mm; height: 32mm; margin: 2mm auto 1mm; image-rendering: pixelated; }
+}

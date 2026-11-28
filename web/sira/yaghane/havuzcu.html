@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B1D28">
+<title>Yağhane sırası · havuzcu</title>
+<link rel="stylesheet" href="/stil.css">
+<script type="module" src="/yaghane/js/havuzcu.js"></script>
+</head>
+<body>
+<header class="marka-cubuk"><div class="marka-ic"><a class="marka" href="https://zeytindefteri.tr/" rel="noopener"><span class="isaret" aria-hidden="true">Z</span>Zeytin Defteri</a><span class="marka-alt">Yağhane sırası</span></div></header>
+<main>
+  <div class="ust">
+    <div>
+      <p class="fabrika" id="fabrika">Yağhane</p>
+      <h1>Bugünkü sıra</h1>
+    </div>
+    <span class="cevrim acik" id="cevrim" role="status">● Bağlı</span>
+  </div>
+  <div id="mesajlar" aria-live="polite"></div>
+  <div id="anahtar-uyari" class="uyari gizli">
+    <p id="anahtar-metni"></p>
+    <form id="anahtar-form" class="gizli">
+      <label for="parola">Anahtar parolası (ofis panelinde yazar)</label>
+      <input id="parola" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <div class="dugmeler"><button class="ana" type="submit">Anahtarı kaydet</button></div>
+    </form>
+  </div>
+  <div class="kutular">
+    <div class="kutu"><div class="etiket">Bekleyen</div><div class="deger" id="bekleyen">–</div></div>
+    <div class="kutu"><div class="etiket">Bekleyen zeytin</div><div class="deger" id="bekleyen-kg">–</div></div>
+    <div class="kutu"><div class="etiket">Biter</div><div class="deger" id="biter">–</div></div>
+  </div>
+  <div class="dugmeler"><button class="ana genis-dugme" type="button" id="yeni-ac">+ Yeni müşteri</button></div>
+
+  <form id="yeni-form" class="kart gizli" novalidate>
+    <h2>Yeni müşteri</h2>
+    <label for="y-ad">İsim (isteğe bağlı, şifreli gider)</label>
+    <input id="y-ad" autocomplete="off" maxlength="40">
+    <label for="y-tel">Telefon (isteğe bağlı; sıra linki buradan gider, sunucuya gitmez)</label>
+    <input id="y-tel" type="tel" inputmode="tel" autocomplete="off">
+    <label for="y-kasa">Kasa</label>
+    <input id="y-kasa" inputmode="numeric" autocomplete="off">
+    <label for="y-kg">Kilo (kantar)</label>
+    <input id="y-kg" inputmode="decimal" autocomplete="off">
+    <div id="y-hata" class="hata gizli" role="alert"></div>
+    <div class="dugmeler">
+      <button type="button" id="yeni-vazgec">Vazgeç</button>
+      <button class="ana" type="submit">Sıraya ekle</button>
+    </div>
+  </form>
+
+  <section id="eklendi" class="kart vurgu gizli" aria-live="polite">
+    <p id="eklendi-baslik"><strong>✓ Sıraya eklendi</strong></p>
+    <p class="not">Çiftçinin sıra kodu</p>
+    <p class="kod-buyuk" id="eklendi-kod"></p>
+    <div class="dugmeler" id="eklendi-gonder"></div>
+    <p class="not" id="eklendi-not">Telefonu olmayana fiş ver: QR'ı okutur ya da sira.zeytindefteri.tr/bul adresinden kod ve kasa sayısıyla girer.</p>
+    <div class="dugmeler"><button type="button" id="eklendi-fis">Fiş yazdır</button><button type="button" id="eklendi-kapat">Tamam</button></div>
+  </section>
+
+  <h2>Şimdi işleniyor</h2>
+  <div id="isleniyor"></div>
+  <h2>Sırada</h2>
+  <div class="kart" id="sirada"></div>
+  <h2>Biten</h2>
+  <div class="kart" id="biten"></div>
+  <div class="dugmeler"><button type="button" id="cikis">Çıkış</button></div>
+  <p class="not">Çiftçiler yalnız kendi sırasını görür; isimler ve kilolar başkasına gösterilmez.</p>
+</main>
+<div id="fis-alan" class="fis-alan"></div>
+</body>
+</html>

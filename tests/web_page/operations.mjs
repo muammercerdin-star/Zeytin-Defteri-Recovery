@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { Operations, decimal } from '../../web/tezgah/js/operations.js';
+import { Operations, decimal, estimate } from '../../web/tezgah/js/operations.js';
 import { TezgahPage } from '../../web/tezgah/app.js';
 let checks = 0;
 function check(value, message) {
@@ -60,6 +60,10 @@ for (const invalid of ['1.14', '-1', 'NaN', 'Infinity', '1e6', '<img>', '1,234',
   assert.throws(() => decimal(invalid));
   checks++;
 }
+// Önizleme, telefondaki TezgahModel formülüyle aynı: net = kg − kasa × dara (eksiye düşmez).
+equal(estimate(2, [60, 50, 0, 0, 0, 0], [{ elek: 0, kasa: 10, kg: 258 }, { elek: 1, kasa: 2, kg: 40 }]),
+  { net: 274, total: 238 * 60 + 36 * 50, gradeNet: [238, 36, 0, 0, 0, 0] }, 'preview formula matches phone');
+equal(estimate(2, [10, 0, 0, 0, 0, 0], [{ elek: 0, kasa: 5, kg: 6 }]).net, 0, 'tare never makes net negative');
 const root = new Element('section');
 const document = { getElementById: () => root, createElement: tag => new Element(tag) };
 const sent = [];
@@ -115,12 +119,46 @@ complete();
 ui.seller.value = malicious;
 await ui.searchProducers();
 equal(ui.producers.children[0].textContent, malicious, 'producer suggestion no HTML');
+equal(ui.paid.value, '', 'paid box starts empty, no 0 to delete');
+equal(ui.prices[0].value, '', 'price boxes start empty');
+check(ui.priceSummary.textContent.includes('önce fiyatları girin') && ui.priceBox.open, 'empty day prices open and ask');
+ui.prices[0].value = '60';
+ui.prices[0].events.input();
+ui.weighings[0].crates.value = '10';
+ui.weighings[0].kg.value = '258';
+ui.weighings[0].kg.events.input();
+equal(ui.previewMain.textContent, 'Net 238 kg · 14.280 ₺', 'live net and amount preview');
+check(ui.priceSummary.textContent.includes('Double 60 ₺'), 'day prices summarised in one line');
+ui.weighings[0].grade.value = '1';
+ui.weighings[0].grade.events.change();
+check(ui.previewNote.textContent.includes('1 numara fiyatı girilmedi'), 'missing grade price warned');
+ui.weighings[0].grade.value = '0';
+ui.weighings[0].kg.value = '12,5,0';
+ui.weighings[0].kg.events.input();
+equal(ui.previewMain.textContent, 'Sayıyı kontrol edin', 'bad number flagged before sending');
+let stopped = false;
+ui.weighings[0].kg.events.keydown({ key: 'Enter', preventDefault() { stopped = true; } });
+check(stopped && ui.weighings.length === 2, 'Enter after kg opens a new weighing row, never submits');
+equal(ui.weighings[1].grade.value, '1', 'new row moves to the next grade');
+check(ui.weighings[1].grade.focused, 'focus jumps to the new row');
+let moved = false;
+ui.paid.focus = () => { moved = true; };
+ui.weighings[1].kg.events.keydown({ key: 'Enter', preventDefault() {} });
+check(moved && ui.weighings.length === 1, 'Enter on empty last row drops it and goes to paid');
+ui.paid.focus = Element.prototype.focus;
+let ctrlMoved = false;
+ui.weighings[0].crates.events.keydown({ key: 'Enter', ctrlKey: true, preventDefault() { ctrlMoved = true; } });
+check(!ctrlMoved, 'Ctrl+Enter is left to the form (send), not field navigation');
+ui.weighings[0].crates.value = '';
 ui.prices[0].value = '12,50';
 ui.weighings[0].kg.value = '1.140,5';
 await submit(ui.purchaseSection);
 equal(sent.at(-1).alanlar.model.tartimlar[0].kg, '1140.5', 'purchase number normalized');
 equal(sent.at(-1).alanlar.model.fiyatlar[0], '12.50', 'price sent as text');
 check(!('tutar' in sent.at(-1).alanlar), 'browser never sends trusted total');
+equal(sent.at(-1).alanlar.model.fiyatlar.slice(1), ['0', '0', '0', '0', '0'], 'empty price boxes sent as 0');
+equal(sent.at(-1).alanlar.odenen, '0', 'empty paid sent as 0');
+equal(sent.at(-1).alanlar.model.tartimlar[0].kasa, 0, 'empty crate box sent as 0');
 complete();
 await ui.rowAction('edit', { id: '9' });
 check(ui.paid.disabled, 'edit preserves paid amount');
@@ -133,7 +171,9 @@ complete();
 await ui.rowAction('delete', { id: '9' });
 equal(sent.at(-1).tur, 'alim_sil', 'delete is phone command');
 complete();
-await ui.rowAction('pay', { id: '9', kalanTL: '120.50' });
+await ui.rowAction('pay', { id: '9', uretici: malicious, kalanTL: '120.50' });
+check(!ui.paymentSection.hidden && ui.payAmount.focused, 'Öde opens payment with focus on amount');
+equal(ui.payInfo.textContent, malicious + ' · kalan 120,5 ₺', 'payment shows producer and debt as text');
 await submit(ui.paymentSection);
 equal(sent.at(-1).alanlar, { alimId: '9', tutar: '120.50' }, 'payment form');
 complete();
@@ -223,4 +263,83 @@ page.permissions = ['tezgah.read'];
 await assert.rejects(page.command('odeme', {}));
 checks++;
 page.stop();
+// Günün fiyatları telefondan gelir; "Şu an tartılıyor" kartı yalnız metinle çizilir.
+{
+  const opsRoot = new Element('section');
+  const quick = new Element('aside');
+  const liveBox = new Element('section');
+  const ids = { operations: opsRoot, 'quick-entry': quick, 'live-weighing': liveBox, workspace: new Element('div') };
+  const doc = { getElementById: id => ids[id] || null, createElement: tag => new Element(tag), activeElement: null };
+  const calls = [];
+  let phone = { gunFiyat: { bugun: true, fiyatlar: ['130.00', '100.00', '0.00', '0.00', '0.00', '20.50'], dara: '2.0', kaynak: 'gun' }, canli: true };
+  let live = { aktif: true, uretici: malicious, dara: '2.0', tartimlar: [{ elek: 0, kasa: 10, kg: '258.0', netKg: '238.0' }, { elek: 0, kasa: 2, kg: '40.0', netKg: '36.0' }], satir: 2, kasa: 12, netKg: '274.0', tutarTL: '35620.00', eksikFiyat: false };
+  const phoneApp = {
+    commands: new Map(),
+    canWrite() { return true; },
+    async command() { return 'x'; },
+    async operation(op) {
+      calls.push(op);
+      if (op === 'web_meta') return { tarih: '2026-11-16', ...phone };
+      if (op === 'canli_tartim') return live;
+      return { items: [], complete: true };
+    }
+  };
+  const lv = new Operations(doc, phoneApp);
+  lv.state({ approved: true, writable: true, stale: false, data: {} });
+  await pause(); await pause(); await pause();
+  equal(lv.prices[0].value, '130', 'phone price fills Double');
+  equal(lv.prices[5].value, '20,5', 'phone price uses Turkish comma');
+  equal(lv.prices[2].value, '', 'zero phone price stays empty');
+  check(lv.priceSummary.textContent.startsWith('Günün fiyatları · telefondan'), 'summary says prices came from phone');
+  check(!liveBox.hidden, 'live card shown while phone weighs');
+  const texts = walk(liveBox).map(node => node.textContent);
+  check(texts.includes(malicious), 'seller rendered as literal text');
+  check(texts.includes('Şu an tartılıyor'), 'live tag');
+  check(texts.some(t => t === '12 kasa'), 'grade rows aggregated (10+2 kasa)');
+  check(texts.some(t => t.startsWith('Net 274 kg')), 'live total net');
+  // Telefon değişti: yazılmakta olan kutu ezilmez, öteki kutular güncellenir; tartım bitince kart kapanır.
+  lv.prices[1].value = '105';
+  doc.activeElement = lv.prices[1];
+  phone = { gunFiyat: { bugun: true, fiyatlar: ['140.00', '110.00', '0.00', '0.00', '0.00', '20.00'], dara: '2.0', kaynak: 'gun' }, canli: true };
+  live = { aktif: false };
+  const before = calls.length;
+  phoneApp.onChange();
+  await pause(); await pause(); await pause();
+  check(calls.length > before, 'change event refetches phone state');
+  equal(lv.prices[0].value, '140', 'updated phone price applied');
+  equal(lv.prices[1].value, '105', 'focused price box not overwritten');
+  check(liveBox.hidden && liveBox.children.length === 0, 'live card hidden when weighing saved');
+  // Dünkü fiyat gelmez: kutular elle doldurulabilir kalır, özet uyarır.
+  doc.activeElement = null;
+  phone = { gunFiyat: { bugun: false }, canli: true };
+  phoneApp.onChange();
+  await pause(); await pause(); await pause();
+  check(lv.priceSummary.textContent.includes('Günün fiyatları') , 'summary still rendered');
+  check(lv.priceSource === 'eksik', 'missing phone prices noted');
+  // Bağlantı kesilince kart ve canlı durum silinir.
+  live = { aktif: true, uretici: 'A', tartimlar: [], satir: 0, kasa: 0, netKg: '0', tutarTL: '0' };
+  phoneApp.onChange();
+  await pause(); await pause(); await pause();
+  check(!liveBox.hidden, 'card back while weighing');
+  phoneApp.onWipe();
+  check(liveBox.hidden && liveBox.children.length === 0 && !lv.liveSupported, 'wipe clears live card');
+}
+// Eski uygulama: canli/gunFiyat yok → canlı istek gönderilmez, elle fiyat girişi aynen.
+{
+  const oldCard = new Element('section');
+  oldCard.hidden = true;
+  const ids = { operations: new Element('section'), 'quick-entry': new Element('aside'), 'live-weighing': oldCard, workspace: new Element('div') };
+  const doc = { getElementById: id => ids[id] || null, createElement: tag => new Element(tag) };
+  const calls = [];
+  const oldApp = { commands: new Map(), canWrite() { return true; }, async command() { return 'x'; },
+    async operation(op) { calls.push(op); if (op === 'web_meta') return { tarih: '2026-11-16' }; return { items: [] }; } };
+  const old = new Operations(doc, oldApp);
+  old.state({ approved: true, writable: true, stale: false, data: {} });
+  await pause(); await pause();
+  oldApp.onChange();
+  await pause();
+  check(!calls.includes('canli_tartim'), 'old phone: no live operation requested');
+  check(oldCard.hidden === true && oldCard.children.length === 0, 'old phone: no live card');
+  equal(old.prices[0].value, '', 'old phone: price boxes stay manual');
+}
 console.log(`PASS ${checks} web operations / forms / permissions / XSS checks`);

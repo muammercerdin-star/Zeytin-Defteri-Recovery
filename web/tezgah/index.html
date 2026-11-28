@@ -24,12 +24,12 @@
     <main>
       <section class="heading">
         <div><p class="eyebrow">BİLGİSAYARDA TEZGÂHINIZ</p>
-          <h1>Tezgâh <span class="separator">·</span> <span id="period">Açık dönem</span></h1>
-          <p class="subtitle">Veriler doğrudan telefonunuzdan gelir.</p>
+          <h1>Kasa defteri <span class="separator">·</span> <span id="period">Gün sonu yapılmamış</span></h1>
+          <p class="subtitle">Veriler doğrudan telefonunuzdan gelir, bu bilgisayarda saklanmaz.</p>
         </div>
         <div class="filters">
-          <button id="open-period" class="quiet" type="button">Açık dönem</button>
-          <label for="day">Takvim günü<input id="day" type="date"></label>
+          <button id="open-period" class="quiet" type="button">Gün sonu yapılmamış</button>
+          <label for="day">Başka bir güne bak<input id="day" type="date"></label>
         </div>
       </section>
       <p id="message" class="message" role="status"></p>
@@ -55,16 +55,21 @@
       </section>
       <section id="ledger" hidden>
         <div id="stale" class="offline" role="alert" hidden>Telefon bağlantısı koptu · Son alınan veriler gösteriliyor.</div>
+        <div id="workspace" class="workspace solo">
+        <div class="side">
+        <section id="live-weighing" class="card live-weighing" aria-live="polite" hidden></section>
+        <button id="new-purchase" class="new-purchase" type="button" aria-expanded="false" aria-controls="quick-entry">+ Yeni alım</button>
+        <aside id="quick-entry" class="quick-entry" aria-label="Yeni alım" hidden></aside>
         <div class="stats">
-          <article class="card stat"><p>Alım sayısı</p><strong id="count">—</strong><small>Seçili kapsamın toplamı</small></article>
-          <article class="card stat"><p>Net ağırlık</p><strong id="weight">—</strong><small>Dara sonrası</small></article>
-          <article class="card stat"><p>Toplam tutar</p><strong id="amount">—</strong><small>Alım bedeli</small></article>
-          <article class="card stat"><p>Ödenen</p><strong id="paid">—</strong><small>Sonraki ödemeler dahil</small></article>
-          <article class="card stat remaining"><p>Kalan</p><strong id="remaining">—</strong><small>Ödenecek bakiye</small></article>
+          <article class="card stat"><p>Alınan zeytin</p><strong id="weight">—</strong><small><span id="count">—</span> alım · dara düşülmüş</small></article>
+          <article class="card stat"><p>Alım tutarı</p><strong id="amount">—</strong><small>Ödenen <span id="paid">—</span></small></article>
+          <article class="card stat remaining"><p>Ödenecek borç</p><strong id="remaining">—</strong><small>Henüz ödenmemiş tutar</small></article>
         </div>
+        </div>
+        <div class="board">
         <section class="card purchases">
           <div class="table-heading">
-            <div><h2>Alımlar</h2><p id="updated"></p></div>
+            <div><h2>Alımlar</h2><p id="updated"></p><p class="table-hint">Borcu olanlar üstte</p></div>
             <div class="table-actions"><span id="loading" hidden>Güncelleniyor…</span><button id="refresh" class="quiet" type="button">Yenile</button></div>
           </div>
           <div class="table-scroll">
@@ -76,9 +81,12 @@
           <p id="empty" class="empty" hidden>Bu kapsamda alım bulunmuyor.</p>
           <div class="pagination"><span id="page">Sayfa 1</span><div><button id="previous" class="quiet" type="button">← Önceki</button><button id="next" class="quiet" type="button">Sonraki →</button></div></div>
         </section>
-        <p class="footnote">Açık dönem, Z ile kapanmamış alımları gösterir; tek bir takvim günüyle sınırlı değildir. Alım saati mevcut telefon verisinde bulunmaz.</p>
+        <p class="footnote">“Gün sonu yapılmamış” listesi: henüz gün sonu (Z) alınmamış bütün alımlar. Başka bir günü görmek için yukarıdan gün seçin.</p>
+        </div>
+        </div>
       </section>
-      <section id="operations" hidden></section>
+      <h2 class="section-title" id="operations-title">Diğer işler</h2>
+      <section id="operations" aria-labelledby="operations-title" hidden></section>
     </main>
     <footer><span>Zeytin Defteri</span><span>5 dakika işlem yapılmazsa bağlantı güvenliğiniz için kapanır.</span></footer>
   </div>

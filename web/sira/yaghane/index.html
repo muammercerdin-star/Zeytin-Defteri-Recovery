@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Yağhane sırası · giriş</title>
+<link rel="stylesheet" href="/stil.css">
+<script type="module" src="/yaghane/js/giris.js"></script>
+</head>
+<body>
+<header class="marka-cubuk"><div class="marka-ic"><a class="marka" href="https://zeytindefteri.tr/" rel="noopener"><span class="isaret" aria-hidden="true">Z</span>Zeytin Defteri</a><span class="marka-alt">Yağhane sırası</span></div></header>
+<main>
+  <p class="fabrika">Yağhane sırası</p>
+  <h1>Giriş</h1>
+  <form id="form" class="kart" novalidate>
+    <label for="ad">Kullanıcı adı</label>
+    <input id="ad" name="ad" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+    <label for="sifre">Şifre</label>
+    <input id="sifre" name="sifre" type="password" autocomplete="current-password" required>
+    <div id="mesaj" class="hata gizli" role="alert"></div>
+    <div class="dugmeler"><button class="ana" type="submit" id="gir">Giriş yap</button></div>
+  </form>
+  <p class="not">Bu sayfa yağhane çalışanları içindir. Sıranı görmek istiyorsan sana gönderilen linki aç ya da
+    <a href="/bul/">sıra kodunla bul</a>.</p>
+</main>
+</body>
+</html>

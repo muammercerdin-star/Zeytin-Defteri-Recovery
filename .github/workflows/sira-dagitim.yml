@@ -1,0 +1,71 @@
+# Yağhane sırası (sira.zeytindefteri.tr) — Cloudflare Worker dağıtımı.
+# Yalnız work/ip9-sira-web dalındaki sıra dosyaları değişince çalışır. Önce testler, sonra dağıtım.
+# Gizli bilgiler GitHub Secrets'tadır (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID); bu dosyaya yazılmaz.
+name: Yağhane sırası dağıtımı
+
+on:
+  push:
+    branches: [work/ip9-sira-web]
+    paths:
+      - "cloud/zeytin-sira/**"
+      - "web/sira/**"
+      - "tests/sira_worker/**"
+      - "tests/sira_web/**"
+      - ".github/workflows/sira-dagitim.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sira-dagitim
+  cancel-in-progress: false
+
+jobs:
+  dagit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Testler (sunucu + web)
+        run: |
+          sh tests/sira_worker/run.sh
+          sh tests/sira_web/run.sh
+
+      - name: Anahtar kontrolü
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::GitHub Secrets eksik: CLOUDFLARE_API_TOKEN ve CLOUDFLARE_ACCOUNT_ID eklenmeli."
+            exit 1
+          fi
+
+      - name: Worker'ı dağıt
+        working-directory: cloud/zeytin-sira
+        run: npx --yes wrangler@4 deploy
+
+      - name: GIZLI_TUZ yoksa bir kez üret
+        working-directory: cloud/zeytin-sira
+        run: |
+          # Tuz kimsenin görmediği rastgele bir değerdir; zaten varsa dokunulmaz.
+          if npx --yes wrangler@4 secret list --format json | grep -q '"GIZLI_TUZ"'; then
+            echo "GIZLI_TUZ zaten var, dokunulmadı."
+          else
+            openssl rand -base64 36 | tr -d '\n' | npx --yes wrangler@4 secret put GIZLI_TUZ
+            echo "GIZLI_TUZ oluşturuldu."
+          fi
+
+      - name: Sağlık kontrolü
+        run: |
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS https://sira.zeytindefteri.tr/api/saglik; then echo; exit 0; fi
+            sleep 10
+          done
+          echo "::warning::sira.zeytindefteri.tr henüz cevap vermiyor (sertifika birkaç dakika sürebilir)."
