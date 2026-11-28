@@ -2,8 +2,10 @@ package com.zeytindefteri.app;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import org.json.JSONObject;
 
 /**
  * Yağhane sırası sunucusundan (sira.zeytindefteri.tr) bir çiftçinin kendi sırasının durumunu çeker.
@@ -27,6 +29,49 @@ final class SiraBulut {
 
     static boolean gecerliToken(String token) {
         return token != null && token.matches("[A-Za-z0-9_-]{22}");
+    }
+
+    /**
+     * Elle giriş: fabrika kısa adı + kod + ek (telefon son 2 hanesi ya da kasa sayısı) → sıra token'ı.
+     * QR okutamayan çiftçi için web'deki /bul ile aynı. Dönen: token ya da null (bulunamadı/ulaşılamadı).
+     */
+    static String bul(String fabrika, String kod, String ek) {
+        HttpURLConnection conn = null;
+        try {
+            JSONObject govde = new JSONObject();
+            govde.put("fabrika", fabrika);
+            govde.put("kod", kod);
+            govde.put("ek", ek);
+            conn = (HttpURLConnection) new URL(TABAN + "/api/sira/bul").openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(CONNECT_MS);
+            conn.setReadTimeout(READ_MS);
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(govde.toString().getBytes("UTF-8"));
+            }
+            if (conn.getResponseCode() != 200) {
+                return null;
+            }
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader r = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"))) {
+                char[] buf = new char[512];
+                int oku;
+                while ((oku = r.read(buf)) != -1 && sb.length() < MAX) {
+                    sb.append(buf, 0, oku);
+                }
+            }
+            String token = new JSONObject(sb.toString()).optString("token", "");
+            return gecerliToken(token) ? token : null;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
     }
 
     /** token'ın sıra durumu; null = ulaşılamadı ya da sıra yok / süresi dolmuş (HTTP 200 dışı). */

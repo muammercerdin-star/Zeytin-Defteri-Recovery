@@ -352,6 +352,10 @@
                 <data android:scheme="zeytin-sira" />
             </intent-filter>
         </activity>
+
+        <!-- QR okutamayan çiftçi için elle sıra ekleme (yağhane kısa adı + kod + son 2 hane). -->
+        <activity android:name=".SiraEkleActivity" android:exported="false" android:label="Sıra ekle"
+            android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="meydan_replies" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_bell_line" />
         <activity android:name=".BlockedUsersActivity" android:exported="false" />

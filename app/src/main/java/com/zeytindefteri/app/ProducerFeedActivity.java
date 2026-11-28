@@ -1820,17 +1820,23 @@ public class ProducerFeedActivity extends Activity {
     private View siramKart() {
         final SiraDefteri defteri = new SiraDefteri(new SiraDepo(this));
         final java.util.List<String> tokenlar = defteri.tokenlar();
-        if (tokenlar.isEmpty()) {
-            return null;
-        }
-        final String token = tokenlar.get(0);
         final LinearLayout kart = new LinearLayout(this);
         kart.setOrientation(LinearLayout.VERTICAL);
         kart.setBackground(round(CARD, 18, BORDER));
         kart.setPadding(dp(16), dp(14), dp(16), dp(14));
+        kart.addView(text("SIRAM", 12, GREEN, true));
+        if (tokenlar.isEmpty()) {
+            TextView bos = text("Yağhaneye zeytin götürdüysen sıranı ekle; sıran yaklaşınca haber veririz.", 14, MUTED, false);
+            bos.setPadding(0, dp(6), 0, dp(10));
+            kart.addView(bos);
+            TextView ekle = text("+ Sıra ekle", 15, GREEN, true);
+            ekle.setOnClickListener(v -> startActivity(new Intent(this, SiraEkleActivity.class)));
+            kart.addView(ekle);
+            return kart;
+        }
+        final String token = tokenlar.get(0);
         kart.setOnClickListener(v -> startActivity(
                 new Intent(this, SiramActivity.class).putExtra(SiramActivity.EXTRA_TOKEN, token)));
-        kart.addView(text("SIRAM", 12, GREEN, true));
         final TextView satir = text("Sıran yükleniyor…", 16, MUTED, false);
         satir.setPadding(0, dp(6), 0, 0);
         kart.addView(satir);
