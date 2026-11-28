@@ -676,6 +676,14 @@ const m = [];
   const kaynak = ["worker.js", "src/api.mjs", "src/guvenlik.mjs", "src/temizlik.mjs", "src/tahmin.mjs", "src/bildirim.mjs"].map((f) => readFileSync(join(dir, f), "utf8")).join("\n");
   check(!/console\.(log|error|warn|info)/.test(kaynak), "sunucu koduna log yazılmaz");
   check(!/telefon/i.test(readFileSync(join(dir, "schema.sql"), "utf8").replace(/--.*$/gm, "")), "şemada telefon sütunu yok");
+
+  // App Links: assetlinks.json Worker'dan application/json olarak sunulur (ofis QR'ı uygulamayı açsın).
+  const al = await handle(new Request(SITE + "/.well-known/assetlinks.json"), { DB: db }, null, T);
+  esit(al.status, 200, "assetlinks 200");
+  check((al.headers.get("content-type") || "").includes("application/json"), "assetlinks application/json");
+  const alb = await al.json();
+  check(Array.isArray(alb) && alb[0].target.package_name === "com.zeytindefteri.app", "assetlinks paket adı doğru");
+  check(alb[0].target.sha256_cert_fingerprints.length >= 1, "assetlinks parmak izi var");
 }
 
 console.log((bad ? "FAIL " : "PASS ") + (n - bad) + "/" + n + " Yağhane sırası sunucusu");
